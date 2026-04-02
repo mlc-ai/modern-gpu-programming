@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>Diagram Generation Scripts &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+
+    <link rel="stylesheet" href="../../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/fontawesome/all.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/fonts.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/d2l.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/d2l.js"></script>
+    <link rel="shortcut icon" href="../../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link is-active">Diagram Generation Scripts</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+          <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../../_sources/img/scripts/README.md.txt" rel="nofollow">
+  <i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+          
+              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
+                  <i class="fab fa-github"></i>
+                  GitHub
+              </a>
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../../index.html">
+              <img class="logo" src="../../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+
+	<script type="text/javascript" src="../../_static/sphinx_materialdesign_theme.js "></script>
+    <header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../../index.html">
+              <img class="logo" src="../../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content" role="main">
+        
+  <section id="diagram-generation-scripts">
+<h1>Diagram Generation Scripts<a class="headerlink" href="#diagram-generation-scripts" title="Permalink to this heading">¶</a></h1>
+<p>These scripts generate the tutorial diagrams in <code class="docutils literal notranslate"><span class="pre">img/</span></code>. Run from this directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>img/scripts
+python<span class="w"> </span>gen_shuffle_reduce.py<span class="w">          </span><span class="c1"># -&gt; ../shuffle_reduce.png (ch5 RMSNorm)</span>
+python<span class="w"> </span>gen_cross_warp_reduce.py<span class="w">       </span><span class="c1"># -&gt; ../cross_warp_reduce.png (ch5 RMSNorm)</span>
+python<span class="w"> </span>gen_warp_specialization_timeline.py<span class="w">  </span><span class="c1"># -&gt; ../warp_specialization_timeline.png (ch8 Step 7)</span>
+python<span class="w"> </span>gen_tma_sync_flow.py<span class="w">           </span><span class="c1"># -&gt; ../tma_sync_flow.png (ch7 Step 4)</span>
+python<span class="w"> </span>gen_flash_attention_barrier_flow.py<span class="w">  </span><span class="c1"># -&gt; ../flash_attention_barrier_flow.png (ch9)</span>
+python<span class="w"> </span>gen_gemm_perf.py<span class="w">               </span><span class="c1"># -&gt; ../gemm_perf.png (ch8 Complete Journey)</span>
+</pre></div>
+</div>
+<p>Requires: <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code>, <code class="docutils literal notranslate"><span class="pre">numpy</span></code></p>
+<p>Note: These images are also in <code class="docutils literal notranslate"><span class="pre">img/</span></code> as static files referenced by the tutorial markdown.
+The scripts are kept here for reproducibility — if you need to tweak a diagram, edit the
+script and re-run it.</p>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+  </div>
+        
+        </main>
+    </div>
+  </body>
+</html>

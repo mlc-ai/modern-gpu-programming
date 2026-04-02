@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>2. TIRX Programming Model &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fontawesome/all.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/d2l.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/d2l.js"></script>
+    <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3. Setup" href="../chapter_setup/index.html" />
+    <link rel="prev" title="1. Background: Blackwell GPU Architecture" href="../chapter_background/index.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link is-active"><span class="section-number">2. </span>TIRX Programming Model</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+          <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/chapter_tirx_primer/index.rst.txt" rel="nofollow">
+  <i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+          
+              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
+                  <i class="fab fa-github"></i>
+                  GitHub
+              </a>
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+
+	<script type="text/javascript" src="../_static/sphinx_materialdesign_theme.js "></script>
+    <header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content" role="main">
+        
+  <section id="tirx-programming-model">
+<span id="chap-tirx-primer"></span><h1><span class="section-number">2. </span>TIRX Programming Model<a class="headerlink" href="#tirx-programming-model" title="Permalink to this heading">¶</a></h1>
+<p>This chapter introduces the core TIRX programming model: how kernels are
+structured, how threads and memory are expressed, and what low-level
+details the DSL abstracts away.</p>
+<section id="import-convention">
+<h2><span class="section-number">2.1. </span>Import Convention<a class="headerlink" href="#import-convention" title="Permalink to this heading">¶</a></h2>
+<p>This tutorial uses the following import:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Tx</span></code> is the TIRX namespace used throughout this tutorial. It provides
+the TIRX DSL APIs, including kernel constructs, thread hierarchy
+operators, memory helpers, asynchronous copy and MMA operations, and PTX
+intrinsics under <code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code>.</p>
+</section>
+<section id="core-apis-at-a-glance">
+<h2><span class="section-number">2.2. </span>Core APIs at a Glance<a class="headerlink" href="#core-apis-at-a-glance" title="Permalink to this heading">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 51%" />
+<col style="width: 24%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Category</p></th>
+<th class="head"><p>API</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Parameters</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.Buffer((M,</span> <span class="pre">K),</span> <span class="pre">dtype)</span></code></p></td>
+<td><p>Buffer with shape
+known at compile time</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.handle</span></code> +
+<code class="docutils literal notranslate"><span class="pre">Tx.match_buffer(ptr,</span> <span class="pre">shape,</span> <span class="pre">dtype)</span></code></p></td>
+<td><p>Buffer with shape
+determined at runtime</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Memory</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PoolAllocator</span></code> / <code class="docutils literal notranslate"><span class="pre">pool.alloc</span></code></p></td>
+<td><p>Dynamic SMEM
+allocation</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.alloc</span></code> / <code class="docutils literal notranslate"><span class="pre">dealloc</span></code></p></td>
+<td><p>TMEM lifecycle
+management</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tma_shared_layout(dtype,</span> <span class="pre">swizzle,</span> <span class="pre">shape)</span></code></p></td>
+<td><p>Swizzled SMEM layout
+helper</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Data movement</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy(dst,</span> <span class="pre">src)</span></code></p></td>
+<td><p>Synchronous copy</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(dst,</span> <span class="pre">src,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code></p></td>
+<td><p>Asynchronous TMA copy</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.gemm_async(D,</span> <span class="pre">A,</span> <span class="pre">B,</span> <span class="pre">dispatch=&quot;tcgen05&quot;)</span></code></p></td>
+<td><p>Asynchronous MMA</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Synchronization</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TMABar</span></code> / <code class="docutils literal notranslate"><span class="pre">TCGen05Bar</span></code> / <code class="docutils literal notranslate"><span class="pre">MBarrier</span></code></p></td>
+<td><p>Barrier abstractions</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Abstractions</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PipelineState</span></code></p></td>
+<td><p>Multi-stage pipeline
+manager</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Scheduling</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ClusterPersistentScheduler2D</span></code></p></td>
+<td><p>Persistent tile
+scheduler</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="kernel-structure">
+<h2><span class="section-number">2.3. </span>Kernel Structure<a class="headerlink" href="#kernel-structure" title="Permalink to this heading">¶</a></h2>
+<p>Every TIRX kernel follows this template:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Declares a TIRX kernel function</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">hgemm</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">),</span>  <span class="c1"># Input buffers with compile-time shapes</span>
+          <span class="n">B</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">),</span>
+          <span class="n">D</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">)):</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
+        <span class="c1"># ① Thread hierarchy</span>
+        <span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">grid_m</span><span class="p">,</span> <span class="n">grid_n</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+        <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="n">num_wg</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+        <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
+        <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ② Memory allocation</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">PoolAllocator</span><span class="p">()</span>
+        <span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">A_layout</span><span class="p">)</span>     <span class="c1"># SMEM buffer</span>
+        <span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>         <span class="c1"># TMEM address slot</span>
+        <span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>                                   <span class="c1"># Finalize SMEM allocations</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>           <span class="c1"># Allocate TMEM</span>
+        <span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span>
+                               <span class="n">allocated_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># ③ Main loop</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span> <span class="o">//</span> <span class="n">BLK_K</span><span class="p">):</span>
+            <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">,</span> <span class="n">A</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>   <span class="c1"># Load (TMA)</span>
+            <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span><span class="n">tmem</span><span class="p">,</span> <span class="n">Asmem</span><span class="p">,</span> <span class="n">Bsmem</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>         <span class="c1"># Compute (MMA)</span>
+
+        <span class="c1"># ④ Writeback</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dreg</span><span class="p">,</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:])</span>                           <span class="c1"># TMEM → RF</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">D</span><span class="p">[</span><span class="n">m_st</span><span class="p">:</span><span class="o">...</span><span class="p">,</span> <span class="n">n_st</span><span class="p">:</span><span class="o">...</span><span class="p">],</span> <span class="n">Dreg</span><span class="p">)</span>               <span class="c1"># RF → GMEM</span>
+</pre></div>
+</div>
+<p>The four regions map to hardware:</p>
+<ul class="simple">
+<li><p><strong>Setup</strong>: SMEM pool allocation, TMEM allocation, mbarrier
+initialization</p></li>
+<li><p><strong>Load</strong>: Data movement from GMEM to SMEM</p></li>
+<li><p><strong>Compute</strong>: tcgen05 MMA operations</p></li>
+<li><p><strong>Writeback</strong>: TMEM → registers → GMEM</p></li>
+</ul>
+</section>
+<section id="thread-hierarchy-scopes">
+<h2><span class="section-number">2.4. </span>Thread Hierarchy Scopes<a class="headerlink" href="#thread-hierarchy-scopes" title="Permalink to this heading">¶</a></h2>
+<p>TIRX uses a hierarchical scope system to control which threads execute a
+block of code:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 29%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Scope</p></th>
+<th class="head"><p>Threads</p></th>
+<th class="head"><p>Use case</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.kernel():</span></code></p></td>
+<td><p>Kernel launch scope</p></td>
+<td><p>Top-level scope for all
+CTAs</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code></p></td>
+<td><p>All 128 threads in
+CTA</p></td>
+<td><p>Cooperative SMEM copy</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warpgroup():</span></code></p></td>
+<td><p>128 threads (4 warps)</p></td>
+<td><p>TMEM reads</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warp():</span></code></p></td>
+<td><p>32 threads</p></td>
+<td><p>Warp-level operations</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread():</span></code></p></td>
+<td><p>Each thread
+independently</p></td>
+<td><p>Per-element operations</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread()[cond]:</span></code></p></td>
+<td><p>Threads where
+<code class="docutils literal notranslate"><span class="pre">cond</span></code> is true</p></td>
+<td><p>Predicated execution for
+a subset of threads</p></td>
+</tr>
+</tbody>
+</table>
+<p>The scope determines how an operation is parallelized. For example,
+<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> inside <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code> means all 128 threads cooperate on
+the copy, while <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> inside <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread():</span></code> means each
+thread copies independently.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">Tx.ptx.elect_sync()</span></code> is not a scope — it is a per-warp
+intrinsic that selects one thread. It is typically combined with a
+thread scope as <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread()[Tx.ptx.elect_sync()]:</span></code> to dispatch
+TMA or MMA operations from a single elected thread.</p>
+</section>
+<section id="memory-management">
+<h2><span class="section-number">2.5. </span>Memory Management<a class="headerlink" href="#memory-management" title="Permalink to this heading">¶</a></h2>
+<p>In TIRX, memory management typically involves three layers: shared
+memory for staging, registers for per-thread temporaries, and TMEM for
+Tensor Core accumulators.</p>
+<p><strong>Shared memory</strong> uses a pool allocator. <code class="docutils literal notranslate"><span class="pre">PoolAllocator</span></code> manages
+shared memory as a contiguous pool — each <code class="docutils literal notranslate"><span class="pre">pool.alloc()</span></code> call bumps a
+pointer forward, similar to a stack allocator. This avoids the
+complexity of a general-purpose allocator and ensures all SMEM buffers
+are packed without fragmentation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">PoolAllocator</span><span class="p">()</span>
+<span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">A_layout</span><span class="p">)</span>   <span class="c1"># SMEM buffer for operand tiles</span>
+<span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>                          <span class="c1"># SMEM slot holding the TMEM base address</span>
+<span class="n">mma_bar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint64&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>                   <span class="c1"># mbarrier stored in SMEM</span>
+<span class="n">pool</span><span class="o">.</span><span class="n">move_base_to</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>  <span class="c1"># Reserve the first 1024 bytes for barriers and metadata</span>
+<span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>             <span class="c1"># Finalize all SMEM allocations</span>
+</pre></div>
+</div>
+<p><strong>Register buffers</strong> (per-thread). A per-thread register buffer can be
+reinterpreted as a warpgroup-level logical tile through a layout view:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="mi">128</span><span class="p">,),</span> <span class="n">acc_type</span><span class="p">)</span>           <span class="c1"># Per-thread register buffer</span>
+<span class="n">reg_wg</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">wg_layout</span><span class="p">)</span>    <span class="c1"># Warpgroup view for cooperative TMEM reads</span>
+</pre></div>
+</div>
+<p><strong>TMEM</strong> is declared as a 2D buffer over Blackwell’s native TMEM axes
+(<code class="docutils literal notranslate"><span class="pre">TLane</span></code> for rows, <code class="docutils literal notranslate"><span class="pre">TCol</span></code> for columns):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">((</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span> <span class="n">allocated_addr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                       <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]))</span>
+</pre></div>
+</div>
+</section>
+<section id="tirx-vs-raw-ptx">
+<h2><span class="section-number">2.6. </span>TIRX vs Raw PTX<a class="headerlink" href="#tirx-vs-raw-ptx" title="Permalink to this heading">¶</a></h2>
+<p>Now that you have seen the TIRX APIs, consider what the same operation
+looks like in raw PTX:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">Raw</span> <span class="n">PTX</span> <span class="p">(</span><span class="n">conceptually</span><span class="p">,</span> <span class="o">~</span><span class="mi">20</span> <span class="n">lines</span><span class="p">)</span>
+<span class="o">//</span> <span class="mf">1.</span> <span class="n">Encode</span> <span class="n">SmemDescriptor</span> <span class="p">(</span><span class="n">start</span> <span class="n">addr</span><span class="p">,</span> <span class="n">leading</span> <span class="n">dim</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">swizzle</span><span class="p">,</span> <span class="n">base</span> <span class="n">offset</span><span class="p">)</span>
+<span class="o">//</span> <span class="mf">2.</span> <span class="n">Encode</span> <span class="n">InstrDescriptor</span> <span class="p">(</span><span class="n">bit</span><span class="o">-</span><span class="n">pack</span><span class="p">:</span> <span class="n">acc</span> <span class="nb">type</span><span class="p">,</span> <span class="n">A</span><span class="o">/</span><span class="n">B</span> <span class="n">types</span><span class="p">,</span> <span class="n">MMA</span> <span class="n">shape</span><span class="p">,</span> <span class="n">transpose</span> <span class="n">flags</span><span class="p">)</span>
+<span class="o">//</span> <span class="mf">3.</span> <span class="n">Initialize</span> <span class="n">mbarrier</span> <span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="nb">set</span> <span class="n">expected</span> <span class="n">arrivals</span><span class="p">)</span>
+<span class="o">//</span> <span class="mf">4.</span> <span class="n">Issue</span> <span class="n">tcgen05</span><span class="o">.</span><span class="n">mma</span> <span class="n">instruction</span>
+<span class="o">//</span> <span class="mf">5.</span> <span class="n">Commit</span> <span class="n">to</span> <span class="n">mbarrier</span>
+<span class="o">//</span> <span class="mf">6.</span> <span class="n">Wait</span> <span class="k">for</span> <span class="n">completion</span>
+<span class="o">//</span> <span class="mf">7.</span> <span class="n">TMEM</span> <span class="n">lifecycle</span> <span class="n">management</span> <span class="p">(</span><span class="n">alloc</span><span class="p">,</span> <span class="n">dealloc</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In TIRX, the same operation is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># TIRX: 3 lines</span>
+<span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span><span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">128</span><span class="p">],</span> <span class="n">Asmem</span><span class="p">[:],</span> <span class="n">Bsmem</span><span class="p">[:],</span>
+              <span class="n">accum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">commit</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>TIRX automates</strong>: descriptor encoding, barrier setup, address
+arithmetic, and TMEM lifecycle management around the MMA itself.</p>
+<p><strong>Compilation flow</strong>: <code class="docutils literal notranslate"><span class="pre">TIRX</span> <span class="pre">Python</span> <span class="pre">→</span> <span class="pre">TIR</span> <span class="pre">→</span> <span class="pre">PTX</span> <span class="pre">→</span> <span class="pre">cubin</span> <span class="pre">(CUDA</span> <span class="pre">binary)</span></code></p>
+</section>
+<section id="meta-variables">
+<h2><span class="section-number">2.7. </span>Meta Variables<a class="headerlink" href="#meta-variables" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> creates a compile-time alias for an expression. This is
+useful when a computed offset must appear in buffer slicing:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">m_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">bx</span> <span class="o">*</span> <span class="n">BLK_M</span><span class="p">)</span>
+<span class="n">n_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">by</span> <span class="o">*</span> <span class="n">BLK_N</span><span class="p">)</span>
+<span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k_st</span> <span class="p">:</span> <span class="n">k_st</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><strong>Important</strong>: Variables assigned inside <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> become TIR
+dynamic variables. Constants such as <code class="docutils literal notranslate"><span class="pre">BLK_M</span></code>, <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">EPI_N</span></code> must remain Python constants defined outside the function.</p>
+</section>
+<section id="axe-layout">
+<h2><span class="section-number">2.8. </span>Axe Layout<a class="headerlink" href="#axe-layout" title="Permalink to this heading">¶</a></h2>
+<p>These kernels use <strong>Axe Layout</strong> (<a class="reference external" href="https://arxiv.org/abs/2601.19092">Hou et al.,
+2026</a>), a hardware-aware layout
+abstraction that maps logical tensor coordinates onto named hardware
+axes. Instead of manually computing memory addresses, you declare a
+layout on each buffer and the compiler generates the correct address
+arithmetic.</p>
+<p><strong>Syntax.</strong> The layout spec <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code> reads as “map
+each dimension to a named hardware axis”:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
+<span class="c1">#  ^^^  ^^^     ^^^^^^^^  ^^^^^^^^</span>
+<span class="c1">#  rows cols    row axis  col axis</span>
+<span class="c1"># &quot;128 rows on TLane, 512 cols on TCol&quot;</span>
+</pre></div>
+</div>
+<p><strong>Quick reference — layouts used in the GEMM kernels:</strong></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 55%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Buffer type</p></th>
+<th class="head"><p>Layout</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>SMEM</strong>
+(TMA-compatible)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tma_shared_layout(dtype,</span> <span class="pre">SWIZZLE_128B_ATOM,</span> <span class="pre">shape)</span></code></p></td>
+<td><p>K-major with 128B
+swizzle</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>TMEM</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">512)</span> <span class="pre">:</span> <span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)])</span></code></p></td>
+<td><p>128 lanes × N
+columns, flat 2D</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Register</strong>
+(warpgroup view)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;axis_tid_in_wg,</span> <span class="pre">1)])</span></code></p></td>
+<td><p>Per-thread view via
+warpgroup tid</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code> creates a swizzled layout for bank-conflict-free
+access — just call this helper with your dtype, swizzle mode, and
+buffer shape.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;TCol</span></code> are Blackwell TMEM’s native 2D addressing
+axes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;axis_tid_in_wg</span></code> means “distribute rows across the 128 threads in a
+warpgroup.” When you write <code class="docutils literal notranslate"><span class="pre">Tx.copy(Dreg_wg,</span> <span class="pre">tmem)</span></code>, the compiler
+matches <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> to <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and generates the correct TMEM load
+instructions.</p></li>
+</ul>
+</section>
+<section id="inline-functions">
+<h2><span class="section-number">2.9. </span>Inline Functions<a class="headerlink" href="#inline-functions" title="Permalink to this heading">¶</a></h2>
+<p>Use <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> to define small helper functions inside the kernel,
+especially for reusable load/store or synchronization boilerplate. These
+functions are inlined at compile time and can capture outer variables:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tma_load</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)[</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()]:</span>
+        <span class="n">tma_bar</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="nb">bytes</span><span class="o">=</span><span class="n">total_bytes</span><span class="p">)</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[</span><span class="n">stage</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m_st</span><span class="p">:</span><span class="n">m_st</span><span class="o">+</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="n">BLK_K</span><span class="p">],</span>
+                       <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mbar</span><span class="o">=</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="n">stage</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>This is commonly used to package repeated TMA load, MMA issue, or
+writeback logic without introducing runtime function-call overhead.</p>
+</section>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+<div class="localtoc">
+    <p class="caption">
+      <span class="caption-text">Table Of Contents</span>
+    </p>
+    <ul>
+<li><a class="reference internal" href="#">2. TIRX Programming Model</a><ul>
+<li><a class="reference internal" href="#import-convention">2.1. Import Convention</a></li>
+<li><a class="reference internal" href="#core-apis-at-a-glance">2.2. Core APIs at a Glance</a></li>
+<li><a class="reference internal" href="#kernel-structure">2.3. Kernel Structure</a></li>
+<li><a class="reference internal" href="#thread-hierarchy-scopes">2.4. Thread Hierarchy Scopes</a></li>
+<li><a class="reference internal" href="#memory-management">2.5. Memory Management</a></li>
+<li><a class="reference internal" href="#tirx-vs-raw-ptx">2.6. TIRX vs Raw PTX</a></li>
+<li><a class="reference internal" href="#meta-variables">2.7. Meta Variables</a></li>
+<li><a class="reference internal" href="#axe-layout">2.8. Axe Layout</a></li>
+<li><a class="reference internal" href="#inline-functions">2.9. Inline Functions</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="../chapter_background/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>1. Background: Blackwell GPU Architecture</div>
+         </div>
+     </a>
+     <a id="button-next" href="../chapter_setup/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>3. Setup</div>
+        </div>
+     </a>
+  </div>
+        
+        </main>
+    </div>
+  </body>
+</html>

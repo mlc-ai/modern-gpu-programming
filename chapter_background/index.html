@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>1. Background: Blackwell GPU Architecture &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fontawesome/all.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/d2l.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/d2l.js"></script>
+    <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2. TIRX Programming Model" href="../chapter_tirx_primer/index.html" />
+    <link rel="prev" title="TIRX: High-Performance GPU Kernel Programming" href="../index.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link is-active"><span class="section-number">1. </span>Background: Blackwell GPU Architecture</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+          <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/chapter_background/index.rst.txt" rel="nofollow">
+  <i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+          
+              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
+                  <i class="fab fa-github"></i>
+                  GitHub
+              </a>
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+
+	<script type="text/javascript" src="../_static/sphinx_materialdesign_theme.js "></script>
+    <header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content" role="main">
+        
+  <section id="background-blackwell-gpu-architecture">
+<span id="chap-background"></span><h1><span class="section-number">1. </span>Background: Blackwell GPU Architecture<a class="headerlink" href="#background-blackwell-gpu-architecture" title="Permalink to this heading">¶</a></h1>
+<p>Before diving into the code, let’s understand the key hardware features
+of NVIDIA Blackwell GPUs. If you’re familiar with CUDA, you already know
+about threads, warps, shared memory, and global memory. Blackwell
+introduces several new hardware units and memory spaces that are
+essential for achieving peak performance.</p>
+<section id="thread-hierarchy">
+<h2><span class="section-number">1.1. </span>Thread Hierarchy<a class="headerlink" href="#thread-hierarchy" title="Permalink to this heading">¶</a></h2>
+<p>Blackwell organizes threads into a nested hierarchy:</p>
+<figure class="align-default" id="id1">
+<img alt="../_images/thread_hierarchy.png" src="../_images/thread_hierarchy.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 1.1.1 </span><span class="caption-text"><em>Thread Hierarchy</em></span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<ul class="simple">
+<li><p><strong>CTA</strong>: The basic scheduling unit. A CTA runs on a single SM and has
+access to that SM’s shared memory.</p></li>
+<li><p><strong>Warpgroup</strong>: 4 consecutive warps (128 threads). On Blackwell, this
+is the cooperation unit for TMEM reads and tcgen05 MMA operations.</p></li>
+<li><p><strong>Warp</strong>: A warp contains 32 threads and is the basic SIMT execution
+unit.</p></li>
+<li><p><strong>Thread</strong>: Each thread is identified by a lane ID within its warp.</p></li>
+<li><p><strong>Cluster</strong>: A group of cooperating CTAs.</p></li>
+</ul>
+</section>
+<section id="memory-hierarchy">
+<h2><span class="section-number">1.2. </span>Memory Hierarchy<a class="headerlink" href="#memory-hierarchy" title="Permalink to this heading">¶</a></h2>
+<p>For TIRX kernels on Blackwell, it is useful to think about memory as a
+hierarchy spanning GMEM, SMEM, TMEM, and registers:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 27%" />
+<col style="width: 21%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Memory</p></th>
+<th class="head"><p>Ownership</p></th>
+<th class="head"><p>Latency</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Global
+Memory
+(GMEM)</strong></p></td>
+<td><p>Device-wide</p></td>
+<td><p>High</p></td>
+<td><p>Large capacity
+(HBM),
+bandwidth-limited</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Shared
+Memory
+(SMEM)</strong></p></td>
+<td><p>Per-CTA (on one
+SM)</p></td>
+<td><p>Low</p></td>
+<td><p>192KB per SM,
+low-latency
+scratchpad</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Tensor
+Memory
+(TMEM)</strong></p></td>
+<td><p>Per-SM</p></td>
+<td><p>Very low</p></td>
+<td><p>Private
+high-bandwidth
+accumulator memory
+for Tensor Cores</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Register
+File (RF)</strong></p></td>
+<td><p>Per-thread</p></td>
+<td><p>Lowest</p></td>
+<td><p>Fastest storage,
+per-thread</p></td>
+</tr>
+</tbody>
+</table>
+<p>The typical data flow for a kernel that uses Tensor Cores:</p>
+<figure class="align-default" id="id2">
+<img alt="../_images/memory_dataflow.png" src="../_images/memory_dataflow.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 1.2.1 </span><span class="caption-text"><em>Memory Data Flow</em></span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>The key difference from earlier GPU generations is that tcgen05 writes
+accumulator results to TMEM first, and software later moves them to
+registers or shared memory as needed.</p>
+<p><strong>Tensor Memory (TMEM)</strong> is new in Blackwell. It is a high-bandwidth
+scratchpad memory private to the Tensor Cores. The tcgen05 MMA unit
+writes its accumulator output directly to TMEM, not to registers or
+shared memory.</p>
+<ul class="simple">
+<li><p><strong>TMEM reads are explicit and cooperative.</strong> To consume MMA results,
+software must explicitly load from TMEM into the register file. These
+reads are performed cooperatively by the full warpgroup (128 threads).</p></li>
+<li><p><strong>TMEM uses its own addressing and allocation model.</strong> It is not
+accessed like normal memory; instead, it uses a special 2D address
+space (rows mapped to threads via <code class="docutils literal notranslate"><span class="pre">TLane</span></code>, columns via <code class="docutils literal notranslate"><span class="pre">TCol</span></code>) and
+must be explicitly allocated and deallocated.</p></li>
+</ul>
+</section>
+<section id="tma-tensor-memory-accelerator">
+<h2><span class="section-number">1.3. </span>TMA (Tensor Memory Accelerator)<a class="headerlink" href="#tma-tensor-memory-accelerator" title="Permalink to this heading">¶</a></h2>
+<p>TMA is a hardware unit that asynchronously copies rectangular tiles
+between global memory and shared memory. TMA lets software describe a
+tile copy, and hardware performs it asynchronously in the background.</p>
+<ul class="simple">
+<li><p><strong>Single-thread launch</strong>: One thread issues the TMA operation, and the
+hardware performs the actual tile transfer asynchronously in the
+background. The remaining threads are free to do other work.</p></li>
+<li><p><strong>Swizzled layouts</strong>: TMA can apply layout swizzling during the
+transfer, helping produce shared-memory layouts that are friendly to
+Tensor Core access.</p></li>
+<li><p><strong>Barrier integration</strong>: TMA works with mbarriers. The programmer
+specifies the expected byte count with <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx</span></code>, and the
+hardware signals completion when that amount of data has arrived.</p></li>
+<li><p><strong>Store support</strong>: TMA is not only for GMEM→SMEM loads; it can also
+store data from SMEM back to GMEM. TMA stores use a commit-group /
+wait-group mechanism for completion tracking.</p></li>
+</ul>
+<p>In short, TMA turns tiled GMEM↔SMEM movement into an asynchronous
+hardware operation with built-in layout and synchronization support.</p>
+</section>
+<section id="tcgen05-tensor-core-mma">
+<h2><span class="section-number">1.4. </span>tcgen05 (Tensor Core MMA)<a class="headerlink" href="#tcgen05-tensor-core-mma" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> is Blackwell’s matrix multiply-accumulate (MMA) unit.
+Depending on the MMA variant, operand A may come from TMEM or SMEM,
+while operand B is read from SMEM via matrix descriptors. The result is
+written to TMEM.</p>
+<ul class="simple">
+<li><p><strong>Asynchronous execution</strong>: The MMA instruction returns immediately
+while the computation continues in the background.</p></li>
+<li><p><strong>Single-thread issue</strong>: Only one elected thread issues the MMA and
+its corresponding commit. The operation itself is carried out by
+hardware on behalf of the warpgroup.</p></li>
+<li><p><strong>TMEM accumulation</strong>: tcgen05 writes its output to TMEM. It can
+either overwrite the destination (<code class="docutils literal notranslate"><span class="pre">accum=False</span></code>) or accumulate into
+existing TMEM values (<code class="docutils literal notranslate"><span class="pre">accum=True</span></code>).</p></li>
+<li><p><strong>Commit and completion tracking</strong>: After issuing one or more MMAs,
+software uses <code class="docutils literal notranslate"><span class="pre">commit</span></code> to group them. The hardware signals the
+associated mbarrier when the group completes.</p></li>
+<li><p><strong>CTA-group execution</strong>: <code class="docutils literal notranslate"><span class="pre">cta_group</span></code> controls whether one CTA or
+multiple CTAs cooperate on the same MMA operation. This becomes
+important for clustered kernels later in the tutorial.</p></li>
+</ul>
+<p>In short, tcgen05 moves MMA accumulation out of registers and into TMEM,
+which changes both the dataflow and the synchronization model compared
+with earlier generations.</p>
+</section>
+<section id="mbarrier-memory-barrier">
+<h2><span class="section-number">1.5. </span>mbarrier (Memory Barrier)<a class="headerlink" href="#mbarrier-memory-barrier" title="Permalink to this heading">¶</a></h2>
+<p>mbarriers are hardware synchronization primitives stored in shared
+memory. They combine a counter with a phase bit to enable reusable,
+asynchronous synchronization.</p>
+<p><strong>Lifecycle of an mbarrier:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Init</strong>: Set the expected number of arrivals. The barrier starts at
+phase 0.</p></li>
+<li><p><strong>Arrive</strong>: Each arrival decrements the counter. There are three ways
+to arrive:</p>
+<ul class="simple">
+<li><p><strong>TMA auto-arrive</strong>: The hardware arrives automatically once the
+byte transfer completes (tracked via <code class="docutils literal notranslate"><span class="pre">expect_tx</span></code>).</p></li>
+<li><p><strong>tcgen05 auto-arrive</strong>: The hardware arrives once committed MMAs
+complete.</p></li>
+<li><p><strong>Thread arrive</strong>: A thread arrives explicitly (used by writeback
+threads to signal “TMEM is free”).</p></li>
+</ul>
+</li>
+<li><p><strong>Wait</strong>: A consumer waits until the barrier reaches the expected
+phase for that iteration, which indicates that all required arrivals
+have completed.</p></li>
+<li><p><strong>Phase flip</strong>: Once all arrivals are done, the barrier automatically
+toggles its phase (0 → 1 → 0 → …). This lets the same barrier be
+reused across loop iterations: iteration 0 uses phase 0, iteration 1
+uses phase 1, iteration 2 uses phase 0 again, etc.</p></li>
+</ol>
+<p>This is the basic producer-consumer pattern used throughout the
+tutorial: a producer (for example, TMA) arrives on a barrier when data
+is ready, and the consumer waits on that barrier before using the data.</p>
+</section>
+<section id="synchronization-rules">
+<h2><span class="section-number">1.6. </span>Synchronization Rules<a class="headerlink" href="#synchronization-rules" title="Permalink to this heading">¶</a></h2>
+<p>Blackwell has multiple asynchronous hardware units (threads, TMA,
+tcgen05 MMA) that read and write different memory spaces. Whenever data
+crosses from one unit or memory space to another, you need explicit
+synchronization:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Data flow</p></th>
+<th class="head"><p>Synchronization needed</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Threads write SMEM → MMA reads
+SMEM</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> +
+<code class="docutils literal notranslate"><span class="pre">fence.after_thread_sync()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>MMA writes TMEM → Threads read
+TMEM</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mbarrier.try_wait</span></code> +
+<code class="docutils literal notranslate"><span class="pre">fence.after_thread_sync()</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Threads write SMEM → TMA reads
+SMEM (store)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fence.proxy_async(&quot;shared::cta&quot;)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Alloc barriers/TMEM → Use them</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fence.proxy_async</span></code> +
+<code class="docutils literal notranslate"><span class="pre">fence.mbarrier_init</span></code> +
+<code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>All work done → Deallocate TMEM</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> (single-CTA) or
+<code class="docutils literal notranslate"><span class="pre">cluster_sync()</span></code> (cluster)</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> only synchronizes threads with one another. When data
+must become visible to asynchronous hardware units such as TMA or
+tcgen05, an additional fence is needed. Fences
+(<code class="docutils literal notranslate"><span class="pre">fence.after_thread_sync</span></code>, <code class="docutils literal notranslate"><span class="pre">fence.proxy_async</span></code>) bridge the gap
+between thread-visible memory and hardware-visible memory.</p>
+<p>Before deallocating TMEM, all CTAs that may still read or write it must
+be finished. For a single-CTA kernel, <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> is sufficient; for
+clustered kernels, <code class="docutils literal notranslate"><span class="pre">cluster_sync()</span></code> is required.</p>
+</section>
+<section id="cta-clusters">
+<h2><span class="section-number">1.7. </span>CTA Clusters<a class="headerlink" href="#cta-clusters" title="Permalink to this heading">¶</a></h2>
+<p>Blackwell supports <strong>CTA clusters</strong>: groups of CTAs that can cooperate
+more tightly than independent thread blocks. Key capabilities include:</p>
+<ul class="simple">
+<li><p><strong>shared::cluster memory</strong>: CTAs in the same cluster can access each
+other’s shared memory through the <code class="docutils literal notranslate"><span class="pre">shared::cluster</span></code> address space,
+typically using <code class="docutils literal notranslate"><span class="pre">map_shared_rank</span></code> to obtain the remote pointer.</p></li>
+<li><p><strong>Multicast TMA</strong>: A single TMA command can deliver the same data to
+multiple CTAs simultaneously, reducing global memory bandwidth.</p></li>
+<li><p><strong>Cross-CTA barrier signaling</strong>: mbarrier arrive/wait can be used
+across CTAs in the same cluster, enabling producer-consumer
+synchronization beyond a single CTA.</p></li>
+</ul>
+<p>Clustering enables hardware units such as tcgen05 MMA to read data from
+both CTAs’ shared memory, effectively doubling the working set without
+additional global memory bandwidth.</p>
+</section>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+<div class="localtoc">
+    <p class="caption">
+      <span class="caption-text">Table Of Contents</span>
+    </p>
+    <ul>
+<li><a class="reference internal" href="#">1. Background: Blackwell GPU Architecture</a><ul>
+<li><a class="reference internal" href="#thread-hierarchy">1.1. Thread Hierarchy</a></li>
+<li><a class="reference internal" href="#memory-hierarchy">1.2. Memory Hierarchy</a></li>
+<li><a class="reference internal" href="#tma-tensor-memory-accelerator">1.3. TMA (Tensor Memory Accelerator)</a></li>
+<li><a class="reference internal" href="#tcgen05-tensor-core-mma">1.4. tcgen05 (Tensor Core MMA)</a></li>
+<li><a class="reference internal" href="#mbarrier-memory-barrier">1.5. mbarrier (Memory Barrier)</a></li>
+<li><a class="reference internal" href="#synchronization-rules">1.6. Synchronization Rules</a></li>
+<li><a class="reference internal" href="#cta-clusters">1.7. CTA Clusters</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="../index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>TIRX: High-Performance GPU Kernel Programming</div>
+         </div>
+     </a>
+     <a id="button-next" href="../chapter_tirx_primer/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>2. TIRX Programming Model</div>
+        </div>
+     </a>
+  </div>
+        
+        </main>
+    </div>
+  </body>
+</html>

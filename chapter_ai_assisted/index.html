@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>10. AI-Assisted Kernel Development &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fontawesome/all.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/d2l.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/d2l.js"></script>
+    <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="11. TIRX API Reference" href="../chapter_api_reference/index.html" />
+    <link rel="prev" title="9. Flash Attention 4" href="../chapter_flash_attention/index.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link is-active"><span class="section-number">10. </span>AI-Assisted Kernel Development</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+          <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/chapter_ai_assisted/index.rst.txt" rel="nofollow">
+  <i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+          
+              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
+                  <i class="fab fa-github"></i>
+                  GitHub
+              </a>
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+
+	<script type="text/javascript" src="../_static/sphinx_materialdesign_theme.js "></script>
+    <header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content" role="main">
+        
+  <section id="ai-assisted-kernel-development">
+<span id="chap-ai-assisted"></span><h1><span class="section-number">10. </span>AI-Assisted Kernel Development<a class="headerlink" href="#ai-assisted-kernel-development" title="Permalink to this heading">¶</a></h1>
+<p><em>Prerequisites: You should have completed at least through Step 7 (Warp
+Specialization) (Step 7). The examples in this chapter reference barrier
+patterns, tcgen05 MMA, and TMA pipelining from earlier chapters.</em></p>
+<hr class="docutils" />
+<p>Writing GPU kernels is slow, detail-heavy work. A single misplaced
+barrier arrive or a wrong descriptor field can produce silent corruption
+that takes hours to debug. Large language models (LLMs) like Claude can
+accelerate parts of this workflow — generating boilerplate, spotting
+known bug patterns, and producing test harnesses — but they also have
+limitations that you should understand before relying on them.</p>
+<p>This chapter is practical, not theoretical. We walk through specific
+workflows where LLMs help, show a concrete debugging example, and
+catalog common failure modes so you know when to be cautious with LLM
+suggestions and when to consult the hardware manual directly.</p>
+<section id="what-llms-tend-to-do-well-and-where-they-need-more-care">
+<h2><span class="section-number">10.1. </span>What LLMs Tend to Do Well — and Where They Need More Care<a class="headerlink" href="#what-llms-tend-to-do-well-and-where-they-need-more-care" title="Permalink to this heading">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Works Well</p></th>
+<th class="head"><p>Needs Careful Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Generating boilerplate (e.g.,
+SMEM allocation, barrier init,
+TMA config dictionaries)</p></td>
+<td><p>Reasoning about barrier phase
+state across loop iterations
+(easy to get off by one)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Spotting common bug patterns
+(e.g., missing <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>
+guard, wrong barrier count,
+<code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> inside a warpgroup
+branch)</p></td>
+<td><p>Predicting SMEM bank conflicts or
+performance behavior</p></td>
+</tr>
+<tr class="row-even"><td><p>Explaining existing kernel code
+(e.g., “what does this writeback
+section do?”)</p></td>
+<td><p>Designing pipeline topologies
+from scratch (e.g., barrier
+grouping and direction)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Generating NumPy/Torch reference
+implementations for verification</p></td>
+<td><p>Getting TMEM layout details
+exactly right (TileLayout,
+TLane/TCol, allocated_addr)</p></td>
+</tr>
+<tr class="row-even"><td><p>Translating between kernel styles
+(e.g., CUTLASS-style pseudocode
+to TIRX)</p></td>
+<td><p>Handling TIRX-specific API quirks
+without explicit context</p></td>
+</tr>
+</tbody>
+</table>
+<p>The general pattern is that LLMs are strong at <strong>matching familiar code
+patterns</strong>, but less dependable for <strong>multi-step reasoning over
+concurrent state</strong>. Barrier protocols, phase tracking, and TMEM layout
+arithmetic are exactly the kinds of stateful details that usually
+require manual checking.</p>
+</section>
+<section id="effective-prompting-for-tirx-kernels">
+<h2><span class="section-number">10.2. </span>Effective Prompting for TIRX Kernels<a class="headerlink" href="#effective-prompting-for-tirx-kernels" title="Permalink to this heading">¶</a></h2>
+<p>A key practical insight is that <strong>output quality depends heavily on
+context quality</strong>. A vague prompt (“my kernel is broken, help”) gets a
+vague answer. A structured prompt with hardware constraints, code, and
+symptoms gets a precise diagnosis.</p>
+<p>Here is a prompt template that works well for TIRX debugging:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I</span><span class="s1">&#39;m writing a TIRX kernel for [operation]. Target: Blackwell B200 (SM100a).</span>
+
+<span class="n">Hardware</span> <span class="n">constraints</span><span class="p">:</span>
+<span class="o">-</span> <span class="n">TMEM</span><span class="p">:</span> <span class="mi">128</span> <span class="n">lanes</span> <span class="n">x</span> <span class="mi">512</span> <span class="n">cols</span><span class="p">,</span> <span class="n">layout</span> <span class="n">TileLayout</span><span class="p">([</span><span class="mi">128</span><span class="p">,</span><span class="mi">512</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">])</span>
+
+<span class="o">-</span> <span class="n">tcgen05</span><span class="o">.</span><span class="n">commit</span> <span class="ow">is</span> <span class="n">per</span><span class="o">-</span><span class="n">thread</span><span class="p">;</span> <span class="n">must</span> <span class="n">be</span> <span class="n">inside</span> <span class="n">elect_sync</span><span class="p">()</span> <span class="n">guard</span>
+
+<span class="o">-</span> <span class="n">MBarrier</span><span class="o">.</span><span class="n">init</span><span class="p">()</span> <span class="n">checks</span> <span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="o">--</span> <span class="n">only</span> <span class="n">works</span> <span class="kn">from</span><span class="w"> </span><span class="nn">warp</span> <span class="mi">0</span>
+
+<span class="o">-</span> <span class="n">fence</span><span class="o">.</span><span class="n">after_thread_sync</span><span class="p">()</span> <span class="n">references</span> <span class="n">the</span> <span class="n">MOST</span> <span class="n">RECENT</span> <span class="n">thread</span> <span class="n">sync</span>
+
+<span class="n">Here</span> <span class="ow">is</span> <span class="n">my</span> <span class="n">kernel</span><span class="p">:</span>
+<span class="p">[</span><span class="n">paste</span> <span class="n">code</span><span class="p">]</span>
+
+<span class="n">Symptom</span><span class="p">:</span> <span class="p">[</span><span class="n">zeros</span> <span class="o">/</span> <span class="n">NaN</span> <span class="o">/</span> <span class="n">deadlock</span> <span class="o">/</span> <span class="n">wrong</span> <span class="n">values</span> <span class="n">at</span> <span class="n">specific</span> <span class="n">indices</span><span class="p">]</span>
+<span class="n">Question</span><span class="p">:</span> <span class="p">[</span><span class="n">specific</span> <span class="n">question</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Why each piece matters:</p>
+<ul class="simple">
+<li><p><strong>“Target: B200 SM100a”</strong> prevents the model from suggesting Hopper
+(SM90) or Ampere (SM80) patterns. Without this, you may get
+<code class="docutils literal notranslate"><span class="pre">cp.async</span></code> suggestions instead of <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>.</p></li>
+<li><p><strong>Hardware constraints</strong> help prevent the model from suggesting wrong
+API semantics. LLMs have limited TIRX training data and may generate
+plausible-sounding but incorrect behavior.</p></li>
+<li><p><strong>Symptom</strong> narrows the search space dramatically. “Output is zeros”
+points to TMEM read-before-write. “Deadlock” points to barrier
+mismatch. “NaN” points to uninitialized memory or softmax overflow.
+“Wrong values at specific row offsets” points to descriptor or swizzle
+misconfiguration.</p></li>
+<li><p><strong>Specific question</strong> forces a focused answer instead of a broad code
+review that buries the real issue.</p></li>
+</ul>
+</section>
+<section id="symptom-to-cause-quick-reference">
+<h2><span class="section-number">10.3. </span>Symptom-to-Cause Quick Reference<a class="headerlink" href="#symptom-to-cause-quick-reference" title="Permalink to this heading">¶</a></h2>
+<p>Before prompting an LLM, it helps to narrow down the category of bug
+yourself. This table maps common symptoms to likely root causes:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 33%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symptom</p></th>
+<th class="head"><p>Likely Cause</p></th>
+<th class="head"><p>What to Check</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Output is all
+zeros</p></td>
+<td><p>TMEM read before MMA
+completes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> outside
+<code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>; missing
+<code class="docutils literal notranslate"><span class="pre">fence.after_thread_sync</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Output is random
+garbage</p></td>
+<td><p>SMEM overwritten
+before MMA reads it</p></td>
+<td><p>Barrier count too high
+(premature arrive); wrong
+pipeline stage index</p></td>
+</tr>
+<tr class="row-even"><td><p>Deadlock (kernel
+hangs)</p></td>
+<td><p>Barrier wait with no
+matching arrive</p></td>
+<td><p>Missing arrive on one code
+path; phase init mismatch;
+<code class="docutils literal notranslate"><span class="pre">MBarrier.init</span></code> from
+wrong warp</p></td>
+</tr>
+<tr class="row-odd"><td><p>NaN in output</p></td>
+<td><p>Uninitialized memory
+or overflow</p></td>
+<td><p>Missing <code class="docutils literal notranslate"><span class="pre">accum=False</span></code> on
+first MMA iteration;
+softmax without max
+subtraction</p></td>
+</tr>
+<tr class="row-even"><td><p>Correct values in
+wrong positions</p></td>
+<td><p>Descriptor or swizzle
+misconfiguration</p></td>
+<td><p>Wrong SBO in B descriptor;
+wrong SwizzleLayout
+parameters; SMEM alignment
+&lt; 1024</p></td>
+</tr>
+<tr class="row-odd"><td><p>Correct for small
+sizes, wrong for
+large</p></td>
+<td><p>Off-by-one in
+tile/block indexing</p></td>
+<td><p>Boundary condition in
+K-loop count; wrong
+<code class="docutils literal notranslate"><span class="pre">BLOCK_SWIZZLED_BK</span></code> in
+SBO calculation</p></td>
+</tr>
+<tr class="row-even"><td><p>Non-deterministic
+correctness</p></td>
+<td><p>Race condition</p></td>
+<td><p>Missing barrier between
+producer and consumer;
+<code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> vs
+<code class="docutils literal notranslate"><span class="pre">cluster_sync</span></code> confusion</p></td>
+</tr>
+</tbody>
+</table>
+<p>Include this table (or a simplified version) in your prompt when
+debugging. It helps the LLM focus on the right area.</p>
+</section>
+<section id="demo-debugging-a-broken-kernel">
+<h2><span class="section-number">10.4. </span>Demo: Debugging a Broken Kernel<a class="headerlink" href="#demo-debugging-a-broken-kernel" title="Permalink to this heading">¶</a></h2>
+<p>Consider this MMA loop from a warp-specialized GEMM (Step 7 style).
+There is one deliberate bug:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Broken MMA loop -- one bug</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
+    <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">after_thread_sync</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">():</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
+            <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span>
+            <span class="n">Asmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
+            <span class="n">Bsmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
+            <span class="n">accum</span><span class="o">=</span><span class="p">(</span><span class="n">k</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
+            <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="c1"># BUG: arrive is outside elect_sync</span>
+    <span class="n">mma2tma</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">)</span>
+    <span class="n">mma_ps</span><span class="o">.</span><span class="n">move_to_next_stage</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Symptom:</strong> Output is all zeros or random garbage,
+non-deterministically.</p>
+<p><strong>Root cause:</strong> <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> internally calls
+<code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code>, which creates a commit group for the calling thread.
+But <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> is a <strong>per-thread</strong> instruction, not a
+warp-cooperative one. Only the elected thread (the one that issued the
+MMA via <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>) has a non-empty commit group. The other 31
+threads in the warp each create an empty commit group that signals the
+mbarrier immediately.</p>
+<p>The result: 31 empty commit groups fire the mbarrier almost instantly,
+well before the MMA completes. The TMA producer sees the barrier as
+arrived and starts overwriting SMEM with the next tile. The MMA is still
+reading the old tile from SMEM — data corruption.</p>
+<p><strong>How to prompt the LLM:</strong> Paste the snippet above and add:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Output is zeros. The MMA uses elect_sync but the arrive() call does not.
+Is this correct?
+</pre></div>
+</div>
+<p>This gives the model the symptom (zeros), the structural observation
+(mismatch between elect_sync scope and arrive scope), and a yes/no
+question. A good model should be much more likely to identify the
+commit-group issue with this level of context.</p>
+<p><strong>Fix:</strong> Move the arrive inside the <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> guard:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Fixed MMA loop</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
+    <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">after_thread_sync</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">():</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
+            <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span>
+            <span class="n">Asmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
+            <span class="n">Bsmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
+            <span class="n">accum</span><span class="o">=</span><span class="p">(</span><span class="n">k</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
+            <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Now only the elected thread (with a non-empty commit group) arrives</span>
+        <span class="n">mma2tma</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">)</span>
+    <span class="n">mma_ps</span><span class="o">.</span><span class="n">move_to_next_stage</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is a very common bug pattern in Blackwell kernel development. It is
+also one of the easier cases for an LLM to catch, because the task is
+closer to recognizing a familiar structural mismatch than to reasoning
+through full phase-state behavior.</p>
+</section>
+<section id="generating-test-harnesses">
+<h2><span class="section-number">10.5. </span>Generating Test Harnesses<a class="headerlink" href="#generating-test-harnesses" title="Permalink to this heading">¶</a></h2>
+<p>One of the most reliable uses of LLMs in kernel work is generating
+reference implementations. The model does not need full hardware
+understanding to be useful here — it just needs to implement math
+correctly.</p>
+<p><strong>Prompt example:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Generate</span> <span class="n">a</span> <span class="n">numpy</span> <span class="n">reference</span> <span class="k">for</span> <span class="n">this</span> <span class="n">TIRX</span> <span class="n">kernel</span> <span class="n">signature</span><span class="p">:</span>
+<span class="o">-</span> <span class="n">Operation</span><span class="p">:</span> <span class="n">RMSNorm</span>
+
+<span class="o">-</span> <span class="n">Input</span><span class="p">:</span> <span class="n">x</span> <span class="p">[</span><span class="n">batch</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">]</span> <span class="n">float16</span><span class="p">,</span> <span class="n">weight</span> <span class="p">[</span><span class="n">hidden_size</span><span class="p">]</span> <span class="n">float16</span>
+
+<span class="o">-</span> <span class="n">Output</span><span class="p">:</span> <span class="n">out</span> <span class="p">[</span><span class="n">batch</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">]</span> <span class="n">float16</span>
+
+<span class="o">-</span> <span class="n">Formula</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">RMS</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">weight</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">RMS</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
+<span class="n">Use</span> <span class="n">float64</span> <span class="k">for</span> <span class="n">intermediate</span> <span class="n">computation</span> <span class="n">to</span> <span class="n">avoid</span> <span class="n">numerical</span> <span class="n">issues</span><span class="o">.</span>
+</pre></div>
+</div>
+<p><strong>Expected output:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">rmsnorm_ref</span><span class="p">(</span><span class="n">x_f16</span><span class="p">,</span> <span class="n">weight_f16</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Numpy reference for RMSNorm. Computes in float64 for precision.&quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x_f16</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">weight_f16</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">rms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">rms</span><span class="p">)</span> <span class="o">*</span> <span class="n">w</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is straightforward for most LLMs to produce correctly. The float64
+intermediate trick avoids false mismatches from fp16 rounding in the
+reference.</p>
+<p>For GEMM verification, a torch reference on CUDA is even simpler:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="c1"># Reference for GEMM verification</span>
+<span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">64</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="n">D_ref</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span>  <span class="c1"># cuBLAS reference, float16 accumulation</span>
+</pre></div>
+</div>
+<p>The torch path calls cuBLAS under the hood, giving you a
+hardware-verified reference.</p>
+<p>For FP8 kernels with block scaling, the reference is more involved. This
+is where LLM assistance pays off — ask it to handle the dtype conversion
+boilerplate:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ml_dtypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fp8_block_scaled_gemm_ref</span><span class="p">(</span><span class="n">A_fp8</span><span class="p">,</span> <span class="n">B_fp8</span><span class="p">,</span> <span class="n">sfa</span><span class="p">,</span> <span class="n">sfb</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reference for FP8 block-scaled GEMM. A_fp8 and B_fp8 are int8 views.&quot;&quot;&quot;</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">A_fp8</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">ml_dtypes</span><span class="o">.</span><span class="n">float8_e4m3fn</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">B_fp8</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">ml_dtypes</span><span class="o">.</span><span class="n">float8_e4m3fn</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="c1"># Apply per-block scale factors</span>
+    <span class="n">M</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
+            <span class="n">A</span><span class="p">[</span><span class="n">m</span><span class="p">:</span><span class="n">m</span><span class="o">+</span><span class="n">block_size</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="n">block_size</span><span class="p">]</span> <span class="o">*=</span> <span class="n">sfa</span><span class="p">[</span><span class="n">m</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">k</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
+            <span class="n">B</span><span class="p">[</span><span class="n">n</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="n">block_size</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="n">block_size</span><span class="p">]</span> <span class="o">*=</span> <span class="n">sfb</span><span class="p">[</span><span class="n">n</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">k</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For higher precision, accumulate in float32:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">D_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>  <span class="c1"># float32 accumulation, cast back</span>
+</pre></div>
+</div>
+<p>Use these references with three-way comparison: your TIRX kernel output
+vs numpy reference vs torch/cuBLAS. If all three agree, you have high
+confidence. If your kernel disagrees with both references, the bug is in
+your kernel. If numpy and torch disagree with each other, check your
+accumulation precision.</p>
+</section>
+<section id="when-to-be-cautious-with-llm-suggestions">
+<h2><span class="section-number">10.6. </span>When to Be Cautious with LLM Suggestions<a class="headerlink" href="#when-to-be-cautious-with-llm-suggestions" title="Permalink to this heading">¶</a></h2>
+<p>These are specific failure modes we have observed in practice. Treat
+them as a checklist.</p>
+<p><strong>1. Phase tracking.</strong> Current LLMs often struggle with barrier phase
+initialization. The <code class="docutils literal notranslate"><span class="pre">is_producer</span></code> flag, the initial phase value, and
+the skip-first-wait pattern interact subtly. If the model suggests a
+phase init, always verify with this test: “If both producer and consumer
+start with the same phase, do they deadlock on the first iteration?” If
+yes, one of them needs to skip the first wait or use a different initial
+phase.</p>
+<p><strong>2. TMEM layout arithmetic.</strong> LLMs may suggest wrong TileLayout
+parameters, forget <code class="docutils literal notranslate"><span class="pre">allocated_addr</span></code>, or confuse physical TMEM rows
+with logical rows. TMEM layout F with <code class="docutils literal notranslate"><span class="pre">BLOCK_M=64</span></code> uses physical rows
+<code class="docutils literal notranslate"><span class="pre">{0-15,</span> <span class="pre">32-47,</span> <span class="pre">64-79,</span> <span class="pre">96-111}</span></code> — this is hardware-defined and easy to
+get wrong. Always cross-reference with the API Reference chapter.</p>
+<p><strong>3. TIRX API quirks.</strong> LLMs have limited TIRX training data and may
+confuse TIRX APIs with CUTLASS or Triton equivalents. Examples of
+details that may not be represented reliably in the model’s prior
+knowledge: - <code class="docutils literal notranslate"><span class="pre">MBarrier.init()</span></code> internally uses <code class="docutils literal notranslate"><span class="pre">Tx.thread()[0:1]</span></code>,
+which checks <code class="docutils literal notranslate"><span class="pre">threadIdx.x</span> <span class="pre">&lt;</span> <span class="pre">1</span></code>. This is always false when called from
+a non-warp-0 context.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> from TMEM to local dispatches <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> but
+does NOT emit <code class="docutils literal notranslate"><span class="pre">tcgen05.wait.ld()</span></code>. If you read the register
+immediately, you get stale data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> elects one thread per <strong>warp</strong>, not per warpgroup.
+With 4 warps, you get 4 elected threads. LLMs sometimes conflate this
+with <code class="docutils literal notranslate"><span class="pre">Tx.thread()[0:1]</span></code> (one per warpgroup).</p></li>
+</ul>
+<p>If an API call in the model’s suggestion looks unfamiliar, grep the TIRX
+codebase to verify it exists before using it.</p>
+<p><strong>4. Performance advice.</strong> “Use <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=8</span></code> for better performance”
+— LLMs generally cannot reason about the SMEM budget vs occupancy
+tradeoff. Deeper pipelines use more SMEM, which may reduce occupancy,
+which may hurt performance. Always profile with <code class="docutils literal notranslate"><span class="pre">torch.cuda.Event</span></code>
+timing or Proton. Performance intuition from an LLM should be verified
+empirically.</p>
+</section>
+<section id="building-a-persistent-context-file">
+<h2><span class="section-number">10.7. </span>Building a Persistent Context File<a class="headerlink" href="#building-a-persistent-context-file" title="Permalink to this heading">¶</a></h2>
+<p>One of the most effective techniques for working with LLMs on kernel
+code is maintaining a <strong>persistent context file</strong> — a plain text file
+that accumulates hard-won debugging lessons. Every time you discover a
+non-obvious bug, add a short entry:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">### tcgen05.commit Must Use elect_sync</span>
+<span class="n">tcgen05</span><span class="o">.</span><span class="n">commit</span> <span class="ow">is</span> <span class="n">per</span><span class="o">-</span><span class="n">thread</span><span class="p">,</span> <span class="ow">not</span> <span class="n">warp</span><span class="o">-</span><span class="n">cooperative</span><span class="o">.</span> <span class="n">If</span> <span class="nb">all</span> <span class="mi">32</span> <span class="n">threads</span> <span class="n">call</span> <span class="n">it</span><span class="p">,</span>
+<span class="n">only</span> <span class="n">the</span> <span class="n">elected</span> <span class="n">thread</span> <span class="n">has</span> <span class="n">a</span> <span class="n">non</span><span class="o">-</span><span class="n">empty</span> <span class="n">commit</span> <span class="n">group</span><span class="o">.</span> <span class="n">The</span> <span class="n">other</span> <span class="mi">31</span> <span class="n">create</span> <span class="n">empty</span>
+<span class="n">commit</span> <span class="n">groups</span> <span class="n">that</span> <span class="n">signal</span> <span class="n">the</span> <span class="n">mbarrier</span> <span class="n">immediately</span><span class="o">.</span>
+<span class="n">Fix</span><span class="p">:</span> <span class="n">Always</span> <span class="n">wrap</span> <span class="n">TCGen05Bar</span><span class="o">.</span><span class="n">arrive</span><span class="p">()</span> <span class="n">calls</span> <span class="ow">in</span> <span class="k">if</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Then include this file (or relevant excerpts) in your prompt context.
+This has two benefits:</p>
+<ol class="arabic simple">
+<li><p><strong>The LLM learns from your past bugs.</strong> It will not suggest patterns
+you have already proven incorrect.</p></li>
+<li><p><strong>You build institutional knowledge.</strong> Six months later, when you hit
+a similar bug in a different kernel, the context file reminds both
+you and the LLM of the solution.</p></li>
+</ol>
+<p>Format tips for the context file: - Use short, titled entries (one bug
+per entry)</p>
+<ul class="simple">
+<li><p>Include the <strong>symptom</strong>, the <strong>root cause</strong>, and the <strong>fix</strong></p></li>
+<li><p>Include hardware-specific details (SM version, instruction name)</p></li>
+<li><p>Keep entries under 5 lines — brevity improves LLM retrieval</p></li>
+</ul>
+</section>
+<section id="practical-workflow-summary">
+<h2><span class="section-number">10.8. </span>Practical Workflow Summary<a class="headerlink" href="#practical-workflow-summary" title="Permalink to this heading">¶</a></h2>
+<p>A workflow that combines human expertise with LLM assistance:</p>
+<ol class="arabic simple">
+<li><p><strong>Design</strong> the kernel yourself: warp roles, barrier topology,
+pipeline depth. Kernel design should still be driven by the
+programmer, with the LLM used mainly as an assistant rather than the
+source of the design.</p></li>
+<li><p><strong>Generate boilerplate</strong> with the LLM: SMEM allocation, TMA
+descriptor setup, barrier initialization. These are tedious and
+mechanical.</p></li>
+<li><p><strong>Write the core logic</strong> yourself: MMA dispatch, softmax, reductions.
+You need to understand what every line does.</p></li>
+<li><p><strong>Generate test harnesses</strong> with the LLM: numpy/torch references,
+input generation, comparison logic.</p></li>
+<li><p><strong>Debug</strong> with the LLM: paste the failing code + symptom. LLMs tend
+to be good at pattern-matching known bugs (missing <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>,
+wrong barrier count, fence ordering), but less reliable for novel
+bugs.</p></li>
+<li><p><strong>Profile</strong> yourself: LLMs generally cannot tell you whether your
+kernel is fast. Use timing tools.</p></li>
+</ol>
+<p>The goal is not to have the LLM write your kernel. The goal is to spend
+your time on the hard parts (design, core logic, performance) and let
+the LLM handle the tedious parts (boilerplate, references, known-bug
+detection).</p>
+</section>
+<section id="exercises">
+<h2><span class="section-number">10.9. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Take your Step 7 kernel and introduce the <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> bug from
+this chapter: move <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> outside the
+<code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">Tx.ptx.elect_sync():</span></code> block. Run the test to confirm it
+produces wrong output. Then paste the buggy code to an LLM with the
+symptom description. Does the model identify the root cause?</p></li>
+<li><p>Ask an LLM to generate a numpy reference for the Cross Entropy loss
+kernel (V3, online softmax) from the Cross Entropy chapter. Compare
+its output with your V3 kernel’s output on the same input. Do the
+results match to within fp16 tolerance?</p></li>
+<li><p>Ask an LLM to explain the barrier flow in Step 8 (2-CTA cluster):
+“Trace what happens when CTA-0’s TMA loads A, CTA-1’s TMA loads B,
+and CTA-0 issues the cooperative MMA. Which barriers fire in what
+order?” Verify the explanation against the actual code.</p></li>
+<li><p>Try asking an LLM to write a complete Step 7 kernel from scratch.
+Give it only the API reference from the API Reference chapter and the
+warp role table from Step 7 (Warp Specialization). What does it get
+right? What does it get wrong? This exercise illustrates the boundary
+between what LLMs tend to do well and where they need more care.</p></li>
+</ol>
+<blockquote>
+<div><p><strong>Try with Claude</strong>: Paste your most confusing kernel bug (the one
+that took you the longest to find) and describe only the symptom. See
+if Claude can identify the root cause. Then try again with the
+hardware constraints template from this chapter. Compare the quality
+of the two responses.</p>
+</div></blockquote>
+</section>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+<div class="localtoc">
+    <p class="caption">
+      <span class="caption-text">Table Of Contents</span>
+    </p>
+    <ul>
+<li><a class="reference internal" href="#">10. AI-Assisted Kernel Development</a><ul>
+<li><a class="reference internal" href="#what-llms-tend-to-do-well-and-where-they-need-more-care">10.1. What LLMs Tend to Do Well — and Where They Need More Care</a></li>
+<li><a class="reference internal" href="#effective-prompting-for-tirx-kernels">10.2. Effective Prompting for TIRX Kernels</a></li>
+<li><a class="reference internal" href="#symptom-to-cause-quick-reference">10.3. Symptom-to-Cause Quick Reference</a></li>
+<li><a class="reference internal" href="#demo-debugging-a-broken-kernel">10.4. Demo: Debugging a Broken Kernel</a></li>
+<li><a class="reference internal" href="#generating-test-harnesses">10.5. Generating Test Harnesses</a></li>
+<li><a class="reference internal" href="#when-to-be-cautious-with-llm-suggestions">10.6. When to Be Cautious with LLM Suggestions</a></li>
+<li><a class="reference internal" href="#building-a-persistent-context-file">10.7. Building a Persistent Context File</a></li>
+<li><a class="reference internal" href="#practical-workflow-summary">10.8. Practical Workflow Summary</a></li>
+<li><a class="reference internal" href="#exercises">10.9. Exercises</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="../chapter_flash_attention/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>9. Flash Attention 4</div>
+         </div>
+     </a>
+     <a id="button-next" href="../chapter_api_reference/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>11. TIRX API Reference</div>
+        </div>
+     </a>
+  </div>
+        
+        </main>
+    </div>
+  </body>
+</html>

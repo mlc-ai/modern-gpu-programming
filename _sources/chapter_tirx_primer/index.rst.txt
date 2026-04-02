@@ -1,0 +1,330 @@
+
+.. _chap_tirx_primer:
+
+TIRX Programming Model
+======================
+
+
+This chapter introduces the core TIRX programming model: how kernels are
+structured, how threads and memory are expressed, and what low-level
+details the DSL abstracts away.
+
+Import Convention
+-----------------
+
+This tutorial uses the following import:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   from tvm.script import tirx as Tx
+
+``Tx`` is the TIRX namespace used throughout this tutorial. It provides
+the TIRX DSL APIs, including kernel constructs, thread hierarchy
+operators, memory helpers, asynchronous copy and MMA operations, and PTX
+intrinsics under ``Tx.ptx.*``.
+
+Core APIs at a Glance
+---------------------
+
++-----------------------+------------------------------------------------+-----------------------+
+| Category              | API                                            | Purpose               |
++=======================+================================================+=======================+
+| **Parameters**        | ``Tx.Buffer((M, K), dtype)``                   | Buffer with shape     |
+|                       |                                                | known at compile time |
++-----------------------+------------------------------------------------+-----------------------+
+|                       | ``Tx.handle`` +                                | Buffer with shape     |
+|                       | ``Tx.match_buffer(ptr, shape, dtype)``         | determined at runtime |
++-----------------------+------------------------------------------------+-----------------------+
+| **Memory**            | ``PoolAllocator`` / ``pool.alloc``             | Dynamic SMEM          |
+|                       |                                                | allocation            |
++-----------------------+------------------------------------------------+-----------------------+
+|                       | ``Tx.ptx.tcgen05.alloc`` / ``dealloc``         | TMEM lifecycle        |
+|                       |                                                | management            |
++-----------------------+------------------------------------------------+-----------------------+
+|                       | ``tma_shared_layout(dtype, swizzle, shape)``   | Swizzled SMEM layout  |
+|                       |                                                | helper                |
++-----------------------+------------------------------------------------+-----------------------+
+| **Data movement**     | ``Tx.copy(dst, src)``                          | Synchronous copy      |
++-----------------------+------------------------------------------------+-----------------------+
+|                       | ``Tx.copy_async(dst, src, dispatch="tma")``    | Asynchronous TMA copy |
++-----------------------+------------------------------------------------+-----------------------+
+|                       | ``Tx.gemm_async(D, A, B, dispatch="tcgen05")`` | Asynchronous MMA      |
++-----------------------+------------------------------------------------+-----------------------+
+| **Synchronization**   | ``TMABar`` / ``TCGen05Bar`` / ``MBarrier``     | Barrier abstractions  |
++-----------------------+------------------------------------------------+-----------------------+
+| **Abstractions**      | ``PipelineState``                              | Multi-stage pipeline  |
+|                       |                                                | manager               |
++-----------------------+------------------------------------------------+-----------------------+
+| **Scheduling**        | ``ClusterPersistentScheduler2D``               | Persistent tile       |
+|                       |                                                | scheduler             |
++-----------------------+------------------------------------------------+-----------------------+
+
+Kernel Structure
+----------------
+
+Every TIRX kernel follows this template:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   @Tx.prim_func(tirx=True)  # Declares a TIRX kernel function
+   def hgemm(A: Tx.Buffer((M, K), "float16"),  # Input buffers with compile-time shapes
+             B: Tx.Buffer((N, K), "float16"),
+             D: Tx.Buffer((M, N), "float16")):
+       with Tx.kernel():
+           # ① Thread hierarchy
+           bx, by = Tx.cta_id([grid_m, grid_n], parent="kernel")
+           wg_id = Tx.warpgroup_id([num_wg], parent="cta")
+           warp_id = Tx.warp_id([4], parent="warpgroup")
+           lane_id = Tx.thread_id([32], parent="warp")
+
+           # ② Memory allocation
+           pool = Tx.PoolAllocator()
+           Asmem = pool.alloc(shape, layout=A_layout)     # SMEM buffer
+           tmem_addr = pool.alloc((1,), "uint32")         # TMEM address slot
+           pool.commit()                                   # Finalize SMEM allocations
+           Tx.ptx.tcgen05.alloc(tmem_addr, ...)           # Allocate TMEM
+           tmem = Tx.decl_buffer(..., scope="tmem",
+                                  allocated_addr=tmem_addr[0])
+
+           # ③ Main loop
+           for k in range(K // BLK_K):
+               Tx.copy_async(Asmem, A[...], dispatch="tma")   # Load (TMA)
+               Tx.gemm_async(tmem, Asmem, Bsmem, ...)         # Compute (MMA)
+
+           # ④ Writeback
+           Tx.copy(Dreg, tmem[:, :])                           # TMEM → RF
+           Tx.copy(D[m_st:..., n_st:...], Dreg)               # RF → GMEM
+
+The four regions map to hardware:
+
+- **Setup**: SMEM pool allocation, TMEM allocation, mbarrier
+  initialization
+
+- **Load**: Data movement from GMEM to SMEM
+
+- **Compute**: tcgen05 MMA operations
+
+- **Writeback**: TMEM → registers → GMEM
+
+Thread Hierarchy Scopes
+-----------------------
+
+TIRX uses a hierarchical scope system to control which threads execute a
+block of code:
+
++-----------------------------+-----------------------+--------------------------+
+| Scope                       | Threads               | Use case                 |
++=============================+=======================+==========================+
+| ``with Tx.kernel():``       | Kernel launch scope   | Top-level scope for all  |
+|                             |                       | CTAs                     |
++-----------------------------+-----------------------+--------------------------+
+| ``with Tx.cta():``          | All 128 threads in    | Cooperative SMEM copy    |
+|                             | CTA                   |                          |
++-----------------------------+-----------------------+--------------------------+
+| ``with Tx.warpgroup():``    | 128 threads (4 warps) | TMEM reads               |
++-----------------------------+-----------------------+--------------------------+
+| ``with Tx.warp():``         | 32 threads            | Warp-level operations    |
++-----------------------------+-----------------------+--------------------------+
+| ``with Tx.thread():``       | Each thread           | Per-element operations   |
+|                             | independently         |                          |
++-----------------------------+-----------------------+--------------------------+
+| ``with Tx.thread()[cond]:`` | Threads where         | Predicated execution for |
+|                             | ``cond`` is true      | a subset of threads      |
++-----------------------------+-----------------------+--------------------------+
+
+The scope determines how an operation is parallelized. For example,
+``Tx.copy`` inside ``with Tx.cta():`` means all 128 threads cooperate on
+the copy, while ``Tx.copy`` inside ``with Tx.thread():`` means each
+thread copies independently.
+
+Note that ``Tx.ptx.elect_sync()`` is not a scope — it is a per-warp
+intrinsic that selects one thread. It is typically combined with a
+thread scope as ``with Tx.thread()[Tx.ptx.elect_sync()]:`` to dispatch
+TMA or MMA operations from a single elected thread.
+
+Memory Management
+-----------------
+
+In TIRX, memory management typically involves three layers: shared
+memory for staging, registers for per-thread temporaries, and TMEM for
+Tensor Core accumulators.
+
+**Shared memory** uses a pool allocator. ``PoolAllocator`` manages
+shared memory as a contiguous pool — each ``pool.alloc()`` call bumps a
+pointer forward, similar to a stack allocator. This avoids the
+complexity of a general-purpose allocator and ensures all SMEM buffers
+are packed without fragmentation.
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   pool = Tx.PoolAllocator()
+   Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)   # SMEM buffer for operand tiles
+   tmem_addr = pool.alloc((1,), "uint32")                          # SMEM slot holding the TMEM base address
+   mma_bar = pool.alloc((1,), "uint64", align=8)                   # mbarrier stored in SMEM
+   pool.move_base_to(1024)  # Reserve the first 1024 bytes for barriers and metadata
+   pool.commit()             # Finalize all SMEM allocations
+
+**Register buffers** (per-thread). A per-thread register buffer can be
+reinterpreted as a warpgroup-level logical tile through a layout view:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   reg = Tx.alloc_local((128,), acc_type)           # Per-thread register buffer
+   reg_wg = reg.view(128, 128, layout=wg_layout)    # Warpgroup view for cooperative TMEM reads
+
+**TMEM** is declared as a 2D buffer over Blackwell’s native TMEM axes
+(``TLane`` for rows, ``TCol`` for columns):
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   tmem = Tx.decl_buffer((128, 512), "float32", scope="tmem", allocated_addr=0,
+                          layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
+
+TIRX vs Raw PTX
+---------------
+
+Now that you have seen the TIRX APIs, consider what the same operation
+looks like in raw PTX:
+
+::
+
+   // Raw PTX (conceptually, ~20 lines)
+   // 1. Encode SmemDescriptor (start addr, leading dim, stride, swizzle, base offset)
+   // 2. Encode InstrDescriptor (bit-pack: acc type, A/B types, MMA shape, transpose flags)
+   // 3. Initialize mbarrier (init, set expected arrivals)
+   // 4. Issue tcgen05.mma instruction
+   // 5. Commit to mbarrier
+   // 6. Wait for completion
+   // 7. TMEM lifecycle management (alloc, dealloc)
+
+In TIRX, the same operation is:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # TIRX: 3 lines
+   Tx.gemm_async(tmem[:, :128], Asmem[:], Bsmem[:],
+                 accum=False, dispatch="tcgen05", cta_group=1)
+   Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
+
+**TIRX automates**: descriptor encoding, barrier setup, address
+arithmetic, and TMEM lifecycle management around the MMA itself.
+
+**Compilation flow**: ``TIRX Python → TIR → PTX → cubin (CUDA binary)``
+
+Meta Variables
+--------------
+
+``Tx.meta_var`` creates a compile-time alias for an expression. This is
+useful when a computed offset must appear in buffer slicing:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   m_st = Tx.meta_var(bx * BLK_M)
+   n_st = Tx.meta_var(by * BLK_N)
+   Tx.copy(Asmem[:], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K])
+
+**Important**: Variables assigned inside ``@Tx.prim_func`` become TIR
+dynamic variables. Constants such as ``BLK_M``, ``PIPE_DEPTH``, and
+``EPI_N`` must remain Python constants defined outside the function.
+
+Axe Layout
+----------
+
+These kernels use **Axe Layout** (`Hou et al.,
+2026 <https://arxiv.org/abs/2601.19092>`__), a hardware-aware layout
+abstraction that maps logical tensor coordinates onto named hardware
+axes. Instead of manually computing memory addresses, you declare a
+layout on each buffer and the compiler generates the correct address
+arithmetic.
+
+**Syntax.** The layout spec ``S[shape : stride@axis]`` reads as “map
+each dimension to a named hardware axis”:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   S[(128, 512) : (1@TLane, 1@TCol)]
+   #  ^^^  ^^^     ^^^^^^^^  ^^^^^^^^
+   #  rows cols    row axis  col axis
+   # "128 rows on TLane, 512 cols on TCol"
+
+**Quick reference — layouts used in the GEMM kernels:**
+
++-----------------------+--------------------------------------------------------+-----------------------+
+| Buffer type           | Layout                                                 | Example               |
++=======================+========================================================+=======================+
+| **SMEM**              | ``tma_shared_layout(dtype, SWIZZLE_128B_ATOM, shape)`` | K-major with 128B     |
+| (TMA-compatible)      |                                                        | swizzle               |
++-----------------------+--------------------------------------------------------+-----------------------+
+| **TMEM**              | ``TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])``      | 128 lanes × N         |
+|                       |                                                        | columns, flat 2D      |
++-----------------------+--------------------------------------------------------+-----------------------+
+| **Register**          | ``TileLayout(S[(128, N) : (1@axis_tid_in_wg, 1)])``    | Per-thread view via   |
+| (warpgroup view)      |                                                        | warpgroup tid         |
++-----------------------+--------------------------------------------------------+-----------------------+
+
+- ``tma_shared_layout`` creates a swizzled layout for bank-conflict-free
+  access — just call this helper with your dtype, swizzle mode, and
+  buffer shape.
+
+- ``@TLane`` and ``@TCol`` are Blackwell TMEM’s native 2D addressing
+  axes.
+
+- ``@axis_tid_in_wg`` means “distribute rows across the 128 threads in a
+  warpgroup.” When you write ``Tx.copy(Dreg_wg, tmem)``, the compiler
+  matches ``tid_in_wg`` to ``TLane`` and generates the correct TMEM load
+  instructions.
+
+Inline Functions
+----------------
+
+Use ``@Tx.inline`` to define small helper functions inside the kernel,
+especially for reusable load/store or synchronization boilerplate. These
+functions are inlined at compile time and can capture outer variables:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   @Tx.inline
+   def tma_load(stage, k):
+       with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+           tma_bar.arrive(stage, bytes=total_bytes)
+           Tx.copy_async(Asmem[stage, :, :], A[m_st:m_st+BLK_M, k:k+BLK_K],
+                          dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([stage]))
+
+This is commonly used to package repeated TMA load, MMA issue, or
+writeback logic without introducing runtime function-call overhead.

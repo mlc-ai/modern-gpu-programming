@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>4. Fused GELU-Tanh &amp; Multiply &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fontawesome/all.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/d2l.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/d2l.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. RMSNorm" href="../chapter_rmsnorm/index.html" />
+    <link rel="prev" title="3. Setup" href="../chapter_setup/index.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link is-active"><span class="section-number">4. </span>Fused GELU-Tanh &amp; Multiply</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+          <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/chapter_fused_gelu/index.rst.txt" rel="nofollow">
+  <i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+          
+              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
+                  <i class="fab fa-github"></i>
+                  GitHub
+              </a>
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+
+	<script type="text/javascript" src="../_static/sphinx_materialdesign_theme.js "></script>
+    <header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content" role="main">
+        
+  <section id="fused-gelu-tanh-multiply">
+<span id="chap-fused-gelu"></span><h1><span class="section-number">4. </span>Fused GELU-Tanh &amp; Multiply<a class="headerlink" href="#fused-gelu-tanh-multiply" title="Permalink to this heading">¶</a></h1>
+<p>Our first TIRX kernel is a simple but practical operator: the fused
+GELU-Tanh activation with multiply, commonly used in MLP gate layers of
+Transformer models. We start here because elementwise kernels are the
+simplest GPU kernel pattern.</p>
+<p><strong>Operation</strong>: The input tensor has shape <code class="docutils literal notranslate"><span class="pre">[batch,</span> <span class="pre">2*d]</span></code>, split into
+two halves along the last dimension. The first half passes through
+GELU-tanh activation, then multiplies with the second half:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-fused-gelu-index-0">
+<span class="eqno">(4.1)<a class="headerlink" href="#equation-chapter-fused-gelu-index-0" title="Permalink to this equation">¶</a></span>\[\text{output} = \operatorname{GELU\_tanh}(\text{input}[:, :d]) \cdot \text{input}[:, d:]\]</div>
+<p>where GELU-tanh is the <strong>tanh approximation</strong> of GELU (not the exact erf
+version). This is the variant used in most LLMs (GPT, Llama, etc.)
+because it’s faster to compute:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-fused-gelu-index-1">
+<span class="eqno">(4.2)<a class="headerlink" href="#equation-chapter-fused-gelu-index-1" title="Permalink to this equation">¶</a></span>\[\operatorname{GELU\_tanh}(x) = 0.5 \cdot x \cdot \left(1 + \tanh\!\left(\sqrt{2/\pi} \cdot (x + 0.044715 \cdot x^3)\right)\right)\]</div>
+<p>This is an example of <strong>operator fusion</strong>: combining two operations
+(GELU activation + gate multiply) into one kernel. The <strong>gate</strong> here
+refers to the second half of the input tensor (<code class="docutils literal notranslate"><span class="pre">input[:,</span> <span class="pre">d:]</span></code>) — in
+Transformer MLP layers, the architecture splits the linear projection
+output into two halves, applies an activation (GELU) to one half, and
+multiplies it element-wise with the other half. This gating mechanism
+controls how much of the activated signal passes through, similar to
+gates in LSTM/GRU networks. Without fusion, you’d compute GELU into a
+temporary buffer, then launch a second kernel to multiply with the gate
+— two kernel launches and an extra round-trip to global memory. With
+fusion, everything happens in one pass.</p>
+<section id="what-you-will-learn">
+<h2><span class="section-number">4.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Basic TIRX kernel structure: <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Tx.kernel()</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.cta_id()</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.thread_id()</span></code></p></li>
+<li><p>How to launch a 1D grid of threads where each thread computes one
+output element</p></li>
+<li><p>How to verify kernel correctness against a numpy reference</p></li>
+</ul>
+</section>
+<section id="implementation">
+<h2><span class="section-number">4.2. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
+<p>The strategy:</p>
+<ol class="arabic simple">
+<li><p>Assign one thread per output element</p></li>
+<li><p>Each thread computes a global ID (<code class="docutils literal notranslate"><span class="pre">bx</span> <span class="pre">*</span> <span class="pre">NUM_THREADS</span> <span class="pre">+</span> <span class="pre">tid</span></code>) and
+converts it to <code class="docutils literal notranslate"><span class="pre">(row,</span> <span class="pre">col)</span></code> using division and modulo</p></li>
+<li><p>Read the corresponding values from both halves of the input</p></li>
+<li><p>Compute GELU-tanh, multiply with the gate, write the result</p></li>
+</ol>
+<section id="d-thread-grid-to-2d-matrix-mapping">
+<h3><span class="section-number">4.2.1. </span>1D Thread Grid to 2D Matrix Mapping<a class="headerlink" href="#d-thread-grid-to-2d-matrix-mapping" title="Permalink to this heading">¶</a></h3>
+<p>GPU threads are launched as a flat 1D grid, but the output data is a 2D
+matrix <code class="docutils literal notranslate"><span class="pre">[batch,</span> <span class="pre">out_dim]</span></code>. Each thread converts its global ID to a
+<code class="docutils literal notranslate"><span class="pre">(row,</span> <span class="pre">col)</span></code> coordinate:</p>
+<figure class="align-default" id="id1">
+<img alt="../_images/thread_grid_to_matrix.png" src="../_images/thread_grid_to_matrix.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 4.2.1 </span><span class="caption-text">1D Thread Grid to 2D Matrix Mapping</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Each thread handles exactly one element. The flat <code class="docutils literal notranslate"><span class="pre">gid</span></code> fills the
+matrix row by row: the first <code class="docutils literal notranslate"><span class="pre">out_dim</span></code> threads cover row 0, the next
+<code class="docutils literal notranslate"><span class="pre">out_dim</span></code> threads cover row 1, and so on.</p>
+<p><strong>APIs you’ll see in this kernel:</strong></p>
+<ul class="simple">
+<li><p><strong>``Tx.handle`` + ``Tx.match_buffer``</strong> — The function takes opaque
+pointer parameters. Inside the kernel, <code class="docutils literal notranslate"><span class="pre">match_buffer</span></code> binds them to
+typed 2D arrays with known shapes.</p></li>
+<li><p><strong>``Tx.cta_id`` + ``Tx.thread_id``</strong> — Together these give each thread
+a unique position in the grid. <code class="docutils literal notranslate"><span class="pre">bx</span></code> is the CTA (block) index,
+<code class="docutils literal notranslate"><span class="pre">tid</span></code> is the thread index within that CTA.</p></li>
+<li><p><strong>``gid = bx * NUM_THREADS + tid``</strong> — The global thread ID. Each
+thread maps this to a <code class="docutils literal notranslate"><span class="pre">(row,</span> <span class="pre">col)</span></code> in the output matrix using
+integer division and modulo. Why the conversion? We launch threads as
+a flat 1D grid (just a single number per thread), but the data is a 2D
+matrix <code class="docutils literal notranslate"><span class="pre">[batch,</span> <span class="pre">out_dim]</span></code>. We need <code class="docutils literal notranslate"><span class="pre">row</span></code> to index which batch
+element, and <code class="docutils literal notranslate"><span class="pre">col</span></code> to index which position within that element — so
+we convert the flat <code class="docutils literal notranslate"><span class="pre">gid</span></code> back to 2D coordinates:
+<code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">=</span> <span class="pre">gid</span> <span class="pre">//</span> <span class="pre">out_dim</span></code>, <code class="docutils literal notranslate"><span class="pre">col</span> <span class="pre">=</span> <span class="pre">gid</span> <span class="pre">%</span> <span class="pre">out_dim</span></code>.</p></li>
+<li><p><strong>``if gid &lt; total``</strong> — Boundary check. The grid might be slightly
+larger than the data (due to <code class="docutils literal notranslate"><span class="pre">ceildiv</span></code>), so excess threads skip the
+computation.</p></li>
+<li><p><strong>``input_buf[row, col]`` and ``input_buf[row, col + out_dim]``</strong> —
+The input is <code class="docutils literal notranslate"><span class="pre">[batch,</span> <span class="pre">2*d]</span></code>. The first half (<code class="docutils literal notranslate"><span class="pre">col</span> <span class="pre">&lt;</span> <span class="pre">out_dim</span></code>) is
+the value to apply GELU to; the second half (<code class="docutils literal notranslate"><span class="pre">col</span> <span class="pre">+</span> <span class="pre">out_dim</span></code>) is the
+gate to multiply with.</p></li>
+<li><p><strong>The GELU computation</strong> — Implements the tanh approximation formula
+in fp16 arithmetic. <code class="docutils literal notranslate"><span class="pre">Tx.float16(...)</span></code> casts constants to fp16.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tvm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ceildiv</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">b</span>
+
+<span class="n">SM_COUNT</span> <span class="o">=</span> <span class="mi">148</span>  <span class="c1"># Number of SMs on NVIDIA B200 GPU</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fused_gelu_kernel</span><span class="p">(</span><span class="n">input_cat</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">out_dim</span>
+    <span class="n">NUM_THREADS</span> <span class="o">=</span> <span class="mi">256</span>
+    <span class="n">NUM_BLOCKS</span> <span class="o">=</span> <span class="n">ceildiv</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">NUM_THREADS</span><span class="p">)</span>
+
+    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fused_gelu_tanh_multiply</span><span class="p">(</span><span class="n">input_cat_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">output_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+        <span class="n">input_buf</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">input_cat_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">out_dim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>
+        <span class="n">output_buf</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">output_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
+            <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">NUM_BLOCKS</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+            <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">NUM_THREADS</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
+                <span class="n">gid</span> <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="n">NUM_THREADS</span> <span class="o">+</span> <span class="n">tid</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">gid</span> <span class="o">//</span> <span class="n">out_dim</span>
+                <span class="n">col</span> <span class="o">=</span> <span class="n">gid</span> <span class="o">%</span> <span class="n">out_dim</span>
+
+                <span class="k">if</span> <span class="n">gid</span> <span class="o">&lt;</span> <span class="n">total</span><span class="p">:</span>
+                    <span class="c1"># input_buf is [batch, 2*out_dim]: first half is x, second half is gate</span>
+                    <span class="n">input1</span> <span class="o">=</span> <span class="n">input_buf</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span>              <span class="c1"># x (first half)</span>
+                    <span class="n">input2</span> <span class="o">=</span> <span class="n">input_buf</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span> <span class="o">+</span> <span class="n">out_dim</span><span class="p">]</span>    <span class="c1"># gate (second half)</span>
+                    <span class="n">x_cubed</span> <span class="o">=</span> <span class="n">input1</span> <span class="o">*</span> <span class="n">input1</span> <span class="o">*</span> <span class="n">input1</span>
+                    <span class="n">inner</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">float16</span><span class="p">(</span><span class="mf">0.7978845608</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>  <span class="c1"># sqrt(2/pi) ≈ 0.7979</span>
+                        <span class="n">input1</span> <span class="o">+</span> <span class="n">Tx</span><span class="o">.</span><span class="n">float16</span><span class="p">(</span><span class="mf">0.044715</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_cubed</span><span class="p">)</span>  <span class="c1"># GELU-tanh approximation constant</span>
+                    <span class="n">gelu_out</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">float16</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">input1</span> <span class="o">*</span> <span class="p">(</span>
+                        <span class="n">Tx</span><span class="o">.</span><span class="n">float16</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">Tx</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">inner</span><span class="p">))</span>
+                    <span class="n">output_buf</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">gelu_out</span> <span class="o">*</span> <span class="n">input2</span>
+
+    <span class="k">return</span> <span class="n">fused_gelu_tanh_multiply</span>
+</pre></div>
+</div>
+<p>Compile, verify, and benchmark:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">out_dim</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda -arch=sm_100a&quot;</span><span class="p">)</span>
+
+<span class="c1"># Compile</span>
+<span class="n">kernel</span> <span class="o">=</span> <span class="n">fused_gelu_kernel</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">}),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run</span>
+<span class="n">x_cat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">out_dim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">out_dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span>
+<span class="n">f</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">x_cat</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+<span class="c1"># Verify against numpy reference</span>
+<span class="n">x_np</span> <span class="o">=</span> <span class="n">x_cat</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">x_np</span><span class="p">[:,</span> <span class="p">:</span><span class="n">out_dim</span><span class="p">],</span> <span class="n">x_np</span><span class="p">[:,</span> <span class="n">out_dim</span><span class="p">:]</span>
+<span class="n">ref</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">x1</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">x1</span> <span class="o">+</span> <span class="mf">0.044715</span> <span class="o">*</span> <span class="n">x1</span><span class="o">**</span><span class="mi">3</span><span class="p">)))</span> <span class="o">*</span> <span class="n">x2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+<span class="n">max_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">-</span> <span class="n">ref</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fused GELU: batch_size=</span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">, out_dim=</span><span class="si">{</span><span class="n">out_dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max error vs numpy reference: </span><span class="si">{</span><span class="n">max_err</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">max_err</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;FAIL: max_err=</span><span class="si">{</span><span class="n">max_err</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Fused</span> <span class="n">GELU</span><span class="p">:</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">out_dim</span><span class="o">=</span><span class="mi">4096</span>
+<span class="n">Max</span> <span class="n">error</span> <span class="n">vs</span> <span class="n">numpy</span> <span class="n">reference</span><span class="p">:</span> <span class="mf">0.007812</span>
+<span class="n">PASS</span>
+</pre></div>
+</div>
+<p><strong>Expected output</strong>:</p>
+<ul class="simple">
+<li><p>Time: 0.003–0.010 ms (varies by GPU load)</p></li>
+<li><p>Max error: &lt; 0.01 (fp16 GELU approximation)</p></li>
+</ul>
+<p><strong>If something goes wrong</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">max_err</span> <span class="pre">&gt;</span> <span class="pre">0.5</span></code>: Check that <code class="docutils literal notranslate"><span class="pre">Tx.float16(0.7978845608)</span></code> is correct
+(this is sqrt(2/pi))</p></li>
+<li><p>Kernel hangs: Check <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">gid</span> <span class="pre">&lt;</span> <span class="pre">total</span></code> boundary guard is present</p></li>
+<li><p>All zeros: Check that <code class="docutils literal notranslate"><span class="pre">input_buf[row,</span> <span class="pre">col</span> <span class="pre">+</span> <span class="pre">out_dim]</span></code> reads from the
+second half (gate)</p></li>
+</ul>
+</section>
+</section>
+<section id="exercises">
+<h2><span class="section-number">4.3. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>How many total threads are launched for
+<code class="docutils literal notranslate"><span class="pre">batch_size=64,</span> <span class="pre">out_dim=4096</span></code>? How many CTAs?</p></li>
+<li><p>Why do we use <code class="docutils literal notranslate"><span class="pre">ceildiv(total,</span> <span class="pre">NUM_THREADS)</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">total</span> <span class="pre">//</span> <span class="pre">NUM_THREADS</span></code> for the number of blocks?</p></li>
+<li><p>What would happen if we removed the <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">gid</span> <span class="pre">&lt;</span> <span class="pre">total:</span></code> guard?</p></li>
+<li><p>This kernel reads each input element exactly once and writes each
+output element exactly once. Is it compute-bound or memory-bound?
+Why?</p></li>
+</ol>
+</section>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+<div class="localtoc">
+    <p class="caption">
+      <span class="caption-text">Table Of Contents</span>
+    </p>
+    <ul>
+<li><a class="reference internal" href="#">4. Fused GELU-Tanh &amp; Multiply</a><ul>
+<li><a class="reference internal" href="#what-you-will-learn">4.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#implementation">4.2. Implementation</a><ul>
+<li><a class="reference internal" href="#d-thread-grid-to-2d-matrix-mapping">4.2.1. 1D Thread Grid to 2D Matrix Mapping</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exercises">4.3. Exercises</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="../chapter_setup/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>3. Setup</div>
+         </div>
+     </a>
+     <a id="button-next" href="../chapter_rmsnorm/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>5. RMSNorm</div>
+        </div>
+     </a>
+  </div>
+        
+        </main>
+    </div>
+  </body>
+</html>
