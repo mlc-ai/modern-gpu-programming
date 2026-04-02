@@ -1,0 +1,125 @@
+# Background: Blackwell GPU Architecture
+:label:`chap_background`
+
+Before diving into the code, let's understand the key hardware features of NVIDIA Blackwell GPUs. If you're familiar with CUDA, you already know about threads, warps, shared memory, and global memory. Blackwell introduces several new hardware units and memory spaces that are essential for achieving peak performance.
+
+
+## Thread Hierarchy
+
+Blackwell organizes threads into a nested hierarchy:
+
+![*Thread Hierarchy*](../img/thread_hierarchy.png)
+
+- **CTA**: The basic scheduling unit. A CTA runs on a single SM and has access to that SM's shared memory.
+
+- **Warpgroup**: 4 consecutive warps (128 threads). On Blackwell, this is the cooperation unit for TMEM reads and tcgen05 MMA operations.
+
+- **Warp**: A warp contains 32 threads and is the basic SIMT execution unit.
+
+- **Thread**: Each thread is identified by a lane ID within its warp.
+
+- **Cluster**: A group of cooperating CTAs.
+
+## Memory Hierarchy
+
+For TIRX kernels on Blackwell, it is useful to think about memory as a hierarchy spanning GMEM, SMEM, TMEM, and registers:
+
+| Memory | Ownership | Latency | Description |
+|--------|-----------|---------|-------------|
+| **Global Memory (GMEM)** | Device-wide | High | Large capacity (HBM), bandwidth-limited |
+| **Shared Memory (SMEM)** | Per-CTA (on one SM) | Low | 192KB per SM, low-latency scratchpad |
+| **Tensor Memory (TMEM)** | Per-SM | Very low | Private high-bandwidth accumulator memory for Tensor Cores |
+| **Register File (RF)** | Per-thread | Lowest | Fastest storage, per-thread |
+
+The typical data flow for a kernel that uses Tensor Cores:
+
+![*Memory Data Flow*](../img/memory_dataflow.png)
+
+The key difference from earlier GPU generations is that tcgen05 writes accumulator results to TMEM first, and software later moves them to registers or shared memory as needed.
+
+**Tensor Memory (TMEM)** is new in Blackwell. It is a high-bandwidth scratchpad memory private to the Tensor Cores. The tcgen05 MMA unit writes its accumulator output directly to TMEM, not to registers or shared memory.
+
+- **TMEM reads are explicit and cooperative.** To consume MMA results, software must explicitly load from TMEM into the register file. These reads are performed cooperatively by the full warpgroup (128 threads).
+
+- **TMEM uses its own addressing and allocation model.** It is not accessed like normal memory; instead, it uses a special 2D address space (rows mapped to threads via `TLane`, columns via `TCol`) and must be explicitly allocated and deallocated.
+
+
+## TMA (Tensor Memory Accelerator)
+
+TMA is a hardware unit that asynchronously copies rectangular tiles between global memory and shared memory. TMA lets software describe a tile copy, and hardware performs it asynchronously in the background.
+
+- **Single-thread launch**: One thread issues the TMA operation, and the hardware performs the actual tile transfer asynchronously in the background. The remaining threads are free to do other work.
+
+- **Swizzled layouts**: TMA can apply layout swizzling during the transfer, helping produce shared-memory layouts that are friendly to Tensor Core access.
+
+- **Barrier integration**: TMA works with mbarriers. The programmer specifies the expected byte count with `arrive.expect_tx`, and the hardware signals completion when that amount of data has arrived.
+
+- **Store support**: TMA is not only for GMEM→SMEM loads; it can also store data from SMEM back to GMEM. TMA stores use a commit-group / wait-group mechanism for completion tracking.
+
+In short, TMA turns tiled GMEM↔SMEM movement into an asynchronous hardware operation with built-in layout and synchronization support.
+
+
+## tcgen05 (Tensor Core MMA)
+
+`tcgen05` is Blackwell's matrix multiply-accumulate (MMA) unit. Depending on the MMA variant, operand A may come from TMEM or SMEM, while operand B is read from SMEM via matrix descriptors. The result is written to TMEM.
+
+- **Asynchronous execution**: The MMA instruction returns immediately while the computation continues in the background.
+
+- **Single-thread issue**: Only one elected thread issues the MMA and its corresponding commit. The operation itself is carried out by hardware on behalf of the warpgroup.
+
+- **TMEM accumulation**: tcgen05 writes its output to TMEM. It can either overwrite the destination (`accum=False`) or accumulate into existing TMEM values (`accum=True`).
+
+- **Commit and completion tracking**: After issuing one or more MMAs, software uses `commit` to group them. The hardware signals the associated mbarrier when the group completes.
+
+- **CTA-group execution**: `cta_group` controls whether one CTA or multiple CTAs cooperate on the same MMA operation. This becomes important for clustered kernels later in the tutorial.
+
+In short, tcgen05 moves MMA accumulation out of registers and into TMEM, which changes both the dataflow and the synchronization model compared with earlier generations.
+
+
+## mbarrier (Memory Barrier)
+
+mbarriers are hardware synchronization primitives stored in shared memory. They combine a counter with a phase bit to enable reusable, asynchronous synchronization.
+
+**Lifecycle of an mbarrier:**
+
+1. **Init**: Set the expected number of arrivals. The barrier starts at phase 0.
+2. **Arrive**: Each arrival decrements the counter. There are three ways to arrive:
+   - **TMA auto-arrive**: The hardware arrives automatically once the byte transfer completes (tracked via `expect_tx`).
+
+   - **tcgen05 auto-arrive**: The hardware arrives once committed MMAs complete.
+
+   - **Thread arrive**: A thread arrives explicitly (used by writeback threads to signal "TMEM is free").
+3. **Wait**: A consumer waits until the barrier reaches the expected phase for that iteration, which indicates that all required arrivals have completed.
+4. **Phase flip**: Once all arrivals are done, the barrier automatically toggles its phase (0 → 1 → 0 → ...). This lets the same barrier be reused across loop iterations: iteration 0 uses phase 0, iteration 1 uses phase 1, iteration 2 uses phase 0 again, etc.
+
+This is the basic producer-consumer pattern used throughout the tutorial: a producer (for example, TMA) arrives on a barrier when data is ready, and the consumer waits on that barrier before using the data.
+
+
+## Synchronization Rules
+
+Blackwell has multiple asynchronous hardware units (threads, TMA, tcgen05 MMA) that read and write different memory spaces. Whenever data crosses from one unit or memory space to another, you need explicit synchronization:
+
+| Data flow | Synchronization needed |
+|:-:|:-:|
+| Threads write SMEM → MMA reads SMEM | `cta_sync()` + `fence.after_thread_sync()` |
+| MMA writes TMEM → Threads read TMEM | `mbarrier.try_wait` + `fence.after_thread_sync()` |
+| Threads write SMEM → TMA reads SMEM (store) | `fence.proxy_async("shared::cta")` |
+| Alloc barriers/TMEM → Use them | `fence.proxy_async` + `fence.mbarrier_init` + `cta_sync()` |
+| All work done → Deallocate TMEM | `cta_sync()` (single-CTA) or `cluster_sync()` (cluster) |
+
+`cta_sync()` only synchronizes threads with one another. When data must become visible to asynchronous hardware units such as TMA or tcgen05, an additional fence is needed. Fences (`fence.after_thread_sync`, `fence.proxy_async`) bridge the gap between thread-visible memory and hardware-visible memory.
+
+Before deallocating TMEM, all CTAs that may still read or write it must be finished. For a single-CTA kernel, `cta_sync()` is sufficient; for clustered kernels, `cluster_sync()` is required.
+
+
+## CTA Clusters
+
+Blackwell supports **CTA clusters**: groups of CTAs that can cooperate more tightly than independent thread blocks. Key capabilities include:
+
+- **shared::cluster memory**: CTAs in the same cluster can access each other's shared memory through the `shared::cluster` address space, typically using `map_shared_rank` to obtain the remote pointer.
+
+- **Multicast TMA**: A single TMA command can deliver the same data to multiple CTAs simultaneously, reducing global memory bandwidth.
+
+- **Cross-CTA barrier signaling**: mbarrier arrive/wait can be used across CTAs in the same cluster, enabling producer-consumer synchronization beyond a single CTA.
+
+Clustering enables hardware units such as tcgen05 MMA to read data from both CTAs' shared memory, effectively doubling the working set without additional global memory bandwidth.

@@ -1,0 +1,16 @@
+**/.ipynb_checkpoints
+**/__pycache__
+data/
+*.json
+*.params
+*.DS_Store
+*.Rhistory
+*.csv
+*egg-info*
+dist/*
+/_build/
+build/
+.idea
+.vscode
+.pytest_cache
+*~

@@ -1,0 +1,157 @@
+# Fused GELU-Tanh & Multiply
+:label:`chap_fused_gelu`
+
+Our first TIRX kernel is a simple but practical operator: the fused GELU-Tanh activation with multiply, commonly used in MLP gate layers of Transformer models. We start here because elementwise kernels are the simplest GPU kernel pattern.
+
+**Operation**: The input tensor has shape `[batch, 2*d]`, split into two halves along the last dimension. The first half passes through GELU-tanh activation, then multiplies with the second half:
+
+$$\text{output} = \operatorname{GELU\_tanh}(\text{input}[:, :d]) \cdot \text{input}[:, d:]$$
+
+where GELU-tanh is the **tanh approximation** of GELU (not the exact erf version). This is the variant used in most LLMs (GPT, Llama, etc.) because it's faster to compute:
+
+$$\operatorname{GELU\_tanh}(x) = 0.5 \cdot x \cdot \left(1 + \tanh\!\left(\sqrt{2/\pi} \cdot (x + 0.044715 \cdot x^3)\right)\right)$$
+
+This is an example of **operator fusion**: combining two operations (GELU activation + gate multiply) into one kernel. The **gate** here refers to the second half of the input tensor (`input[:, d:]`) — in Transformer MLP layers, the architecture splits the linear projection output into two halves, applies an activation (GELU) to one half, and multiplies it element-wise with the other half. This gating mechanism controls how much of the activated signal passes through, similar to gates in LSTM/GRU networks. Without fusion, you'd compute GELU into a temporary buffer, then launch a second kernel to multiply with the gate — two kernel launches and an extra round-trip to global memory. With fusion, everything happens in one pass.
+
+
+## What You Will Learn
+
+- Basic TIRX kernel structure: `@Tx.prim_func(tirx=True)`, `Tx.kernel()`, `Tx.cta_id()`, `Tx.thread_id()`
+
+- How to launch a 1D grid of threads where each thread computes one output element
+
+- How to verify kernel correctness against a numpy reference
+
+
+## Implementation
+
+The strategy:
+
+1. Assign one thread per output element
+2. Each thread computes a global ID (`bx * NUM_THREADS + tid`) and converts it to `(row, col)` using division and modulo
+3. Read the corresponding values from both halves of the input
+4. Compute GELU-tanh, multiply with the gate, write the result
+
+### 1D Thread Grid to 2D Matrix Mapping
+
+GPU threads are launched as a flat 1D grid, but the output data is a 2D matrix `[batch, out_dim]`. Each thread converts its global ID to a `(row, col)` coordinate:
+
+![1D Thread Grid to 2D Matrix Mapping](../img/thread_grid_to_matrix.png)
+
+Each thread handles exactly one element. The flat `gid` fills the matrix row by row: the first `out_dim` threads cover row 0, the next `out_dim` threads cover row 1, and so on.
+
+**APIs you'll see in this kernel:**
+
+- **`Tx.handle` + `Tx.match_buffer`** — The function takes opaque pointer parameters. Inside the kernel, `match_buffer` binds them to typed 2D arrays with known shapes.
+
+- **`Tx.cta_id` + `Tx.thread_id`** — Together these give each thread a unique position in the grid. `bx` is the CTA (block) index, `tid` is the thread index within that CTA.
+
+- **`gid = bx * NUM_THREADS + tid`** — The global thread ID. Each thread maps this to a `(row, col)` in the output matrix using integer division and modulo. Why the conversion? We launch threads as a flat 1D grid (just a single number per thread), but the data is a 2D matrix `[batch, out_dim]`. We need `row` to index which batch element, and `col` to index which position within that element — so we convert the flat `gid` back to 2D coordinates: `row = gid // out_dim`, `col = gid % out_dim`.
+
+- **`if gid < total`** — Boundary check. The grid might be slightly larger than the data (due to `ceildiv`), so excess threads skip the computation.
+
+- **`input_buf[row, col]` and `input_buf[row, col + out_dim]`** — The input is `[batch, 2*d]`. The first half (`col < out_dim`) is the value to apply GELU to; the second half (`col + out_dim`) is the gate to multiply with.
+
+- **The GELU computation** — Implements the tanh approximation formula in fp16 arithmetic. `Tx.float16(...)` casts constants to fp16.
+
+```{.python .input}
+import math
+import numpy as np
+import tvm
+from tvm.script import tirx as Tx
+import torch
+
+def ceildiv(a, b):
+    return (a + b - 1) // b
+
+SM_COUNT = 148  # Number of SMs on NVIDIA B200 GPU
+```
+
+```{.python .input}
+def fused_gelu_kernel(input_cat, out_dim, batch_size):
+    total = batch_size * out_dim
+    NUM_THREADS = 256
+    NUM_BLOCKS = ceildiv(total, NUM_THREADS)
+
+    @Tx.prim_func(tirx=True)
+    def fused_gelu_tanh_multiply(input_cat_ptr: Tx.handle, output_ptr: Tx.handle):
+        input_buf = Tx.match_buffer(input_cat_ptr, [batch_size, out_dim * 2], "float16")
+        output_buf = Tx.match_buffer(output_ptr, [batch_size, out_dim], "float16")
+
+        with Tx.kernel():
+            bx = Tx.cta_id([NUM_BLOCKS], parent="kernel")
+            tid = Tx.thread_id([NUM_THREADS], parent="cta")
+
+            with Tx.thread():
+                gid = bx * NUM_THREADS + tid
+                row = gid // out_dim
+                col = gid % out_dim
+
+                if gid < total:
+                    # input_buf is [batch, 2*out_dim]: first half is x, second half is gate
+                    input1 = input_buf[row, col]              # x (first half)
+                    input2 = input_buf[row, col + out_dim]    # gate (second half)
+                    x_cubed = input1 * input1 * input1
+                    inner = Tx.float16(0.7978845608) * (  # sqrt(2/pi) ≈ 0.7979
+                        input1 + Tx.float16(0.044715) * x_cubed)  # GELU-tanh approximation constant
+                    gelu_out = Tx.float16(0.5) * input1 * (
+                        Tx.float16(1.0) + Tx.tanh(inner))
+                    output_buf[row, col] = gelu_out * input2
+
+    return fused_gelu_tanh_multiply
+```
+
+Compile, verify, and benchmark:
+
+```{.python .input}
+out_dim = 4096
+batch_size = 64
+device = torch.device('cuda')  # gpu(0)
+target = tvm.target.Target("cuda -arch=sm_100a")
+
+# Compile
+kernel = fused_gelu_kernel(None, out_dim, batch_size)
+with target:
+    lib = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
+
+# Run
+x_cat = torch.randn(batch_size, out_dim * 2, dtype=torch.float16, device=device)
+out = torch.zeros(batch_size, out_dim, dtype=torch.float16, device=device)
+f = lib["main"]
+f(tvm.runtime.from_dlpack(x_cat), tvm.runtime.from_dlpack(out))
+
+# Verify against numpy reference
+x_np = x_cat.float().cpu().numpy()
+x1, x2 = x_np[:, :out_dim], x_np[:, out_dim:]
+ref = (0.5 * x1 * (1.0 + np.tanh(np.sqrt(2.0/np.pi) * (x1 + 0.044715 * x1**3))) * x2).astype(np.float16)
+max_err = float(np.max(np.abs(out.cpu().numpy().astype(np.float32) - ref.astype(np.float32))))
+print(f"Fused GELU: batch_size={batch_size}, out_dim={out_dim}")
+print(f"Max error vs numpy reference: {max_err:.6f}")
+assert max_err < 0.05, f"FAIL: max_err={max_err}"
+print("PASS")
+```
+
+**Expected output**:
+
+- Time: 0.003–0.010 ms (varies by GPU load)
+
+- Max error: < 0.01 (fp16 GELU approximation)
+
+**If something goes wrong**:
+
+- `max_err > 0.5`: Check that `Tx.float16(0.7978845608)` is correct (this is sqrt(2/pi))
+
+- Kernel hangs: Check `if gid < total` boundary guard is present
+
+- All zeros: Check that `input_buf[row, col + out_dim]` reads from the second half (gate)
+
+
+## Exercises
+
+1. How many total threads are launched for `batch_size=64, out_dim=4096`? How many CTAs?
+
+2. Why do we use `ceildiv(total, NUM_THREADS)` instead of `total // NUM_THREADS` for the number of blocks?
+
+3. What would happen if we removed the `if gid < total:` guard?
+
+4. This kernel reads each input element exactly once and writes each output element exactly once. Is it compute-bound or memory-bound? Why?

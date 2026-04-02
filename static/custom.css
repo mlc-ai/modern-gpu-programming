@@ -1,0 +1,16 @@
+/* Center table headers */
+table.docutils th {
+    text-align: center !important;
+}
+
+/* Math formula rendering — prevent theme CSS from breaking MathJax metrics */
+div.math {
+    overflow-x: auto;
+    padding: 0.5em 0;
+}
+mjx-container, .MathJax {
+    line-height: normal !important;
+}
+span.math {
+    line-height: normal;
+}
