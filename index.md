@@ -13,7 +13,7 @@ New here? Follow this path:
 
 2. **Ch 4 (Fused GELU)** — Write your first real operator kernel
 
-3. **Ch 6 (GEMM Steps 1–3)** — Start the GEMM optimization journey: 714ms → 0.9ms
+3. **Ch 6 (GEMM Steps 1–3)** — Start the GEMM optimization journey: 70ms → 0.11ms
 
 
 ## Who Is This For
@@ -33,7 +33,7 @@ New here? Follow this path:
 
 - **Part II: Entry-Level Kernels** (Ch 4–5) — Learn TIRX basics through two self-contained operators: Fused GELU (elementwise + fusion) and RMSNorm (warp reduction + shared memory).
 
-- **Part III: GEMM Deep Dive** (Ch 6–8) — A single GEMM kernel, optimized step by step from 714ms to 0.9ms in 10 steps across 3 chapters.
+- **Part III: GEMM Deep Dive** (Ch 6–8) — A single GEMM kernel, optimized step by step from 70ms to 0.11ms in 9 steps across 3 chapters.
 
 - **Part IV: Advanced Kernels** (Ch 9) — Flash Attention on Blackwell.
 

@@ -18,7 +18,7 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 | `Tx.cta_id(shape, parent=...)` | CTA index in grid or cluster |
 | `Tx.warpgroup_id(shape, parent=...)` | Warpgroup index within CTA |
 | `Tx.warp_id(shape, parent=...)` | Warp index within warpgroup |
-| `Tx.thread_id(shape, parent=...)` | Thread (lane) index within warp |
+| `Tx.thread_id(shape, parent=...)` | Thread index within the scope specified by `parent` (e.g., `parent="warp"` gives lane ID 0-31; `parent="cta"` gives CTA-level thread ID 0-127) |
 | `Tx.ptx.elect_sync()` | Elect one thread in a warp (for single-thread dispatch) |
 
 
@@ -130,6 +130,6 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 
 - **Constants must be defined outside `@Tx.prim_func`**: Variables like `EPI_N`, `TMEM_LD_N`, `MMA_N` must be Python constants.
 
-- **Dsmem overlap**: `pool.move_base_to(1024)` before Dsmem allocation allows it to overlap with Asmem/Bsmem (reusing memory after MMA is done).
+- **`pool.move_base_to(1024)`**: Reserves the first 1024 bytes for metadata (TMEM address, barriers). All data buffers (Asmem, Bsmem, Dsmem) are allocated sequentially after this offset.
 
 - **GPU flakiness**: If tests fail intermittently, check `nvidia-smi` and switch to an idle GPU.

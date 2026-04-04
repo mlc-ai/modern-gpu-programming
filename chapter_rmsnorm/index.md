@@ -319,4 +319,4 @@ In Transformer models, RMSNorm is almost always preceded by a residual addition:
 3. Why does the cross-warp reduction run only in warp 0 (`ty == 0`)? What would happen if all warps tried to do the final reduction?
 4. How would you modify this kernel to compute LayerNorm instead of RMSNorm? What additional computation is needed?
 
-**Try with Claude**: Paste your RMSNorm kernel and ask: *"Trace the warp shuffle reduction for a warp of 32 threads. After each XOR-shuffle step, which threads hold partial results? Why does every thread end up with the same final sum?"*
+**Try with your agent**: Paste your RMSNorm kernel and ask: *"Trace the warp shuffle reduction for a warp of 32 threads. After each XOR-shuffle step, which threads hold partial results? Why does every thread end up with the same final sum?"*

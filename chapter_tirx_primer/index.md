@@ -144,7 +144,7 @@ Now that you have seen the TIRX APIs, consider what the same operation looks lik
 In TIRX, the same operation is:
 
 ```python
-# TIRX: 3 lines
+# TIRX: 2 lines
 Tx.gemm_async(tmem[:, :128], Asmem[:], Bsmem[:],
               accum=False, dispatch="tcgen05", cta_group=1)
 Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)

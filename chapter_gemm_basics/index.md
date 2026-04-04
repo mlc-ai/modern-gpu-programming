@@ -1,7 +1,7 @@
 # GEMM Steps 1--3: From Single Tile to Spatial Tiling
 :label:`chap_gemm_basics`
 
-*This is the start of Part III: GEMM Deep Dive. Unlike Part II's standalone operators, the next 3 chapters (9 steps) tell a single continuous story --- one GEMM kernel, progressively optimized from 714ms to 0.9ms. Each step builds on the previous one.*
+*This is the start of Part III: GEMM Deep Dive. Unlike Part II's standalone operators, the next 3 chapters (9 steps) tell a single continuous story --- one GEMM kernel, progressively optimized from 70ms to 0.11ms. Each step builds on the previous one.*
 
 ## What is GEMM
 
@@ -29,7 +29,7 @@ Over the next 3 chapters (9 steps), we will progressively optimize a GEMM kernel
 - **Warp Specialization** --- dedicated warp roles for maximum parallelism
 - **CTA Clusters** --- 2SM cooperative MMA for higher arithmetic intensity
 
-If you're short on time, Steps 1, 4, 7, and 9 are the most important.
+If you're short on time, Steps 1, 4, 7, and 8 are the most important — they introduce the four key optimizations (TMA, pipelining, warp specialization, CTA clusters).
 
 ---
 
@@ -84,7 +84,7 @@ Tx.cuda.cta_sync()                           # Wait for all threads
 Tx.ptx.tcgen05.fence.after_thread_sync()     # Make SMEM visible to MMA HW
 ```
 
-Step 1 only has one tile (M=N=128, K=64), so we copy the entire A and B. All 128 threads cooperatively copy data. In Step 4, we'll replace this with TMA where a single thread issues the copy.
+Step 1 only has one tile (M=N=128, K=64), so we copy the entire A and B. `with Tx.cta()` is a **scope marker** that means all 128 threads in the CTA participate — every thread executes the `Tx.copy` inside, each handling a portion of the data. This is the simplest but least efficient approach: 128 threads each compute addresses and issue load/store instructions. In Step 4, we'll replace this with TMA where a single thread issues the copy and dedicated hardware does the rest.
 
 #### MMA Dispatch
 
@@ -112,7 +112,7 @@ with Tx.thread():             # Each thread writes its row
 
 Thread row mapping: warp 0 handles rows 0-31, warp 1 handles rows 32-63, etc. Each thread's row is `m_st + warp_id * 32 + lane_id`.
 
-### Complete Implementation
+### Implementation
 
 With the above walkthrough in mind, here is the complete runnable kernel (M=N=128, K=64):
 
@@ -120,7 +120,7 @@ With the above walkthrough in mind, here is the complete runnable kernel (M=N=12
 
 import tvm
 from tvm.script import tirx as Tx
-from tvm.tirx.op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
+from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
 from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
 ```
 
@@ -154,7 +154,7 @@ The kernel itself:
 
 ```{.python .input}
 @Tx.prim_func(tirx=True)
-def hgemm_ver1(
+def hgemm_v1(
     A: Tx.Buffer((M, K), a_type),
     B: Tx.Buffer((N, K), b_type),
     D: Tx.Buffer((M, N), d_type),
@@ -238,7 +238,7 @@ import torch
 
 target = tvm.target.Target("cuda -arch=sm_100a")
 with target:
-    mod = tvm.IRModule({"main": hgemm_ver1})
+    mod = tvm.IRModule({"main": hgemm_v1})
     lib = tvm.compile(mod, target=target, tir_pipeline="tirx")
 
 device = torch.device('cuda')  # gpu(0)
@@ -254,23 +254,9 @@ D_ref = (A_tensor.float() @ B_tensor.float().T).half()
 max_err = float((D_tensor - D_ref).abs().max())
 print(f"Step 1 Synchronous GEMM: M={M}, N={N}, K={K}")
 print(f"Max error vs torch reference: {max_err:.6f}")
-assert max_err < 1.0, f"FAIL: max_err={max_err}"
+assert max_err < 0.1, f"FAIL: max_err={max_err}"
 print("PASS")
 
-# Benchmark
-args = [tvm.runtime.from_dlpack(A_tensor), tvm.runtime.from_dlpack(B_tensor), tvm.runtime.from_dlpack(D_tensor)]
-for _ in range(10):
-    f(*args)
-start = torch.cuda.Event(enable_timing=True)
-end = torch.cuda.Event(enable_timing=True)
-start.record()
-for _ in range(100):
-    f(*args)
-end.record()
-torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
-tflops = 2 * M * N * K / ms / 1e9
-print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
 
 ### What to Optimize Next
@@ -323,13 +309,13 @@ Iteration 1: phase=1, call try_wait(bar, 1) → blocks until barrier flips to ph
 
 Without `phase_mma ^= 1`, the second `try_wait(bar, 0)` would see the barrier already at phase 1 (from iteration 0's arrival) and return immediately — before the second MMA finishes.
 
-### Complete Implementation
+### Implementation
 
 ```{.python .input}
 
 import tvm
 from tvm.script import tirx as Tx
-from tvm.tirx.op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
+from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
 from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg as axis_tid_in_wg
 ```
 
@@ -390,8 +376,8 @@ def hgemm_v2(M, N, K):
             for i in range(K_TILES):
                 # Load the i-th K chunk
                 with Tx.cta():
-                    Tx.copy(Asmem[:, :], A[:, i*64:(i+1)*64])
-                    Tx.copy(Bsmem[:, :], B[:, i*64:(i+1)*64])
+                    Tx.copy(Asmem[:, :], A[:, i*BLK_K:(i+1)*BLK_K])
+                    Tx.copy(Bsmem[:, :], B[:, i*BLK_K:(i+1)*BLK_K])
 
                 Tx.cuda.cta_sync()
                 Tx.ptx.tcgen05.fence.after_thread_sync()
@@ -456,23 +442,9 @@ D_ref = (A_tensor.float() @ B_tensor.float().T).half()
 max_err = float((D_tensor - D_ref).abs().max())
 print(f"Step 2 K-loop GEMM: M={M}, N={N}, K={K} ({K // 64} K-tiles)")
 print(f"Max error vs torch reference: {max_err:.6f}")
-assert max_err < 1.0, f"FAIL: max_err={max_err}"
+assert max_err < 0.1, f"FAIL: max_err={max_err}"
 print("PASS")
 
-# Benchmark
-args = [tvm.runtime.from_dlpack(A_tensor), tvm.runtime.from_dlpack(B_tensor), tvm.runtime.from_dlpack(D_tensor)]
-for _ in range(10):
-    f(*args)
-start = torch.cuda.Event(enable_timing=True)
-end = torch.cuda.Event(enable_timing=True)
-start.record()
-for _ in range(100):
-    f(*args)
-end.record()
-torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
-tflops = 2 * M * N * K / ms / 1e9
-print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
 
 ### What Changed from Step 1
@@ -509,13 +481,13 @@ To support larger matrices, we launch a 2D grid of CTAs: `[M // BLK_M, N // BLK_
 
 CTA `(bx, by)` computes `D[bx*128 : (bx+1)*128, by*128 : (by+1)*128]` by loading `A[bx*128 : (bx+1)*128, :]` and `B[by*128 : (by+1)*128, :]`.
 
-### Complete Implementation
+### Implementation
 
 ```{.python .input}
 
 import tvm
 from tvm.script import tirx as Tx
-from tvm.tirx.op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
+from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
 from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg as axis_tid_in_wg
 ```
 
@@ -578,8 +550,8 @@ def hgemm_v3(M, N, K):
             # K-loop with offset A and B slices
             for i in range(K_TILES):
                 with Tx.cta():
-                    Tx.copy(Asmem[:, :], A[m_st:m_st+BLK_M, i*64:(i+1)*64])
-                    Tx.copy(Bsmem[:, :], B[n_st:n_st+BLK_N, i*64:(i+1)*64])
+                    Tx.copy(Asmem[:, :], A[m_st:m_st+BLK_M, i*BLK_K:(i+1)*BLK_K])
+                    Tx.copy(Bsmem[:, :], B[n_st:n_st+BLK_N, i*BLK_K:(i+1)*BLK_K])
 
                 Tx.cuda.cta_sync()
                 Tx.ptx.tcgen05.fence.after_thread_sync()
@@ -642,23 +614,9 @@ D_ref = (A_tensor.float() @ B_tensor.float().T).half()
 max_err = float((D_tensor - D_ref).abs().max())
 print(f"Step 3 Spatial Tiling GEMM: M={M}, N={N}, K={K} ({M//128}x{N//128} CTA grid)")
 print(f"Max error vs torch reference: {max_err:.6f}")
-assert max_err < 1.0, f"FAIL: max_err={max_err}"
+assert max_err < 0.1, f"FAIL: max_err={max_err}"
 print("PASS")
 
-# Benchmark
-args = [tvm.runtime.from_dlpack(A_tensor), tvm.runtime.from_dlpack(B_tensor), tvm.runtime.from_dlpack(D_tensor)]
-for _ in range(10):
-    f(*args)
-start = torch.cuda.Event(enable_timing=True)
-end = torch.cuda.Event(enable_timing=True)
-start.record()
-for _ in range(100):
-    f(*args)
-end.record()
-torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
-tflops = 2 * M * N * K / ms / 1e9
-print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
 
 ### What Changed from Step 2
@@ -677,33 +635,4 @@ The K-loop body is identical to Step 2 --- only the grid dimensions and offset c
 1. Why is `cta_sync() + fence.after_thread_sync()` needed between the sync copy and the MMA? What could go wrong without it?
 2. What happens if you remove `phase_mma ^= 1` in Step 2's K-loop? Will the kernel deadlock, produce wrong results, or both?
 3. For M=N=4096 with BLK_M=BLK_N=128, how many CTAs are launched in Step 3? Do adjacent CTAs share any data from GMEM?
-
-
-## Debugging: Inspecting Generated CUDA Source
-
-When your kernel produces wrong results, deadlocks, or crashes, inspecting the generated CUDA code is the most effective debugging tool — it shows you exactly which threads execute which instructions.
-
-```python
-cuda_source = lib.mod.imports[0].inspect_source()
-print(cuda_source)
-```
-
-### Key Mappings from TIRX to Generated CUDA
-
-| TIRX | Generated CUDA |
-|------|---------------|
-| `wg_id == 0` | `(warp_id_in_cta >> 2) == 0` |
-| `wg_id == 1` | `(warp_id_in_cta >> 2) == 1` |
-| `warp_id == 0` | `(warp_id_in_cta & 3) == 0` |
-| `lane_id == 0` | `(((int)threadIdx.x) % 32) == 0` |
-| `.init()` internal guard | `((int)threadIdx.x) < 1` (CTA thread 0 only) |
-| `elect_sync()` | `tvm_builtin_elect_one_sync_op()` |
-
-### What to Look For
-
-- **Barrier init count**: Search for `mbarrier_init` — check that the arrival count matches your code.
-- **Thread guards**: MMA and commit should be inside an `elect_sync` guard. If they are inside `threadIdx.x < 1`, only CTA thread 0 executes them.
-- **TMEM alloc**: Search for `tcgen05_alloc` — verify it runs from the correct warpgroup and warp.
-- **MMA unrolling**: For K=64 with MMA_K=16, you should see 4 `ptx_tcgen05_mma` calls with increasing descriptor offsets.
-- **Swizzle arithmetic**: SMEM address calculations contain XOR expressions like `((v ^ ((v & 56) >> 3)) << 3)` — this is the swizzle pattern for bank-conflict-free access.
 

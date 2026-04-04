@@ -3,11 +3,11 @@
 
 *Prerequisites: You should be comfortable with Step 7 (Warp Specialization) — specifically warp specialization, the 4-barrier producer-consumer pattern, PipelineState, and TMA/tcgen05 pipelining. If Step 7 still feels unclear, go back and re-read it before continuing.*
 
-*These chapters explain how the same TIRX patterns from GEMM generalize to other important kernels. The focus is on architecture and algorithm design rather than line-by-line code.*
+*This chapter explains how the same TIRX patterns from GEMM generalize to attention kernels. The focus is on architecture and algorithm design rather than line-by-line code.*
 
 ---
 
-Flash Attention 4 is the latest generation of the Flash Attention 4 family, designed specifically for Blackwell GPUs. It fuses the entire attention computation ($QK^T \to \text{softmax} \to \times V$) into a single kernel, avoiding materializing the full $N \times N$ attention matrix. This chapter explores how Flash Attention 4 maps to Blackwell hardware using TIRX.
+Flash Attention 4 is the Blackwell-native implementation of Flash Attention, designed specifically for SM100a GPUs. It fuses the entire attention computation ($QK^T \to \text{softmax} \to \times V$) into a single kernel, avoiding materializing the full $N \times N$ attention matrix. This chapter explores how Flash Attention 4 maps to Blackwell hardware using TIRX.
 
 
 ## What You Will Learn
@@ -20,7 +20,7 @@ Flash Attention 4 is the latest generation of the Flash Attention 4 family, desi
 
 - The barrier topology connecting 4 warpgroups (512 threads)
 
-- Writeback, rescaling, and LSE computation
+- Writeback and adaptive rescaling
 
 - Causal masking and Grouped Query Attention (GQA)
 
@@ -45,13 +45,13 @@ The rescaling in step 2 is the key insight. Since $m_{\text{old}} \le m_{\text{n
 
 ### Numeric example
 
-Consider computing softmax over 4 elements $[2, 5, 1, 8]$ processed in two chunks of size 2.
+Consider computing softmax over 4 elements `[2, 5, 1, 8]` processed in two chunks of size 2.
 
-**Chunk 1: $[2, 5]$**
+**Chunk 1:** [2, 5]
 
 $$m = 5, \quad \ell = e^{2-5} + e^{5-5} = e^{-3} + 1 \approx 0.050 + 1.0 = 1.050$$
 
-**Chunk 2: $[1, 8]$**
+**Chunk 2:** [1, 8]
 
 $$m_{\text{new}} = \max(5, 8) = 8$$
 $$\ell = 1.050 \cdot e^{5-8} + e^{1-8} + e^{8-8} = 1.050 \cdot e^{-3} + e^{-7} + 1$$
@@ -91,14 +91,16 @@ The Blackwell Flash Attention 4 kernel uses 4 warpgroups (512 threads) with full
 
 | Warpgroup | Role | Description |
 |-----------|------|-------------|
-| **WG3** | TMA Producer | Loads Q, K, V tiles via TMA; stores O via TMA |
-| **WG1** | Softmax + MMA (Q@K^T) | Computes attention scores via Score MMA, runs softmax, writes P to TMEM |
-| **WG0** | Softmax + MMA (Q@K^T) | Same as WG1 but handles a different Q stage (double-buffered Q) |
+| **WG3, warp 0** | MMA warp | Issues **both** Score MMA (Q@K^T) and Value MMA (P@V) via `tcgen05.mma` |
+| **WG3, warp 1** | TMA Load | Loads Q, K, V tiles from GMEM to SMEM via TMA |
+| **WG3, warp 2** | TMA Store | Stores O tiles from SMEM to GMEM via TMA |
+| **WG0** | Softmax | Runs online softmax on scores (Q stage 0), writes P to TMEM |
+| **WG1** | Softmax | Same as WG0 but handles Q stage 1 (double-buffered Q) |
 | **WG2** | Correction + Epilogue | Rescales O accumulator in TMEM, normalizes, writes to SMEM |
 
-WG0 and WG1 each handle one of two Q pipeline stages. While WG0 processes Q stage 0 through softmax, WG1 processes Q stage 1. This is a form of **Q double-buffering** at the warpgroup level.
+**All MMA instructions are issued by WG3's warp 0** — this is different from the warp role table description in some papers. WG0 and WG1 are purely softmax warpgroups: they read scores from TMEM, compute softmax (row_max, row_sum, exp), and write the probability matrix P back to TMEM. They do **not** issue any MMA instructions.
 
-**Key distinction from GEMM**: In GEMM, the MMA warpgroup only does matrix multiply. In Flash Attention 4, WG0/WG1 do Score MMA *and* softmax *and* write P back to TMEM. The MMA for P@V is issued by WG3's MMA warp (warp 0 within WG3), not by the softmax warpgroups.
+WG0 and WG1 each handle one of two Q pipeline stages. While WG0 processes Q stage 0 through softmax, WG1 processes Q stage 1. This is a form of **Q double-buffering** at the warpgroup level.
 
 **Key constants** (from `flash_attention4.py`):
 
@@ -123,10 +125,12 @@ The first MMA computes attention scores:
 
 $$S = Q_{\text{block}} \times K_{\text{block}}^T \quad [\text{BLK}_M \times \text{BLK}_N]$$
 
-This writes the score matrix $S$ into TMEM. Each of WG0/WG1 issues the Score MMA for its Q stage, then the `bar_s_full` barrier signals that scores are ready.
+This writes the score matrix $S$ into TMEM. WG3's MMA warp (warp 0) issues the Score MMA for both Q stages sequentially, then the `bar_s_full` barrier signals that scores are ready for WG0/WG1 to run softmax.
+
+Simplified excerpt (the real implementation wraps `arrive` in an `elect_sync` guard and handles both Q stages in an unrolled loop — see `flash_attention4.py` for full details):
 
 ```python
-# WG3, warp 0: Issues Score MMA for both Q stages
+# WG3, warp 0: Issues Score MMA (simplified)
 def gemm_qk(q_stage, kv_stage, tmem_col_s, bar_s_full):
     with Tx.warp():
         Tx.gemm_async(
@@ -135,6 +139,7 @@ def gemm_qk(q_stage, kv_stage, tmem_col_s, bar_s_full):
             K_smem[kv_stage, 0:BLK_N, 0:HEAD_DIM],
             dispatch="tcgen05", cta_group=CTA_GROUP,
         )
+    # In the real code: wrapped in elect_sync()
     bar_s_full.arrive(q_stage)  # Signal: scores ready in TMEM
 ```
 
@@ -160,29 +165,30 @@ $$O = O + P_{\text{block}} \times V_{\text{block}} \quad [\text{BLK}_M \times \t
 
 This is issued by WG3's MMA warp (warp 0). P lives in TMEM as float16 (written there by WG0/WG1), while V lives in SMEM. The result accumulates into O in TMEM as float32.
 
+Simplified excerpt (barrier waits and elect_sync guards omitted — see `flash_attention4.py:gemm_pv` for the full version):
+
 ```python
-# WG3, warp 0: Issues Value MMA
+# WG3, warp 0: Issues Value MMA (simplified)
 # P is read from TMEM (A operand), V from SMEM (B operand, transposed)
-def gemm_pv(i_q, kv_stage, tmem_col_o, tmem_col_p, should_accumulate, bar_p_full_2):
-    K_SPLIT = 6 * MMA_K  # 96 — first 6 MMA iterations
-    with Tx.warp():
-        Tx.gemm_async(
-            tmem[0:128, tmem_col_o : tmem_col_o + MMA_N],
-            tmem_as_f16[0:128, tmem_col_p*2 : tmem_col_p*2 + K_SPLIT],
-            V_smem[kv_stage, 0:K_SPLIT, 0:HEAD_DIM],
-            transB=True, accum=should_accumulate,
-            dispatch="tcgen05", cta_group=CTA_GROUP,
-        )
-    # Wait for last quarter of P, then issue remaining MMA iterations
-    bar_p_full_2.wait(...)
-    with Tx.warp():
-        Tx.gemm_async(
-            tmem[0:128, tmem_col_o : tmem_col_o + MMA_N],
-            tmem_as_f16[0:128, tmem_col_p*2 + K_SPLIT : tmem_col_p*2 + BLK_N],
-            V_smem[kv_stage, K_SPLIT:BLK_N, 0:HEAD_DIM],
-            transB=True, accum=True,
-            dispatch="tcgen05", cta_group=CTA_GROUP,
-        )
+K_SPLIT = 6 * MMA_K  # 96 — first 6 of 8 MMA iterations
+
+# Part 1: P columns 0..95 x V rows 0..95 (can start before softmax finishes last quarter)
+Tx.gemm_async(
+    tmem[0:128, tmem_col_o : tmem_col_o + MMA_N],
+    tmem_as_f16[0:128, tmem_col_p*2 : tmem_col_p*2 + K_SPLIT],
+    V_smem[kv_stage, 0:K_SPLIT, 0:HEAD_DIM],
+    transB=True, accum=should_accumulate, dispatch="tcgen05", cta_group=CTA_GROUP,
+)
+
+# Wait for softmax to finish writing last quarter of P (barrier omitted here)
+
+# Part 2: P columns 96..127 x V rows 96..127
+Tx.gemm_async(
+    tmem[0:128, tmem_col_o : tmem_col_o + MMA_N],
+    tmem_as_f16[0:128, tmem_col_p*2 + K_SPLIT : tmem_col_p*2 + BLK_N],
+    V_smem[kv_stage, K_SPLIT:BLK_N, 0:HEAD_DIM],
+    transB=True, accum=True, dispatch="tcgen05", cta_group=CTA_GROUP,
+)
 ```
 
 Notice the split: P@V is broken into two parts (first 96 columns, then last 32 columns). This allows the Value MMA to start before the softmax warpgroup finishes writing the last quarter of P to TMEM, overlapping computation with the TMEM store.
@@ -278,11 +284,11 @@ if any_thread_needs_rescale:
 
 The kernel optimizes this by checking `any_needs_rescale` via `Tx.ptx.any_sync` — if no thread in the warp needs rescaling (because the maximum did not change), the entire TMEM read-modify-write is skipped.
 
-**Adaptive rescaling threshold**: Unlike earlier Flash Attention versions that rescale O every time a new maximum appears, Flash Attention 4 only applies the rescaling when the maximum changes enough to threaten numerical stability. In practice, the running maximum stabilizes quickly after the first few KV blocks, so most iterations skip rescaling entirely. This reportedly reduces correction operations by a factor of ~10, which is a significant contributor to the overall ~20% speedup over cuDNN.
+**Adaptive rescaling threshold**: Unlike earlier Flash Attention versions that rescale O every time a new maximum appears, Flash Attention 4 only applies the rescaling when the maximum changes by more than `rescale_threshold` (set to 8.0 in the implementation). In practice, the running maximum stabilizes quickly after the first few KV blocks, so most iterations skip rescaling entirely. This reduces the number of expensive TMEM read-modify-write correction operations.
 
 ### LSE for backward pass
 
-The log-sum-exp $\text{LSE} = \log(\ell) + m$ is stored for the backward pass. This is not shown in the forward kernel above but follows directly: after the last KV block, $\text{LSE}_i = \log(\text{row\_sum}_i) + \text{row\_max}_i$ for each row $i$.
+In a full training pipeline, the log-sum-exp $\text{LSE} = \log(\ell) + m$ would be stored as an auxiliary output for the backward pass. After the last KV block, $\text{LSE}_i = \log(\text{row\_sum}_i) + \text{row\_max}_i$ for each row $i$. **The current tutorial kernel does not output LSE** — it only computes the forward attention output O. A backward kernel would need an additional output buffer for LSE.
 
 
 ## Pipelining Structure
@@ -365,10 +371,12 @@ Tx.copy_async(
 
 ## Tile Scheduling
 
-The kernel uses a persistent kernel design with a tile scheduler. Two scheduler variants are available:
+The kernel supports two scheduling modes with different CTA launch strategies:
 
-- **LinearScheduler** (non-causal): CTAs cycle through `(batch, kv_head, m_block)` tasks round-robin. Each CTA picks up the next available task in linear order.
-- **LPTScheduler** (causal): Longest Processing Time first. Because causal attention gives later Q blocks more KV blocks to process, LPT scheduling balances the workload by assigning heavier tasks first. An L2 swizzle factor optimizes cache reuse for KV heads that fit in L2.
+- **Non-causal (persistent)**: Launches `min(148, num_tasks)` CTAs that cycle through `(batch, kv_head, m_block)` tasks round-robin using a `LinearScheduler`. Each CTA picks up the next available task.
+- **Causal (non-persistent)**: Launches one CTA per task (`cta_count = num_tasks`). Because causal attention gives later Q blocks fewer KV blocks to process, the workload is naturally unbalanced. An `LPTScheduler` (Longest Processing Time first) assigns heavier tasks first to balance load. An L2 swizzle factor optimizes cache reuse.
+
+This distinction matters: causal mode does **not** use a persistent kernel, since the varying workload per tile makes persistent scheduling less effective.
 
 ```python
 scheduler = (
@@ -408,17 +416,22 @@ while scheduler.valid():
 5. The Value MMA splits P into two parts (96 + 32 columns). Why? What would happen if it waited for all of P before starting?
 6. Why is O rescaling done by a separate warpgroup (WG2) rather than by the softmax warpgroups (WG0/WG1) that computed the rescaling factor?
 
-> **Try with Claude**: Describe your Flash Attention 4 kernel's pipeline structure (barrier types, warp roles, pipeline depths) and ask: *"Is there a deadlock scenario in this pipeline topology? Check that every wait has a matching arrive, and that no circular dependency exists between barrier groups."*
+> **Try with your agent**: Describe your Flash Attention 4 kernel's pipeline structure (barrier types, warp roles, pipeline depths) and ask: *"Is there a deadlock scenario in this pipeline topology? Check that every wait has a matching arrive, and that no circular dependency exists between barrier groups."*
 
 
 ## Running the Kernel
 
 The complete Flash Attention 4 kernel (~1000 lines) is in `tirx_tutorial/flash_attention4.py`. Below we compile it, verify correctness against PyTorch's scaled dot-product attention, and benchmark.
 
+Note: The kernel signature has 5 arguments `(Q, K, V, O, profiler_buffer)` — the extra `profiler_buffer` is used for optional profiling instrumentation and must always be provided.
+
 ```python
 import torch
+import numpy as np
 import tvm
-from tirx_tutorial.flash_attention4 import get_flash_attention4_kernel, prepare_data
+from tirx_tutorial.flash_attention4 import (
+    get_flash_attention4_kernel, prepare_data, PROFILER_BUFFER_SIZE
+)
 
 # Configuration
 batch_size = 4
@@ -436,15 +449,18 @@ target = tvm.target.Target("cuda -arch=sm_100a")
 with target:
     lib = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
 
-# Prepare data
+# Prepare data (Q, K, V, O are CPU tensors)
 Q, K, V, O = prepare_data(batch_size, seq_len, seq_len, num_qo_heads, num_kv_heads, head_dim)
 device = torch.device("cuda")
 Q, K, V, O = Q.to(device), K.to(device), V.to(device), O.to(device)
+profiler_buf = tvm.runtime.tensor(
+    np.zeros(PROFILER_BUFFER_SIZE, dtype=np.uint64), tvm.cuda(0)
+)
 
-# Run
+# Run — note the 5th argument (profiler_buffer)
 f = lib["main"]
 f(tvm.runtime.from_dlpack(Q), tvm.runtime.from_dlpack(K),
-  tvm.runtime.from_dlpack(V), tvm.runtime.from_dlpack(O))
+  tvm.runtime.from_dlpack(V), tvm.runtime.from_dlpack(O), profiler_buf)
 
 # Verify against PyTorch SDPA
 Q_ref = Q.transpose(1, 2).float()  # [batch, heads, seq, dim]
@@ -458,12 +474,12 @@ O_ref = O_ref.transpose(1, 2).half()
 max_err = float((O.cpu() - O_ref.cpu()).abs().max())
 print(f"Flash Attention 4: batch={batch_size}, seq={seq_len}, heads={num_qo_heads}/{num_kv_heads}, dim={head_dim}")
 print(f"Max error vs PyTorch SDPA: {max_err:.6f}")
-assert max_err < 1.0, f"FAIL: max_err={max_err}"
+assert max_err < 0.05, f"FAIL: max_err={max_err}"
 print("PASS")
 
 # Benchmark
 args = [tvm.runtime.from_dlpack(Q), tvm.runtime.from_dlpack(K),
-        tvm.runtime.from_dlpack(V), tvm.runtime.from_dlpack(O)]
+        tvm.runtime.from_dlpack(V), tvm.runtime.from_dlpack(O), profiler_buf]
 for _ in range(10):
     f(*args)
 start = torch.cuda.Event(enable_timing=True)
