@@ -4,7 +4,7 @@ A hands-on tutorial for writing GPU kernels on NVIDIA Blackwell GPUs using TIRX.
 
 ## Quickstart
 
-**Read online**: Visit the [tutorial website](https://mlc.ai/tirx-tutorial/) (no setup needed to read).
+**Read online**: Tutorial website coming soon.
 
 **Run locally** (requires Blackwell GPU):
 
