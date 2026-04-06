@@ -9,9 +9,11 @@ A hands-on tutorial for writing GPU kernels on NVIDIA Blackwell GPUs using TIRX.
 **Run locally** (requires Blackwell GPU):
 
 ```bash
-pip install --pre -U -f https://mlc.ai/wheels "mlc-ai-tirx-cu130==0.0.1b2"
 pip install torch==2.9.1+cu130 --index-url https://download.pytorch.org/whl/cu130
 pip install numpy
+
+# TIRX wheel coming soon — check https://mlc.ai/wheels for the latest release.
+# You can use any environment where the newest TIRX can run.
 
 # Verify: this should print "TIRX OK"
 python -c "from tvm.script import tirx as Tx; print('TIRX OK')"
@@ -57,10 +59,27 @@ conda install pandoc
 sed -i 's/eval_notebook = True/eval_notebook = False/' config.ini
 d2lbook build html
 
-# Preview
-python -m http.server -d _build/html
-
 # Build with GPU kernel execution (requires Blackwell GPU)
 sed -i 's/eval_notebook = False/eval_notebook = True/' config.ini
 CUDA_VISIBLE_DEVICES=0 d2lbook build html
 ```
+
+### Previewing the Site
+
+After building, start a local HTTP server:
+
+```bash
+python -m http.server -d _build/html
+```
+
+**If you are on a remote server** (e.g., SSH into a GPU machine), the server runs
+on the remote machine so `localhost:8000` won't work in your local browser.
+Use SSH port forwarding — connect to your server with:
+
+```bash
+ssh -L 8000:localhost:8000 user@your-server
+```
+
+Then open `http://localhost:8000` in your local browser. Alternatively, if you
+use VS Code Remote SSH, it will auto-forward the port and show a notification
+to open in browser.
