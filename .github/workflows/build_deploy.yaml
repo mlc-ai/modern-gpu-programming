@@ -36,3 +36,10 @@ jobs:
     - name: Build
       run: |
         d2lbook build html
+    - name: Deploy
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./_build/html
+        cname: tirx-tutorial.mlc.ai
