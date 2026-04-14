@@ -33,6 +33,20 @@ jobs:
       run: |
         conda install pandoc
         pip install git+https://github.com/d2l-ai/d2l-book
+    - name: Patch d2lbook to skip GPU requirement
+      run: |
+        python -c "
+        import d2lbook.resource as r, inspect, os
+        path = inspect.getfile(r)
+        with open(path) as f:
+            src = f.read()
+        src = src.replace(
+            'def get_notebook_gpus(notebook, max_gpus):',
+            'def get_notebook_gpus(notebook, max_gpus):\n    return 0\n\ndef _get_notebook_gpus_orig(notebook, max_gpus):'
+        )
+        with open(path, 'w') as f:
+            f.write(src)
+        "
     - name: Build
       run: |
         d2lbook build html
