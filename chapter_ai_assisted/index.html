@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>10. AI-Assisted Kernel Development &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>11. AI-Assisted Kernel Development &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,15 +28,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="11. TIRX API Reference" href="../chapter_api_reference/index.html" />
-    <link rel="prev" title="9. Flash Attention 4" href="../chapter_flash_attention/index.html" /> 
+    <link rel="next" title="12. TIRX API Reference" href="../chapter_api_reference/index.html" />
+    <link rel="prev" title="10. Flash Attention 4" href="../chapter_flash_attention/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">10. </span>AI-Assisted Kernel Development</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">11. </span>AI-Assisted Kernel Development</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -95,16 +95,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -133,16 +134,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -155,7 +157,7 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="ai-assisted-kernel-development">
-<span id="chap-ai-assisted"></span><h1><span class="section-number">10. </span>AI-Assisted Kernel Development<a class="headerlink" href="#ai-assisted-kernel-development" title="Permalink to this heading">¶</a></h1>
+<span id="chap-ai-assisted"></span><h1><span class="section-number">11. </span>AI-Assisted Kernel Development<a class="headerlink" href="#ai-assisted-kernel-development" title="Permalink to this heading">¶</a></h1>
 <p><em>Prerequisites: You should have completed at least through Step 7 (Warp
 Specialization). The examples in this chapter reference barrier
 patterns, tcgen05 MMA, and TMA pipelining from earlier chapters.</em></p>
@@ -171,7 +173,7 @@ workflows where LLMs help, show a concrete debugging example, and
 catalog common failure modes so you know when to be cautious with LLM
 suggestions and when to consult the hardware manual directly.</p>
 <section id="what-llms-tend-to-do-well-and-where-they-need-more-care">
-<h2><span class="section-number">10.1. </span>What LLMs Tend to Do Well — and Where They Need More Care<a class="headerlink" href="#what-llms-tend-to-do-well-and-where-they-need-more-care" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.1. </span>What LLMs Tend to Do Well — and Where They Need More Care<a class="headerlink" href="#what-llms-tend-to-do-well-and-where-they-need-more-care" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Works Well</p></th>
@@ -222,7 +224,7 @@ arithmetic are exactly the kinds of stateful details that usually
 require manual checking.</p>
 </section>
 <section id="effective-prompting-for-tirx-kernels">
-<h2><span class="section-number">10.2. </span>Effective Prompting for TIRX Kernels<a class="headerlink" href="#effective-prompting-for-tirx-kernels" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.2. </span>Effective Prompting for TIRX Kernels<a class="headerlink" href="#effective-prompting-for-tirx-kernels" title="Permalink to this heading">¶</a></h2>
 <p>A key practical insight is that <strong>output quality depends heavily on
 context quality</strong>. A vague prompt (“my kernel is broken, help”) gets a
 vague answer. A structured prompt with hardware constraints, code, and
@@ -264,7 +266,7 @@ review that buries the real issue.</p></li>
 </ul>
 </section>
 <section id="symptom-to-cause-quick-reference">
-<h2><span class="section-number">10.3. </span>Symptom-to-Cause Quick Reference<a class="headerlink" href="#symptom-to-cause-quick-reference" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.3. </span>Symptom-to-Cause Quick Reference<a class="headerlink" href="#symptom-to-cause-quick-reference" title="Permalink to this heading">¶</a></h2>
 <p>Before prompting an LLM, it helps to narrow down the category of bug
 yourself. This table maps common symptoms to likely root causes:</p>
 <table class="docutils align-default">
@@ -340,7 +342,7 @@ producer and consumer;
 debugging. It helps the LLM focus on the right area.</p>
 </section>
 <section id="demo-debugging-a-broken-kernel">
-<h2><span class="section-number">10.4. </span>Demo: Debugging a Broken Kernel<a class="headerlink" href="#demo-debugging-a-broken-kernel" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.4. </span>Demo: Debugging a Broken Kernel<a class="headerlink" href="#demo-debugging-a-broken-kernel" title="Permalink to this heading">¶</a></h2>
 <p>Consider this MMA loop from a warp-specialized GEMM (Step 7 style). This
 code runs inside the MMA consumer warp (<code class="docutils literal notranslate"><span class="pre">wg_id</span> <span class="pre">==</span> <span class="pre">1,</span> <span class="pre">warp_id</span> <span class="pre">==</span> <span class="pre">0</span></code>).
 There is one deliberate bug:</p>
@@ -408,7 +410,7 @@ also one of the easier cases for an LLM to catch, because the task is
 closer to recognizing a familiar structural mismatch than to reasoning
 through full phase-state behavior.</p>
 <section id="real-comparison-weak-prompt-vs-strong-prompt">
-<h3><span class="section-number">10.4.1. </span>Real comparison: weak prompt vs strong prompt<a class="headerlink" href="#real-comparison-weak-prompt-vs-strong-prompt" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">11.4.1. </span>Real comparison: weak prompt vs strong prompt<a class="headerlink" href="#real-comparison-weak-prompt-vs-strong-prompt" title="Permalink to this heading">¶</a></h3>
 <p>We tested the same bug with two different prompts using Claude Opus 4.6.
 The results illustrate why context matters.</p>
 <p><strong>Weak prompt</strong> (code only, vague question):</p>
@@ -446,7 +448,7 @@ the real issue. <strong>The quality of your context determines whether the
 model finds the bug or invents a plausible-sounding wrong answer.</strong></p>
 </section>
 <section id="llm-output-red-flags">
-<h3><span class="section-number">10.4.2. </span>LLM output red flags<a class="headerlink" href="#llm-output-red-flags" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">11.4.2. </span>LLM output red flags<a class="headerlink" href="#llm-output-red-flags" title="Permalink to this heading">¶</a></h3>
 <p>When reviewing LLM-generated TIRX code, watch for these signals that the
 model is guessing rather than reasoning from correct knowledge:</p>
 <ol class="arabic simple">
@@ -469,7 +471,7 @@ the most common silent correctness bug in LLM-generated kernels.</p></li>
 </section>
 </section>
 <section id="generating-test-harnesses">
-<h2><span class="section-number">10.5. </span>Generating Test Harnesses<a class="headerlink" href="#generating-test-harnesses" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.5. </span>Generating Test Harnesses<a class="headerlink" href="#generating-test-harnesses" title="Permalink to this heading">¶</a></h2>
 <p>One of the most reliable uses of LLMs in kernel work is generating
 reference implementations. The model does not need full hardware
 understanding to be useful here — it just needs to implement math
@@ -546,7 +548,7 @@ your kernel. If numpy and torch disagree with each other, check your
 accumulation precision.</p>
 </section>
 <section id="when-to-be-cautious-with-llm-suggestions">
-<h2><span class="section-number">10.6. </span>When to Be Cautious with LLM Suggestions<a class="headerlink" href="#when-to-be-cautious-with-llm-suggestions" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.6. </span>When to Be Cautious with LLM Suggestions<a class="headerlink" href="#when-to-be-cautious-with-llm-suggestions" title="Permalink to this heading">¶</a></h2>
 <p>These are specific failure modes we have observed in practice. Treat
 them as a checklist.</p>
 <p><strong>1. Phase tracking.</strong> Current LLMs often struggle with barrier phase
@@ -587,7 +589,7 @@ timing or Proton. Performance intuition from an LLM should be verified
 empirically.</p>
 </section>
 <section id="building-a-persistent-context-file">
-<h2><span class="section-number">10.7. </span>Building a Persistent Context File<a class="headerlink" href="#building-a-persistent-context-file" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.7. </span>Building a Persistent Context File<a class="headerlink" href="#building-a-persistent-context-file" title="Permalink to this heading">¶</a></h2>
 <p>One of the most effective techniques for working with LLMs on kernel
 code is maintaining a <strong>persistent context file</strong> — a plain text file
 that accumulates hard-won debugging lessons. Every time you discover a
@@ -634,11 +636,11 @@ details (SM version, instruction name) - Paste relevant entries into
 your prompt when debugging similar issues</p>
 </section>
 <section id="practical-workflow-summary">
-<h2><span class="section-number">10.8. </span>Practical Workflow Summary<a class="headerlink" href="#practical-workflow-summary" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.8. </span>Practical Workflow Summary<a class="headerlink" href="#practical-workflow-summary" title="Permalink to this heading">¶</a></h2>
 <figure class="align-default" id="id1">
 <img alt="../_images/ai_assisted_workflow.png" src="../_images/ai_assisted_workflow.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 10.8.1 </span><span class="caption-text">AI-Assisted Kernel Development Workflow</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 11.8.1 </span><span class="caption-text">AI-Assisted Kernel Development Workflow</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>A workflow that combines human expertise with LLM assistance:</p>
@@ -667,7 +669,7 @@ the LLM handle the tedious parts (boilerplate, references, known-bug
 detection).</p>
 </section>
 <section id="exercises">
-<h2><span class="section-number">10.9. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">11.9. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Take your Step 7 kernel and introduce the <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> bug from
 this chapter: move <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> outside the
@@ -708,20 +710,20 @@ of the two responses.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">10. AI-Assisted Kernel Development</a><ul>
-<li><a class="reference internal" href="#what-llms-tend-to-do-well-and-where-they-need-more-care">10.1. What LLMs Tend to Do Well — and Where They Need More Care</a></li>
-<li><a class="reference internal" href="#effective-prompting-for-tirx-kernels">10.2. Effective Prompting for TIRX Kernels</a></li>
-<li><a class="reference internal" href="#symptom-to-cause-quick-reference">10.3. Symptom-to-Cause Quick Reference</a></li>
-<li><a class="reference internal" href="#demo-debugging-a-broken-kernel">10.4. Demo: Debugging a Broken Kernel</a><ul>
-<li><a class="reference internal" href="#real-comparison-weak-prompt-vs-strong-prompt">10.4.1. Real comparison: weak prompt vs strong prompt</a></li>
-<li><a class="reference internal" href="#llm-output-red-flags">10.4.2. LLM output red flags</a></li>
+<li><a class="reference internal" href="#">11. AI-Assisted Kernel Development</a><ul>
+<li><a class="reference internal" href="#what-llms-tend-to-do-well-and-where-they-need-more-care">11.1. What LLMs Tend to Do Well — and Where They Need More Care</a></li>
+<li><a class="reference internal" href="#effective-prompting-for-tirx-kernels">11.2. Effective Prompting for TIRX Kernels</a></li>
+<li><a class="reference internal" href="#symptom-to-cause-quick-reference">11.3. Symptom-to-Cause Quick Reference</a></li>
+<li><a class="reference internal" href="#demo-debugging-a-broken-kernel">11.4. Demo: Debugging a Broken Kernel</a><ul>
+<li><a class="reference internal" href="#real-comparison-weak-prompt-vs-strong-prompt">11.4.1. Real comparison: weak prompt vs strong prompt</a></li>
+<li><a class="reference internal" href="#llm-output-red-flags">11.4.2. LLM output red flags</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#generating-test-harnesses">10.5. Generating Test Harnesses</a></li>
-<li><a class="reference internal" href="#when-to-be-cautious-with-llm-suggestions">10.6. When to Be Cautious with LLM Suggestions</a></li>
-<li><a class="reference internal" href="#building-a-persistent-context-file">10.7. Building a Persistent Context File</a></li>
-<li><a class="reference internal" href="#practical-workflow-summary">10.8. Practical Workflow Summary</a></li>
-<li><a class="reference internal" href="#exercises">10.9. Exercises</a></li>
+<li><a class="reference internal" href="#generating-test-harnesses">11.5. Generating Test Harnesses</a></li>
+<li><a class="reference internal" href="#when-to-be-cautious-with-llm-suggestions">11.6. When to Be Cautious with LLM Suggestions</a></li>
+<li><a class="reference internal" href="#building-a-persistent-context-file">11.7. Building a Persistent Context File</a></li>
+<li><a class="reference internal" href="#practical-workflow-summary">11.8. Practical Workflow Summary</a></li>
+<li><a class="reference internal" href="#exercises">11.9. Exercises</a></li>
 </ul>
 </li>
 </ul>
@@ -736,14 +738,14 @@ of the two responses.</p>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>9. Flash Attention 4</div>
+            <div>10. Flash Attention 4</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_api_reference/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>11. TIRX API Reference</div>
+            <div>12. TIRX API Reference</div>
         </div>
      </a>
   </div>

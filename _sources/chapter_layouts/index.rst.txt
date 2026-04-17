@@ -1,0 +1,1039 @@
+
+.. _chap_layouts:
+
+TIRX Layout: Mapping Tensors to Hardware
+========================================
+
+
+*Every TIRX kernel you will write has the same three-line pattern:
+allocate a buffer, attach a layout, and move data into or out of it. The
+``layout=`` argument is what makes the kernel fast. This chapter opens
+up that argument.*
+
+Most tutorials on GPU programming treat memory layout as a footnote —
+“use 128-byte swizzle, it avoids bank conflicts, move on.” That works
+for copy-paste engineering but breaks the moment you leave the beaten
+path: a non-square tile, a new dtype, a 2-CTA kernel, a Flash Attention
+epilogue. At that point you need a *mental model* of what a layout is,
+what it does, and what degrees of freedom you have.
+
+TIRX exposes such a model, called the **TIRX Layout** system. This
+chapter introduces it from the ground up. By the end you will be able
+to:
+
+- read any layout expression in the GEMM, RMSNorm, and Flash Attention
+  kernels,
+- pick the right swizzle mode for a given tile shape and dtype,
+- diagnose a bank-conflict or TMEM-matching bug by inspecting the
+  layout,
+- write your own layouts for custom buffers in later chapters.
+
+We ground every idea in the Blackwell hardware you met in
+:numref:`chap_background` — TMEM, SMEM, TMA, warpgroups, and CTA
+clusters — and we reuse code directly from the GEMM kernels in Part III.
+
+--------------
+
+Why Layouts Matter
+------------------
+
+A tensor on paper is indexed by logical coordinates such as ``A[m, k]``.
+A tensor in a GPU is indexed by *physical* coordinates that depend on
+where it lives:
+
+- In **global memory (GMEM)** a tensor is a flat byte array; ``A[m, k]``
+  becomes a byte offset.
+- In **shared memory (SMEM)** a tensor lives in a 32-bank scratchpad
+  with 4-byte banks; ``A[m, k]`` becomes a bank ID plus a bank offset.
+- In **tensor memory (TMEM)** a tensor is a 2D array addressed by
+  ``(TLane, TCol)``; ``A[m, k]`` becomes a ``(TLane, TCol)`` pair.
+- In **registers (RF)** a tensor is sharded across 128 threads of a
+  warpgroup; ``A[m, k]`` becomes a thread ID plus a per-thread register
+  index.
+
+A **layout** is the function that performs this translation. The same
+logical tile ``A[0:128, 0:64]`` can have four very different layouts
+depending on which memory space it is in, and the same memory space can
+use many different layouts for the same logical tile. The choice is
+almost never cosmetic: an incorrect layout causes one of three failures.
+
+**Failure mode 1: bank conflicts.** SMEM is divided into 32 banks of 4
+bytes each. If 32 threads of a warp access 32 addresses that map to the
+same bank, the accesses serialize. A naive row-major layout of a 128×64
+fp16 tile has exactly this pathology when 32 threads read the same
+column from 32 different rows — which is precisely the access pattern an
+unswizzled ``tcgen05.mma`` descriptor ends up issuing. The generated
+code is correct but can be several times slower than necessary.
+
+**Failure mode 2: wrong MMA operands.** The ``tcgen05.mma`` instruction
+does not read arbitrary SMEM. It reads SMEM through a *matrix
+descriptor* that encodes a specific layout (leading dimension, stride,
+swizzle mode, base offset). If your SMEM layout does not match one of
+the patterns the descriptor can express, the compiler rejects it; if the
+descriptor fields are wrong, the MMA silently reads garbage. You will
+see ``NaN`` in the output.
+
+**Failure mode 3: TMEM–RF mismatch.** When a warpgroup reads TMEM into
+registers via ``Tx.copy(Dreg, tmem)``, the compiler must match the TMEM
+layout to the RF layout thread-by-thread. A 128×8 TMEM tile laid out as
+``(1@TLane, 1@TCol)`` feeds naturally into a 128-thread warpgroup where
+thread ``i`` receives row ``i``. A mismatched layout triggers a
+compile-time error; a subtly wrong one (for example,
+``(1@TCol, 1@TLane)``) loads the transpose.
+
+TIRX Layout gives us a *vocabulary* to talk about all three problems in
+the same language.
+
+--------------
+
+The Core Idea: Named Hardware Axes
+----------------------------------
+
+CUTLASS CuTe layouts describe a tensor as a shape tuple paired with a
+stride tuple:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # CuTe-style (for reference only):
+   shape = (128, 64)
+   stride = (64, 1)          # row-major
+
+This works fine for GMEM, where “stride” is unambiguous: it is the
+number of elements between consecutive indices. But as soon as you
+descend to SMEM, TMEM, or RF, “stride” becomes ambiguous: stride *in
+what*? Banks? Rows of TMEM? Threads of a warpgroup?
+
+TIRX Layout resolves this by giving each hardware dimension a **name**
+and requiring every stride to be paired with a name:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
+
+   layout = TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])
+   #                      ^^^^^^^^^   ^^^^^^^^^^^^^^^^^
+   #                      shape       stride @ named axis
+
+Read this as: “the logical tile has 128 rows and 512 columns; move one
+unit along ``TLane`` for each row, move one unit along ``TCol`` for each
+column.” The named axes (``TLane``, ``TCol``, ``tid_in_wg``, ``laneid``,
+``warpid``, ``cbx``, ``cby``, …) are a fixed vocabulary that represents
+concrete hardware resources:
+
++-----------------------+-----------------------+-----------------------+
+| Named axis            | What it represents    | Where it lives        |
++=======================+=======================+=======================+
+| ``TLane``             | TMEM row index        | TMEM                  |
+|                       | (0…127)               |                       |
++-----------------------+-----------------------+-----------------------+
+| ``TCol``              | TMEM column index     | TMEM                  |
+|                       | (0…511)               |                       |
++-----------------------+-----------------------+-----------------------+
+| ``tid_in_wg``         | Thread index within a | RF                    |
+|                       | warpgroup (0…127)     |                       |
++-----------------------+-----------------------+-----------------------+
+| ``laneid``            | Thread index within a | RF                    |
+|                       | warp (0…31)           |                       |
++-----------------------+-----------------------+-----------------------+
+| ``warpid``            | Warp index within a   | RF                    |
+|                       | CTA                   |                       |
++-----------------------+-----------------------+-----------------------+
+| ``wid_in_wg``         | Warp index within a   | RF                    |
+|                       | warpgroup (0…3)       |                       |
++-----------------------+-----------------------+-----------------------+
+| ``cbx``, ``cby``,     | CTA index within a    | Cross-CTA SMEM        |
+| ``cbz``               | cluster               |                       |
++-----------------------+-----------------------+-----------------------+
+| *(unnamed)*           | Logical memory offset | GMEM, SMEM, RF        |
+|                       | (default axis ``m``)  |                       |
++-----------------------+-----------------------+-----------------------+
+
+The named axes are not user-defined; they are a hardware manifest. When
+you write ``1@TLane``, you are saying: “this dimension maps one-for-one
+to the physical ``TLane`` axis of TMEM.” When the compiler later matches
+a ``Tx.copy(Dreg, tmem)`` call, it looks at the TMEM layout, finds the
+RF layout, and pairs ``TLane`` with ``tid_in_wg`` because they are the
+same length. The matching is mechanical.
+
+Why Named Axes, Not Just Strides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Consider a concrete case. The Blackwell MMA writes a 128×512 fp32
+accumulator tile to TMEM. You want to read it into a warpgroup of 128
+threads, each thread taking one row of 512 elements. In CuTe-style
+strides you would write:
+
+::
+
+   TMEM:  shape=(128, 512),  stride=(1, 128)
+   RF:    shape=(128, 512),  stride=(???, 1)        # stride "1 in threads"?
+
+What is the stride of the row dimension in RF? It is not a memory
+address. It is an *index into the thread space*, which CuTe has to
+encode using a separate threadblock-level layout. Named axes flatten
+this distinction:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # TMEM layout:
+   TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])
+
+   # Matching RF layout:
+   TileLayout(S[(128, 512) : (1@tid_in_wg, 1)])
+   #                          ^^^^^^^^^^^^  ^
+   #                          thread axis   memory axis (default "m")
+
+One dimension lives on a thread axis, another on a memory axis; both are
+spelled the same way. The compiler proves they are compatible by a
+simple axis-matching rule, and the ``Tx.copy`` call emits the right
+``tcgen05.ld`` instruction.
+
+This is the one idea you need to carry through the rest of the chapter:
+**a layout maps logical indices to coordinates on named hardware axes,
+and compatibility between two layouts is decided by whether their axis
+pairings match.**
+
+Reading ``stride@axis``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The expression ``k@axis`` reads as “advance by ``k`` units along
+``axis`` when the logical index increases by 1.” It is the direct
+analogue of CuTe’s strides, with one addition: the “unit” is whatever
+the axis counts — lanes, columns, elements — not always raw bytes.
+
+- ``1@TLane`` means “each logical row is the next TMEM lane.” Logical
+  indices 0, 1, 2, … map to TLane 0, 1, 2, ….
+- ``1@tid_in_wg`` means “each logical row is the next thread in the
+  warpgroup.” Logical index 0 goes to thread 0; logical index 127 goes
+  to thread 127.
+- ``32@TLane`` means “step 32 lanes per increment.” Logical indices 0,
+  1, 2, 3 land on TLane 0, 32, 64, 96. Non-unit strides almost never
+  appear alone; they show up when one dimension picks the *outer* block
+  and a second dimension (with stride 1 on the same axis) picks the
+  *inner* position within that block — so together they tile the full
+  128 lanes without gaps.
+
+The ``m`` axis is special. It is the **linear element offset within the
+buffer** — the thing you would call “a flat array index” in C. Two
+conventions matter:
+
+- A bare integer ``k`` with no ``@axis`` is shorthand for ``k@m``. So
+  ``S[(128, 8) : (1@tid_in_wg, 1)]`` is identical to
+  ``S[(128, 8) : (1@tid_in_wg, 1@m)]``: the column dimension advances
+  one element in memory per step.
+- When a whole ``S[(shape...)]`` has no stride list at all, the strides
+  default to row-major on ``m``. For example
+  ``S[(PIPE_DEPTH, BLK_M, BLK_K)]`` expands to
+  ``S[(...) : (BLK_M*BLK_K@m, BLK_K@m, 1@m)]``. This is the “nothing
+  special” case and is what you want for ordinary memory buffers.
+
+A named axis is a hardware resource with a fixed range (``TLane`` has
+128 lanes, ``TCol`` has 512 columns, ``tid_in_wg`` has 128 threads, and
+so on). A stride larger than the range is an error; legal layouts choose
+strides so the dimensions that target an axis together tile the axis
+exactly once (as in the ``32@TLane`` / ``1@TLane`` pair above), leaving
+no gaps and no overlaps.
+
+Visualizing a Mapping
+~~~~~~~~~~~~~~~~~~~~~
+
+To make the abstraction concrete, consider the same logical tile — a
+128×8 fp32 block — viewed through two different layouts:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # Same logical tile. Different physical homes.
+   layout_A = TileLayout(S[(128, 8) : (1@TLane,     1@TCol)])   # lives in TMEM
+   layout_B = TileLayout(S[(128, 8) : (1@tid_in_wg, 1)])        # lives in RF
+
+Layout ``A`` places each logical cell ``[r, c]`` at the TMEM coordinate
+``(TLane=r, TCol=c)``. TMEM is a shared SM-wide 2D scratchpad, so every
+thread in the warpgroup sees the same cell at the same hardware
+location:
+
+::
+
+   TMEM (shared by the whole SM):
+                  TCol 0   1   2   3   4   5   6   7
+      TLane   0 | [0,0] [0,1] [0,2] [0,3] [0,4] [0,5] [0,6] [0,7]
+      TLane   1 | [1,0] [1,1] [1,2] [1,3] [1,4] [1,5] [1,6] [1,7]
+         ...
+      TLane 127 | [127,0]                                 [127,7]
+
+Layout ``B`` places the same logical cell ``[r, c]`` in thread ``r``\ ’s
+register ``c``. Registers are thread-private, so the view is 128
+independent per-thread register files that, taken together, form the
+logical tile:
+
+::
+
+   RF (128 private register files, one per thread in the warpgroup):
+      Thread   0 regs: [0,0] [0,1] [0,2] [0,3] [0,4] [0,5] [0,6] [0,7]
+      Thread   1 regs: [1,0] [1,1] [1,2] [1,3] [1,4] [1,5] [1,6] [1,7]
+         ...
+      Thread 127 regs: [127,0]                                  [127,7]
+
+Both layouts describe the *same* logical tile but assign its 1024 cells
+to very different physical locations. A ``Tx.copy`` from layout ``A`` to
+layout ``B`` lines up by pairing ``TLane`` with ``tid_in_wg`` and
+``TCol`` with ``m``. That pairing is the entire content of the
+``tcgen05.ld`` instruction — and it is exactly what makes the epilogue
+of every GEMM kernel in Part III “just work”.
+
+--------------
+
+TIRX Layout Syntax
+------------------
+
+TIRX Layout has three components, each contributed by an operator in the
+Python DSL.
+
+S (Shard): ``S[shape : stride@axis]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The shard component is the backbone of every layout. It says how each
+logical dimension is partitioned over named axes:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   S[(shape_0, shape_1, ...) : (stride_0@axis_0, stride_1@axis_1, ...)]
+
+The ``i``-th dimension has extent ``shape_i`` and places consecutive
+logical indices ``stride_i`` units apart along ``axis_i``. If you omit
+the ``@axis`` suffix, the axis defaults to ``m`` (the logical memory
+offset within the buffer), which is what you want for GMEM and for any
+“pipeline stage” dimension that only exists for indexing.
+
+Concrete examples from ``chapter_gemm_basics``:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # (1) A 2D TMEM accumulator tile, 128 rows on TLane and 512 columns on TCol:
+   S[(128, 512) : (1@TLane, 1@TCol)]
+
+   # (2) An RF buffer viewed as a 128×BLK_N tile, with the row dimension distributed
+   #     across the 128 threads of a warpgroup:
+   S[(128, BLK_N) : (1@tid_in_wg, 1)]
+
+   # (3) A multi-stage pipelined SMEM buffer: the leading stage index is a memory
+   #     offset, and the inner BLK_M×BLK_K tile is row-major in memory:
+   S[(PIPE_DEPTH, BLK_M, BLK_K)]
+
+In example (3) no ``@axis`` is given for any dimension, so every
+dimension defaults to ``m`` — this is an ordinary memory layout
+indistinguishable from a flat buffer of shape
+``(PIPE_DEPTH, BLK_M, BLK_K)``. The value of TIRX Layout for such a
+buffer is not the shard but the *swizzle wrapper* we introduce in the
+next section.
+
+A Worked Example: From Logical Index to Hardware Coordinate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The shard operator ``S[...]`` is formally a linear map. Given a logical
+index :math:`x = (x_0, x_1, \ldots, x_{d-1})`, the physical coordinate
+on each named axis is the sum of ``stride_i * x_i`` contributions from
+the dimensions that target that axis:
+
+.. math::
+
+
+   \mathrm{phys}(\mathrm{axis}) \;=\; \sum_{i \;:\; \mathrm{axis}_i \,=\, \mathrm{axis}} \mathrm{stride}_i \cdot x_i .
+
+Let’s walk through a concrete case. Take the following layout, which
+describes a 128×8 TMEM tile with the row and column hierarchically
+decomposed:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   S[(4, 32, 2, 4) : (32@TLane, 1@TLane, 4@TCol, 1@TCol)]
+   #  ^  ^^  ^  ^     ^^^^^^^^  ^^^^^^^  ^^^^^^  ^^^^^^
+   #  |  |   |  |     warp      lane     col-    col
+   #  |  |   |  |     (outer)   (inner)  block   inner
+   #  |  |   |  +-- 4 columns inside a col-block
+   #  |  |   +----- 2 col-blocks stacked (0..3, 4..7)
+   #  |  +--------- 32 lanes inside one warp
+   #  +------------ 4 warps of 32 lanes each (128 lanes total)
+
+Four logical dimensions project onto two output axes. Let’s map the
+logical index ``x = (1, 5, 1, 2)`` — meaning “warp 1, lane 5,
+column-block 1, column 2 within the block” — to a TMEM coordinate:
+
+::
+
+   Dim 0: 32@TLane * 1  ->  TLane += 32
+   Dim 1:  1@TLane * 5  ->  TLane +=  5
+   Dim 2:  4@TCol  * 1  ->  TCol  +=  4
+   Dim 3:  1@TCol  * 2  ->  TCol  +=  2
+
+   Result: (TLane = 37, TCol = 6)
+
+The hierarchical reading lines up with the arithmetic: warp 1 covers
+lanes 32–63, so lane 5 in that warp is physical lane 37; column-block 1
+covers cols 4–7, so column 2 in that block is physical col 6.
+
+Three observations from this calculation:
+
+1. **Multiple logical dimensions can map to the same physical axis.**
+   Dims 0 and 1 both feed ``TLane``; dims 2 and 3 both feed ``TCol``.
+   This is how you express a hierarchical partition — say “outer warp,
+   inner lane” or “outer tile, inner element” — without inventing new
+   axes.
+
+2. **Axes that no logical dim targets are implicitly zero.** If no dim
+   targets ``cbx``, the output simply has no ``cbx`` coordinate and the
+   layout is CTA-local.
+
+3. **Element offsets on ``m`` sum the same way.** The only difference
+   between ``m`` and named axes is that ``m`` measures the linear
+   element offset within the buffer, while named axes index a hardware
+   resource. The arithmetic is identical.
+
+With this in hand, every layout you will encounter — including the
+scary-looking cluster ones later in the chapter — becomes a routine
+substitution into the formula above.
+
+R (Replica): ``+ R[extent : stride@axis]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The replica component broadcasts a tile across hardware space. Unlike a
+shard, a replica iterates over additional axis coordinates *without
+changing the logical index*, so the same logical data appears at
+multiple physical locations.
+
+The simplest replica is a scalar broadcast. Suppose you have a
+length-``N`` vector that you want every thread in a warpgroup to see —
+for example, a softmax scale vector broadcast across 128 rows of an
+output tile:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # One vector of length N, seen identically by all 128 threads of the warpgroup:
+   S[(N,) : (1,)] + R[128 : 1@tid_in_wg]
+
+The shard ``S[(N,) : (1,)]`` says the vector is a flat ``N``-element
+memory buffer. The replica ``R[128 : 1@tid_in_wg]`` says: “for every
+value of ``tid_in_wg`` from 0 to 127, this whole vector exists *as-is*
+at that thread coordinate.” The logical index is still ``v[i]``; there
+is no new logical axis. All 128 threads read the same ``v[i]``
+concurrently.
+
+Contrast a replica with a shard on the same named axis:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # Shard: each thread gets ITS OWN slice of a length-(128*N) vector.
+   S[(128, N) : (1@tid_in_wg, 1)]
+
+   # Replica: the same length-N vector is seen identically by every thread.
+   S[(N,) : (1,)] + R[128 : 1@tid_in_wg]
+
+A shard *partitions*; a replica *copies*. You reach for a replica
+whenever the hardware has to consume the same data from many sites
+simultaneously.
+
+A more elaborate example combines shard and replica. From the paper’s
+TMA-multicast case study:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   S[(3, 2, 128, 128) : (16384, 1@cbx, 128, 1)] + R[4 : 1@cby]
+
+This layout spreads a 256×128 tile across two CTAs (via ``1@cbx``) and
+then replicates the entire result across four CTAs in the ``cby``
+direction. A single TMA instruction broadcasts the tile to all four
+receivers; the replica axis is how the compiler knows the broadcast
+pattern.
+
+Replicas show up in three practical settings:
+
+1. **TMA multicast** across a CTA cluster (``R[N : 1@cby]``).
+2. **Scale/scalar broadcasts**, where a length-``N`` vector is
+   replicated across the rows of an ``M×N`` tile.
+3. **Allocation of exclusive resources**, where the replica marks a
+   buffer as “reserved for this warpgroup” while leaving the logical
+   tile unchanged.
+
+You will see replicas in the Flash Attention kernel
+(:numref:`chap_flash_attention`) where the softmax scale vector is
+broadcast across the tile.
+
+O (Offset): ``+ k@axis``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+A bare ``+ k@axis`` expression adds a constant offset on the given axis
+to every output coordinate. This is the least commonly used operator —
+it appears mainly when a buffer is carved out of a larger pool and needs
+to land on a particular warp or column:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   S[(8, 16) : (1@laneid, 1@m)] + 5@warpid
+   #                               ^^^^^^^^
+   #                               "place this tile on warp 5 (and 6 if replicated)"
+
+For the kernels in this tutorial you will rarely write offsets by hand —
+they are generated by allocators like ``pool.alloc`` and helpers like
+``tma_shared_layout``. It is enough to know the operator exists so you
+can read it.
+
+Formal Semantics (Optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you prefer a precise definition, the layout :math:`L` maps a logical
+index :math:`x` to a *set* of hardware coordinates:
+
+.. math::
+
+
+   L(x) = \{\, S(x) + r + O \mid r \in \mathcal{R} \,\}
+
+where :math:`S(x)` is the coordinate tuple produced by the shard
+operator ``S[...]``, :math:`\mathcal{R}` is the (possibly empty) set of
+replica offsets produced by ``R[...]``, and :math:`O` is the constant
+offset contributed by any bare ``k@axis`` terms. When
+:math:`\mathcal{R}` is empty, :math:`L` is a function; when
+:math:`\mathcal{R}` is non-empty, :math:`L` is a multi-valued map — that
+is what broadcasting means formally.
+
+You will not have to manipulate this formula directly. The DSL composes
+the three operators for you; you only need to read the result.
+
+--------------
+
+SMEM Layouts and Swizzling
+--------------------------
+
+We now apply the layout vocabulary from the previous section to
+Blackwell’s shared memory. SMEM is the common meeting ground for data
+movement and compute: TMA writes here, ``tcgen05.mma`` reads from here,
+and the writeback path stages tiles here before a TMA store. Every
+performance problem that is not “the algorithm is wrong” is a SMEM
+layout problem.
+
+The Bank-Conflict Problem
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Blackwell SMEM is 228 KB per SM, organized as 32 banks of 4 bytes each.
+A 32-wide thread access is conflict-free only when all 32 threads hit
+distinct banks. Consider a naive row-major fp16 tile of shape
+``(128, 64)``:
+
+::
+
+   addr[m, k] = 64 * m + k              (in fp16 units)
+              = 128 * m + 2 * k         (in bytes)
+   bank(m, k) = (128 * m + 2 * k) / 4 mod 32
+              = (32 * m + k/2)     mod 32
+              = k/2                 mod 32     # 32 * m is divisible by 32, so it drops out
+
+The row coordinate ``m`` has no effect on the bank ID. When 32 threads
+access 32 different rows at the same column, they all compute the same
+``k/2 mod 32`` and therefore hit the *same* bank, serializing into 32
+sequential accesses. The same tile laid out with 128-byte swizzle
+scrambles the column index as a function of the row so that the 32 row
+accesses land in 32 different banks.
+
+The ``tma_shared_layout`` Helper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You almost never write an SMEM layout by hand. The helper
+``tma_shared_layout`` chooses a TMA- and MMA-compatible layout from
+three inputs:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import (
+       tma_shared_layout, SwizzleMode,
+   )
+
+   A_layout = tma_shared_layout(
+       dtype="float16",
+       swizzle=SwizzleMode.SWIZZLE_128B_ATOM,
+       shape=(BLK_M, BLK_K),
+   )
+
+The helper emits a layout equivalent to
+``Swizzle(mode.128B, Layout(S[(BLK_M, BLK_K)]))``: a row-major shard
+wrapped in a 128-byte swizzle pattern. Both TMA (when generating the
+descriptor) and ``tcgen05.mma`` (when encoding the matrix descriptor)
+understand this wrapper directly.
+
+Choosing a Swizzle Mode
+~~~~~~~~~~~~~~~~~~~~~~~
+
+There are four swizzle modes:
+
++-----------------------+-----------------------+-----------------------+
+| Mode                  | Atom width            | When to use           |
++=======================+=======================+=======================+
+| ``SWIZZLE_NONE``      | —                     | Tiny tiles where the  |
+|                       |                       | natural row length is |
+|                       |                       | already ≤ 16 B;       |
+|                       |                       | debugging             |
++-----------------------+-----------------------+-----------------------+
+| ``SWIZZLE_32B_ATOM``  | 32 B                  | 8-bit tiles or very   |
+|                       |                       | narrow (K ≤ 16 fp16)  |
+|                       |                       | tiles                 |
++-----------------------+-----------------------+-----------------------+
+| ``SWIZZLE_64B_ATOM``  | 64 B                  | Medium tiles, fp16 K  |
+|                       |                       | = 32                  |
++-----------------------+-----------------------+-----------------------+
+| ``SWIZZLE_128B_ATOM`` | 128 B                 | **Default for         |
+|                       |                       | fp16/bf16 GEMM;**     |
+|                       |                       | fp16 K = 64 is        |
+|                       |                       | exactly one atom      |
++-----------------------+-----------------------+-----------------------+
+
+The decision rule for fp16/bf16 GEMM on Blackwell is simple: pick the
+mode whose atom width equals ``K_inner * sizeof(dtype)``. For
+``BLK_K = 64`` and fp16 (2 bytes), one K-row is 128 B, and
+``SWIZZLE_128B_ATOM`` is the natural choice. If you are writing an fp8
+kernel with ``BLK_K = 128``, the same rule gives 128 B and the same
+mode.
+
+When in doubt, start with ``SWIZZLE_128B_ATOM``. The cost of getting the
+swizzle mode wrong is a 2–10× slowdown that is invisible in correctness
+tests but glaring in benchmarks.
+
+Multi-Stage SMEM
+~~~~~~~~~~~~~~~~
+
+Software pipelining (Step 5 onward in :numref:`chap_gemm_async`)
+multi-buffers each SMEM tile so that TMA can prefetch future iterations
+while MMA consumes the current one. The layout gains a leading stage
+dimension:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   A_layout = tma_shared_layout(
+       "float16",
+       SwizzleMode.SWIZZLE_128B_ATOM,
+       (PIPE_DEPTH, BLK_M, BLK_K),   # was (BLK_M, BLK_K) in Step 4
+   )
+
+   Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), "float16", layout=A_layout)
+   Asmem[stage, :, :]                # a single 2D tile at this pipeline stage
+
+The stage dimension defaults to the memory axis ``m``, so stride between
+stages is simply the size of one tile. The swizzle wraps *each* stage
+independently — you do not swizzle across stages. The helper takes care
+of this automatically; the point of the example is that a pipelined SMEM
+layout is the scalar layout with one extra outer dimension, nothing
+more.
+
+--------------
+
+TMEM Layouts
+------------
+
+TMEM is the Blackwell-specific scratchpad that holds MMA accumulators.
+It is fundamentally different from SMEM in two respects:
+
+1. It is addressed as a 2D grid with two native axes, ``TLane`` (128
+   rows) and ``TCol`` (512 columns per SM), not as a flat byte array.
+2. Reads and writes are *always cooperative at warpgroup granularity*:
+   the entire 128-thread warpgroup participates in one ``tcgen05.ld`` or
+   ``tcgen05.st`` instruction.
+
+Every TMEM layout you will see in this tutorial is some variation of:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   TileLayout(S[(128, N) : (1@TLane, 1@TCol)])
+
+The row dimension is pinned to ``TLane`` with stride 1, and the column
+dimension is pinned to ``TCol`` with stride 1. This is the only layout
+that ``tcgen05.mma`` can write directly.
+
+Why the Shape Is Always 128 on the Row Axis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``TLane`` axis has exactly 128 physical lanes. A 64-row MMA
+instruction still writes into 128 TMEM rows — the hardware uses a 64×N
+tile view on top of a 128-row physical backing. As a TIRX user you
+always allocate the full 128 rows:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   tmem = tmem_pool.alloc((128, 512), "float32")
+   Tx.copy(Dreg, tmem[:, warp_id * MMA_N : warp_id * MMA_N + MMA_N])
+
+You *slice* the column dimension to match an MMA instruction
+(``MMA_N = 128, 256, …``), but the row dimension is always 128.
+
+Axis Ordering Matters
+~~~~~~~~~~~~~~~~~~~~~
+
+The layout ``S[(128, 512) : (1@TLane, 1@TCol)]`` and the layout
+``S[(128, 512) : (1@TCol, 1@TLane)]`` both describe a 128×512 tile, and
+both use the same pair of named axes — but they produce different
+physical placements. Swapping axes transposes the tile in TMEM and is an
+easy bug to introduce:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # Correct:
+   layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])
+
+   # Transposed (wrong for the conventional accumulator layout):
+   layout=TileLayout(S[(128, 512) : (1@TCol,  1@TLane)])
+
+If the result looks transposed, or if rows and columns of the output are
+swapped in a regular pattern, check axis order on TMEM first.
+
+--------------
+
+RF Layouts and TMEM–RF Matching
+-------------------------------
+
+Registers are per-thread, but TIRX lets you *view* a per-thread register
+buffer as a warpgroup-wide tile. Letting ``N`` denote the number of TMEM
+columns you load in one ``tcgen05.ld`` (typically ``N = 8`` in practice
+so that each thread receives a manageable 8 fp32 registers):
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   reg: Tx.f32[N]
+   reg_wg = reg.view(128, N, layout=TileLayout(S[(128, N) : (1@tid_in_wg, 1)]))
+
+``reg`` is a length-``N`` per-thread register buffer; ``reg_wg`` is a
+logical 128×\ ``N`` warpgroup-wide tile whose row index maps to the
+thread-in-warpgroup axis. Each thread’s ``N`` physical registers
+correspond to one logical row.
+
+The Matching Rule
+~~~~~~~~~~~~~~~~~
+
+When you write ``Tx.copy(reg_wg, tmem[:, n0:n0+N])``, the compiler
+performs axis matching between the two layouts:
+
+- Destination: ``S[(128, N) : (1@tid_in_wg, 1)]``
+- Source: ``S[(128, N) : (1@TLane,     1@TCol)]``
+
+The first dimension has extent 128 on both sides; it pairs ``tid_in_wg``
+with ``TLane``. Both are 128-element axes, and ``tcgen05.ld`` is exactly
+the instruction that moves data from ``TLane`` coordinates into
+``tid_in_wg`` coordinates. The second dimension is memory-on-RF to
+``TCol``-on-TMEM; the instruction knows how to iterate over ``TCol`` to
+stream data into consecutive registers.
+
+If the extents did not match — say you tried to copy a 64×\ ``N`` TMEM
+slice into a 128-wide RF tile — the compiler would reject the call. If
+the axes did not match — for example, you tried to pair ``laneid`` (32
+lanes) with ``TLane`` (128) — the compiler would reject it as well.
+
+Axis-Pairing Reference
+^^^^^^^^^^^^^^^^^^^^^^
+
+The full set of pairings the compiler recognizes on Blackwell is small.
+Once you internalize this table, every ``Tx.copy`` call in Part III
+becomes self-explanatory:
+
++-----------------+-----------------+--------------------------+-----------------+
+| Source (data    | Destination     | Emitted instruction      | Used in         |
+| lives in)       | (data goes to)  |                          |                 |
++=================+=================+==========================+=================+
+| GMEM (``m``)    | SMEM (``m``,    | ``cp.async.bulk.tensor`` | Operand load    |
+|                 | swizzled)       | (TMA load)               |                 |
++-----------------+-----------------+--------------------------+-----------------+
+| SMEM (``m``,    | GMEM (``m``)    | ``cp.async.bulk.tensor`` | Writeback       |
+| swizzled)       |                 | (TMA store)              |                 |
++-----------------+-----------------+--------------------------+-----------------+
+| SMEM × 2        | TMEM            | ``tcgen05.mma`` via      | MMA compute     |
+| operands        | (``TLane``,     | matrix descriptor        |                 |
+|                 | ``TCol``)       |                          |                 |
++-----------------+-----------------+--------------------------+-----------------+
+| TMEM            | RF              | ``tcgen05.ld``           | Epilogue TMEM → |
+| (``TLane``,     | (``tid_in_wg``, |                          | RF              |
+| ``TCol``)       | ``m``)          |                          |                 |
++-----------------+-----------------+--------------------------+-----------------+
+| RF              | TMEM            | ``tcgen05.st``           | Rare: scales    |
+| (``tid_in_wg``, | (``TLane``,     |                          | written back to |
+| ``m``)          | ``TCol``)       |                          | TMEM            |
++-----------------+-----------------+--------------------------+-----------------+
+| RF              | SMEM (``m``,    | shared-memory store      | Writeback       |
+| (``tid_in_wg``, | swizzled)       |                          | staging before  |
+| ``m``)          |                 |                          | TMA             |
++-----------------+-----------------+--------------------------+-----------------+
+
+Two rules govern the matching:
+
+1. **Extents must be identical on every logical dimension.** A 128×8
+   source cannot pair with a 64×8 destination; the compiler will stop
+   you.
+2. **Axes must be linked by a known pairing above.**
+   ``TLane ↔ tid_in_wg`` is legal because both have 128 elements and
+   ``tcgen05.ld/st`` implements it; ``TLane ↔ laneid`` is not
+   (``laneid`` has only 32 lanes), so the compiler rejects it.
+
+Everything else — the descriptor encoding, the swizzle mode, the number
+of registers per thread — is derived automatically from the two layouts.
+
+A realistic epilogue reads the 128×MMA_N TMEM accumulator ``N`` columns
+at a time in a loop, so that each iteration fits comfortably in the
+255-register per-thread budget:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   for no in Tx.unroll(MMA_N // N):
+       Tx.copy(reg_wg, tmem[:, no * N : (no + 1) * N])
+       # cast / activation / store ...
+
+Helper: ``wg_local_layout``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the common case of declaring a 2D warpgroup-view register buffer
+directly, there is a one-line helper:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   from tvm.tirx.layout import wg_local_layout
+
+   reg = Tx.alloc_buffer(
+       (128, N), "float32",
+       layout=wg_local_layout(N),
+       scope="local",
+   )
+
+``wg_local_layout(N)`` expands to
+``TileLayout(S[(128, N) : (1@tid_in_wg, 1)])``. You will see this helper
+in the writeback paths of every warp-specialized GEMM kernel in Part III
+(for example ``fp16_bf16_gemm.py`` in the TIRX kernel library).
+
+--------------
+
+Cluster and Remote Layouts
+--------------------------
+
+The 2-CTA cooperative MMA introduced in Step 8
+(:numref:`chap_gemm_advanced`) requires one CTA to read operand ``B``
+from the *other* CTA’s SMEM. This is not a layout feature per se — it is
+a cluster-scope pointer — but you will see cluster axes ``cbx`` and
+``cby`` appear in layout expressions for buffers that span a cluster.
+
+From the paper’s mixed-dtype GEMM case study:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   # A per-CTA buffer shape (3, 128, 128), swizzled 128B:
+   As = smem((3, 128, 128), "uint8",
+             layout=Swizzle(mode.128B, Layout(S[(3, 128, 128)])))
+
+   # Cluster-wide view across 2 CTAs in the cbx direction:
+   As_cl = As.view(
+       (3, 256, 128),
+       layout=Swizzle(mode.128B,
+                      Layout(S[(3, 2, 128, 128) : (16384, 1@cbx, 128, 1)]
+                             + R[4 : 1@cby])),
+   )
+
+The shard spec says: iterate the outer stage dimension over memory
+(stride 16384), split the row dimension across two CTAs via ``1@cbx``,
+and keep the inner 128×128 tile per CTA. The replica ``R[4 : 1@cby]``
+says: broadcast the whole cluster-wide tile to four receiver CTAs in
+``cby`` via a single TMA multicast.
+
+Once you can read a layout like this, the cluster kernel’s TMA calls
+become transparent: the layout tells you exactly which CTA holds which
+bytes.
+
+You will not need to write such layouts from scratch for the kernels in
+this tutorial — ``Tx.copy_async(..., cta_group=2)`` and
+``smem_pipe.full.remote_view(...)`` compose them for you — but you
+should be able to read them when debugging.
+
+--------------
+
+Debugging Layouts
+-----------------
+
+Layout bugs are distinctive because they rarely crash. They manifest as:
+
+- Silently wrong output (transposed tile, ``NaN``\ s, off-by-one in a
+  dimension).
+- Correct output but catastrophically slow kernel (bank conflicts).
+- Compile-time errors complaining about “incompatible axes” or “extent
+  mismatch”.
+
+Use this checklist when a layout is suspect.
+
+**1. Does each dimension have the axis you expect?** Print the layout or
+stare at the ``S[...]`` expression. Every dimension should have either a
+named axis (``TLane``, ``tid_in_wg``, ``cbx``, …) or no axis (which
+means memory axis ``m``). Mixed-up row/column axes are the most common
+bug.
+
+**2. Do extents match on both sides of a ``Tx.copy``?** The source and
+destination of a copy must agree on every dimension’s extent. If the
+destination is a 128×64 RF tile and the source is a 64×128 TMEM slice,
+the compiler will refuse. If the compiler accepts a copy you expected it
+to reject, look for an implicit reshape or a ``view`` that silently
+flattened a dimension.
+
+**3. Is the SMEM swizzle mode consistent across producer and consumer?**
+TMA uses a swizzle mode when *writing* the SMEM buffer; ``tcgen05.mma``
+uses a swizzle mode when *reading* it. If they disagree, the MMA reads
+scrambled data. The simplest guard: always use ``tma_shared_layout`` so
+both sides share the same helper.
+
+**4. Is the TMEM slice aligned to an MMA shape?** ``tcgen05.mma`` writes
+into a ``(M_mma, N_mma)`` rectangle of TMEM starting at some column. If
+you slice ``tmem[:, n0:n0+N_mma]`` where ``n0`` is not a multiple of
+``N_mma`` (or of whatever column granularity the chosen MMA variant
+requires), the MMA will write to an unexpected region. Always derive
+column offsets from ``consumer_id * N_mma`` or a similar aligned
+expression.
+
+**5. Inspect the generated CUDA.** When in doubt, dump the CUDA that
+TIRX emits (see the debugging section in
+:numref:`chap_gemm_advanced`). The generated code will contain
+explicit ``cp.async.bulk.tensor`` and ``tcgen05.ld/st`` instructions
+with the encoded descriptors — you can cross-check the layout against
+what the hardware actually receives.
+
+--------------
+
+Summary
+-------
+
+Three ideas carry through the rest of the book.
+
+1. **A layout is a map from logical indices to coordinates on named
+   hardware axes.** The same logical tile has different layouts in GMEM,
+   SMEM, TMEM, and RF, and the axes (``TLane``, ``TCol``, ``tid_in_wg``,
+   ``cbx``, …) are a hardware-defined vocabulary, not a user convention.
+
+2. **Compatibility between two layouts is an axis-matching problem.** A
+   ``Tx.copy`` between two buffers succeeds when their extents match
+   dimension-by-dimension and their axes pair up into one of the
+   supported hardware instructions (``tcgen05.ld`` for TMEM→RF,
+   ``cp.async.bulk.tensor`` for GMEM↔SMEM, and so on).
+
+3. **The cost of a wrong layout is not an error but a performance
+   collapse or a subtly wrong result.** Bank conflicts, swizzle
+   mismatches, and transposed TMEM reads all fall into this category.
+   Build the habit of checking layouts first whenever a kernel is slow
+   or subtly broken.
+
+The next chapter (:numref:`chap_fused_gelu`) uses a simple elementwise
+operator to put the SMEM and RF layouts to work. After that,
+:numref:`chap_gemm_basics` begins the GEMM optimization journey where
+every layout idea in this chapter appears in context.
+
+--------------
+
+Exercises
+---------
+
+1. **Read a layout.** Write out in English what each of the following
+   layouts expresses. Identify the axes used and whether any dimension
+   uses the default memory axis.
+
+   .. code:: python
+
+      S[(PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K)]
+      S[(128, EPI_N) : (1@tid_in_wg, 1)]
+      S[(4, 32, 4, 4) : (4@TCol, 1@TLane, 16@TCol, 1@TCol)] + R[4 : 32@TLane]
+
+2. **Swap an axis.** In :numref:`chap_gemm_basics` Step 1, locate the
+   TMEM layout and swap ``TLane`` with ``TCol``. Predict what will
+   happen to the output, then run the kernel and verify.
+
+3. **Change a swizzle mode.** Run Step 4 of the GEMM journey with
+   ``SwizzleMode.SWIZZLE_NONE`` instead of
+   ``SwizzleMode.SWIZZLE_128B_ATOM`` on the SMEM buffers. Measure the
+   performance drop and explain it in terms of bank conflicts.
+
+4. **Split rows across warps.** In a warpgroup of 4 warps × 32 lanes =
+   128 threads, write an RF layout that gives each *warp* 32 consecutive
+   rows of a 128×\ ``N`` tile (warp 0 owns rows 0–31, warp 1 owns rows
+   32–63, etc.), and within each warp maps lane ``i`` to row ``i`` of
+   that slab. The answer should use two named axes — one for warp index,
+   one for lane index — instead of a single ``tid_in_wg``. Why is this
+   layout equivalent to ``S[(128, N) : (1@tid_in_wg, 1)]`` under the
+   hood?
+
+5. **Trace a replica.** In the cluster layout in § Cluster and Remote
+   Layouts, what is the total number of CTAs that receive a single TMA
+   multicast? Which logical indices are shared across them, and which
+   differ?

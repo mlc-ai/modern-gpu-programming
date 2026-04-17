@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>9. Flash Attention 4 &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>10. Flash Attention 4 &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -29,15 +29,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="10. AI-Assisted Kernel Development" href="../chapter_ai_assisted/index.html" />
-    <link rel="prev" title="8. GEMM Steps 7–9: Warp Specialization to cuBLAS" href="../chapter_gemm_advanced/index.html" /> 
+    <link rel="next" title="11. AI-Assisted Kernel Development" href="../chapter_ai_assisted/index.html" />
+    <link rel="prev" title="9. GEMM Steps 7–9: Warp Specialization to cuBLAS" href="../chapter_gemm_advanced/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">9. </span>Flash Attention 4</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">10. </span>Flash Attention 4</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -96,16 +96,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -134,16 +135,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -156,7 +158,7 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="flash-attention-4">
-<span id="chap-flash-attention"></span><h1><span class="section-number">9. </span>Flash Attention 4<a class="headerlink" href="#flash-attention-4" title="Permalink to this heading">¶</a></h1>
+<span id="chap-flash-attention"></span><h1><span class="section-number">10. </span>Flash Attention 4<a class="headerlink" href="#flash-attention-4" title="Permalink to this heading">¶</a></h1>
 <p><em>Prerequisites: You should be comfortable with Step 7 (Warp
 Specialization) — specifically warp specialization, the 4-barrier
 producer-consumer pattern, PipelineState, and TMA/tcgen05 pipelining. If
@@ -172,7 +174,7 @@ into a single kernel, avoiding materializing the full <span class="math notransl
 attention matrix. This chapter explores how Flash Attention 4 maps to
 Blackwell hardware using TIRX.</p>
 <section id="what-you-will-learn">
-<h2><span class="section-number">9.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>How online softmax works, step by step with a numeric example</p></li>
 <li><p>How Flash Attention 4’s tiled algorithm maps to TIRX’s
@@ -184,19 +186,19 @@ warp-specialized architecture</p></li>
 </ul>
 </section>
 <section id="online-softmax">
-<h2><span class="section-number">9.2. </span>Online Softmax<a class="headerlink" href="#online-softmax" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.2. </span>Online Softmax<a class="headerlink" href="#online-softmax" title="Permalink to this heading">¶</a></h2>
 <p>Standard softmax requires two passes over the data: one to find the
 maximum (for numerical stability), and one to compute the exponentials
 and their sum. For a vector <span class="math notranslate nohighlight">\(x = [x_1, x_2, \ldots, x_N]\)</span>:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-0">
-<span class="eqno">(9.2.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-0" title="Permalink to this equation">¶</a></span>\[\text{softmax}(x_i) = \frac{e^{x_i - \max(x)}}{\ \sum_j e^{x_j - \max(x)}}\]</div>
+<span class="eqno">(10.2.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-0" title="Permalink to this equation">¶</a></span>\[\text{softmax}(x_i) = \frac{e^{x_i - \max(x)}}{\ \sum_j e^{x_j - \max(x)}}\]</div>
 <p>This is problematic for attention because the score vector has length
 <span class="math notranslate nohighlight">\(N\)</span> (the sequence length), and materializing it requires
 <span class="math notranslate nohighlight">\(O(N^2)\)</span> memory across all query positions. Online softmax
 eliminates this by processing the scores in chunks, maintaining a
 running maximum and sum that get updated as each new chunk arrives.</p>
 <section id="the-core-idea">
-<h3><span class="section-number">9.2.1. </span>The core idea<a class="headerlink" href="#the-core-idea" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.2.1. </span>The core idea<a class="headerlink" href="#the-core-idea" title="Permalink to this heading">¶</a></h3>
 <p>For each row, we maintain two running values: a maximum <span class="math notranslate nohighlight">\(m\)</span> and an
 exponential sum <span class="math notranslate nohighlight">\(\ell\)</span>. When a new chunk of scores arrives, we
 update both:</p>
@@ -216,29 +218,29 @@ so the rescaling factor
 ever multiply by values in <span class="math notranslate nohighlight">\([0, 1]\)</span>, which is numerically stable.</p>
 </section>
 <section id="numeric-example">
-<h3><span class="section-number">9.2.2. </span>Numeric example<a class="headerlink" href="#numeric-example" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.2.2. </span>Numeric example<a class="headerlink" href="#numeric-example" title="Permalink to this heading">¶</a></h3>
 <p>Consider computing softmax over 4 elements <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">5,</span> <span class="pre">1,</span> <span class="pre">8]</span></code> processed in
 two chunks of size 2.</p>
 <p><strong>Chunk 1:</strong> [2, 5]</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-1">
-<span class="eqno">(9.2.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-1" title="Permalink to this equation">¶</a></span>\[m = 5, \quad \ell = e^{2-5} + e^{5-5} = e^{-3} + 1 \approx 0.050 + 1.0 = 1.050\]</div>
+<span class="eqno">(10.2.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-1" title="Permalink to this equation">¶</a></span>\[m = 5, \quad \ell = e^{2-5} + e^{5-5} = e^{-3} + 1 \approx 0.050 + 1.0 = 1.050\]</div>
 <p><strong>Chunk 2:</strong> [1, 8]</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-2">
-<span class="eqno">(9.2.3)<a class="headerlink" href="#equation-chapter-flash-attention-index-2" title="Permalink to this equation">¶</a></span>\[m_{\text{new}} = \max(5, 8) = 8\]</div>
+<span class="eqno">(10.2.3)<a class="headerlink" href="#equation-chapter-flash-attention-index-2" title="Permalink to this equation">¶</a></span>\[m_{\text{new}} = \max(5, 8) = 8\]</div>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-3">
-<span class="eqno">(9.2.4)<a class="headerlink" href="#equation-chapter-flash-attention-index-3" title="Permalink to this equation">¶</a></span>\[\ell = 1.050 \cdot e^{5-8} + e^{1-8} + e^{8-8} = 1.050 \cdot e^{-3} + e^{-7} + 1\]</div>
+<span class="eqno">(10.2.4)<a class="headerlink" href="#equation-chapter-flash-attention-index-3" title="Permalink to this equation">¶</a></span>\[\ell = 1.050 \cdot e^{5-8} + e^{1-8} + e^{8-8} = 1.050 \cdot e^{-3} + e^{-7} + 1\]</div>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-4">
-<span class="eqno">(9.2.5)<a class="headerlink" href="#equation-chapter-flash-attention-index-4" title="Permalink to this equation">¶</a></span>\[\approx 0.0523 + 0.000912 + 1.0 = 1.053\]</div>
+<span class="eqno">(10.2.5)<a class="headerlink" href="#equation-chapter-flash-attention-index-4" title="Permalink to this equation">¶</a></span>\[\approx 0.0523 + 0.000912 + 1.0 = 1.053\]</div>
 <p>The final softmax values are <span class="math notranslate nohighlight">\(e^{x_i - 8} / 1.053\)</span> for each
 element, which matches the two-pass result.</p>
 </section>
 <section id="extending-to-flash-attention-4">
-<h3><span class="section-number">9.2.3. </span>Extending to Flash Attention 4<a class="headerlink" href="#extending-to-flash-attention-4" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.2.3. </span>Extending to Flash Attention 4<a class="headerlink" href="#extending-to-flash-attention-4" title="Permalink to this heading">¶</a></h3>
 <p>In Flash Attention 4, we track not just <span class="math notranslate nohighlight">\((m, \ell)\)</span> but also an
 output accumulator <span class="math notranslate nohighlight">\(O\)</span>. When the maximum changes, <span class="math notranslate nohighlight">\(O\)</span> must
 be rescaled by the same factor:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-5">
-<span class="eqno">(9.2.6)<a class="headerlink" href="#equation-chapter-flash-attention-index-5" title="Permalink to this equation">¶</a></span>\[O = O \cdot e^{m_{\text{old}} - m_{\text{new}}} + P_{\text{new}} \times V_{\text{block}}\]</div>
+<span class="eqno">(10.2.6)<a class="headerlink" href="#equation-chapter-flash-attention-index-5" title="Permalink to this equation">¶</a></span>\[O = O \cdot e^{m_{\text{old}} - m_{\text{new}}} + P_{\text{new}} \times V_{\text{block}}\]</div>
 <p>where <span class="math notranslate nohighlight">\(P_{\text{new}} = e^{S_{\text{block}} - m_{\text{new}}}\)</span> are
 the softmax weights for the current block. After processing all KV
 blocks, the final output is <span class="math notranslate nohighlight">\(O / \ell\)</span> (dividing each row by its
@@ -261,7 +263,7 @@ the BLK_M rows maintains its own running state independently.</p>
 </section>
 </section>
 <section id="kernel-architecture">
-<h2><span class="section-number">9.3. </span>Kernel Architecture<a class="headerlink" href="#kernel-architecture" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.3. </span>Kernel Architecture<a class="headerlink" href="#kernel-architecture" title="Permalink to this heading">¶</a></h2>
 <p>The Blackwell Flash Attention 4 kernel uses 4 warpgroups (512 threads)
 with full warp specialization:</p>
 <table class="docutils align-default">
@@ -328,15 +330,15 @@ form of <strong>Q double-buffering</strong> at the warpgroup level.</p>
 </div>
 </section>
 <section id="the-two-mma-phases">
-<h2><span class="section-number">9.4. </span>The Two MMA Phases<a class="headerlink" href="#the-two-mma-phases" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.4. </span>The Two MMA Phases<a class="headerlink" href="#the-two-mma-phases" title="Permalink to this heading">¶</a></h2>
 <p>Flash Attention 4 requires two distinct MMA operations per KV block,
 creating a pipeline that is fundamentally different from GEMM’s
 single-MMA pattern.</p>
 <section id="phase-1-score-mma-q-k-t-s">
-<h3><span class="section-number">9.4.1. </span>Phase 1: Score MMA (Q &#64; K^T -&gt; S)<a class="headerlink" href="#phase-1-score-mma-q-k-t-s" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.4.1. </span>Phase 1: Score MMA (Q &#64; K^T -&gt; S)<a class="headerlink" href="#phase-1-score-mma-q-k-t-s" title="Permalink to this heading">¶</a></h3>
 <p>The first MMA computes attention scores:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-6">
-<span class="eqno">(9.4.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-6" title="Permalink to this equation">¶</a></span>\[S = Q_{\text{block}} \times K_{\text{block}}^T \quad [\text{BLK}_M \times \text{BLK}_N]\]</div>
+<span class="eqno">(10.4.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-6" title="Permalink to this equation">¶</a></span>\[S = Q_{\text{block}} \times K_{\text{block}}^T \quad [\text{BLK}_M \times \text{BLK}_N]\]</div>
 <p>This writes the score matrix <span class="math notranslate nohighlight">\(S\)</span> into TMEM. WG3’s MMA warp (warp
 0) issues the Score MMA for both Q stages sequentially, then the
 <code class="docutils literal notranslate"><span class="pre">bar_s_full</span></code> barrier signals that scores are ready for WG0/WG1 to run
@@ -359,7 +361,7 @@ softmax.</p>
 </div>
 </section>
 <section id="between-phases-softmax-in-registers">
-<h3><span class="section-number">9.4.2. </span>Between phases: Softmax in registers<a class="headerlink" href="#between-phases-softmax-in-registers" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.4.2. </span>Between phases: Softmax in registers<a class="headerlink" href="#between-phases-softmax-in-registers" title="Permalink to this heading">¶</a></h3>
 <p>WG0/WG1 wait on <code class="docutils literal notranslate"><span class="pre">bar_s_full</span></code>, then read <span class="math notranslate nohighlight">\(S\)</span> from TMEM into
 registers and run online softmax:</p>
 <ol class="arabic simple">
@@ -385,10 +387,10 @@ and adjusts the scale factor accordingly
 (<span class="math notranslate nohighlight">\(\text{scale\_log2} = \log_2(e) / \sqrt{d}\)</span>).</p>
 </section>
 <section id="phase-2-value-mma-p-v-o">
-<h3><span class="section-number">9.4.3. </span>Phase 2: Value MMA (P &#64; V -&gt; O)<a class="headerlink" href="#phase-2-value-mma-p-v-o" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.4.3. </span>Phase 2: Value MMA (P &#64; V -&gt; O)<a class="headerlink" href="#phase-2-value-mma-p-v-o" title="Permalink to this heading">¶</a></h3>
 <p>The second MMA accumulates the weighted values:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-7">
-<span class="eqno">(9.4.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-7" title="Permalink to this equation">¶</a></span>\[O = O + P_{\text{block}} \times V_{\text{block}} \quad [\text{BLK}_M \times \text{HEAD}_{\text{DIM}}]\]</div>
+<span class="eqno">(10.4.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-7" title="Permalink to this equation">¶</a></span>\[O = O + P_{\text{block}} \times V_{\text{block}} \quad [\text{BLK}_M \times \text{HEAD}_{\text{DIM}}]\]</div>
 <p>This is issued by WG3’s MMA warp (warp 0). P lives in TMEM as float16
 (written there by WG0/WG1), while V lives in SMEM. The result
 accumulates into O in TMEM as float32.</p>
@@ -423,13 +425,13 @@ warpgroup finishes writing the last quarter of P to TMEM, overlapping
 computation with the TMEM store.</p>
 </section>
 <section id="tmem-layout">
-<h3><span class="section-number">9.4.4. </span>TMEM Layout<a class="headerlink" href="#tmem-layout" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.4.4. </span>TMEM Layout<a class="headerlink" href="#tmem-layout" title="Permalink to this heading">¶</a></h3>
 <p>The kernel uses a single TMEM allocation of 128 rows x 512 columns,
 partitioned as:</p>
 <figure class="align-default" id="id1">
 <img alt="../_images/tmem_layout.png" src="../_images/tmem_layout.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 9.4.1 </span><span class="caption-text">TMEM Layout</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 10.4.1 </span><span class="caption-text">TMEM Layout</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Each Q stage uses <code class="docutils literal notranslate"><span class="pre">tmem_offset=128</span></code> columns of f32 (or 256 columns of
@@ -438,12 +440,12 @@ which is safe because S is fully consumed before P is written.</p>
 </section>
 </section>
 <section id="barrier-topology">
-<h2><span class="section-number">9.5. </span>Barrier Topology<a class="headerlink" href="#barrier-topology" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.5. </span>Barrier Topology<a class="headerlink" href="#barrier-topology" title="Permalink to this heading">¶</a></h2>
 <p>Flash Attention 4’s barrier system is more complex than GEMM’s because
 of the two MMA phases and the softmax computation between them. Below is
 every barrier in the kernel.</p>
 <section id="barrier-table">
-<h3><span class="section-number">9.5.1. </span>Barrier Table<a class="headerlink" href="#barrier-table" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.5.1. </span>Barrier Table<a class="headerlink" href="#barrier-table" title="Permalink to this heading">¶</a></h3>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Barrier</p></th>
@@ -585,16 +587,16 @@ when MMA completes asynchronously). <code class="docutils literal notranslate"><
 counts. <code class="docutils literal notranslate"><span class="pre">Arrive</span></code> barriers use simple <code class="docutils literal notranslate"><span class="pre">mbarrier.arrive</span></code>.</p>
 </section>
 <section id="barrier-flow-diagram">
-<h3><span class="section-number">9.5.2. </span>Barrier Flow Diagram<a class="headerlink" href="#barrier-flow-diagram" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.5.2. </span>Barrier Flow Diagram<a class="headerlink" href="#barrier-flow-diagram" title="Permalink to this heading">¶</a></h3>
 <figure class="align-default" id="id2">
 <img alt="../_images/flash_attention_barrier_flow.png" src="../_images/flash_attention_barrier_flow.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 9.5.1 </span><span class="caption-text">Flash Attention 4 Barrier Flow</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 10.5.1 </span><span class="caption-text">Flash Attention 4 Barrier Flow</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 </section>
 <section id="comparison-with-gemm-barriers">
-<h3><span class="section-number">9.5.3. </span>Comparison with GEMM barriers<a class="headerlink" href="#comparison-with-gemm-barriers" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.5.3. </span>Comparison with GEMM barriers<a class="headerlink" href="#comparison-with-gemm-barriers" title="Permalink to this heading">¶</a></h3>
 <p>In GEMM, the barrier system is simple: <code class="docutils literal notranslate"><span class="pre">full</span></code> and <code class="docutils literal notranslate"><span class="pre">empty</span></code> barriers
 between TMA producer and MMA consumer, with the epilogue being a
 straightforward TMEM-&gt;SMEM-&gt;TMA store. Flash Attention 4 adds:</p>
@@ -611,12 +613,12 @@ where every MMA signals completion)</p></li>
 </section>
 </section>
 <section id="writeback-and-rescaling">
-<h2><span class="section-number">9.6. </span>Writeback and Rescaling<a class="headerlink" href="#writeback-and-rescaling" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.6. </span>Writeback and Rescaling<a class="headerlink" href="#writeback-and-rescaling" title="Permalink to this heading">¶</a></h2>
 <p>After all KV blocks have been processed, the O accumulator in TMEM
 contains unnormalized values. The writeback process involves three
 steps:</p>
 <section id="final-normalization">
-<h3><span class="section-number">9.6.1. </span>1. Final normalization<a class="headerlink" href="#final-normalization" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.6.1. </span>1. Final normalization<a class="headerlink" href="#final-normalization" title="Permalink to this heading">¶</a></h3>
 <p>WG0/WG1 write the final <code class="docutils literal notranslate"><span class="pre">row_sum</span></code> to SMEM. WG2 reads it and computes
 <code class="docutils literal notranslate"><span class="pre">norm_scale</span> <span class="pre">=</span> <span class="pre">1.0</span> <span class="pre">/</span> <span class="pre">row_sum</span></code> (with a guard for zero/NaN rows):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG2 epilogue: normalize O</span>
@@ -626,7 +628,7 @@ steps:</p>
 </div>
 </section>
 <section id="tmem-smem-transfer">
-<h3><span class="section-number">9.6.2. </span>2. TMEM -&gt; SMEM transfer<a class="headerlink" href="#tmem-smem-transfer" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.6.2. </span>2. TMEM -&gt; SMEM transfer<a class="headerlink" href="#tmem-smem-transfer" title="Permalink to this heading">¶</a></h3>
 <p>WG2 reads O from TMEM in chunks of 16 columns, multiplies each element
 by <code class="docutils literal notranslate"><span class="pre">norm_scale</span></code>, casts from float32 to float16, and writes to O_smem:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG2: Read O from TMEM, normalize, write to SMEM</span>
@@ -639,13 +641,13 @@ by <code class="docutils literal notranslate"><span class="pre">norm_scale</span
 </div>
 </section>
 <section id="tma-store">
-<h3><span class="section-number">9.6.3. </span>3. TMA store<a class="headerlink" href="#tma-store" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.6.3. </span>3. TMA store<a class="headerlink" href="#tma-store" title="Permalink to this heading">¶</a></h3>
 <p>WG3’s TMA store warp (warp 2) waits on <code class="docutils literal notranslate"><span class="pre">bar_corr_epi_full</span></code>, then
 issues a TMA store from O_smem to global memory. This follows the same
 pattern as GEMM’s epilogue.</p>
 </section>
 <section id="o-rescaling-during-iteration">
-<h3><span class="section-number">9.6.4. </span>O rescaling during iteration<a class="headerlink" href="#o-rescaling-during-iteration" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.6.4. </span>O rescaling during iteration<a class="headerlink" href="#o-rescaling-during-iteration" title="Permalink to this heading">¶</a></h3>
 <p>Between KV blocks, the O accumulator must be rescaled when the running
 maximum changes. This is done by <strong>WG2</strong> (the correction warpgroup), not
 by the softmax warpgroups. Here is why: WG0/WG1 are busy computing
@@ -673,7 +675,7 @@ blocks, so most iterations skip rescaling entirely. This reduces the
 number of expensive TMEM read-modify-write correction operations.</p>
 </section>
 <section id="lse-for-backward-pass">
-<h3><span class="section-number">9.6.5. </span>LSE for backward pass<a class="headerlink" href="#lse-for-backward-pass" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.6.5. </span>LSE for backward pass<a class="headerlink" href="#lse-for-backward-pass" title="Permalink to this heading">¶</a></h3>
 <p>In a full training pipeline, the log-sum-exp
 <span class="math notranslate nohighlight">\(\text{LSE} = \log(\ell) + m\)</span> would be stored as an auxiliary
 output for the backward pass. After the last KV block,
@@ -684,7 +686,7 @@ would need an additional output buffer for LSE.</p>
 </section>
 </section>
 <section id="pipelining-structure">
-<h2><span class="section-number">9.7. </span>Pipelining Structure<a class="headerlink" href="#pipelining-structure" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.7. </span>Pipelining Structure<a class="headerlink" href="#pipelining-structure" title="Permalink to this heading">¶</a></h2>
 <p>The kernel uses <strong>three independent pipeline depths</strong>:</p>
 <ul class="simple">
 <li><p><strong>Q pipeline</strong> (depth 2): Q tiles change infrequently (only when
@@ -698,7 +700,7 @@ the two Q stages.</p></li>
 <figure class="align-default" id="id3">
 <img alt="../_images/flash_attention_pipeline.png" src="../_images/flash_attention_pipeline.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 9.7.1 </span><span class="caption-text">Flash Attention 4 Pipeline Structure</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 10.7.1 </span><span class="caption-text">Flash Attention 4 Pipeline Structure</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Note that the KV blocks are iterated in <strong>reverse order</strong> (from
@@ -706,11 +708,11 @@ the two Q stages.</p></li>
 attention where the last block is most likely to need masking.</p>
 </section>
 <section id="causal-masking">
-<h2><span class="section-number">9.8. </span>Causal Masking<a class="headerlink" href="#causal-masking" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.8. </span>Causal Masking<a class="headerlink" href="#causal-masking" title="Permalink to this heading">¶</a></h2>
 <p>For causal (autoregressive) attention, positions can only attend to
 earlier positions. The kernel implements this at two granularities:</p>
 <section id="block-level-skipping">
-<h3><span class="section-number">9.8.1. </span>Block-level skipping<a class="headerlink" href="#block-level-skipping" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.8.1. </span>Block-level skipping<a class="headerlink" href="#block-level-skipping" title="Permalink to this heading">¶</a></h3>
 <p>Entire KV blocks that are fully above the diagonal are skipped:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_n_block_max</span><span class="p">(</span><span class="n">m_block_idx</span><span class="p">,</span> <span class="n">causal</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Maximum KV block index (exclusive) for this Q block.&quot;&quot;&quot;</span>
@@ -726,7 +728,7 @@ processes only 1 KV block, the last processes all of them, averaging
 half.</p>
 </section>
 <section id="three-phase-iteration">
-<h3><span class="section-number">9.8.2. </span>Three-phase iteration<a class="headerlink" href="#three-phase-iteration" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.8.2. </span>Three-phase iteration<a class="headerlink" href="#three-phase-iteration" title="Permalink to this heading">¶</a></h3>
 <p>KV blocks are processed in three phases:</p>
 <ol class="arabic simple">
 <li><p><strong>Phase 1</strong>: The last KV block (<code class="docutils literal notranslate"><span class="pre">n_block_max</span> <span class="pre">-</span> <span class="pre">1</span></code>), always with
@@ -739,7 +741,7 @@ masking via R2P (Register-to-Predicate) bit manipulation</p></li>
 </ol>
 </section>
 <section id="r2p-masking">
-<h3><span class="section-number">9.8.3. </span>R2P masking<a class="headerlink" href="#r2p-masking" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">10.8.3. </span>R2P masking<a class="headerlink" href="#r2p-masking" title="Permalink to this heading">¶</a></h3>
 <p>Rather than per-column comparisons, the kernel uses bit manipulation
 that compiles to the PTX <code class="docutils literal notranslate"><span class="pre">R2P</span></code> instruction:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create bitmask: col_limit=5 -&gt; 0b11111 (bits 0-4 set)</span>
@@ -752,7 +754,7 @@ that compiles to the PTX <code class="docutils literal notranslate"><span class=
 </section>
 </section>
 <section id="gqa-support">
-<h2><span class="section-number">9.9. </span>GQA Support<a class="headerlink" href="#gqa-support" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.9. </span>GQA Support<a class="headerlink" href="#gqa-support" title="Permalink to this heading">¶</a></h2>
 <p>Grouped Query Attention (GQA) shares K/V heads across multiple Q heads.
 The kernel handles this by packing multiple Q heads into the same BLK_M
 tile:</p>
@@ -775,7 +777,7 @@ view to pack the GQA heads:</p>
 </div>
 </section>
 <section id="tile-scheduling">
-<h2><span class="section-number">9.10. </span>Tile Scheduling<a class="headerlink" href="#tile-scheduling" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.10. </span>Tile Scheduling<a class="headerlink" href="#tile-scheduling" title="Permalink to this heading">¶</a></h2>
 <p>The kernel supports two scheduling modes with different CTA launch
 strategies:</p>
 <ul class="simple">
@@ -807,7 +809,7 @@ less effective.</p>
 </div>
 </section>
 <section id="key-differences-from-gemm">
-<h2><span class="section-number">9.11. </span>Key Differences from GEMM<a class="headerlink" href="#key-differences-from-gemm" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.11. </span>Key Differences from GEMM<a class="headerlink" href="#key-differences-from-gemm" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Aspect</p></th>
@@ -869,7 +871,7 @@ Correction, Writeback</p></td>
 </table>
 </section>
 <section id="exercises">
-<h2><span class="section-number">9.12. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.12. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Why does the KV pipeline use depth 3 while the Q pipeline uses depth
 2? What determines the optimal depth for each?</p></li>
@@ -896,7 +898,7 @@ dependency exists between barrier groups.”</em></p>
 </div></blockquote>
 </section>
 <section id="running-the-kernel">
-<h2><span class="section-number">9.13. </span>Running the Kernel<a class="headerlink" href="#running-the-kernel" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">10.13. </span>Running the Kernel<a class="headerlink" href="#running-the-kernel" title="Permalink to this heading">¶</a></h2>
 <p>The complete Flash Attention 4 kernel (~1000 lines) is in
 <code class="docutils literal notranslate"><span class="pre">tirx_tutorial/flash_attention4.py</span></code>. Below we compile it, verify
 correctness against PyTorch’s scaled dot-product attention, and
@@ -929,7 +931,7 @@ used for optional profiling instrumentation and must always be provided.</p>
 
 <span class="c1"># Prepare data (Q, K, V, O are CPU tensors)</span>
 <span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">O</span> <span class="o">=</span> <span class="n">prepare_data</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">num_qo_heads</span><span class="p">,</span> <span class="n">num_kv_heads</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
 <span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">O</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">K</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">V</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">O</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 <span class="n">profiler_buf</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
     <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">PROFILER_BUFFER_SIZE</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">cuda</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -983,48 +985,48 @@ used for optional profiling instrumentation and must always be provided.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">9. Flash Attention 4</a><ul>
-<li><a class="reference internal" href="#what-you-will-learn">9.1. What You Will Learn</a></li>
-<li><a class="reference internal" href="#online-softmax">9.2. Online Softmax</a><ul>
-<li><a class="reference internal" href="#the-core-idea">9.2.1. The core idea</a></li>
-<li><a class="reference internal" href="#numeric-example">9.2.2. Numeric example</a></li>
-<li><a class="reference internal" href="#extending-to-flash-attention-4">9.2.3. Extending to Flash Attention 4</a></li>
+<li><a class="reference internal" href="#">10. Flash Attention 4</a><ul>
+<li><a class="reference internal" href="#what-you-will-learn">10.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#online-softmax">10.2. Online Softmax</a><ul>
+<li><a class="reference internal" href="#the-core-idea">10.2.1. The core idea</a></li>
+<li><a class="reference internal" href="#numeric-example">10.2.2. Numeric example</a></li>
+<li><a class="reference internal" href="#extending-to-flash-attention-4">10.2.3. Extending to Flash Attention 4</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#kernel-architecture">9.3. Kernel Architecture</a></li>
-<li><a class="reference internal" href="#the-two-mma-phases">9.4. The Two MMA Phases</a><ul>
-<li><a class="reference internal" href="#phase-1-score-mma-q-k-t-s">9.4.1. Phase 1: Score MMA (Q &#64; K^T -&gt; S)</a></li>
-<li><a class="reference internal" href="#between-phases-softmax-in-registers">9.4.2. Between phases: Softmax in registers</a></li>
-<li><a class="reference internal" href="#phase-2-value-mma-p-v-o">9.4.3. Phase 2: Value MMA (P &#64; V -&gt; O)</a></li>
-<li><a class="reference internal" href="#tmem-layout">9.4.4. TMEM Layout</a></li>
+<li><a class="reference internal" href="#kernel-architecture">10.3. Kernel Architecture</a></li>
+<li><a class="reference internal" href="#the-two-mma-phases">10.4. The Two MMA Phases</a><ul>
+<li><a class="reference internal" href="#phase-1-score-mma-q-k-t-s">10.4.1. Phase 1: Score MMA (Q &#64; K^T -&gt; S)</a></li>
+<li><a class="reference internal" href="#between-phases-softmax-in-registers">10.4.2. Between phases: Softmax in registers</a></li>
+<li><a class="reference internal" href="#phase-2-value-mma-p-v-o">10.4.3. Phase 2: Value MMA (P &#64; V -&gt; O)</a></li>
+<li><a class="reference internal" href="#tmem-layout">10.4.4. TMEM Layout</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#barrier-topology">9.5. Barrier Topology</a><ul>
-<li><a class="reference internal" href="#barrier-table">9.5.1. Barrier Table</a></li>
-<li><a class="reference internal" href="#barrier-flow-diagram">9.5.2. Barrier Flow Diagram</a></li>
-<li><a class="reference internal" href="#comparison-with-gemm-barriers">9.5.3. Comparison with GEMM barriers</a></li>
+<li><a class="reference internal" href="#barrier-topology">10.5. Barrier Topology</a><ul>
+<li><a class="reference internal" href="#barrier-table">10.5.1. Barrier Table</a></li>
+<li><a class="reference internal" href="#barrier-flow-diagram">10.5.2. Barrier Flow Diagram</a></li>
+<li><a class="reference internal" href="#comparison-with-gemm-barriers">10.5.3. Comparison with GEMM barriers</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#writeback-and-rescaling">9.6. Writeback and Rescaling</a><ul>
-<li><a class="reference internal" href="#final-normalization">9.6.1. 1. Final normalization</a></li>
-<li><a class="reference internal" href="#tmem-smem-transfer">9.6.2. 2. TMEM -&gt; SMEM transfer</a></li>
-<li><a class="reference internal" href="#tma-store">9.6.3. 3. TMA store</a></li>
-<li><a class="reference internal" href="#o-rescaling-during-iteration">9.6.4. O rescaling during iteration</a></li>
-<li><a class="reference internal" href="#lse-for-backward-pass">9.6.5. LSE for backward pass</a></li>
+<li><a class="reference internal" href="#writeback-and-rescaling">10.6. Writeback and Rescaling</a><ul>
+<li><a class="reference internal" href="#final-normalization">10.6.1. 1. Final normalization</a></li>
+<li><a class="reference internal" href="#tmem-smem-transfer">10.6.2. 2. TMEM -&gt; SMEM transfer</a></li>
+<li><a class="reference internal" href="#tma-store">10.6.3. 3. TMA store</a></li>
+<li><a class="reference internal" href="#o-rescaling-during-iteration">10.6.4. O rescaling during iteration</a></li>
+<li><a class="reference internal" href="#lse-for-backward-pass">10.6.5. LSE for backward pass</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#pipelining-structure">9.7. Pipelining Structure</a></li>
-<li><a class="reference internal" href="#causal-masking">9.8. Causal Masking</a><ul>
-<li><a class="reference internal" href="#block-level-skipping">9.8.1. Block-level skipping</a></li>
-<li><a class="reference internal" href="#three-phase-iteration">9.8.2. Three-phase iteration</a></li>
-<li><a class="reference internal" href="#r2p-masking">9.8.3. R2P masking</a></li>
+<li><a class="reference internal" href="#pipelining-structure">10.7. Pipelining Structure</a></li>
+<li><a class="reference internal" href="#causal-masking">10.8. Causal Masking</a><ul>
+<li><a class="reference internal" href="#block-level-skipping">10.8.1. Block-level skipping</a></li>
+<li><a class="reference internal" href="#three-phase-iteration">10.8.2. Three-phase iteration</a></li>
+<li><a class="reference internal" href="#r2p-masking">10.8.3. R2P masking</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#gqa-support">9.9. GQA Support</a></li>
-<li><a class="reference internal" href="#tile-scheduling">9.10. Tile Scheduling</a></li>
-<li><a class="reference internal" href="#key-differences-from-gemm">9.11. Key Differences from GEMM</a></li>
-<li><a class="reference internal" href="#exercises">9.12. Exercises</a></li>
-<li><a class="reference internal" href="#running-the-kernel">9.13. Running the Kernel</a></li>
+<li><a class="reference internal" href="#gqa-support">10.9. GQA Support</a></li>
+<li><a class="reference internal" href="#tile-scheduling">10.10. Tile Scheduling</a></li>
+<li><a class="reference internal" href="#key-differences-from-gemm">10.11. Key Differences from GEMM</a></li>
+<li><a class="reference internal" href="#exercises">10.12. Exercises</a></li>
+<li><a class="reference internal" href="#running-the-kernel">10.13. Running the Kernel</a></li>
 </ul>
 </li>
 </ul>
@@ -1039,14 +1041,14 @@ used for optional profiling instrumentation and must always be provided.</p>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>8. GEMM Steps 7–9: Warp Specialization to cuBLAS</div>
+            <div>9. GEMM Steps 7–9: Warp Specialization to cuBLAS</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_ai_assisted/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>10. AI-Assisted Kernel Development</div>
+            <div>11. AI-Assisted Kernel Development</div>
         </div>
      </a>
   </div>

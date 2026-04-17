@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>4. TIRX Layout: Mapping Tensors to Hardware &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fontawesome/all.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/d2l.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/d2l.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. Fused GELU-Tanh &amp; Multiply" href="../chapter_fused_gelu/index.html" />
+    <link rel="prev" title="3. TIRX Programming Model" href="../chapter_tirx_primer/index.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link is-active"><span class="section-number">4. </span>TIRX Layout: Mapping Tensors to Hardware</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+          <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/chapter_layouts/index.rst.txt" rel="nofollow">
+  <i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+          
+              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
+                  <i class="fab fa-github"></i>
+                  GitHub
+              </a>
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+
+	<script type="text/javascript" src="../_static/sphinx_materialdesign_theme.js "></script>
+    <header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content" role="main">
+        
+  <section id="tirx-layout-mapping-tensors-to-hardware">
+<span id="chap-layouts"></span><h1><span class="section-number">4. </span>TIRX Layout: Mapping Tensors to Hardware<a class="headerlink" href="#tirx-layout-mapping-tensors-to-hardware" title="Permalink to this heading">¶</a></h1>
+<p><em>Every TIRX kernel you will write has the same three-line pattern:
+allocate a buffer, attach a layout, and move data into or out of it. The
+``layout=`` argument is what makes the kernel fast. This chapter opens
+up that argument.</em></p>
+<p>Most tutorials on GPU programming treat memory layout as a footnote —
+“use 128-byte swizzle, it avoids bank conflicts, move on.” That works
+for copy-paste engineering but breaks the moment you leave the beaten
+path: a non-square tile, a new dtype, a 2-CTA kernel, a Flash Attention
+epilogue. At that point you need a <em>mental model</em> of what a layout is,
+what it does, and what degrees of freedom you have.</p>
+<p>TIRX exposes such a model, called the <strong>TIRX Layout</strong> system. This
+chapter introduces it from the ground up. By the end you will be able
+to:</p>
+<ul class="simple">
+<li><p>read any layout expression in the GEMM, RMSNorm, and Flash Attention
+kernels,</p></li>
+<li><p>pick the right swizzle mode for a given tile shape and dtype,</p></li>
+<li><p>diagnose a bank-conflict or TMEM-matching bug by inspecting the
+layout,</p></li>
+<li><p>write your own layouts for custom buffers in later chapters.</p></li>
+</ul>
+<p>We ground every idea in the Blackwell hardware you met in
+<a class="reference internal" href="../chapter_background/index.html#chap-background"><span class="std std-numref">Section 1</span></a> — TMEM, SMEM, TMA, warpgroups, and CTA
+clusters — and we reuse code directly from the GEMM kernels in Part III.</p>
+<hr class="docutils" />
+<section id="why-layouts-matter">
+<h2><span class="section-number">4.1. </span>Why Layouts Matter<a class="headerlink" href="#why-layouts-matter" title="Permalink to this heading">¶</a></h2>
+<p>A tensor on paper is indexed by logical coordinates such as <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code>.
+A tensor in a GPU is indexed by <em>physical</em> coordinates that depend on
+where it lives:</p>
+<ul class="simple">
+<li><p>In <strong>global memory (GMEM)</strong> a tensor is a flat byte array; <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code>
+becomes a byte offset.</p></li>
+<li><p>In <strong>shared memory (SMEM)</strong> a tensor lives in a 32-bank scratchpad
+with 4-byte banks; <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code> becomes a bank ID plus a bank offset.</p></li>
+<li><p>In <strong>tensor memory (TMEM)</strong> a tensor is a 2D array addressed by
+<code class="docutils literal notranslate"><span class="pre">(TLane,</span> <span class="pre">TCol)</span></code>; <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code> becomes a <code class="docutils literal notranslate"><span class="pre">(TLane,</span> <span class="pre">TCol)</span></code> pair.</p></li>
+<li><p>In <strong>registers (RF)</strong> a tensor is sharded across 128 threads of a
+warpgroup; <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code> becomes a thread ID plus a per-thread register
+index.</p></li>
+</ul>
+<p>A <strong>layout</strong> is the function that performs this translation. The same
+logical tile <code class="docutils literal notranslate"><span class="pre">A[0:128,</span> <span class="pre">0:64]</span></code> can have four very different layouts
+depending on which memory space it is in, and the same memory space can
+use many different layouts for the same logical tile. The choice is
+almost never cosmetic: an incorrect layout causes one of three failures.</p>
+<p><strong>Failure mode 1: bank conflicts.</strong> SMEM is divided into 32 banks of 4
+bytes each. If 32 threads of a warp access 32 addresses that map to the
+same bank, the accesses serialize. A naive row-major layout of a 128×64
+fp16 tile has exactly this pathology when 32 threads read the same
+column from 32 different rows — which is precisely the access pattern an
+unswizzled <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> descriptor ends up issuing. The generated
+code is correct but can be several times slower than necessary.</p>
+<p><strong>Failure mode 2: wrong MMA operands.</strong> The <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> instruction
+does not read arbitrary SMEM. It reads SMEM through a <em>matrix
+descriptor</em> that encodes a specific layout (leading dimension, stride,
+swizzle mode, base offset). If your SMEM layout does not match one of
+the patterns the descriptor can express, the compiler rejects it; if the
+descriptor fields are wrong, the MMA silently reads garbage. You will
+see <code class="docutils literal notranslate"><span class="pre">NaN</span></code> in the output.</p>
+<p><strong>Failure mode 3: TMEM–RF mismatch.</strong> When a warpgroup reads TMEM into
+registers via <code class="docutils literal notranslate"><span class="pre">Tx.copy(Dreg,</span> <span class="pre">tmem)</span></code>, the compiler must match the TMEM
+layout to the RF layout thread-by-thread. A 128×8 TMEM tile laid out as
+<code class="docutils literal notranslate"><span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)</span></code> feeds naturally into a 128-thread warpgroup where
+thread <code class="docutils literal notranslate"><span class="pre">i</span></code> receives row <code class="docutils literal notranslate"><span class="pre">i</span></code>. A mismatched layout triggers a
+compile-time error; a subtly wrong one (for example,
+<code class="docutils literal notranslate"><span class="pre">(1&#64;TCol,</span> <span class="pre">1&#64;TLane)</span></code>) loads the transpose.</p>
+<p>TIRX Layout gives us a <em>vocabulary</em> to talk about all three problems in
+the same language.</p>
+</section>
+<hr class="docutils" />
+<section id="the-core-idea-named-hardware-axes">
+<h2><span class="section-number">4.2. </span>The Core Idea: Named Hardware Axes<a class="headerlink" href="#the-core-idea-named-hardware-axes" title="Permalink to this heading">¶</a></h2>
+<p>CUTLASS CuTe layouts describe a tensor as a shape tuple paired with a
+stride tuple:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># CuTe-style (for reference only):</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+<span class="n">stride</span> <span class="o">=</span> <span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>          <span class="c1"># row-major</span>
+</pre></div>
+</div>
+<p>This works fine for GMEM, where “stride” is unambiguous: it is the
+number of elements between consecutive indices. But as soon as you
+descend to SMEM, TMEM, or RF, “stride” becomes ambiguous: stride <em>in
+what</em>? Banks? Rows of TMEM? Threads of a warpgroup?</p>
+<p>TIRX Layout resolves this by giving each hardware dimension a <strong>name</strong>
+and requiring every stride to be paired with a name:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.layout</span><span class="w"> </span><span class="kn">import</span> <span class="n">TileLayout</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">TLane</span><span class="p">,</span> <span class="n">TCol</span><span class="p">,</span> <span class="n">tid_in_wg</span>
+
+<span class="n">layout</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+<span class="c1">#                      ^^^^^^^^^   ^^^^^^^^^^^^^^^^^</span>
+<span class="c1">#                      shape       stride @ named axis</span>
+</pre></div>
+</div>
+<p>Read this as: “the logical tile has 128 rows and 512 columns; move one
+unit along <code class="docutils literal notranslate"><span class="pre">TLane</span></code> for each row, move one unit along <code class="docutils literal notranslate"><span class="pre">TCol</span></code> for each
+column.” The named axes (<code class="docutils literal notranslate"><span class="pre">TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">TCol</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>, <code class="docutils literal notranslate"><span class="pre">laneid</span></code>,
+<code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, <code class="docutils literal notranslate"><span class="pre">cby</span></code>, …) are a fixed vocabulary that represents
+concrete hardware resources:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Named axis</p></th>
+<th class="head"><p>What it represents</p></th>
+<th class="head"><p>Where it lives</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TLane</span></code></p></td>
+<td><p>TMEM row index
+(0…127)</p></td>
+<td><p>TMEM</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCol</span></code></p></td>
+<td><p>TMEM column index
+(0…511)</p></td>
+<td><p>TMEM</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code></p></td>
+<td><p>Thread index within a
+warpgroup (0…127)</p></td>
+<td><p>RF</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">laneid</span></code></p></td>
+<td><p>Thread index within a
+warp (0…31)</p></td>
+<td><p>RF</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warpid</span></code></p></td>
+<td><p>Warp index within a
+CTA</p></td>
+<td><p>RF</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">wid_in_wg</span></code></p></td>
+<td><p>Warp index within a
+warpgroup (0…3)</p></td>
+<td><p>RF</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cbx</span></code>, <code class="docutils literal notranslate"><span class="pre">cby</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cbz</span></code></p></td>
+<td><p>CTA index within a
+cluster</p></td>
+<td><p>Cross-CTA SMEM</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>(unnamed)</em></p></td>
+<td><p>Logical memory offset
+(default axis <code class="docutils literal notranslate"><span class="pre">m</span></code>)</p></td>
+<td><p>GMEM, SMEM, RF</p></td>
+</tr>
+</tbody>
+</table>
+<p>The named axes are not user-defined; they are a hardware manifest. When
+you write <code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code>, you are saying: “this dimension maps one-for-one
+to the physical <code class="docutils literal notranslate"><span class="pre">TLane</span></code> axis of TMEM.” When the compiler later matches
+a <code class="docutils literal notranslate"><span class="pre">Tx.copy(Dreg,</span> <span class="pre">tmem)</span></code> call, it looks at the TMEM layout, finds the
+RF layout, and pairs <code class="docutils literal notranslate"><span class="pre">TLane</span></code> with <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> because they are the
+same length. The matching is mechanical.</p>
+<section id="why-named-axes-not-just-strides">
+<h3><span class="section-number">4.2.1. </span>Why Named Axes, Not Just Strides<a class="headerlink" href="#why-named-axes-not-just-strides" title="Permalink to this heading">¶</a></h3>
+<p>Consider a concrete case. The Blackwell MMA writes a 128×512 fp32
+accumulator tile to TMEM. You want to read it into a warpgroup of 128
+threads, each thread taking one row of 512 elements. In CuTe-style
+strides you would write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>TMEM:  shape=(128, 512),  stride=(1, 128)
+RF:    shape=(128, 512),  stride=(???, 1)        # stride &quot;1 in threads&quot;?
+</pre></div>
+</div>
+<p>What is the stride of the row dimension in RF? It is not a memory
+address. It is an <em>index into the thread space</em>, which CuTe has to
+encode using a separate threadblock-level layout. Named axes flatten
+this distinction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># TMEM layout:</span>
+<span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+
+<span class="c1"># Matching RF layout:</span>
+<span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+<span class="c1">#                          ^^^^^^^^^^^^  ^</span>
+<span class="c1">#                          thread axis   memory axis (default &quot;m&quot;)</span>
+</pre></div>
+</div>
+<p>One dimension lives on a thread axis, another on a memory axis; both are
+spelled the same way. The compiler proves they are compatible by a
+simple axis-matching rule, and the <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> call emits the right
+<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> instruction.</p>
+<p>This is the one idea you need to carry through the rest of the chapter:
+<strong>a layout maps logical indices to coordinates on named hardware axes,
+and compatibility between two layouts is decided by whether their axis
+pairings match.</strong></p>
+</section>
+<section id="reading-stride-axis">
+<h3><span class="section-number">4.2.2. </span>Reading <code class="docutils literal notranslate"><span class="pre">stride&#64;axis</span></code><a class="headerlink" href="#reading-stride-axis" title="Permalink to this heading">¶</a></h3>
+<p>The expression <code class="docutils literal notranslate"><span class="pre">k&#64;axis</span></code> reads as “advance by <code class="docutils literal notranslate"><span class="pre">k</span></code> units along
+<code class="docutils literal notranslate"><span class="pre">axis</span></code> when the logical index increases by 1.” It is the direct
+analogue of CuTe’s strides, with one addition: the “unit” is whatever
+the axis counts — lanes, columns, elements — not always raw bytes.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code> means “each logical row is the next TMEM lane.” Logical
+indices 0, 1, 2, … map to TLane 0, 1, 2, ….</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">1&#64;tid_in_wg</span></code> means “each logical row is the next thread in the
+warpgroup.” Logical index 0 goes to thread 0; logical index 127 goes
+to thread 127.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">32&#64;TLane</span></code> means “step 32 lanes per increment.” Logical indices 0,
+1, 2, 3 land on TLane 0, 32, 64, 96. Non-unit strides almost never
+appear alone; they show up when one dimension picks the <em>outer</em> block
+and a second dimension (with stride 1 on the same axis) picks the
+<em>inner</em> position within that block — so together they tile the full
+128 lanes without gaps.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">m</span></code> axis is special. It is the <strong>linear element offset within the
+buffer</strong> — the thing you would call “a flat array index” in C. Two
+conventions matter:</p>
+<ul class="simple">
+<li><p>A bare integer <code class="docutils literal notranslate"><span class="pre">k</span></code> with no <code class="docutils literal notranslate"><span class="pre">&#64;axis</span></code> is shorthand for <code class="docutils literal notranslate"><span class="pre">k&#64;m</span></code>. So
+<code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">8)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)]</span></code> is identical to
+<code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">8)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1&#64;m)]</span></code>: the column dimension advances
+one element in memory per step.</p></li>
+<li><p>When a whole <code class="docutils literal notranslate"><span class="pre">S[(shape...)]</span></code> has no stride list at all, the strides
+default to row-major on <code class="docutils literal notranslate"><span class="pre">m</span></code>. For example
+<code class="docutils literal notranslate"><span class="pre">S[(PIPE_DEPTH,</span> <span class="pre">BLK_M,</span> <span class="pre">BLK_K)]</span></code> expands to
+<code class="docutils literal notranslate"><span class="pre">S[(...)</span> <span class="pre">:</span> <span class="pre">(BLK_M*BLK_K&#64;m,</span> <span class="pre">BLK_K&#64;m,</span> <span class="pre">1&#64;m)]</span></code>. This is the “nothing
+special” case and is what you want for ordinary memory buffers.</p></li>
+</ul>
+<p>A named axis is a hardware resource with a fixed range (<code class="docutils literal notranslate"><span class="pre">TLane</span></code> has
+128 lanes, <code class="docutils literal notranslate"><span class="pre">TCol</span></code> has 512 columns, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> has 128 threads, and
+so on). A stride larger than the range is an error; legal layouts choose
+strides so the dimensions that target an axis together tile the axis
+exactly once (as in the <code class="docutils literal notranslate"><span class="pre">32&#64;TLane</span></code> / <code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code> pair above), leaving
+no gaps and no overlaps.</p>
+</section>
+<section id="visualizing-a-mapping">
+<h3><span class="section-number">4.2.3. </span>Visualizing a Mapping<a class="headerlink" href="#visualizing-a-mapping" title="Permalink to this heading">¶</a></h3>
+<p>To make the abstraction concrete, consider the same logical tile — a
+128×8 fp32 block — viewed through two different layouts:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Same logical tile. Different physical homes.</span>
+<span class="n">layout_A</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span>     <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>   <span class="c1"># lives in TMEM</span>
+<span class="n">layout_B</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>        <span class="c1"># lives in RF</span>
+</pre></div>
+</div>
+<p>Layout <code class="docutils literal notranslate"><span class="pre">A</span></code> places each logical cell <code class="docutils literal notranslate"><span class="pre">[r,</span> <span class="pre">c]</span></code> at the TMEM coordinate
+<code class="docutils literal notranslate"><span class="pre">(TLane=r,</span> <span class="pre">TCol=c)</span></code>. TMEM is a shared SM-wide 2D scratchpad, so every
+thread in the warpgroup sees the same cell at the same hardware
+location:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TMEM</span> <span class="p">(</span><span class="n">shared</span> <span class="n">by</span> <span class="n">the</span> <span class="n">whole</span> <span class="n">SM</span><span class="p">):</span>
+               <span class="n">TCol</span> <span class="mi">0</span>   <span class="mi">1</span>   <span class="mi">2</span>   <span class="mi">3</span>   <span class="mi">4</span>   <span class="mi">5</span>   <span class="mi">6</span>   <span class="mi">7</span>
+   <span class="n">TLane</span>   <span class="mi">0</span> <span class="o">|</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+   <span class="n">TLane</span>   <span class="mi">1</span> <span class="o">|</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+      <span class="o">...</span>
+   <span class="n">TLane</span> <span class="mi">127</span> <span class="o">|</span> <span class="p">[</span><span class="mi">127</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>                                 <span class="p">[</span><span class="mi">127</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Layout <code class="docutils literal notranslate"><span class="pre">B</span></code> places the same logical cell <code class="docutils literal notranslate"><span class="pre">[r,</span> <span class="pre">c]</span></code> in thread <code class="docutils literal notranslate"><span class="pre">r</span></code>’s
+register <code class="docutils literal notranslate"><span class="pre">c</span></code>. Registers are thread-private, so the view is 128
+independent per-thread register files that, taken together, form the
+logical tile:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">RF</span> <span class="p">(</span><span class="mi">128</span> <span class="n">private</span> <span class="n">register</span> <span class="n">files</span><span class="p">,</span> <span class="n">one</span> <span class="n">per</span> <span class="n">thread</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">warpgroup</span><span class="p">):</span>
+   <span class="n">Thread</span>   <span class="mi">0</span> <span class="n">regs</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+   <span class="n">Thread</span>   <span class="mi">1</span> <span class="n">regs</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+      <span class="o">...</span>
+   <span class="n">Thread</span> <span class="mi">127</span> <span class="n">regs</span><span class="p">:</span> <span class="p">[</span><span class="mi">127</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>                                  <span class="p">[</span><span class="mi">127</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Both layouts describe the <em>same</em> logical tile but assign its 1024 cells
+to very different physical locations. A <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> from layout <code class="docutils literal notranslate"><span class="pre">A</span></code> to
+layout <code class="docutils literal notranslate"><span class="pre">B</span></code> lines up by pairing <code class="docutils literal notranslate"><span class="pre">TLane</span></code> with <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> and
+<code class="docutils literal notranslate"><span class="pre">TCol</span></code> with <code class="docutils literal notranslate"><span class="pre">m</span></code>. That pairing is the entire content of the
+<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> instruction — and it is exactly what makes the epilogue
+of every GEMM kernel in Part III “just work”.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="tirx-layout-syntax">
+<h2><span class="section-number">4.3. </span>TIRX Layout Syntax<a class="headerlink" href="#tirx-layout-syntax" title="Permalink to this heading">¶</a></h2>
+<p>TIRX Layout has three components, each contributed by an operator in the
+Python DSL.</p>
+<section id="s-shard-s-shape-stride-axis">
+<h3><span class="section-number">4.3.1. </span>S (Shard): <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code><a class="headerlink" href="#s-shard-s-shape-stride-axis" title="Permalink to this heading">¶</a></h3>
+<p>The shard component is the backbone of every layout. It says how each
+logical dimension is partitioned over named axes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="n">shape_0</span><span class="p">,</span> <span class="n">shape_1</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="n">stride_0</span><span class="nd">@axis_0</span><span class="p">,</span> <span class="n">stride_1</span><span class="nd">@axis_1</span><span class="p">,</span> <span class="o">...</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">i</span></code>-th dimension has extent <code class="docutils literal notranslate"><span class="pre">shape_i</span></code> and places consecutive
+logical indices <code class="docutils literal notranslate"><span class="pre">stride_i</span></code> units apart along <code class="docutils literal notranslate"><span class="pre">axis_i</span></code>. If you omit
+the <code class="docutils literal notranslate"><span class="pre">&#64;axis</span></code> suffix, the axis defaults to <code class="docutils literal notranslate"><span class="pre">m</span></code> (the logical memory
+offset within the buffer), which is what you want for GMEM and for any
+“pipeline stage” dimension that only exists for indexing.</p>
+<p>Concrete examples from <code class="docutils literal notranslate"><span class="pre">chapter_gemm_basics</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># (1) A 2D TMEM accumulator tile, 128 rows on TLane and 512 columns on TCol:</span>
+<span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
+
+<span class="c1"># (2) An RF buffer viewed as a 128×BLK_N tile, with the row dimension distributed</span>
+<span class="c1">#     across the 128 threads of a warpgroup:</span>
+<span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+
+<span class="c1"># (3) A multi-stage pipelined SMEM buffer: the leading stage index is a memory</span>
+<span class="c1">#     offset, and the inner BLK_M×BLK_K tile is row-major in memory:</span>
+<span class="n">S</span><span class="p">[(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>In example (3) no <code class="docutils literal notranslate"><span class="pre">&#64;axis</span></code> is given for any dimension, so every
+dimension defaults to <code class="docutils literal notranslate"><span class="pre">m</span></code> — this is an ordinary memory layout
+indistinguishable from a flat buffer of shape
+<code class="docutils literal notranslate"><span class="pre">(PIPE_DEPTH,</span> <span class="pre">BLK_M,</span> <span class="pre">BLK_K)</span></code>. The value of TIRX Layout for such a
+buffer is not the shard but the <em>swizzle wrapper</em> we introduce in the
+next section.</p>
+</section>
+<section id="a-worked-example-from-logical-index-to-hardware-coordinate">
+<h3><span class="section-number">4.3.2. </span>A Worked Example: From Logical Index to Hardware Coordinate<a class="headerlink" href="#a-worked-example-from-logical-index-to-hardware-coordinate" title="Permalink to this heading">¶</a></h3>
+<p>The shard operator <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> is formally a linear map. Given a logical
+index <span class="math notranslate nohighlight">\(x = (x_0, x_1, \ldots, x_{d-1})\)</span>, the physical coordinate
+on each named axis is the sum of <code class="docutils literal notranslate"><span class="pre">stride_i</span> <span class="pre">*</span> <span class="pre">x_i</span></code> contributions from
+the dimensions that target that axis:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-layouts-index-0">
+<span class="eqno">(4.3.1)<a class="headerlink" href="#equation-chapter-layouts-index-0" title="Permalink to this equation">¶</a></span>\[\mathrm{phys}(\mathrm{axis}) \;=\; \sum_{i \;:\; \mathrm{axis}_i \,=\, \mathrm{axis}} \mathrm{stride}_i \cdot x_i .\]</div>
+<p>Let’s walk through a concrete case. Take the following layout, which
+describes a 128×8 TMEM tile with the row and column hierarchically
+decomposed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">32</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">4</span><span class="nd">@TCol</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
+<span class="c1">#  ^  ^^  ^  ^     ^^^^^^^^  ^^^^^^^  ^^^^^^  ^^^^^^</span>
+<span class="c1">#  |  |   |  |     warp      lane     col-    col</span>
+<span class="c1">#  |  |   |  |     (outer)   (inner)  block   inner</span>
+<span class="c1">#  |  |   |  +-- 4 columns inside a col-block</span>
+<span class="c1">#  |  |   +----- 2 col-blocks stacked (0..3, 4..7)</span>
+<span class="c1">#  |  +--------- 32 lanes inside one warp</span>
+<span class="c1">#  +------------ 4 warps of 32 lanes each (128 lanes total)</span>
+</pre></div>
+</div>
+<p>Four logical dimensions project onto two output axes. Let’s map the
+logical index <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">(1,</span> <span class="pre">5,</span> <span class="pre">1,</span> <span class="pre">2)</span></code> — meaning “warp 1, lane 5,
+column-block 1, column 2 within the block” — to a TMEM coordinate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Dim</span> <span class="mi">0</span><span class="p">:</span> <span class="mi">32</span><span class="nd">@TLane</span> <span class="o">*</span> <span class="mi">1</span>  <span class="o">-&gt;</span>  <span class="n">TLane</span> <span class="o">+=</span> <span class="mi">32</span>
+<span class="n">Dim</span> <span class="mi">1</span><span class="p">:</span>  <span class="mi">1</span><span class="nd">@TLane</span> <span class="o">*</span> <span class="mi">5</span>  <span class="o">-&gt;</span>  <span class="n">TLane</span> <span class="o">+=</span>  <span class="mi">5</span>
+<span class="n">Dim</span> <span class="mi">2</span><span class="p">:</span>  <span class="mi">4</span><span class="nd">@TCol</span>  <span class="o">*</span> <span class="mi">1</span>  <span class="o">-&gt;</span>  <span class="n">TCol</span>  <span class="o">+=</span>  <span class="mi">4</span>
+<span class="n">Dim</span> <span class="mi">3</span><span class="p">:</span>  <span class="mi">1</span><span class="nd">@TCol</span>  <span class="o">*</span> <span class="mi">2</span>  <span class="o">-&gt;</span>  <span class="n">TCol</span>  <span class="o">+=</span>  <span class="mi">2</span>
+
+<span class="n">Result</span><span class="p">:</span> <span class="p">(</span><span class="n">TLane</span> <span class="o">=</span> <span class="mi">37</span><span class="p">,</span> <span class="n">TCol</span> <span class="o">=</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The hierarchical reading lines up with the arithmetic: warp 1 covers
+lanes 32–63, so lane 5 in that warp is physical lane 37; column-block 1
+covers cols 4–7, so column 2 in that block is physical col 6.</p>
+<p>Three observations from this calculation:</p>
+<ol class="arabic simple">
+<li><p><strong>Multiple logical dimensions can map to the same physical axis.</strong>
+Dims 0 and 1 both feed <code class="docutils literal notranslate"><span class="pre">TLane</span></code>; dims 2 and 3 both feed <code class="docutils literal notranslate"><span class="pre">TCol</span></code>.
+This is how you express a hierarchical partition — say “outer warp,
+inner lane” or “outer tile, inner element” — without inventing new
+axes.</p></li>
+<li><p><strong>Axes that no logical dim targets are implicitly zero.</strong> If no dim
+targets <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, the output simply has no <code class="docutils literal notranslate"><span class="pre">cbx</span></code> coordinate and the
+layout is CTA-local.</p></li>
+<li><p><strong>Element offsets on ``m`` sum the same way.</strong> The only difference
+between <code class="docutils literal notranslate"><span class="pre">m</span></code> and named axes is that <code class="docutils literal notranslate"><span class="pre">m</span></code> measures the linear
+element offset within the buffer, while named axes index a hardware
+resource. The arithmetic is identical.</p></li>
+</ol>
+<p>With this in hand, every layout you will encounter — including the
+scary-looking cluster ones later in the chapter — becomes a routine
+substitution into the formula above.</p>
+</section>
+<section id="r-replica-r-extent-stride-axis">
+<h3><span class="section-number">4.3.3. </span>R (Replica): <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">R[extent</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code><a class="headerlink" href="#r-replica-r-extent-stride-axis" title="Permalink to this heading">¶</a></h3>
+<p>The replica component broadcasts a tile across hardware space. Unlike a
+shard, a replica iterates over additional axis coordinates <em>without
+changing the logical index</em>, so the same logical data appears at
+multiple physical locations.</p>
+<p>The simplest replica is a scalar broadcast. Suppose you have a
+length-<code class="docutils literal notranslate"><span class="pre">N</span></code> vector that you want every thread in a warpgroup to see —
+for example, a softmax scale vector broadcast across 128 rows of an
+output tile:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># One vector of length N, seen identically by all 128 threads of the warpgroup:</span>
+<span class="n">S</span><span class="p">[(</span><span class="n">N</span><span class="p">,)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">128</span> <span class="p">:</span> <span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The shard <code class="docutils literal notranslate"><span class="pre">S[(N,)</span> <span class="pre">:</span> <span class="pre">(1,)]</span></code> says the vector is a flat <code class="docutils literal notranslate"><span class="pre">N</span></code>-element
+memory buffer. The replica <code class="docutils literal notranslate"><span class="pre">R[128</span> <span class="pre">:</span> <span class="pre">1&#64;tid_in_wg]</span></code> says: “for every
+value of <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> from 0 to 127, this whole vector exists <em>as-is</em>
+at that thread coordinate.” The logical index is still <code class="docutils literal notranslate"><span class="pre">v[i]</span></code>; there
+is no new logical axis. All 128 threads read the same <code class="docutils literal notranslate"><span class="pre">v[i]</span></code>
+concurrently.</p>
+<p>Contrast a replica with a shard on the same named axis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Shard: each thread gets ITS OWN slice of a length-(128*N) vector.</span>
+<span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+
+<span class="c1"># Replica: the same length-N vector is seen identically by every thread.</span>
+<span class="n">S</span><span class="p">[(</span><span class="n">N</span><span class="p">,)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">128</span> <span class="p">:</span> <span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A shard <em>partitions</em>; a replica <em>copies</em>. You reach for a replica
+whenever the hardware has to consume the same data from many sites
+simultaneously.</p>
+<p>A more elaborate example combines shard and replica. From the paper’s
+TMA-multicast case study:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">16384</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@cbx</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span> <span class="p">:</span> <span class="mi">1</span><span class="nd">@cby</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This layout spreads a 256×128 tile across two CTAs (via <code class="docutils literal notranslate"><span class="pre">1&#64;cbx</span></code>) and
+then replicates the entire result across four CTAs in the <code class="docutils literal notranslate"><span class="pre">cby</span></code>
+direction. A single TMA instruction broadcasts the tile to all four
+receivers; the replica axis is how the compiler knows the broadcast
+pattern.</p>
+<p>Replicas show up in three practical settings:</p>
+<ol class="arabic simple">
+<li><p><strong>TMA multicast</strong> across a CTA cluster (<code class="docutils literal notranslate"><span class="pre">R[N</span> <span class="pre">:</span> <span class="pre">1&#64;cby]</span></code>).</p></li>
+<li><p><strong>Scale/scalar broadcasts</strong>, where a length-<code class="docutils literal notranslate"><span class="pre">N</span></code> vector is
+replicated across the rows of an <code class="docutils literal notranslate"><span class="pre">M×N</span></code> tile.</p></li>
+<li><p><strong>Allocation of exclusive resources</strong>, where the replica marks a
+buffer as “reserved for this warpgroup” while leaving the logical
+tile unchanged.</p></li>
+</ol>
+<p>You will see replicas in the Flash Attention kernel
+(<a class="reference internal" href="../chapter_flash_attention/index.html#chap-flash-attention"><span class="std std-numref">Section 10</span></a>) where the softmax scale vector is
+broadcast across the tile.</p>
+</section>
+<section id="o-offset-k-axis">
+<h3><span class="section-number">4.3.4. </span>O (Offset): <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">k&#64;axis</span></code><a class="headerlink" href="#o-offset-k-axis" title="Permalink to this heading">¶</a></h3>
+<p>A bare <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">k&#64;axis</span></code> expression adds a constant offset on the given axis
+to every output coordinate. This is the least commonly used operator —
+it appears mainly when a buffer is carved out of a larger pool and needs
+to land on a particular warp or column:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@m</span><span class="p">)]</span> <span class="o">+</span> <span class="mi">5</span><span class="nd">@warpid</span>
+<span class="c1">#                               ^^^^^^^^</span>
+<span class="c1">#                               &quot;place this tile on warp 5 (and 6 if replicated)&quot;</span>
+</pre></div>
+</div>
+<p>For the kernels in this tutorial you will rarely write offsets by hand —
+they are generated by allocators like <code class="docutils literal notranslate"><span class="pre">pool.alloc</span></code> and helpers like
+<code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code>. It is enough to know the operator exists so you
+can read it.</p>
+</section>
+<section id="formal-semantics-optional">
+<h3><span class="section-number">4.3.5. </span>Formal Semantics (Optional)<a class="headerlink" href="#formal-semantics-optional" title="Permalink to this heading">¶</a></h3>
+<p>If you prefer a precise definition, the layout <span class="math notranslate nohighlight">\(L\)</span> maps a logical
+index <span class="math notranslate nohighlight">\(x\)</span> to a <em>set</em> of hardware coordinates:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-layouts-index-1">
+<span class="eqno">(4.3.2)<a class="headerlink" href="#equation-chapter-layouts-index-1" title="Permalink to this equation">¶</a></span>\[L(x) = \{\, S(x) + r + O \mid r \in \mathcal{R} \,\}\]</div>
+<p>where <span class="math notranslate nohighlight">\(S(x)\)</span> is the coordinate tuple produced by the shard
+operator <code class="docutils literal notranslate"><span class="pre">S[...]</span></code>, <span class="math notranslate nohighlight">\(\mathcal{R}\)</span> is the (possibly empty) set of
+replica offsets produced by <code class="docutils literal notranslate"><span class="pre">R[...]</span></code>, and <span class="math notranslate nohighlight">\(O\)</span> is the constant
+offset contributed by any bare <code class="docutils literal notranslate"><span class="pre">k&#64;axis</span></code> terms. When
+<span class="math notranslate nohighlight">\(\mathcal{R}\)</span> is empty, <span class="math notranslate nohighlight">\(L\)</span> is a function; when
+<span class="math notranslate nohighlight">\(\mathcal{R}\)</span> is non-empty, <span class="math notranslate nohighlight">\(L\)</span> is a multi-valued map — that
+is what broadcasting means formally.</p>
+<p>You will not have to manipulate this formula directly. The DSL composes
+the three operators for you; you only need to read the result.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="smem-layouts-and-swizzling">
+<h2><span class="section-number">4.4. </span>SMEM Layouts and Swizzling<a class="headerlink" href="#smem-layouts-and-swizzling" title="Permalink to this heading">¶</a></h2>
+<p>We now apply the layout vocabulary from the previous section to
+Blackwell’s shared memory. SMEM is the common meeting ground for data
+movement and compute: TMA writes here, <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> reads from here,
+and the writeback path stages tiles here before a TMA store. Every
+performance problem that is not “the algorithm is wrong” is a SMEM
+layout problem.</p>
+<section id="the-bank-conflict-problem">
+<h3><span class="section-number">4.4.1. </span>The Bank-Conflict Problem<a class="headerlink" href="#the-bank-conflict-problem" title="Permalink to this heading">¶</a></h3>
+<p>Blackwell SMEM is 228 KB per SM, organized as 32 banks of 4 bytes each.
+A 32-wide thread access is conflict-free only when all 32 threads hit
+distinct banks. Consider a naive row-major fp16 tile of shape
+<code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">64)</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">addr</span><span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mi">64</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">k</span>              <span class="p">(</span><span class="ow">in</span> <span class="n">fp16</span> <span class="n">units</span><span class="p">)</span>
+           <span class="o">=</span> <span class="mi">128</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k</span>         <span class="p">(</span><span class="ow">in</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">bank</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="mi">128</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span> <span class="n">mod</span> <span class="mi">32</span>
+           <span class="o">=</span> <span class="p">(</span><span class="mi">32</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">k</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>     <span class="n">mod</span> <span class="mi">32</span>
+           <span class="o">=</span> <span class="n">k</span><span class="o">/</span><span class="mi">2</span>                 <span class="n">mod</span> <span class="mi">32</span>     <span class="c1"># 32 * m is divisible by 32, so it drops out</span>
+</pre></div>
+</div>
+<p>The row coordinate <code class="docutils literal notranslate"><span class="pre">m</span></code> has no effect on the bank ID. When 32 threads
+access 32 different rows at the same column, they all compute the same
+<code class="docutils literal notranslate"><span class="pre">k/2</span> <span class="pre">mod</span> <span class="pre">32</span></code> and therefore hit the <em>same</em> bank, serializing into 32
+sequential accesses. The same tile laid out with 128-byte swizzle
+scrambles the column index as a function of the row so that the 32 row
+accesses land in 32 different banks.</p>
+</section>
+<section id="the-tma-shared-layout-helper">
+<h3><span class="section-number">4.4.2. </span>The <code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code> Helper<a class="headerlink" href="#the-tma-shared-layout-helper" title="Permalink to this heading">¶</a></h3>
+<p>You almost never write an SMEM layout by hand. The helper
+<code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code> chooses a TMA- and MMA-compatible layout from
+three inputs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">tma_shared_layout</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">A_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float16&quot;</span><span class="p">,</span>
+    <span class="n">swizzle</span><span class="o">=</span><span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The helper emits a layout equivalent to
+<code class="docutils literal notranslate"><span class="pre">Swizzle(mode.128B,</span> <span class="pre">Layout(S[(BLK_M,</span> <span class="pre">BLK_K)]))</span></code>: a row-major shard
+wrapped in a 128-byte swizzle pattern. Both TMA (when generating the
+descriptor) and <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> (when encoding the matrix descriptor)
+understand this wrapper directly.</p>
+</section>
+<section id="choosing-a-swizzle-mode">
+<h3><span class="section-number">4.4.3. </span>Choosing a Swizzle Mode<a class="headerlink" href="#choosing-a-swizzle-mode" title="Permalink to this heading">¶</a></h3>
+<p>There are four swizzle modes:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Atom width</p></th>
+<th class="head"><p>When to use</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SWIZZLE_NONE</span></code></p></td>
+<td><p>—</p></td>
+<td><p>Tiny tiles where the
+natural row length is
+already ≤ 16 B;
+debugging</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SWIZZLE_32B_ATOM</span></code></p></td>
+<td><p>32 B</p></td>
+<td><p>8-bit tiles or very
+narrow (K ≤ 16 fp16)
+tiles</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SWIZZLE_64B_ATOM</span></code></p></td>
+<td><p>64 B</p></td>
+<td><p>Medium tiles, fp16 K
+= 32</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B_ATOM</span></code></p></td>
+<td><p>128 B</p></td>
+<td><p><strong>Default for
+fp16/bf16 GEMM;</strong>
+fp16 K = 64 is
+exactly one atom</p></td>
+</tr>
+</tbody>
+</table>
+<p>The decision rule for fp16/bf16 GEMM on Blackwell is simple: pick the
+mode whose atom width equals <code class="docutils literal notranslate"><span class="pre">K_inner</span> <span class="pre">*</span> <span class="pre">sizeof(dtype)</span></code>. For
+<code class="docutils literal notranslate"><span class="pre">BLK_K</span> <span class="pre">=</span> <span class="pre">64</span></code> and fp16 (2 bytes), one K-row is 128 B, and
+<code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B_ATOM</span></code> is the natural choice. If you are writing an fp8
+kernel with <code class="docutils literal notranslate"><span class="pre">BLK_K</span> <span class="pre">=</span> <span class="pre">128</span></code>, the same rule gives 128 B and the same
+mode.</p>
+<p>When in doubt, start with <code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B_ATOM</span></code>. The cost of getting the
+swizzle mode wrong is a 2–10× slowdown that is invisible in correctness
+tests but glaring in benchmarks.</p>
+</section>
+<section id="multi-stage-smem">
+<h3><span class="section-number">4.4.4. </span>Multi-Stage SMEM<a class="headerlink" href="#multi-stage-smem" title="Permalink to this heading">¶</a></h3>
+<p>Software pipelining (Step 5 onward in <a class="reference internal" href="../chapter_gemm_async/index.html#chap-gemm-async"><span class="std std-numref">Section 8</span></a>)
+multi-buffers each SMEM tile so that TMA can prefetch future iterations
+while MMA consumes the current one. The layout gains a leading stage
+dimension:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">A_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span>
+    <span class="s2">&quot;float16&quot;</span><span class="p">,</span>
+    <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span>   <span class="c1"># was (BLK_M, BLK_K) in Step 4</span>
+<span class="p">)</span>
+
+<span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">A_layout</span><span class="p">)</span>
+<span class="n">Asmem</span><span class="p">[</span><span class="n">stage</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>                <span class="c1"># a single 2D tile at this pipeline stage</span>
+</pre></div>
+</div>
+<p>The stage dimension defaults to the memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code>, so stride between
+stages is simply the size of one tile. The swizzle wraps <em>each</em> stage
+independently — you do not swizzle across stages. The helper takes care
+of this automatically; the point of the example is that a pipelined SMEM
+layout is the scalar layout with one extra outer dimension, nothing
+more.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="tmem-layouts">
+<h2><span class="section-number">4.5. </span>TMEM Layouts<a class="headerlink" href="#tmem-layouts" title="Permalink to this heading">¶</a></h2>
+<p>TMEM is the Blackwell-specific scratchpad that holds MMA accumulators.
+It is fundamentally different from SMEM in two respects:</p>
+<ol class="arabic simple">
+<li><p>It is addressed as a 2D grid with two native axes, <code class="docutils literal notranslate"><span class="pre">TLane</span></code> (128
+rows) and <code class="docutils literal notranslate"><span class="pre">TCol</span></code> (512 columns per SM), not as a flat byte array.</p></li>
+<li><p>Reads and writes are <em>always cooperative at warpgroup granularity</em>:
+the entire 128-thread warpgroup participates in one <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> or
+<code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code> instruction.</p></li>
+</ol>
+<p>Every TMEM layout you will see in this tutorial is some variation of:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>The row dimension is pinned to <code class="docutils literal notranslate"><span class="pre">TLane</span></code> with stride 1, and the column
+dimension is pinned to <code class="docutils literal notranslate"><span class="pre">TCol</span></code> with stride 1. This is the only layout
+that <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> can write directly.</p>
+<section id="why-the-shape-is-always-128-on-the-row-axis">
+<h3><span class="section-number">4.5.1. </span>Why the Shape Is Always 128 on the Row Axis<a class="headerlink" href="#why-the-shape-is-always-128-on-the-row-axis" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">TLane</span></code> axis has exactly 128 physical lanes. A 64-row MMA
+instruction still writes into 128 TMEM rows — the hardware uses a 64×N
+tile view on top of a 128-row physical backing. As a TIRX user you
+always allocate the full 128 rows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem</span> <span class="o">=</span> <span class="n">tmem_pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+<span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dreg</span><span class="p">,</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="n">warp_id</span> <span class="o">*</span> <span class="n">MMA_N</span> <span class="p">:</span> <span class="n">warp_id</span> <span class="o">*</span> <span class="n">MMA_N</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>You <em>slice</em> the column dimension to match an MMA instruction
+(<code class="docutils literal notranslate"><span class="pre">MMA_N</span> <span class="pre">=</span> <span class="pre">128,</span> <span class="pre">256,</span> <span class="pre">…</span></code>), but the row dimension is always 128.</p>
+</section>
+<section id="axis-ordering-matters">
+<h3><span class="section-number">4.5.2. </span>Axis Ordering Matters<a class="headerlink" href="#axis-ordering-matters" title="Permalink to this heading">¶</a></h3>
+<p>The layout <code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">512)</span> <span class="pre">:</span> <span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)]</span></code> and the layout
+<code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">512)</span> <span class="pre">:</span> <span class="pre">(1&#64;TCol,</span> <span class="pre">1&#64;TLane)]</span></code> both describe a 128×512 tile, and
+both use the same pair of named axes — but they produce different
+physical placements. Swapping axes transposes the tile in TMEM and is an
+easy bug to introduce:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Correct:</span>
+<span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+
+<span class="c1"># Transposed (wrong for the conventional accumulator layout):</span>
+<span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TCol</span><span class="p">,</span>  <span class="mi">1</span><span class="nd">@TLane</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>If the result looks transposed, or if rows and columns of the output are
+swapped in a regular pattern, check axis order on TMEM first.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="rf-layouts-and-tmemrf-matching">
+<h2><span class="section-number">4.6. </span>RF Layouts and TMEM–RF Matching<a class="headerlink" href="#rf-layouts-and-tmemrf-matching" title="Permalink to this heading">¶</a></h2>
+<p>Registers are per-thread, but TIRX lets you <em>view</em> a per-thread register
+buffer as a warpgroup-wide tile. Letting <code class="docutils literal notranslate"><span class="pre">N</span></code> denote the number of TMEM
+columns you load in one <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> (typically <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">8</span></code> in practice
+so that each thread receives a manageable 8 fp32 registers):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reg</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">f32</span><span class="p">[</span><span class="n">N</span><span class="p">]</span>
+<span class="n">reg_wg</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]))</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">reg</span></code> is a length-<code class="docutils literal notranslate"><span class="pre">N</span></code> per-thread register buffer; <code class="docutils literal notranslate"><span class="pre">reg_wg</span></code> is a
+logical 128×<code class="docutils literal notranslate"><span class="pre">N</span></code> warpgroup-wide tile whose row index maps to the
+thread-in-warpgroup axis. Each thread’s <code class="docutils literal notranslate"><span class="pre">N</span></code> physical registers
+correspond to one logical row.</p>
+<section id="the-matching-rule">
+<h3><span class="section-number">4.6.1. </span>The Matching Rule<a class="headerlink" href="#the-matching-rule" title="Permalink to this heading">¶</a></h3>
+<p>When you write <code class="docutils literal notranslate"><span class="pre">Tx.copy(reg_wg,</span> <span class="pre">tmem[:,</span> <span class="pre">n0:n0+N])</span></code>, the compiler
+performs axis matching between the two layouts:</p>
+<ul class="simple">
+<li><p>Destination: <code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)]</span></code></p></li>
+<li><p>Source: <code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;TLane,</span>&#160;&#160;&#160;&#160; <span class="pre">1&#64;TCol)]</span></code></p></li>
+</ul>
+<p>The first dimension has extent 128 on both sides; it pairs <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>
+with <code class="docutils literal notranslate"><span class="pre">TLane</span></code>. Both are 128-element axes, and <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> is exactly
+the instruction that moves data from <code class="docutils literal notranslate"><span class="pre">TLane</span></code> coordinates into
+<code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> coordinates. The second dimension is memory-on-RF to
+<code class="docutils literal notranslate"><span class="pre">TCol</span></code>-on-TMEM; the instruction knows how to iterate over <code class="docutils literal notranslate"><span class="pre">TCol</span></code> to
+stream data into consecutive registers.</p>
+<p>If the extents did not match — say you tried to copy a 64×<code class="docutils literal notranslate"><span class="pre">N</span></code> TMEM
+slice into a 128-wide RF tile — the compiler would reject the call. If
+the axes did not match — for example, you tried to pair <code class="docutils literal notranslate"><span class="pre">laneid</span></code> (32
+lanes) with <code class="docutils literal notranslate"><span class="pre">TLane</span></code> (128) — the compiler would reject it as well.</p>
+<section id="axis-pairing-reference">
+<h4><span class="section-number">4.6.1.1. </span>Axis-Pairing Reference<a class="headerlink" href="#axis-pairing-reference" title="Permalink to this heading">¶</a></h4>
+<p>The full set of pairings the compiler recognizes on Blackwell is small.
+Once you internalize this table, every <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> call in Part III
+becomes self-explanatory:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Source (data
+lives in)</p></th>
+<th class="head"><p>Destination
+(data goes to)</p></th>
+<th class="head"><p>Emitted instruction</p></th>
+<th class="head"><p>Used in</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>GMEM (<code class="docutils literal notranslate"><span class="pre">m</span></code>)</p></td>
+<td><p>SMEM (<code class="docutils literal notranslate"><span class="pre">m</span></code>,
+swizzled)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cp.async.bulk.tensor</span></code>
+(TMA load)</p></td>
+<td><p>Operand load</p></td>
+</tr>
+<tr class="row-odd"><td><p>SMEM (<code class="docutils literal notranslate"><span class="pre">m</span></code>,
+swizzled)</p></td>
+<td><p>GMEM (<code class="docutils literal notranslate"><span class="pre">m</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cp.async.bulk.tensor</span></code>
+(TMA store)</p></td>
+<td><p>Writeback</p></td>
+</tr>
+<tr class="row-even"><td><p>SMEM × 2
+operands</p></td>
+<td><p>TMEM
+(<code class="docutils literal notranslate"><span class="pre">TLane</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TCol</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> via
+matrix descriptor</p></td>
+<td><p>MMA compute</p></td>
+</tr>
+<tr class="row-odd"><td><p>TMEM
+(<code class="docutils literal notranslate"><span class="pre">TLane</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TCol</span></code>)</p></td>
+<td><p>RF
+(<code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>,
+<code class="docutils literal notranslate"><span class="pre">m</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code></p></td>
+<td><p>Epilogue TMEM →
+RF</p></td>
+</tr>
+<tr class="row-even"><td><p>RF
+(<code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>,
+<code class="docutils literal notranslate"><span class="pre">m</span></code>)</p></td>
+<td><p>TMEM
+(<code class="docutils literal notranslate"><span class="pre">TLane</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TCol</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code></p></td>
+<td><p>Rare: scales
+written back to
+TMEM</p></td>
+</tr>
+<tr class="row-odd"><td><p>RF
+(<code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>,
+<code class="docutils literal notranslate"><span class="pre">m</span></code>)</p></td>
+<td><p>SMEM (<code class="docutils literal notranslate"><span class="pre">m</span></code>,
+swizzled)</p></td>
+<td><p>shared-memory store</p></td>
+<td><p>Writeback
+staging before
+TMA</p></td>
+</tr>
+</tbody>
+</table>
+<p>Two rules govern the matching:</p>
+<ol class="arabic simple">
+<li><p><strong>Extents must be identical on every logical dimension.</strong> A 128×8
+source cannot pair with a 64×8 destination; the compiler will stop
+you.</p></li>
+<li><p><strong>Axes must be linked by a known pairing above.</strong>
+<code class="docutils literal notranslate"><span class="pre">TLane</span> <span class="pre">↔</span> <span class="pre">tid_in_wg</span></code> is legal because both have 128 elements and
+<code class="docutils literal notranslate"><span class="pre">tcgen05.ld/st</span></code> implements it; <code class="docutils literal notranslate"><span class="pre">TLane</span> <span class="pre">↔</span> <span class="pre">laneid</span></code> is not
+(<code class="docutils literal notranslate"><span class="pre">laneid</span></code> has only 32 lanes), so the compiler rejects it.</p></li>
+</ol>
+<p>Everything else — the descriptor encoding, the swizzle mode, the number
+of registers per thread — is derived automatically from the two layouts.</p>
+<p>A realistic epilogue reads the 128×MMA_N TMEM accumulator <code class="docutils literal notranslate"><span class="pre">N</span></code> columns
+at a time in a loop, so that each iteration fits comfortably in the
+255-register per-thread budget:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">no</span> <span class="ow">in</span> <span class="n">Tx</span><span class="o">.</span><span class="n">unroll</span><span class="p">(</span><span class="n">MMA_N</span> <span class="o">//</span> <span class="n">N</span><span class="p">):</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">reg_wg</span><span class="p">,</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="n">no</span> <span class="o">*</span> <span class="n">N</span> <span class="p">:</span> <span class="p">(</span><span class="n">no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">N</span><span class="p">])</span>
+    <span class="c1"># cast / activation / store ...</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="helper-wg-local-layout">
+<h3><span class="section-number">4.6.2. </span>Helper: <code class="docutils literal notranslate"><span class="pre">wg_local_layout</span></code><a class="headerlink" href="#helper-wg-local-layout" title="Permalink to this heading">¶</a></h3>
+<p>For the common case of declaring a 2D warpgroup-view register buffer
+directly, there is a one-line helper:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.layout</span><span class="w"> </span><span class="kn">import</span> <span class="n">wg_local_layout</span>
+
+<span class="n">reg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_buffer</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span>
+    <span class="n">layout</span><span class="o">=</span><span class="n">wg_local_layout</span><span class="p">(</span><span class="n">N</span><span class="p">),</span>
+    <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">wg_local_layout(N)</span></code> expands to
+<code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)])</span></code>. You will see this helper
+in the writeback paths of every warp-specialized GEMM kernel in Part III
+(for example <code class="docutils literal notranslate"><span class="pre">fp16_bf16_gemm.py</span></code> in the TIRX kernel library).</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="cluster-and-remote-layouts">
+<h2><span class="section-number">4.7. </span>Cluster and Remote Layouts<a class="headerlink" href="#cluster-and-remote-layouts" title="Permalink to this heading">¶</a></h2>
+<p>The 2-CTA cooperative MMA introduced in Step 8
+(<a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-numref">Section 9</span></a>) requires one CTA to read operand <code class="docutils literal notranslate"><span class="pre">B</span></code>
+from the <em>other</em> CTA’s SMEM. This is not a layout feature per se — it is
+a cluster-scope pointer — but you will see cluster axes <code class="docutils literal notranslate"><span class="pre">cbx</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cby</span></code> appear in layout expressions for buffers that span a cluster.</p>
+<p>From the paper’s mixed-dtype GEMM case study:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A per-CTA buffer shape (3, 128, 128), swizzled 128B:</span>
+<span class="n">As</span> <span class="o">=</span> <span class="n">smem</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">),</span> <span class="s2">&quot;uint8&quot;</span><span class="p">,</span>
+          <span class="n">layout</span><span class="o">=</span><span class="n">Swizzle</span><span class="p">(</span><span class="n">mode</span><span class="mf">.128</span><span class="n">B</span><span class="p">,</span> <span class="n">Layout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)])))</span>
+
+<span class="c1"># Cluster-wide view across 2 CTAs in the cbx direction:</span>
+<span class="n">As_cl</span> <span class="o">=</span> <span class="n">As</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">128</span><span class="p">),</span>
+    <span class="n">layout</span><span class="o">=</span><span class="n">Swizzle</span><span class="p">(</span><span class="n">mode</span><span class="mf">.128</span><span class="n">B</span><span class="p">,</span>
+                   <span class="n">Layout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">16384</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@cbx</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+                          <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span> <span class="p">:</span> <span class="mi">1</span><span class="nd">@cby</span><span class="p">])),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The shard spec says: iterate the outer stage dimension over memory
+(stride 16384), split the row dimension across two CTAs via <code class="docutils literal notranslate"><span class="pre">1&#64;cbx</span></code>,
+and keep the inner 128×128 tile per CTA. The replica <code class="docutils literal notranslate"><span class="pre">R[4</span> <span class="pre">:</span> <span class="pre">1&#64;cby]</span></code>
+says: broadcast the whole cluster-wide tile to four receiver CTAs in
+<code class="docutils literal notranslate"><span class="pre">cby</span></code> via a single TMA multicast.</p>
+<p>Once you can read a layout like this, the cluster kernel’s TMA calls
+become transparent: the layout tells you exactly which CTA holds which
+bytes.</p>
+<p>You will not need to write such layouts from scratch for the kernels in
+this tutorial — <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...,</span> <span class="pre">cta_group=2)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">smem_pipe.full.remote_view(...)</span></code> compose them for you — but you
+should be able to read them when debugging.</p>
+</section>
+<hr class="docutils" />
+<section id="debugging-layouts">
+<h2><span class="section-number">4.8. </span>Debugging Layouts<a class="headerlink" href="#debugging-layouts" title="Permalink to this heading">¶</a></h2>
+<p>Layout bugs are distinctive because they rarely crash. They manifest as:</p>
+<ul class="simple">
+<li><p>Silently wrong output (transposed tile, <code class="docutils literal notranslate"><span class="pre">NaN</span></code>s, off-by-one in a
+dimension).</p></li>
+<li><p>Correct output but catastrophically slow kernel (bank conflicts).</p></li>
+<li><p>Compile-time errors complaining about “incompatible axes” or “extent
+mismatch”.</p></li>
+</ul>
+<p>Use this checklist when a layout is suspect.</p>
+<p><strong>1. Does each dimension have the axis you expect?</strong> Print the layout or
+stare at the <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> expression. Every dimension should have either a
+named axis (<code class="docutils literal notranslate"><span class="pre">TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>, <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, …) or no axis (which
+means memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code>). Mixed-up row/column axes are the most common
+bug.</p>
+<p><strong>2. Do extents match on both sides of a ``Tx.copy``?</strong> The source and
+destination of a copy must agree on every dimension’s extent. If the
+destination is a 128×64 RF tile and the source is a 64×128 TMEM slice,
+the compiler will refuse. If the compiler accepts a copy you expected it
+to reject, look for an implicit reshape or a <code class="docutils literal notranslate"><span class="pre">view</span></code> that silently
+flattened a dimension.</p>
+<p><strong>3. Is the SMEM swizzle mode consistent across producer and consumer?</strong>
+TMA uses a swizzle mode when <em>writing</em> the SMEM buffer; <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>
+uses a swizzle mode when <em>reading</em> it. If they disagree, the MMA reads
+scrambled data. The simplest guard: always use <code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code> so
+both sides share the same helper.</p>
+<p><strong>4. Is the TMEM slice aligned to an MMA shape?</strong> <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> writes
+into a <code class="docutils literal notranslate"><span class="pre">(M_mma,</span> <span class="pre">N_mma)</span></code> rectangle of TMEM starting at some column. If
+you slice <code class="docutils literal notranslate"><span class="pre">tmem[:,</span> <span class="pre">n0:n0+N_mma]</span></code> where <code class="docutils literal notranslate"><span class="pre">n0</span></code> is not a multiple of
+<code class="docutils literal notranslate"><span class="pre">N_mma</span></code> (or of whatever column granularity the chosen MMA variant
+requires), the MMA will write to an unexpected region. Always derive
+column offsets from <code class="docutils literal notranslate"><span class="pre">consumer_id</span> <span class="pre">*</span> <span class="pre">N_mma</span></code> or a similar aligned
+expression.</p>
+<p><strong>5. Inspect the generated CUDA.</strong> When in doubt, dump the CUDA that
+TIRX emits (see the debugging section in
+<a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-numref">Section 9</span></a>). The generated code will contain
+explicit <code class="docutils literal notranslate"><span class="pre">cp.async.bulk.tensor</span></code> and <code class="docutils literal notranslate"><span class="pre">tcgen05.ld/st</span></code> instructions
+with the encoded descriptors — you can cross-check the layout against
+what the hardware actually receives.</p>
+</section>
+<hr class="docutils" />
+<section id="summary">
+<h2><span class="section-number">4.9. </span>Summary<a class="headerlink" href="#summary" title="Permalink to this heading">¶</a></h2>
+<p>Three ideas carry through the rest of the book.</p>
+<ol class="arabic simple">
+<li><p><strong>A layout is a map from logical indices to coordinates on named
+hardware axes.</strong> The same logical tile has different layouts in GMEM,
+SMEM, TMEM, and RF, and the axes (<code class="docutils literal notranslate"><span class="pre">TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">TCol</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cbx</span></code>, …) are a hardware-defined vocabulary, not a user convention.</p></li>
+<li><p><strong>Compatibility between two layouts is an axis-matching problem.</strong> A
+<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> between two buffers succeeds when their extents match
+dimension-by-dimension and their axes pair up into one of the
+supported hardware instructions (<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> for TMEM→RF,
+<code class="docutils literal notranslate"><span class="pre">cp.async.bulk.tensor</span></code> for GMEM↔SMEM, and so on).</p></li>
+<li><p><strong>The cost of a wrong layout is not an error but a performance
+collapse or a subtly wrong result.</strong> Bank conflicts, swizzle
+mismatches, and transposed TMEM reads all fall into this category.
+Build the habit of checking layouts first whenever a kernel is slow
+or subtly broken.</p></li>
+</ol>
+<p>The next chapter (<a class="reference internal" href="../chapter_fused_gelu/index.html#chap-fused-gelu"><span class="std std-numref">Section 5</span></a>) uses a simple elementwise
+operator to put the SMEM and RF layouts to work. After that,
+<a class="reference internal" href="../chapter_gemm_basics/index.html#chap-gemm-basics"><span class="std std-numref">Section 7</span></a> begins the GEMM optimization journey where
+every layout idea in this chapter appears in context.</p>
+</section>
+<hr class="docutils" />
+<section id="exercises">
+<h2><span class="section-number">4.10. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p><strong>Read a layout.</strong> Write out in English what each of the following
+layouts expresses. Identify the axes used and whether any dimension
+uses the default memory axis.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">NUM_CONSUMER</span><span class="p">,</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">)]</span>
+<span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">EPI_N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+<span class="n">S</span><span class="p">[(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@TCol</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">16</span><span class="nd">@TCol</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span> <span class="p">:</span> <span class="mi">32</span><span class="nd">@TLane</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Swap an axis.</strong> In <a class="reference internal" href="../chapter_gemm_basics/index.html#chap-gemm-basics"><span class="std std-numref">Section 7</span></a> Step 1, locate the
+TMEM layout and swap <code class="docutils literal notranslate"><span class="pre">TLane</span></code> with <code class="docutils literal notranslate"><span class="pre">TCol</span></code>. Predict what will
+happen to the output, then run the kernel and verify.</p></li>
+<li><p><strong>Change a swizzle mode.</strong> Run Step 4 of the GEMM journey with
+<code class="docutils literal notranslate"><span class="pre">SwizzleMode.SWIZZLE_NONE</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">SwizzleMode.SWIZZLE_128B_ATOM</span></code> on the SMEM buffers. Measure the
+performance drop and explain it in terms of bank conflicts.</p></li>
+<li><p><strong>Split rows across warps.</strong> In a warpgroup of 4 warps × 32 lanes =
+128 threads, write an RF layout that gives each <em>warp</em> 32 consecutive
+rows of a 128×<code class="docutils literal notranslate"><span class="pre">N</span></code> tile (warp 0 owns rows 0–31, warp 1 owns rows
+32–63, etc.), and within each warp maps lane <code class="docutils literal notranslate"><span class="pre">i</span></code> to row <code class="docutils literal notranslate"><span class="pre">i</span></code> of
+that slab. The answer should use two named axes — one for warp index,
+one for lane index — instead of a single <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>. Why is this
+layout equivalent to <code class="docutils literal notranslate"><span class="pre">S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)]</span></code> under the
+hood?</p></li>
+<li><p><strong>Trace a replica.</strong> In the cluster layout in § Cluster and Remote
+Layouts, what is the total number of CTAs that receive a single TMA
+multicast? Which logical indices are shared across them, and which
+differ?</p></li>
+</ol>
+</section>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+<div class="localtoc">
+    <p class="caption">
+      <span class="caption-text">Table Of Contents</span>
+    </p>
+    <ul>
+<li><a class="reference internal" href="#">4. TIRX Layout: Mapping Tensors to Hardware</a><ul>
+<li><a class="reference internal" href="#why-layouts-matter">4.1. Why Layouts Matter</a></li>
+<li><a class="reference internal" href="#the-core-idea-named-hardware-axes">4.2. The Core Idea: Named Hardware Axes</a><ul>
+<li><a class="reference internal" href="#why-named-axes-not-just-strides">4.2.1. Why Named Axes, Not Just Strides</a></li>
+<li><a class="reference internal" href="#reading-stride-axis">4.2.2. Reading <code class="docutils literal notranslate"><span class="pre">stride&#64;axis</span></code></a></li>
+<li><a class="reference internal" href="#visualizing-a-mapping">4.2.3. Visualizing a Mapping</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tirx-layout-syntax">4.3. TIRX Layout Syntax</a><ul>
+<li><a class="reference internal" href="#s-shard-s-shape-stride-axis">4.3.1. S (Shard): <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code></a></li>
+<li><a class="reference internal" href="#a-worked-example-from-logical-index-to-hardware-coordinate">4.3.2. A Worked Example: From Logical Index to Hardware Coordinate</a></li>
+<li><a class="reference internal" href="#r-replica-r-extent-stride-axis">4.3.3. R (Replica): <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">R[extent</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code></a></li>
+<li><a class="reference internal" href="#o-offset-k-axis">4.3.4. O (Offset): <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">k&#64;axis</span></code></a></li>
+<li><a class="reference internal" href="#formal-semantics-optional">4.3.5. Formal Semantics (Optional)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#smem-layouts-and-swizzling">4.4. SMEM Layouts and Swizzling</a><ul>
+<li><a class="reference internal" href="#the-bank-conflict-problem">4.4.1. The Bank-Conflict Problem</a></li>
+<li><a class="reference internal" href="#the-tma-shared-layout-helper">4.4.2. The <code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code> Helper</a></li>
+<li><a class="reference internal" href="#choosing-a-swizzle-mode">4.4.3. Choosing a Swizzle Mode</a></li>
+<li><a class="reference internal" href="#multi-stage-smem">4.4.4. Multi-Stage SMEM</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tmem-layouts">4.5. TMEM Layouts</a><ul>
+<li><a class="reference internal" href="#why-the-shape-is-always-128-on-the-row-axis">4.5.1. Why the Shape Is Always 128 on the Row Axis</a></li>
+<li><a class="reference internal" href="#axis-ordering-matters">4.5.2. Axis Ordering Matters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rf-layouts-and-tmemrf-matching">4.6. RF Layouts and TMEM–RF Matching</a><ul>
+<li><a class="reference internal" href="#the-matching-rule">4.6.1. The Matching Rule</a><ul>
+<li><a class="reference internal" href="#axis-pairing-reference">4.6.1.1. Axis-Pairing Reference</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#helper-wg-local-layout">4.6.2. Helper: <code class="docutils literal notranslate"><span class="pre">wg_local_layout</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cluster-and-remote-layouts">4.7. Cluster and Remote Layouts</a></li>
+<li><a class="reference internal" href="#debugging-layouts">4.8. Debugging Layouts</a></li>
+<li><a class="reference internal" href="#summary">4.9. Summary</a></li>
+<li><a class="reference internal" href="#exercises">4.10. Exercises</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="../chapter_tirx_primer/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>3. TIRX Programming Model</div>
+         </div>
+     </a>
+     <a id="button-next" href="../chapter_fused_gelu/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>5. Fused GELU-Tanh & Multiply</div>
+        </div>
+     </a>
+  </div>
+        
+        </main>
+    </div>
+  </body>
+</html>

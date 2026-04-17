@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>4. Fused GELU-Tanh &amp; Multiply &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>5. Fused GELU-Tanh &amp; Multiply &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -29,15 +29,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="5. RMSNorm" href="../chapter_rmsnorm/index.html" />
-    <link rel="prev" title="3. Setup" href="../chapter_setup/index.html" /> 
+    <link rel="next" title="6. RMSNorm" href="../chapter_rmsnorm/index.html" />
+    <link rel="prev" title="4. TIRX Layout: Mapping Tensors to Hardware" href="../chapter_layouts/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">4. </span>Fused GELU-Tanh &amp; Multiply</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">5. </span>Fused GELU-Tanh &amp; Multiply</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -96,16 +96,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -134,16 +135,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -156,7 +158,7 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="fused-gelu-tanh-multiply">
-<span id="chap-fused-gelu"></span><h1><span class="section-number">4. </span>Fused GELU-Tanh &amp; Multiply<a class="headerlink" href="#fused-gelu-tanh-multiply" title="Permalink to this heading">¶</a></h1>
+<span id="chap-fused-gelu"></span><h1><span class="section-number">5. </span>Fused GELU-Tanh &amp; Multiply<a class="headerlink" href="#fused-gelu-tanh-multiply" title="Permalink to this heading">¶</a></h1>
 <p>Our first TIRX kernel is a simple but practical operator: the fused
 GELU-Tanh activation with multiply, commonly used in MLP gate layers of
 Transformer models. We start here because elementwise kernels are the
@@ -165,12 +167,12 @@ simplest GPU kernel pattern.</p>
 two halves along the last dimension. The first half passes through
 GELU-tanh activation, then multiplies with the second half:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-fused-gelu-index-0">
-<span class="eqno">(4.1)<a class="headerlink" href="#equation-chapter-fused-gelu-index-0" title="Permalink to this equation">¶</a></span>\[\text{output} = \operatorname{GELU\_tanh}(\text{input}[:, :d]) \cdot \text{input}[:, d:]\]</div>
+<span class="eqno">(5.1)<a class="headerlink" href="#equation-chapter-fused-gelu-index-0" title="Permalink to this equation">¶</a></span>\[\text{output} = \operatorname{GELU\_tanh}(\text{input}[:, :d]) \cdot \text{input}[:, d:]\]</div>
 <p>where GELU-tanh is the <strong>tanh approximation</strong> of GELU (not the exact erf
 version). This is the variant used in most LLMs (GPT, Llama, etc.)
 because it’s faster to compute:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-fused-gelu-index-1">
-<span class="eqno">(4.2)<a class="headerlink" href="#equation-chapter-fused-gelu-index-1" title="Permalink to this equation">¶</a></span>\[\operatorname{GELU\_tanh}(x) = 0.5 \cdot x \cdot \left(1 + \tanh\!\left(\sqrt{2/\pi} \cdot (x + 0.044715 \cdot x^3)\right)\right)\]</div>
+<span class="eqno">(5.2)<a class="headerlink" href="#equation-chapter-fused-gelu-index-1" title="Permalink to this equation">¶</a></span>\[\operatorname{GELU\_tanh}(x) = 0.5 \cdot x \cdot \left(1 + \tanh\!\left(\sqrt{2/\pi} \cdot (x + 0.044715 \cdot x^3)\right)\right)\]</div>
 <p>This is an example of <strong>operator fusion</strong>: combining two operations
 (GELU activation + gate multiply) into one kernel. The <strong>gate</strong> here
 refers to the second half of the input tensor (<code class="docutils literal notranslate"><span class="pre">input[:,</span> <span class="pre">d:]</span></code>) — in
@@ -183,7 +185,7 @@ temporary buffer, then launch a second kernel to multiply with the gate
 — two kernel launches and an extra round-trip to global memory. With
 fusion, everything happens in one pass.</p>
 <section id="what-you-will-learn">
-<h2><span class="section-number">4.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Basic TIRX kernel structure: <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Tx.kernel()</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.cta_id()</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.thread_id()</span></code></p></li>
@@ -193,7 +195,7 @@ output element</p></li>
 </ul>
 </section>
 <section id="implementation">
-<h2><span class="section-number">4.2. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.2. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
 <p>The strategy:</p>
 <ol class="arabic simple">
 <li><p>Assign one thread per output element</p></li>
@@ -203,14 +205,14 @@ converts it to <code class="docutils literal notranslate"><span class="pre">(row
 <li><p>Compute GELU-tanh, multiply with the gate, write the result</p></li>
 </ol>
 <section id="d-thread-grid-to-2d-matrix-mapping">
-<h3><span class="section-number">4.2.1. </span>1D Thread Grid to 2D Matrix Mapping<a class="headerlink" href="#d-thread-grid-to-2d-matrix-mapping" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">5.2.1. </span>1D Thread Grid to 2D Matrix Mapping<a class="headerlink" href="#d-thread-grid-to-2d-matrix-mapping" title="Permalink to this heading">¶</a></h3>
 <p>GPU threads are launched as a flat 1D grid, but the output data is a 2D
 matrix <code class="docutils literal notranslate"><span class="pre">[batch,</span> <span class="pre">out_dim]</span></code>. Each thread converts its global ID to a
 <code class="docutils literal notranslate"><span class="pre">(row,</span> <span class="pre">col)</span></code> coordinate:</p>
 <figure class="align-default" id="id1">
 <img alt="../_images/thread_grid_to_matrix.png" src="../_images/thread_grid_to_matrix.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 4.2.1 </span><span class="caption-text">1D Thread Grid to 2D Matrix Mapping</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 5.2.1 </span><span class="caption-text">1D Thread Grid to 2D Matrix Mapping</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Each thread handles exactly one element. The flat <code class="docutils literal notranslate"><span class="pre">gid</span></code> fills the
@@ -332,7 +334,7 @@ second half (gate)</p></li>
 </section>
 </section>
 <section id="exercises">
-<h2><span class="section-number">4.3. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.3. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>How many total threads are launched for
 <code class="docutils literal notranslate"><span class="pre">batch_size=64,</span> <span class="pre">out_dim=4096</span></code>? How many CTAs?</p></li>
@@ -355,13 +357,13 @@ Why?</p></li>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">4. Fused GELU-Tanh &amp; Multiply</a><ul>
-<li><a class="reference internal" href="#what-you-will-learn">4.1. What You Will Learn</a></li>
-<li><a class="reference internal" href="#implementation">4.2. Implementation</a><ul>
-<li><a class="reference internal" href="#d-thread-grid-to-2d-matrix-mapping">4.2.1. 1D Thread Grid to 2D Matrix Mapping</a></li>
+<li><a class="reference internal" href="#">5. Fused GELU-Tanh &amp; Multiply</a><ul>
+<li><a class="reference internal" href="#what-you-will-learn">5.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#implementation">5.2. Implementation</a><ul>
+<li><a class="reference internal" href="#d-thread-grid-to-2d-matrix-mapping">5.2.1. 1D Thread Grid to 2D Matrix Mapping</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#exercises">4.3. Exercises</a></li>
+<li><a class="reference internal" href="#exercises">5.3. Exercises</a></li>
 </ul>
 </li>
 </ul>
@@ -372,18 +374,18 @@ Why?</p></li>
 
       <div class="clearer"></div>
     </div><div class="pagenation">
-     <a id="button-prev" href="../chapter_setup/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+     <a id="button-prev" href="../chapter_layouts/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>3. Setup</div>
+            <div>4. TIRX Layout: Mapping Tensors to Hardware</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_rmsnorm/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>5. RMSNorm</div>
+            <div>6. RMSNorm</div>
         </div>
      </a>
   </div>

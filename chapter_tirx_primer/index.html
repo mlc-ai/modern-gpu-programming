@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>2. TIRX Programming Model &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>3. TIRX Programming Model &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,15 +28,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="3. Setup" href="../chapter_setup/index.html" />
-    <link rel="prev" title="1. Background: Blackwell GPU Architecture" href="../chapter_background/index.html" /> 
+    <link rel="next" title="4. TIRX Layout: Mapping Tensors to Hardware" href="../chapter_layouts/index.html" />
+    <link rel="prev" title="2. Setup" href="../chapter_setup/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">2. </span>TIRX Programming Model</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">3. </span>TIRX Programming Model</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -95,16 +95,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -133,16 +134,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -155,12 +157,12 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="tirx-programming-model">
-<span id="chap-tirx-primer"></span><h1><span class="section-number">2. </span>TIRX Programming Model<a class="headerlink" href="#tirx-programming-model" title="Permalink to this heading">¶</a></h1>
+<span id="chap-tirx-primer"></span><h1><span class="section-number">3. </span>TIRX Programming Model<a class="headerlink" href="#tirx-programming-model" title="Permalink to this heading">¶</a></h1>
 <p>This chapter introduces the core TIRX programming model: how kernels are
 structured, how threads and memory are expressed, and what low-level
 details the DSL abstracts away.</p>
 <section id="import-convention">
-<h2><span class="section-number">2.1. </span>Import Convention<a class="headerlink" href="#import-convention" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.1. </span>Import Convention<a class="headerlink" href="#import-convention" title="Permalink to this heading">¶</a></h2>
 <p>This tutorial uses the following import:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
 </pre></div>
@@ -171,7 +173,7 @@ operators, memory helpers, asynchronous copy and MMA operations, and PTX
 intrinsics under <code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code>.</p>
 </section>
 <section id="core-apis-at-a-glance">
-<h2><span class="section-number">2.2. </span>Core APIs at a Glance<a class="headerlink" href="#core-apis-at-a-glance" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.2. </span>Core APIs at a Glance<a class="headerlink" href="#core-apis-at-a-glance" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Category</p></th>
@@ -236,7 +238,7 @@ scheduler</p></td>
 </table>
 </section>
 <section id="kernel-structure">
-<h2><span class="section-number">2.3. </span>Kernel Structure<a class="headerlink" href="#kernel-structure" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.3. </span>Kernel Structure<a class="headerlink" href="#kernel-structure" title="Permalink to this heading">¶</a></h2>
 <p>Every TIRX kernel follows this template:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Declares a TIRX kernel function</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">hgemm</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">),</span>  <span class="c1"># Input buffers with compile-time shapes</span>
@@ -278,7 +280,7 @@ initialization</p></li>
 </ul>
 </section>
 <section id="thread-hierarchy-scopes">
-<h2><span class="section-number">2.4. </span>Thread Hierarchy Scopes<a class="headerlink" href="#thread-hierarchy-scopes" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.4. </span>Thread Hierarchy Scopes<a class="headerlink" href="#thread-hierarchy-scopes" title="Permalink to this heading">¶</a></h2>
 <p>TIRX uses a hierarchical scope system to control which threads execute a
 block of code:</p>
 <table class="docutils align-default">
@@ -295,9 +297,14 @@ block of code:</p>
 CTAs</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code></p></td>
-<td><p>All 128 threads in
-CTA</p></td>
-<td><p>Cooperative SMEM copy</p></td>
+<td><p>All threads in the
+CTA (128 in
+single-warpgroup
+kernels, up to 512 in
+warp-specialized
+ones)</p></td>
+<td><p>Cooperative SMEM copy
+across the entire CTA</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warpgroup():</span></code></p></td>
 <td><p>128 threads (4 warps)</p></td>
@@ -321,16 +328,17 @@ a subset of threads</p></td>
 </tbody>
 </table>
 <p>The scope determines how an operation is parallelized. For example,
-<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> inside <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code> means all 128 threads cooperate on
-the copy, while <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> inside <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread():</span></code> means each
-thread copies independently.</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> inside <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code> means all threads of the CTA
+cooperate on the copy (128 threads in a single-warpgroup CTA, more in
+warp-specialized kernels), while <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> inside
+<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread():</span></code> means each thread copies independently.</p>
 <p>Note that <code class="docutils literal notranslate"><span class="pre">Tx.ptx.elect_sync()</span></code> is not a scope — it is a per-warp
 intrinsic that selects one thread. It is typically combined with a
 thread scope as <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread()[Tx.ptx.elect_sync()]:</span></code> to dispatch
 TMA or MMA operations from a single elected thread.</p>
 </section>
 <section id="memory-management">
-<h2><span class="section-number">2.5. </span>Memory Management<a class="headerlink" href="#memory-management" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.5. </span>Memory Management<a class="headerlink" href="#memory-management" title="Permalink to this heading">¶</a></h2>
 <p>In TIRX, memory management typically involves three layers: shared
 memory for staging, registers for per-thread temporaries, and TMEM for
 Tensor Core accumulators.</p>
@@ -349,10 +357,14 @@ are packed without fragmentation.</p>
 </div>
 <p><strong>Register buffers</strong> (per-thread). A per-thread register buffer can be
 reinterpreted as a warpgroup-level logical tile through a layout view:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="mi">128</span><span class="p">,),</span> <span class="n">acc_type</span><span class="p">)</span>           <span class="c1"># Per-thread register buffer</span>
-<span class="n">reg_wg</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">wg_layout</span><span class="p">)</span>    <span class="c1"># Warpgroup view for cooperative TMEM reads</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="mi">128</span><span class="p">,),</span> <span class="n">acc_type</span><span class="p">)</span>                      <span class="c1"># Per-thread register buffer</span>
+<span class="n">reg_wg</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">wg_local_layout</span><span class="p">(</span><span class="mi">128</span><span class="p">))</span>    <span class="c1"># Warpgroup view for cooperative TMEM reads</span>
 </pre></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">wg_local_layout(N)</span></code> helper expands to
+<code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)])</span></code> — a 128-row tile whose
+row dimension is sharded across the 128 threads of a warpgroup. See
+<a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 4</span></a> for a full derivation of this pattern.</p>
 <p><strong>TMEM</strong> is declared as a 2D buffer over Blackwell’s native TMEM axes
 (<code class="docutils literal notranslate"><span class="pre">TLane</span></code> for rows, <code class="docutils literal notranslate"><span class="pre">TCol</span></code> for columns):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">((</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span> <span class="n">allocated_addr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -361,7 +373,7 @@ reinterpreted as a warpgroup-level logical tile through a layout view:</p>
 </div>
 </section>
 <section id="tirx-vs-raw-ptx">
-<h2><span class="section-number">2.6. </span>TIRX vs Raw PTX<a class="headerlink" href="#tirx-vs-raw-ptx" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.6. </span>TIRX vs Raw PTX<a class="headerlink" href="#tirx-vs-raw-ptx" title="Permalink to this heading">¶</a></h2>
 <p>Now that you have seen the TIRX APIs, consider what the same operation
 looks like in raw PTX:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">Raw</span> <span class="n">PTX</span> <span class="p">(</span><span class="n">conceptually</span><span class="p">,</span> <span class="o">~</span><span class="mi">20</span> <span class="n">lines</span><span class="p">)</span>
@@ -386,7 +398,7 @@ arithmetic, and TMEM lifecycle management around the MMA itself.</p>
 <p><strong>Compilation flow</strong>: <code class="docutils literal notranslate"><span class="pre">TIRX</span> <span class="pre">Python</span> <span class="pre">→</span> <span class="pre">TIR</span> <span class="pre">→</span> <span class="pre">PTX</span> <span class="pre">→</span> <span class="pre">cubin</span> <span class="pre">(CUDA</span> <span class="pre">binary)</span></code></p>
 </section>
 <section id="meta-variables">
-<h2><span class="section-number">2.7. </span>Meta Variables<a class="headerlink" href="#meta-variables" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.7. </span>Meta Variables<a class="headerlink" href="#meta-variables" title="Permalink to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> creates a compile-time alias for an expression. This is
 useful when a computed offset must appear in buffer slicing:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">m_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">bx</span> <span class="o">*</span> <span class="n">BLK_M</span><span class="p">)</span>
@@ -398,64 +410,47 @@ useful when a computed offset must appear in buffer slicing:</p>
 dynamic variables. Constants such as <code class="docutils literal notranslate"><span class="pre">BLK_M</span></code>, <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">EPI_N</span></code> must remain Python constants defined outside the function.</p>
 </section>
-<section id="axe-layout">
-<h2><span class="section-number">2.8. </span>Axe Layout<a class="headerlink" href="#axe-layout" title="Permalink to this heading">¶</a></h2>
-<p>These kernels use <strong>Axe Layout</strong> (<a class="reference external" href="https://arxiv.org/abs/2601.19092">Hou et al.,
-2026</a>), a hardware-aware layout
-abstraction that maps logical tensor coordinates onto named hardware
-axes. Instead of manually computing memory addresses, you declare a
-layout on each buffer and the compiler generates the correct address
-arithmetic.</p>
-<p><strong>Syntax.</strong> The layout spec <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code> reads as “map
-each dimension to a named hardware axis”:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
-<span class="c1">#  ^^^  ^^^     ^^^^^^^^  ^^^^^^^^</span>
-<span class="c1">#  rows cols    row axis  col axis</span>
-<span class="c1"># &quot;128 rows on TLane, 512 cols on TCol&quot;</span>
+<section id="tirx-layout-preview">
+<h2><span class="section-number">3.8. </span>TIRX Layout (Preview)<a class="headerlink" href="#tirx-layout-preview" title="Permalink to this heading">¶</a></h2>
+<p>TIRX uses the <strong>TIRX Layout</strong> system, a hardware-aware layout
+abstraction that maps logical tensor coordinates onto <em>named hardware
+axes</em> — <code class="docutils literal notranslate"><span class="pre">TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">TCol</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>, <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, and so on. Instead
+of encoding strides into a memory-address calculation, you declare a
+layout on each buffer and the compiler generates the correct SMEM / TMEM
+/ register access code.</p>
+<p>The essential syntax <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">stride&#64;axis]</span></code> reads as “map each
+dimension to a named hardware axis”:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>   <span class="c1"># 128 TMEM rows × 512 TMEM columns</span>
+<span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>   <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>    <span class="c1"># 128 warpgroup threads × N memory cols</span>
 </pre></div>
 </div>
-<p><strong>Quick reference — layouts used in the GEMM kernels:</strong></p>
+<p>The three layouts used throughout Part III are:</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Buffer type</p></th>
-<th class="head"><p>Layout</p></th>
-<th class="head"><p>Example</p></th>
+<th class="head"><p>Layout helper / spec</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>SMEM</strong>
-(TMA-compatible)</p></td>
+<tr class="row-even"><td><p><strong>SMEM</strong> (TMA-compatible)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">tma_shared_layout(dtype,</span> <span class="pre">SWIZZLE_128B_ATOM,</span> <span class="pre">shape)</span></code></p></td>
-<td><p>K-major with 128B
-swizzle</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>TMEM</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">512)</span> <span class="pre">:</span> <span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)])</span></code></p></td>
-<td><p>128 lanes × N
-columns, flat 2D</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)])</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Register</strong>
-(warpgroup view)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;axis_tid_in_wg,</span> <span class="pre">1)])</span></code></p></td>
-<td><p>Per-thread view via
-warpgroup tid</p></td>
+<tr class="row-even"><td><p><strong>Register</strong> (warpgroup view)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)])</span></code></p></td>
 </tr>
 </tbody>
 </table>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code> creates a swizzled layout for bank-conflict-free
-access — just call this helper with your dtype, swizzle mode, and
-buffer shape.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;TCol</span></code> are Blackwell TMEM’s native 2D addressing
-axes.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;axis_tid_in_wg</span></code> means “distribute rows across the 128 threads in a
-warpgroup.” When you write <code class="docutils literal notranslate"><span class="pre">Tx.copy(Dreg_wg,</span> <span class="pre">tmem)</span></code>, the compiler
-matches <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> to <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and generates the correct TMEM load
-instructions.</p></li>
-</ul>
+<p>This snippet is only a speed reference. <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 4</span></a> covers
+the full semantics: why named axes replace bare strides, how to pick a
+swizzle mode, how TMEM–RF axis matching generates <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>, and
+how cluster-level layouts drive TMA multicast. Read that chapter before
+attempting a non-standard kernel.</p>
 </section>
 <section id="inline-functions">
-<h2><span class="section-number">2.9. </span>Inline Functions<a class="headerlink" href="#inline-functions" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">3.9. </span>Inline Functions<a class="headerlink" href="#inline-functions" title="Permalink to this heading">¶</a></h2>
 <p>Use <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> to define small helper functions inside the kernel,
 especially for reusable load/store or synchronization boilerplate. These
 functions are inlined at compile time and can capture outer variables:</p>
@@ -481,16 +476,16 @@ writeback logic without introducing runtime function-call overhead.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">2. TIRX Programming Model</a><ul>
-<li><a class="reference internal" href="#import-convention">2.1. Import Convention</a></li>
-<li><a class="reference internal" href="#core-apis-at-a-glance">2.2. Core APIs at a Glance</a></li>
-<li><a class="reference internal" href="#kernel-structure">2.3. Kernel Structure</a></li>
-<li><a class="reference internal" href="#thread-hierarchy-scopes">2.4. Thread Hierarchy Scopes</a></li>
-<li><a class="reference internal" href="#memory-management">2.5. Memory Management</a></li>
-<li><a class="reference internal" href="#tirx-vs-raw-ptx">2.6. TIRX vs Raw PTX</a></li>
-<li><a class="reference internal" href="#meta-variables">2.7. Meta Variables</a></li>
-<li><a class="reference internal" href="#axe-layout">2.8. Axe Layout</a></li>
-<li><a class="reference internal" href="#inline-functions">2.9. Inline Functions</a></li>
+<li><a class="reference internal" href="#">3. TIRX Programming Model</a><ul>
+<li><a class="reference internal" href="#import-convention">3.1. Import Convention</a></li>
+<li><a class="reference internal" href="#core-apis-at-a-glance">3.2. Core APIs at a Glance</a></li>
+<li><a class="reference internal" href="#kernel-structure">3.3. Kernel Structure</a></li>
+<li><a class="reference internal" href="#thread-hierarchy-scopes">3.4. Thread Hierarchy Scopes</a></li>
+<li><a class="reference internal" href="#memory-management">3.5. Memory Management</a></li>
+<li><a class="reference internal" href="#tirx-vs-raw-ptx">3.6. TIRX vs Raw PTX</a></li>
+<li><a class="reference internal" href="#meta-variables">3.7. Meta Variables</a></li>
+<li><a class="reference internal" href="#tirx-layout-preview">3.8. TIRX Layout (Preview)</a></li>
+<li><a class="reference internal" href="#inline-functions">3.9. Inline Functions</a></li>
 </ul>
 </li>
 </ul>
@@ -501,18 +496,18 @@ writeback logic without introducing runtime function-call overhead.</p>
 
       <div class="clearer"></div>
     </div><div class="pagenation">
-     <a id="button-prev" href="../chapter_background/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+     <a id="button-prev" href="../chapter_setup/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>1. Background: Blackwell GPU Architecture</div>
+            <div>2. Setup</div>
          </div>
      </a>
-     <a id="button-next" href="../chapter_setup/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+     <a id="button-next" href="../chapter_layouts/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>3. Setup</div>
+            <div>4. TIRX Layout: Mapping Tensors to Hardware</div>
         </div>
      </a>
   </div>

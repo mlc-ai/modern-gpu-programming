@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>8. GEMM Steps 7–9: Warp Specialization to cuBLAS &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>9. GEMM Steps 7–9: Warp Specialization to cuBLAS &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,15 +28,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="9. Flash Attention 4" href="../chapter_flash_attention/index.html" />
-    <link rel="prev" title="7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels" href="../chapter_gemm_async/index.html" /> 
+    <link rel="next" title="10. Flash Attention 4" href="../chapter_flash_attention/index.html" />
+    <link rel="prev" title="8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels" href="../chapter_gemm_async/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">8. </span>GEMM Steps 7–9: Warp Specialization to cuBLAS</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">9. </span>GEMM Steps 7–9: Warp Specialization to cuBLAS</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -95,16 +95,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -133,16 +134,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -155,20 +157,28 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="gemm-steps-79-warp-specialization-to-cublas">
-<span id="chap-gemm-advanced"></span><h1><span class="section-number">8. </span>GEMM Steps 7–9: Warp Specialization to cuBLAS<a class="headerlink" href="#gemm-steps-79-warp-specialization-to-cublas" title="Permalink to this heading">¶</a></h1>
+<span id="chap-gemm-advanced"></span><h1><span class="section-number">9. </span>GEMM Steps 7–9: Warp Specialization to cuBLAS<a class="headerlink" href="#gemm-steps-79-warp-specialization-to-cublas" title="Permalink to this heading">¶</a></h1>
 <p>This chapter covers the three advanced GEMM optimizations that bridge
 the gap from a basic tiled kernel to cuBLAS-level performance. We start
 with warp specialization and software pipelining (Step 7), introduce CTA
 clusters for cooperative MMA (Step 8), and finish with multi-consumer
 warp specialization (Step 9).</p>
+<blockquote>
+<div><p><strong>Layout recap.</strong> The per-step SMEM / TMEM / register layouts repeat
+the pattern established in <a class="reference internal" href="../chapter_gemm_basics/index.html#chap-gemm-basics"><span class="std std-numref">Section 7</span></a> and
+<a class="reference internal" href="../chapter_gemm_async/index.html#chap-gemm-async"><span class="std std-numref">Section 8</span></a>. Step 8 additionally uses cluster-scope
+buffers; for the <code class="docutils literal notranslate"><span class="pre">cbx</span></code> / <code class="docutils literal notranslate"><span class="pre">cby</span></code> axes and how a single layout can
+span two CTAs, refer to <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 4</span></a>, section <em>Cluster
+and Remote Layouts</em>.</p>
+</div></blockquote>
 <section id="step-7-warp-specialization-pipeline">
-<span id="chap-warp-specialization"></span><h2><span class="section-number">8.1. </span>Step 7: Warp Specialization + Pipeline<a class="headerlink" href="#step-7-warp-specialization-pipeline" title="Permalink to this heading">¶</a></h2>
+<span id="chap-warp-specialization"></span><h2><span class="section-number">9.1. </span>Step 7: Warp Specialization + Pipeline<a class="headerlink" href="#step-7-warp-specialization-pipeline" title="Permalink to this heading">¶</a></h2>
 <p>This is the biggest architectural change: instead of all threads doing
 load-then-compute sequentially, we dedicate specific warps to specific
 tasks and overlap them with software pipelining. We benchmark with
 M=N=K=4096.</p>
 <section id="what-you-will-learn">
-<h3><span class="section-number">8.1.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Warp specialization: dedicating different warps/warpgroups to
 different tasks</p></li>
@@ -180,11 +190,11 @@ different tasks</p></li>
 </ul>
 </section>
 <section id="from-sequential-to-concurrent">
-<h3><span class="section-number">8.1.2. </span>From Sequential to Concurrent<a class="headerlink" href="#from-sequential-to-concurrent" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.2. </span>From Sequential to Concurrent<a class="headerlink" href="#from-sequential-to-concurrent" title="Permalink to this heading">¶</a></h3>
 <figure class="align-default" id="id7">
 <img alt="../_images/warp_specialization_timeline.png" src="../_images/warp_specialization_timeline.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8.1.1 </span><span class="caption-text">Warp Specialization Timeline</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 9.1.1 </span><span class="caption-text">Warp Specialization Timeline</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>The TMA producer prefetches data while the MMA consumer computes, and
@@ -203,7 +213,7 @@ buffer 1). So the <code class="docutils literal notranslate"><span class="pre">m
 Load k=2.</p>
 </section>
 <section id="warp-roles">
-<h3><span class="section-number">8.1.3. </span>Warp Roles<a class="headerlink" href="#warp-roles" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.3. </span>Warp Roles<a class="headerlink" href="#warp-roles" title="Permalink to this heading">¶</a></h3>
 <p>With <code class="docutils literal notranslate"><span class="pre">WG_NUMBER=2</span></code>, the kernel uses two warpgroups (abbreviated WG
 below):</p>
 <table class="docutils align-default">
@@ -237,7 +247,7 @@ GMEM</p></td>
 </table>
 </section>
 <section id="barrier-types">
-<h3><span class="section-number">8.1.4. </span>4 Barrier Types<a class="headerlink" href="#barrier-types" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.4. </span>4 Barrier Types<a class="headerlink" href="#barrier-types" title="Permalink to this heading">¶</a></h3>
 <p>The three actors are synchronized by four barrier types. The forward
 path (TMA → MMA → Writeback) signals data readiness; the backward path
 (Writeback → MMA → TMA) signals buffer release. We name each barrier as
@@ -288,7 +298,7 @@ completion. <strong>MMA operations</strong> use <code class="docutils literal no
 <code class="docutils literal notranslate"><span class="pre">tcgen05.commit()</span></code> instruction signals the barrier when MMA finishes.</p>
 </section>
 <section id="pipelinestate">
-<h3><span class="section-number">8.1.5. </span>PipelineState<a class="headerlink" href="#pipelinestate" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.5. </span>PipelineState<a class="headerlink" href="#pipelinestate" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">PipelineState</span></code> manages stage indices and phase counters:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tma_ps</span> <span class="o">=</span> <span class="n">PipelineState</span><span class="p">(</span><span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="n">PIPE_DEPTH</span><span class="p">)</span>
 <span class="n">tma_ps</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">is_producer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># Producer starts ready (phase=1)</span>
@@ -308,7 +318,7 @@ sees barrier phase 0 == 0, so it <strong>blocks</strong> (consumer waits for dat
 <p>Getting this wrong causes deadlock or data corruption.</p>
 </section>
 <section id="warpgroup-sync-barrier-ids">
-<h3><span class="section-number">8.1.6. </span><code class="docutils literal notranslate"><span class="pre">warpgroup_sync</span></code> Barrier IDs<a class="headerlink" href="#warpgroup-sync-barrier-ids" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.6. </span><code class="docutils literal notranslate"><span class="pre">warpgroup_sync</span></code> Barrier IDs<a class="headerlink" href="#warpgroup-sync-barrier-ids" title="Permalink to this heading">¶</a></h3>
 <p>The GPU hardware has 16 named barriers (ID 0-15). <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> uses
 barrier #0 by default. In warp-specialized kernels, different warpgroups
 run different code paths, so we cannot use <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> (which
@@ -318,7 +328,7 @@ conflicting with barrier #0. In multi-consumer kernels (Step 9), each
 warpgroup uses a different ID: <code class="docutils literal notranslate"><span class="pre">warpgroup_sync(wg_id</span> <span class="pre">+</span> <span class="pre">10)</span></code>.</p>
 </section>
 <section id="implementation">
-<h3><span class="section-number">8.1.7. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.7. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h3>
 <p>The complete Step 7 kernel. <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=2</span></code> for clarity (production
 kernels use <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=4</span></code> or higher — see “Pipeline depth tuning”
 below for the SMEM trade-offs involved).</p>
@@ -517,7 +527,7 @@ below for the SMEM trade-offs involved).</p>
     <span class="n">mod</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">})</span>
     <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
 
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
 <span class="n">A_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 <span class="n">B_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 <span class="n">D_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
@@ -548,7 +558,7 @@ below for the SMEM trade-offs involved).</p>
 </div>
 </section>
 <section id="epilogue-writeback-details">
-<h3><span class="section-number">8.1.8. </span>Epilogue (Writeback) Details<a class="headerlink" href="#epilogue-writeback-details" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.8. </span>Epilogue (Writeback) Details<a class="headerlink" href="#epilogue-writeback-details" title="Permalink to this heading">¶</a></h3>
 <p>The writeback warpgroup processes the output in <code class="docutils literal notranslate"><span class="pre">EPI_N</span></code>-column chunks
 rather than writing the full <code class="docutils literal notranslate"><span class="pre">BLK_N=128</span></code> columns at once. This is
 because reading all 128 columns of TMEM into registers at once would
@@ -573,7 +583,7 @@ now free for the next tile</p></li>
 </ol>
 </section>
 <section id="key-points">
-<h3><span class="section-number">8.1.9. </span>Key Points<a class="headerlink" href="#key-points" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.9. </span>Key Points<a class="headerlink" href="#key-points" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Persistent kernel</strong>: <code class="docutils literal notranslate"><span class="pre">bx</span> <span class="pre">=</span> <span class="pre">Tx.cta_id([SM_COUNT],</span> <span class="pre">parent=&quot;kernel&quot;)</span></code>
 — one CTA per SM, loops over tiles</p></li>
@@ -584,13 +594,13 @@ tiles for cache locality</p></li>
 </ul>
 </section>
 <section id="debugging-guide">
-<h3><span class="section-number">8.1.10. </span>Debugging Guide<a class="headerlink" href="#debugging-guide" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.1.10. </span>Debugging Guide<a class="headerlink" href="#debugging-guide" title="Permalink to this heading">¶</a></h3>
 <p>This is the most bug-prone step. Warp specialization introduces
 concurrency between TMA, MMA, and writeback — if any barrier is
 misconfigured, the kernel deadlocks, crashes, or silently produces wrong
 results.</p>
 <section id="inspecting-generated-code">
-<h4><span class="section-number">8.1.10.1. </span>Inspecting Generated Code<a class="headerlink" href="#inspecting-generated-code" title="Permalink to this heading">¶</a></h4>
+<h4><span class="section-number">9.1.10.1. </span>Inspecting Generated Code<a class="headerlink" href="#inspecting-generated-code" title="Permalink to this heading">¶</a></h4>
 <p>The first debugging tool is reading the generated CUDA source. After
 compiling any kernel:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cuda_source</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">imports</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inspect_source</span><span class="p">()</span>
@@ -631,7 +641,7 @@ internal guard</p></td>
 </table>
 </section>
 <section id="reference-correct-step-7-generated-cuda">
-<h4><span class="section-number">8.1.10.2. </span>Reference: Correct Step 7 Generated CUDA<a class="headerlink" href="#reference-correct-step-7-generated-cuda" title="Permalink to this heading">¶</a></h4>
+<h4><span class="section-number">9.1.10.2. </span>Reference: Correct Step 7 Generated CUDA<a class="headerlink" href="#reference-correct-step-7-generated-cuda" title="Permalink to this heading">¶</a></h4>
 <p>A correctly compiled Step 7 kernel produces CUDA code with this
 structure. Comparing your generated code against this reference is the
 fastest way to find bugs:</p>
@@ -733,7 +743,7 @@ MMA both loop <code class="docutils literal notranslate"><span class="pre">K_TIL
 producer=1, consumer=0</p>
 </section>
 <section id="debugging-deadlocks">
-<h4><span class="section-number">8.1.10.3. </span>Debugging Deadlocks<a class="headerlink" href="#debugging-deadlocks" title="Permalink to this heading">¶</a></h4>
+<h4><span class="section-number">9.1.10.3. </span>Debugging Deadlocks<a class="headerlink" href="#debugging-deadlocks" title="Permalink to this heading">¶</a></h4>
 <p><strong>How to tell it’s a deadlock</strong>: The kernel hangs for ~30 seconds, then
 reports “unspecified launch failure.” A crash (XID 43) fails instantly.</p>
 <p><strong>Step 1: Verify barrier arrival counts match init counts.</strong></p>
@@ -810,7 +820,7 @@ phase 1 (first wait passes immediately). Consumer starts at phase 0
 they deadlock on the first iteration.</p>
 </section>
 <section id="debugging-crashes-xid-43-illegal-memory-access">
-<h4><span class="section-number">8.1.10.4. </span>Debugging Crashes (XID 43 / Illegal Memory Access)<a class="headerlink" href="#debugging-crashes-xid-43-illegal-memory-access" title="Permalink to this heading">¶</a></h4>
+<h4><span class="section-number">9.1.10.4. </span>Debugging Crashes (XID 43 / Illegal Memory Access)<a class="headerlink" href="#debugging-crashes-xid-43-illegal-memory-access" title="Permalink to this heading">¶</a></h4>
 <p>These corrupt the CUDA context — even <code class="docutils literal notranslate"><span class="pre">torch.randn</span></code> fails afterward.</p>
 <p><strong>Common causes:</strong></p>
 <ol class="arabic simple">
@@ -831,7 +841,7 @@ writeback still reading.</p></li>
 </ol>
 </section>
 <section id="debugging-wrong-results">
-<h4><span class="section-number">8.1.10.5. </span>Debugging Wrong Results<a class="headerlink" href="#debugging-wrong-results" title="Permalink to this heading">¶</a></h4>
+<h4><span class="section-number">9.1.10.5. </span>Debugging Wrong Results<a class="headerlink" href="#debugging-wrong-results" title="Permalink to this heading">¶</a></h4>
 <p>If you see specific mismatch counts like 128, 253, or 381 (multiples of
 128 = corrupted rows), it’s a synchronization bug, not an arithmetic
 error.</p>
@@ -860,13 +870,16 @@ correctly reset between tiles, and that TMA stores complete
 <p><strong>Pipeline depth tuning</strong>: The demo above uses <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=2</span></code> (the
 minimum). In production, increasing <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code> to 4 or 6 lets the
 TMA producer get further ahead of the MMA consumer, better hiding memory
-latency. B200 has 192 KB SMEM per SM. With
-<code class="docutils literal notranslate"><span class="pre">BLK_M=BLK_N=128,</span> <span class="pre">BLK_K=64,</span> <span class="pre">fp16</span></code>, each pipeline stage uses
-<code class="docutils literal notranslate"><span class="pre">(128*64</span> <span class="pre">+</span> <span class="pre">128*64)</span> <span class="pre">*</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">32</span> <span class="pre">KB</span></code> for A+B. <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=4</span></code> uses 128 KB
-for A+B, leaving room for Dsmem (32 KB) and barrier metadata.
-<code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=6</span></code> uses 192 KB for A+B alone, so it requires shrinking or
-eliminating the Dsmem buffer (e.g., writing back to GMEM directly from
-registers instead of via TMA store).</p>
+latency. B200 has 228 KB SMEM per SM (see <a class="reference internal" href="../chapter_background/index.html#chap-background"><span class="std std-numref">Section 1</span></a>,
+<em>Numbers to Remember</em>). With <code class="docutils literal notranslate"><span class="pre">BLK_M=BLK_N=128,</span> <span class="pre">BLK_K=64,</span> <span class="pre">fp16</span></code>, each
+pipeline stage uses <code class="docutils literal notranslate"><span class="pre">(128*64</span> <span class="pre">+</span> <span class="pre">128*64)</span> <span class="pre">*</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">32</span> <span class="pre">KB</span></code> for A+B, and the
+<code class="docutils literal notranslate"><span class="pre">Dsmem</span></code> writeback staging buffer consumes <code class="docutils literal notranslate"><span class="pre">128*128*2</span> <span class="pre">=</span> <span class="pre">32</span> <span class="pre">KB</span></code>.
+<code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=4</span></code> uses 128 KB for A+B, leaving ~68 KB for Dsmem and
+metadata. <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=6</span></code> pushes total SMEM usage to ~224 KB (192 KB
+A+B + 32 KB Dsmem), fitting just inside the 228 KB budget. Going deeper
+(e.g., <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=7</span></code> needing 256 KB) requires shrinking or
+eliminating the Dsmem buffer — for example, writing back to GMEM
+directly from registers instead of staging through SMEM+TMA store.</p>
 <hr class="docutils" />
 <p>With warp specialization in place, the next optimization is to have
 multiple CTAs cooperate on a larger tile.</p>
@@ -874,11 +887,11 @@ multiple CTAs cooperate on a larger tile.</p>
 </section>
 </section>
 <section id="step-8-2-cta-cluster">
-<span id="chap-cta-cluster"></span><h2><span class="section-number">8.2. </span>Step 8: 2-CTA Cluster<a class="headerlink" href="#step-8-2-cta-cluster" title="Permalink to this heading">¶</a></h2>
+<span id="chap-cta-cluster"></span><h2><span class="section-number">9.2. </span>Step 8: 2-CTA Cluster<a class="headerlink" href="#step-8-2-cta-cluster" title="Permalink to this heading">¶</a></h2>
 <p>Two CTAs cooperate via cross-CTA shared memory, doubling the output
 width. M=N=K=4096.</p>
 <section id="id1">
-<h3><span class="section-number">8.2.1. </span>What You Will Learn<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.1. </span>What You Will Learn<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>CTA clusters: multiple CTAs cooperating on a larger tile</p></li>
 <li><p>Cross-CTA SMEM access via <code class="docutils literal notranslate"><span class="pre">map_shared_rank</span></code></p></li>
@@ -887,14 +900,14 @@ width. M=N=K=4096.</p>
 </ul>
 </section>
 <section id="the-key-insight">
-<h3><span class="section-number">8.2.2. </span>The Key Insight<a class="headerlink" href="#the-key-insight" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.2. </span>The Key Insight<a class="headerlink" href="#the-key-insight" title="Permalink to this heading">¶</a></h3>
 <p>With <code class="docutils literal notranslate"><span class="pre">cta_group=2</span></code>, the MMA hardware reads B from <strong>both</strong> CTAs’
 shared memory. Each CTA loads only 128 columns of B, but the MMA sees
 all 256 columns:</p>
 <figure class="align-default" id="id8">
 <img alt="../_images/cta_cluster.png" src="../_images/cta_cluster.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8.2.1 </span><span class="caption-text">2-CTA Cluster</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 9.2.1 </span><span class="caption-text">2-CTA Cluster</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p><strong>Why A is split but B is shared</strong>: Think of <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">A</span> <span class="pre">×</span> <span class="pre">B</span></code>. With 2 CTAs
@@ -913,7 +926,7 @@ SMEM via cross-CTA shared memory access, so it sees all 256 columns of
 a 256×256 output — 2x arithmetic intensity with the same memory traffic.</p>
 </section>
 <section id="tile-address-calculation">
-<h3><span class="section-number">8.2.3. </span>Tile Address Calculation<a class="headerlink" href="#tile-address-calculation" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.3. </span>Tile Address Calculation<a class="headerlink" href="#tile-address-calculation" title="Permalink to this heading">¶</a></h3>
 <p>With 2-CTA clusters, the tile scheduler works in units of 256x256
 cluster tiles. Each <code class="docutils literal notranslate"><span class="pre">(m_idx,</span> <span class="pre">n_idx)</span></code> from the scheduler identifies a
 256x256 region, and the two CTAs within the cluster split the work. The
@@ -929,7 +942,7 @@ different 128x128 sub-tile of the 256x256 cluster tile. The scheduler’s
 tiles, not individual CTA tiles.</p>
 </section>
 <section id="code-changes-from-step-7">
-<h3><span class="section-number">8.2.4. </span>Code Changes from Step 7<a class="headerlink" href="#code-changes-from-step-7" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.4. </span>Code Changes from Step 7<a class="headerlink" href="#code-changes-from-step-7" title="Permalink to this heading">¶</a></h3>
 <p>The changes are surprisingly small — TIRX abstracts away most of the
 complexity:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Cluster launch</span>
@@ -954,7 +967,7 @@ complexity:</p>
 </div>
 </section>
 <section id="new-concepts">
-<h3><span class="section-number">8.2.5. </span>New Concepts<a class="headerlink" href="#new-concepts" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.5. </span>New Concepts<a class="headerlink" href="#new-concepts" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Cluster CTA ID</strong>: <code class="docutils literal notranslate"><span class="pre">cbx</span></code> tells each CTA its position in the cluster
 (0 or 1). CTA-0 handles A rows 0-127, CTA-1 handles rows 128-255.</p></li>
@@ -980,7 +993,7 @@ writeback warpgroups (128 threads each) arrive.</p></li>
 </ul>
 </section>
 <section id="id2">
-<h3><span class="section-number">8.2.6. </span>Implementation<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.6. </span>Implementation<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">hgemm_v8</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
     <span class="n">a_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
     <span class="n">b_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
@@ -1195,7 +1208,7 @@ writeback warpgroups (128 threads each) arrive.</p></li>
 </div>
 </section>
 <section id="id3">
-<h3><span class="section-number">8.2.7. </span>Key Points<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.2.7. </span>Key Points<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">CTA_GROUP</span> <span class="pre">=</span> <span class="pre">2</span></code>, <code class="docutils literal notranslate"><span class="pre">MMA_N</span> <span class="pre">=</span> <span class="pre">BLK_N</span> <span class="pre">*</span> <span class="pre">CTA_GROUP</span> <span class="pre">=</span> <span class="pre">256</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ld2mma.init(128</span> <span class="pre">*</span> <span class="pre">CTA_GROUP)</span></code> — both CTAs’ writeback WGs arrive</p></li>
@@ -1222,12 +1235,12 @@ MMA consumer within each CTA.</p>
 </section>
 </section>
 <section id="step-9-multi-consumer-warp-specialization">
-<span id="chap-multi-consumer"></span><h2><span class="section-number">8.3. </span>Step 9: Multi-Consumer Warp Specialization<a class="headerlink" href="#step-9-multi-consumer-warp-specialization" title="Permalink to this heading">¶</a></h2>
+<span id="chap-multi-consumer"></span><h2><span class="section-number">9.3. </span>Step 9: Multi-Consumer Warp Specialization<a class="headerlink" href="#step-9-multi-consumer-warp-specialization" title="Permalink to this heading">¶</a></h2>
 <p>The final optimization adds a second MMA consumer, doubling the compute
 density per CTA. The cluster output grows from 256x256 to 512x256.
 M=N=K=4096.</p>
 <section id="id4">
-<h3><span class="section-number">8.3.1. </span>What You Will Learn<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.1. </span>What You Will Learn<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Multiple MMA warps (consumers) for higher throughput</p></li>
 <li><p>Multiple writeback warpgroups with independent barrier slots</p></li>
@@ -1235,7 +1248,7 @@ M=N=K=4096.</p>
 </ul>
 </section>
 <section id="background">
-<h3><span class="section-number">8.3.2. </span>Background<a class="headerlink" href="#background" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.2. </span>Background<a class="headerlink" href="#background" title="Permalink to this heading">¶</a></h3>
 <p>With <code class="docutils literal notranslate"><span class="pre">NUM_CONSUMER=2</span></code> and <code class="docutils literal notranslate"><span class="pre">WG_NUMBER=3</span></code>, there are three warpgroups
 (abbreviated WG below):</p>
 <table class="docutils align-default">
@@ -1282,7 +1295,7 @@ TMEM <code class="docutils literal notranslate"><span class="pre">[256:512]</spa
 </table>
 </section>
 <section id="changes-from-step-8">
-<h3><span class="section-number">8.3.3. </span>Changes from Step 8<a class="headerlink" href="#changes-from-step-8" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.3. </span>Changes from Step 8<a class="headerlink" href="#changes-from-step-8" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Asmem</span> <span class="pre">=</span> <span class="pre">pool.alloc((PIPE_DEPTH,</span> <span class="pre">NUM_CONSUMER,</span> <span class="pre">BLK_M,</span> <span class="pre">BLK_K),</span> <span class="pre">...)</span></code>
 — 2 A blocks per stage, one per consumer</p></li>
@@ -1305,7 +1318,7 @@ once exceeds register capacity</p></li>
 </ul>
 </section>
 <section id="id5">
-<h3><span class="section-number">8.3.4. </span>Implementation<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.4. </span>Implementation<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">hgemm_v9</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
     <span class="n">a_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
     <span class="n">b_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
@@ -1537,7 +1550,7 @@ once exceeds register capacity</p></li>
 </div>
 </section>
 <section id="id6">
-<h3><span class="section-number">8.3.5. </span>Key Points<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.5. </span>Key Points<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">mma2ld</span></code> and <code class="docutils literal notranslate"><span class="pre">ld2mma</span></code> must be <strong>one shared object</strong> each with
 <code class="docutils literal notranslate"><span class="pre">depth=NUM_CONSUMER</span></code>, NOT separate per-consumer objects. Slot 0
@@ -1549,7 +1562,7 @@ Warpgroup 1. MMA side uses <code class="docutils literal notranslate"><span clas
 </section>
 </section>
 <section id="exercises">
-<h2><span class="section-number">8.4. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">9.4. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>What happens if you set <code class="docutils literal notranslate"><span class="pre">is_producer=False</span></code> for both the TMA and
 MMA pipeline states in Step 7? Draw the deadlock scenario.</p></li>
@@ -1588,7 +1601,7 @@ tile. Why is sharing B (not A) the right choice?</p></li>
 </pre></div>
 </div>
 <section id="the-complete-journey">
-<h3><span class="section-number">8.4.1. </span>The Complete Journey<a class="headerlink" href="#the-complete-journey" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.4.1. </span>The Complete Journey<a class="headerlink" href="#the-complete-journey" title="Permalink to this heading">¶</a></h3>
 <p>Benchmarked on NVIDIA B200, M=N=K=4096, fp16:</p>
 <table class="docutils align-default">
 <thead>
@@ -1661,7 +1674,7 @@ speedup) 4. <strong>Multi-Consumer</strong> — 2 MMA warps for higher compute d
 <figure class="align-default" id="id9">
 <img alt="../_images/gemm_perf.png" src="../_images/gemm_perf.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8.4.1 </span><span class="caption-text">GEMM Optimization Journey</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 9.4.1 </span><span class="caption-text">GEMM Optimization Journey</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>582x speedup: from 70 ms to 0.12 ms — within 10% of cuBLAS!</p>
@@ -1678,47 +1691,47 @@ speedup) 4. <strong>Multi-Consumer</strong> — 2 MMA warps for higher compute d
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a><ul>
-<li><a class="reference internal" href="#step-7-warp-specialization-pipeline">8.1. Step 7: Warp Specialization + Pipeline</a><ul>
-<li><a class="reference internal" href="#what-you-will-learn">8.1.1. What You Will Learn</a></li>
-<li><a class="reference internal" href="#from-sequential-to-concurrent">8.1.2. From Sequential to Concurrent</a></li>
-<li><a class="reference internal" href="#warp-roles">8.1.3. Warp Roles</a></li>
-<li><a class="reference internal" href="#barrier-types">8.1.4. 4 Barrier Types</a></li>
-<li><a class="reference internal" href="#pipelinestate">8.1.5. PipelineState</a></li>
-<li><a class="reference internal" href="#warpgroup-sync-barrier-ids">8.1.6. <code class="docutils literal notranslate"><span class="pre">warpgroup_sync</span></code> Barrier IDs</a></li>
-<li><a class="reference internal" href="#implementation">8.1.7. Implementation</a></li>
-<li><a class="reference internal" href="#epilogue-writeback-details">8.1.8. Epilogue (Writeback) Details</a></li>
-<li><a class="reference internal" href="#key-points">8.1.9. Key Points</a></li>
-<li><a class="reference internal" href="#debugging-guide">8.1.10. Debugging Guide</a><ul>
-<li><a class="reference internal" href="#inspecting-generated-code">8.1.10.1. Inspecting Generated Code</a></li>
-<li><a class="reference internal" href="#reference-correct-step-7-generated-cuda">8.1.10.2. Reference: Correct Step 7 Generated CUDA</a></li>
-<li><a class="reference internal" href="#debugging-deadlocks">8.1.10.3. Debugging Deadlocks</a></li>
-<li><a class="reference internal" href="#debugging-crashes-xid-43-illegal-memory-access">8.1.10.4. Debugging Crashes (XID 43 / Illegal Memory Access)</a></li>
-<li><a class="reference internal" href="#debugging-wrong-results">8.1.10.5. Debugging Wrong Results</a></li>
+<li><a class="reference internal" href="#">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a><ul>
+<li><a class="reference internal" href="#step-7-warp-specialization-pipeline">9.1. Step 7: Warp Specialization + Pipeline</a><ul>
+<li><a class="reference internal" href="#what-you-will-learn">9.1.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#from-sequential-to-concurrent">9.1.2. From Sequential to Concurrent</a></li>
+<li><a class="reference internal" href="#warp-roles">9.1.3. Warp Roles</a></li>
+<li><a class="reference internal" href="#barrier-types">9.1.4. 4 Barrier Types</a></li>
+<li><a class="reference internal" href="#pipelinestate">9.1.5. PipelineState</a></li>
+<li><a class="reference internal" href="#warpgroup-sync-barrier-ids">9.1.6. <code class="docutils literal notranslate"><span class="pre">warpgroup_sync</span></code> Barrier IDs</a></li>
+<li><a class="reference internal" href="#implementation">9.1.7. Implementation</a></li>
+<li><a class="reference internal" href="#epilogue-writeback-details">9.1.8. Epilogue (Writeback) Details</a></li>
+<li><a class="reference internal" href="#key-points">9.1.9. Key Points</a></li>
+<li><a class="reference internal" href="#debugging-guide">9.1.10. Debugging Guide</a><ul>
+<li><a class="reference internal" href="#inspecting-generated-code">9.1.10.1. Inspecting Generated Code</a></li>
+<li><a class="reference internal" href="#reference-correct-step-7-generated-cuda">9.1.10.2. Reference: Correct Step 7 Generated CUDA</a></li>
+<li><a class="reference internal" href="#debugging-deadlocks">9.1.10.3. Debugging Deadlocks</a></li>
+<li><a class="reference internal" href="#debugging-crashes-xid-43-illegal-memory-access">9.1.10.4. Debugging Crashes (XID 43 / Illegal Memory Access)</a></li>
+<li><a class="reference internal" href="#debugging-wrong-results">9.1.10.5. Debugging Wrong Results</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#step-8-2-cta-cluster">8.2. Step 8: 2-CTA Cluster</a><ul>
-<li><a class="reference internal" href="#id1">8.2.1. What You Will Learn</a></li>
-<li><a class="reference internal" href="#the-key-insight">8.2.2. The Key Insight</a></li>
-<li><a class="reference internal" href="#tile-address-calculation">8.2.3. Tile Address Calculation</a></li>
-<li><a class="reference internal" href="#code-changes-from-step-7">8.2.4. Code Changes from Step 7</a></li>
-<li><a class="reference internal" href="#new-concepts">8.2.5. New Concepts</a></li>
-<li><a class="reference internal" href="#id2">8.2.6. Implementation</a></li>
-<li><a class="reference internal" href="#id3">8.2.7. Key Points</a></li>
+<li><a class="reference internal" href="#step-8-2-cta-cluster">9.2. Step 8: 2-CTA Cluster</a><ul>
+<li><a class="reference internal" href="#id1">9.2.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#the-key-insight">9.2.2. The Key Insight</a></li>
+<li><a class="reference internal" href="#tile-address-calculation">9.2.3. Tile Address Calculation</a></li>
+<li><a class="reference internal" href="#code-changes-from-step-7">9.2.4. Code Changes from Step 7</a></li>
+<li><a class="reference internal" href="#new-concepts">9.2.5. New Concepts</a></li>
+<li><a class="reference internal" href="#id2">9.2.6. Implementation</a></li>
+<li><a class="reference internal" href="#id3">9.2.7. Key Points</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#step-9-multi-consumer-warp-specialization">8.3. Step 9: Multi-Consumer Warp Specialization</a><ul>
-<li><a class="reference internal" href="#id4">8.3.1. What You Will Learn</a></li>
-<li><a class="reference internal" href="#background">8.3.2. Background</a></li>
-<li><a class="reference internal" href="#changes-from-step-8">8.3.3. Changes from Step 8</a></li>
-<li><a class="reference internal" href="#id5">8.3.4. Implementation</a></li>
-<li><a class="reference internal" href="#id6">8.3.5. Key Points</a></li>
+<li><a class="reference internal" href="#step-9-multi-consumer-warp-specialization">9.3. Step 9: Multi-Consumer Warp Specialization</a><ul>
+<li><a class="reference internal" href="#id4">9.3.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#background">9.3.2. Background</a></li>
+<li><a class="reference internal" href="#changes-from-step-8">9.3.3. Changes from Step 8</a></li>
+<li><a class="reference internal" href="#id5">9.3.4. Implementation</a></li>
+<li><a class="reference internal" href="#id6">9.3.5. Key Points</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#exercises">8.4. Exercises</a><ul>
-<li><a class="reference internal" href="#the-complete-journey">8.4.1. The Complete Journey</a></li>
+<li><a class="reference internal" href="#exercises">9.4. Exercises</a><ul>
+<li><a class="reference internal" href="#the-complete-journey">9.4.1. The Complete Journey</a></li>
 </ul>
 </li>
 </ul>
@@ -1735,14 +1748,14 @@ speedup) 4. <strong>Multi-Consumer</strong> — 2 MMA warps for higher compute d
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</div>
+            <div>8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_flash_attention/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>9. Flash Attention 4</div>
+            <div>10. Flash Attention 4</div>
         </div>
      </a>
   </div>

@@ -16,12 +16,15 @@ Get Started
 
 New here? Follow this path:
 
-1. **Ch 3 (Setup)** — Install TIRX and run your first GPU kernel in
+1. **Ch 2 (Setup)** — Install TIRX and run your first GPU kernel in
    under 5 minutes
 
-2. **Ch 4 (Fused GELU)** — Write your first real operator kernel
+2. **Ch 4 (TIRX Layout)** — Build a mental model of hardware-aware
+   tensor layouts before touching real kernels
 
-3. **Ch 6 (GEMM Steps 1–3)** — Start the GEMM optimization journey: 70ms
+3. **Ch 5 (Fused GELU)** — Write your first real operator kernel
+
+4. **Ch 7 (GEMM Steps 1–3)** — Start the GEMM optimization journey: 70ms
    → 0.11ms
 
 Who Is This For
@@ -42,31 +45,34 @@ GPU (B200/B100) to run the code.
 Tutorial Structure
 ------------------
 
-- **Part I: Fundamentals** (Ch 1–3) — Blackwell GPU architecture, TIRX
-  programming model, and environment setup.
+- **Part I: Fundamentals** (Ch 1–4) — Blackwell GPU architecture, TIRX
+  programming model, environment setup, and TIRX Layout — the
+  hardware-aware tensor-layout abstraction that every later kernel
+  relies on.
 
-- **Part II: Entry-Level Kernels** (Ch 4–5) — Learn TIRX basics through
+- **Part II: Entry-Level Kernels** (Ch 5–6) — Learn TIRX basics through
   two self-contained operators: Fused GELU (elementwise + fusion) and
   RMSNorm (warp reduction + shared memory).
 
-- **Part III: GEMM Deep Dive** (Ch 6–8) — A single GEMM kernel,
+- **Part III: GEMM Deep Dive** (Ch 7–9) — A single GEMM kernel,
   optimized step by step from 70ms to 0.11ms in 9 steps across 3
   chapters.
 
-- **Part IV: Advanced Kernels** (Ch 9) — Flash Attention on Blackwell.
+- **Part IV: Advanced Kernels** (Ch 10) — Flash Attention on Blackwell.
 
-- **Part V: AI-Assisted Development** (Ch 10) — Using LLMs to generate
+- **Part V: AI-Assisted Development** (Ch 11) — Using LLMs to generate
   boilerplate, debug kernels, and produce test harnesses.
 
-- **Appendix** (Ch 11) — Full API reference and common pitfalls.
+- **Appendix** (Ch 12) — Full API reference and common pitfalls.
 
 .. toctree::
    :maxdepth: 2
    :numbered:
 
    chapter_background/index
-   chapter_tirx_primer/index
    chapter_setup/index
+   chapter_tirx_primer/index
+   chapter_layouts/index
    chapter_fused_gelu/index
    chapter_rmsnorm/index
    chapter_gemm_basics/index

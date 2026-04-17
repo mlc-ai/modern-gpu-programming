@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>11. TIRX API Reference &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>12. TIRX API Reference &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,14 +28,14 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="10. AI-Assisted Kernel Development" href="../chapter_ai_assisted/index.html" /> 
+    <link rel="prev" title="11. AI-Assisted Kernel Development" href="../chapter_ai_assisted/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">11. </span>TIRX API Reference</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">12. </span>TIRX API Reference</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -94,16 +94,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -132,16 +133,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -154,11 +156,11 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="tirx-api-reference">
-<span id="chap-api-reference"></span><h1><span class="section-number">11. </span>TIRX API Reference<a class="headerlink" href="#tirx-api-reference" title="Permalink to this heading">¶</a></h1>
+<span id="chap-api-reference"></span><h1><span class="section-number">12. </span>TIRX API Reference<a class="headerlink" href="#tirx-api-reference" title="Permalink to this heading">¶</a></h1>
 <p>This chapter provides a comprehensive reference for the TIRX APIs used
 in this tutorial.</p>
 <section id="thread-hierarchy">
-<h2><span class="section-number">11.1. </span>Thread Hierarchy<a class="headerlink" href="#thread-hierarchy" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.1. </span>Thread Hierarchy<a class="headerlink" href="#thread-hierarchy" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -213,7 +215,7 @@ dispatch)</p></td>
 </table>
 </section>
 <section id="function-parameters">
-<h2><span class="section-number">11.2. </span>Function Parameters<a class="headerlink" href="#function-parameters" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.2. </span>Function Parameters<a class="headerlink" href="#function-parameters" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -246,7 +248,7 @@ shape.</p></td>
 </table>
 </section>
 <section id="memory">
-<h2><span class="section-number">11.3. </span>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.3. </span>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -300,7 +302,7 @@ mbarrier access)</p></td>
 </table>
 </section>
 <section id="data-movement">
-<h2><span class="section-number">11.4. </span>Data Movement<a class="headerlink" href="#data-movement" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.4. </span>Data Movement<a class="headerlink" href="#data-movement" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -324,7 +326,7 @@ mbarrier access)</p></td>
 </table>
 </section>
 <section id="control-flow">
-<h2><span class="section-number">11.5. </span>Control Flow<a class="headerlink" href="#control-flow" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.5. </span>Control Flow<a class="headerlink" href="#control-flow" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -352,7 +354,7 @@ kernel</p></td>
 </table>
 </section>
 <section id="synchronization">
-<h2><span class="section-number">11.6. </span>Synchronization<a class="headerlink" href="#synchronization" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.6. </span>Synchronization<a class="headerlink" href="#synchronization" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -400,7 +402,7 @@ kernel</p></td>
 </table>
 </section>
 <section id="high-level-abstractions">
-<h2><span class="section-number">11.7. </span>High-Level Abstractions<a class="headerlink" href="#high-level-abstractions" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.7. </span>High-Level Abstractions<a class="headerlink" href="#high-level-abstractions" title="Permalink to this heading">¶</a></h2>
 <p>These abstractions are introduced in Step 7 (Warp Specialization) and
 used through Step 9.</p>
 <table class="docutils align-default">
@@ -459,7 +461,7 @@ used through Step 9.</p>
 </table>
 </section>
 <section id="common-pitfalls">
-<h2><span class="section-number">11.8. </span>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">12.8. </span>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Do NOT use Python ``and``/``or`` in ``if`` statements on TIR
 variables</strong>: <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">wg_id</span> <span class="pre">==</span> <span class="pre">1</span> <span class="pre">and</span> <span class="pre">warp_id</span> <span class="pre">==</span> <span class="pre">0:</span></code> does NOT work. Python
@@ -504,15 +506,15 @@ and switch to an idle GPU.</p></li>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">11. TIRX API Reference</a><ul>
-<li><a class="reference internal" href="#thread-hierarchy">11.1. Thread Hierarchy</a></li>
-<li><a class="reference internal" href="#function-parameters">11.2. Function Parameters</a></li>
-<li><a class="reference internal" href="#memory">11.3. Memory</a></li>
-<li><a class="reference internal" href="#data-movement">11.4. Data Movement</a></li>
-<li><a class="reference internal" href="#control-flow">11.5. Control Flow</a></li>
-<li><a class="reference internal" href="#synchronization">11.6. Synchronization</a></li>
-<li><a class="reference internal" href="#high-level-abstractions">11.7. High-Level Abstractions</a></li>
-<li><a class="reference internal" href="#common-pitfalls">11.8. Common Pitfalls</a></li>
+<li><a class="reference internal" href="#">12. TIRX API Reference</a><ul>
+<li><a class="reference internal" href="#thread-hierarchy">12.1. Thread Hierarchy</a></li>
+<li><a class="reference internal" href="#function-parameters">12.2. Function Parameters</a></li>
+<li><a class="reference internal" href="#memory">12.3. Memory</a></li>
+<li><a class="reference internal" href="#data-movement">12.4. Data Movement</a></li>
+<li><a class="reference internal" href="#control-flow">12.5. Control Flow</a></li>
+<li><a class="reference internal" href="#synchronization">12.6. Synchronization</a></li>
+<li><a class="reference internal" href="#high-level-abstractions">12.7. High-Level Abstractions</a></li>
+<li><a class="reference internal" href="#common-pitfalls">12.8. Common Pitfalls</a></li>
 </ul>
 </li>
 </ul>
@@ -527,7 +529,7 @@ and switch to an idle GPU.</p></li>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>10. AI-Assisted Kernel Development</div>
+            <div>11. AI-Assisted Kernel Development</div>
          </div>
      </a>
   </div>

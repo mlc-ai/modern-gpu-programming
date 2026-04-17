@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>5. RMSNorm &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>6. RMSNorm &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -29,15 +29,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="6. GEMM Steps 1–3: From Single Tile to Spatial Tiling" href="../chapter_gemm_basics/index.html" />
-    <link rel="prev" title="4. Fused GELU-Tanh &amp; Multiply" href="../chapter_fused_gelu/index.html" /> 
+    <link rel="next" title="7. GEMM Steps 1–3: From Single Tile to Spatial Tiling" href="../chapter_gemm_basics/index.html" />
+    <link rel="prev" title="5. Fused GELU-Tanh &amp; Multiply" href="../chapter_fused_gelu/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">5. </span>RMSNorm</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">6. </span>RMSNorm</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -96,16 +96,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -134,16 +135,17 @@ Show Source
             <nav class="mdl-navigation">
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Background: Blackwell GPU Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">2. TIRX Programming Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">3. Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">4. Fused GELU-Tanh &amp; Multiply</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">5. RMSNorm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">7. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">8. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">9. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">10. AI-Assisted Kernel Development</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">11. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">2. Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">3. TIRX Programming Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">4. TIRX Layout: Mapping Tensors to Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">5. Fused GELU-Tanh &amp; Multiply</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. RMSNorm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">8. GEMM Steps 4–6: TMA, Pipelining, and Persistent Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">9. GEMM Steps 7–9: Warp Specialization to cuBLAS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">10. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">11. AI-Assisted Kernel Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">12. TIRX API Reference</a></li>
 </ul>
 
             </nav>
@@ -156,19 +158,19 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="rmsnorm">
-<span id="chap-rmsnorm"></span><h1><span class="section-number">5. </span>RMSNorm<a class="headerlink" href="#rmsnorm" title="Permalink to this heading">¶</a></h1>
+<span id="chap-rmsnorm"></span><h1><span class="section-number">6. </span>RMSNorm<a class="headerlink" href="#rmsnorm" title="Permalink to this heading">¶</a></h1>
 <p>RMSNorm (Root Mean Square Layer Normalization) is used in most modern
 LLMs (Llama, Qwen, etc.). It introduces two important GPU programming
 patterns: <strong>warp-level reduction</strong> and <strong>shared memory communication</strong>.</p>
 <p><strong>Operation</strong>: Given input <code class="docutils literal notranslate"><span class="pre">x[batch,</span> <span class="pre">hidden]</span></code> and weight
 <code class="docutils literal notranslate"><span class="pre">w[hidden]</span></code>, for each row <span class="math notranslate nohighlight">\(b\)</span>:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-rmsnorm-index-0">
-<span class="eqno">(5.1)<a class="headerlink" href="#equation-chapter-rmsnorm-index-0" title="Permalink to this equation">¶</a></span>\[\text{out}[b, h] = \frac{x[b, h]}{\text{RMS}(x[b,:])} \cdot w[h], \quad \text{where } \text{RMS}(x[b,:]) = \sqrt{\frac{1}{d}\sum_{h} x[b,h]^2 + \epsilon}\]</div>
+<span class="eqno">(6.1)<a class="headerlink" href="#equation-chapter-rmsnorm-index-0" title="Permalink to this equation">¶</a></span>\[\text{out}[b, h] = \frac{x[b, h]}{\text{RMS}(x[b,:])} \cdot w[h], \quad \text{where } \text{RMS}(x[b,:]) = \sqrt{\frac{1}{d}\sum_{h} x[b,h]^2 + \epsilon}\]</div>
 <p>Each row is normalized independently by its own RMS value. Here
 <span class="math notranslate nohighlight">\(b\)</span> indexes the batch dimension and <span class="math notranslate nohighlight">\(h\)</span> indexes the hidden
 dimension.</p>
 <section id="what-you-will-learn">
-<h2><span class="section-number">5.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.1. </span>What You Will Learn<a class="headerlink" href="#what-you-will-learn" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Vectorized memory access with <code class="docutils literal notranslate"><span class="pre">Tx.copy()</span></code> and <code class="docutils literal notranslate"><span class="pre">Tx.cast()</span></code></p></li>
 <li><p>Warp-level reduction using <code class="docutils literal notranslate"><span class="pre">Tx.tvm_warp_shuffle_xor()</span></code></p></li>
@@ -178,7 +180,7 @@ normalization</p></li>
 </ul>
 </section>
 <section id="implementation">
-<h2><span class="section-number">5.2. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.2. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
 <p>First, the helper functions and constants:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -206,7 +208,7 @@ warps, cache x in shared memory.</p>
 <p><strong>Pass 2</strong>: Read cached x from shared memory, multiply by
 <span class="math notranslate nohighlight">\(1/\text{RMS} \cdot \text{weight}\)</span>, write output.</p>
 <section id="how-threads-are-organized-in-this-kernel">
-<h3><span class="section-number">5.2.1. </span>How threads are organized in this kernel<a class="headerlink" href="#how-threads-are-organized-in-this-kernel" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.1. </span>How threads are organized in this kernel<a class="headerlink" href="#how-threads-are-organized-in-this-kernel" title="Permalink to this heading">¶</a></h3>
 <p>Each CTA has <code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">*</span> <span class="pre">bdy</span></code> threads, arranged in a 2D layout via
 <code class="docutils literal notranslate"><span class="pre">Tx.thread_id([bdx,</span> <span class="pre">bdy],</span> <span class="pre">parent=&quot;cta&quot;)</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">bdx</span><span class="p">,</span> <span class="n">bdy</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
@@ -216,8 +218,9 @@ warps, cache x in shared memory.</p>
 </div>
 <p>Passing a <strong>2D list ``[bdx, bdy]``</strong> means the CTA’s threads are
 logically arranged as a 2D grid of size <code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">×</span> <span class="pre">bdy</span></code>, and the call
-returns <strong>two indices</strong> <code class="docutils literal notranslate"><span class="pre">(tx,</span> <span class="pre">ty)</span></code>. Compare this to Chapter 4’s
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([256])</span></code>, which is 1D and returns a single <code class="docutils literal notranslate"><span class="pre">tid</span></code>.</p>
+returns <strong>two indices</strong> <code class="docutils literal notranslate"><span class="pre">(tx,</span> <span class="pre">ty)</span></code>. Compare this to the
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([NUM_THREADS])</span></code> call in <a class="reference internal" href="../chapter_fused_gelu/index.html#chap-fused-gelu"><span class="std std-numref">Section 5</span></a>,
+which is 1D and returns a single <code class="docutils literal notranslate"><span class="pre">tid</span></code>.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">=</span> <span class="pre">32</span></code> — one warp (32 threads). <code class="docutils literal notranslate"><span class="pre">tx</span></code> is the lane ID within the
 warp.</p></li>
@@ -236,7 +239,7 @@ per CTA = 256 threads total.</p>
 <figure class="align-default" id="id1">
 <img alt="../_images/cta_warp_layout.png" src="../_images/cta_warp_layout.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 5.2.1 </span><span class="caption-text">CTA Layout and Warp Organization</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 6.2.1 </span><span class="caption-text">CTA Layout and Warp Organization</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Each row is one warp. The two reduction stages map directly to the two
@@ -260,7 +263,7 @@ Each CTA loops over rows with <code class="docutils literal notranslate"><span c
 pattern).</p>
 </section>
 <section id="warp-shuffle-reduction">
-<h3><span class="section-number">5.2.2. </span>Warp Shuffle Reduction<a class="headerlink" href="#warp-shuffle-reduction" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.2. </span>Warp Shuffle Reduction<a class="headerlink" href="#warp-shuffle-reduction" title="Permalink to this heading">¶</a></h3>
 <p>Within a warp (32 threads), shuffle operations let threads exchange
 values directly through registers – no shared memory needed. The XOR
 shuffle pattern pairs threads at decreasing distances to combine partial
@@ -269,7 +272,7 @@ warp has 32 threads and 5 steps, same pattern):</p>
 <figure class="align-default" id="id2">
 <img alt="../_images/shuffle_reduce.png" src="../_images/shuffle_reduce.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 5.2.2 </span><span class="caption-text">XOR Shuffle Reduction</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 6.2.2 </span><span class="caption-text">XOR Shuffle Reduction</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>A real warp has 32 threads and 5 steps (offsets 16, 8, 4, 2, 1), but the
@@ -288,7 +291,7 @@ heavy lifting is done by hardware units (tcgen05 MMA, TMA), and you will
 not need to write shuffle reductions by hand.</p>
 </section>
 <section id="cross-warp-reduction">
-<h3><span class="section-number">5.2.3. </span>Cross-Warp Reduction<a class="headerlink" href="#cross-warp-reduction" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.3. </span>Cross-Warp Reduction<a class="headerlink" href="#cross-warp-reduction" title="Permalink to this heading">¶</a></h3>
 <p>Shuffle only works within a single warp (32 threads). If the CTA has 8
 warps, each warp has its own partial sum, but they can’t shuffle with
 each other. The solution is to use shared memory (SMEM) as a bridge —
@@ -297,7 +300,7 @@ shuffle reduction.</p>
 <figure class="align-default" id="id3">
 <img alt="../_images/cross_warp_reduce.png" src="../_images/cross_warp_reduce.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 5.2.3 </span><span class="caption-text">Cross-Warp Reduction</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 6.2.3 </span><span class="caption-text">Cross-Warp Reduction</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>The key idea: Steps 1-2 <strong>gather</strong> all warp results into SMEM, Steps 3-4
@@ -323,7 +326,7 @@ and has higher latency. We only use SMEM for the cross-warp step because
 shuffle can’t reach across warps.</p>
 </section>
 <section id="two-pass-structure">
-<h3><span class="section-number">5.2.4. </span>Two-Pass Structure<a class="headerlink" href="#two-pass-structure" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.4. </span>Two-Pass Structure<a class="headerlink" href="#two-pass-structure" title="Permalink to this heading">¶</a></h3>
 <ol class="arabic simple">
 <li><p><strong>Pass 1</strong>: Load <span class="math notranslate nohighlight">\(x\)</span>, compute <span class="math notranslate nohighlight">\(x^2\)</span>, reduce to get
 sum-of-squares, store <span class="math notranslate nohighlight">\(x\)</span> to SMEM</p></li>
@@ -333,7 +336,7 @@ sum-of-squares, store <span class="math notranslate nohighlight">\(x\)</span> to
 <p>This avoids reading global memory twice.</p>
 </section>
 <section id="bar-sync-vs-cta-sync">
-<h3><span class="section-number">5.2.5. </span>bar.sync vs cta_sync<a class="headerlink" href="#bar-sync-vs-cta-sync" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.5. </span>bar.sync vs cta_sync<a class="headerlink" href="#bar-sync-vs-cta-sync" title="Permalink to this heading">¶</a></h3>
 <p>Both are synchronization barriers, but they differ: -
 <code class="docutils literal notranslate"><span class="pre">Tx.cuda.cta_sync()</span></code> = <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> — synchronizes <strong>all</strong>
 threads in the CTA.</p>
@@ -513,7 +516,7 @@ Check <code class="docutils literal notranslate"><span class="pre">idx[0]</span>
 </section>
 </section>
 <section id="extension-operator-fusion">
-<h2><span class="section-number">5.3. </span>Extension: Operator Fusion<a class="headerlink" href="#extension-operator-fusion" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.3. </span>Extension: Operator Fusion<a class="headerlink" href="#extension-operator-fusion" title="Permalink to this heading">¶</a></h2>
 <p>In Transformer models, RMSNorm is almost always preceded by a residual
 addition:
 <code class="docutils literal notranslate"><span class="pre">residual</span> <span class="pre">=</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">residual;</span> <span class="pre">output</span> <span class="pre">=</span> <span class="pre">RMSNorm(residual)</span> <span class="pre">*</span> <span class="pre">weight</span></code>.
@@ -527,7 +530,7 @@ save memory bandwidth” pattern is one of the most important optimization
 techniques in GPU kernel programming.</p>
 </section>
 <section id="exercises">
-<h2><span class="section-number">5.4. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.4. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Why does the kernel store <code class="docutils literal notranslate"><span class="pre">x</span></code> to shared memory (<code class="docutils literal notranslate"><span class="pre">x_smem</span></code>) during
 Pass 1, rather than re-reading from global memory in Pass 2?</p></li>
@@ -555,18 +558,18 @@ with the same final sum?”</em></p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">5. RMSNorm</a><ul>
-<li><a class="reference internal" href="#what-you-will-learn">5.1. What You Will Learn</a></li>
-<li><a class="reference internal" href="#implementation">5.2. Implementation</a><ul>
-<li><a class="reference internal" href="#how-threads-are-organized-in-this-kernel">5.2.1. How threads are organized in this kernel</a></li>
-<li><a class="reference internal" href="#warp-shuffle-reduction">5.2.2. Warp Shuffle Reduction</a></li>
-<li><a class="reference internal" href="#cross-warp-reduction">5.2.3. Cross-Warp Reduction</a></li>
-<li><a class="reference internal" href="#two-pass-structure">5.2.4. Two-Pass Structure</a></li>
-<li><a class="reference internal" href="#bar-sync-vs-cta-sync">5.2.5. bar.sync vs cta_sync</a></li>
+<li><a class="reference internal" href="#">6. RMSNorm</a><ul>
+<li><a class="reference internal" href="#what-you-will-learn">6.1. What You Will Learn</a></li>
+<li><a class="reference internal" href="#implementation">6.2. Implementation</a><ul>
+<li><a class="reference internal" href="#how-threads-are-organized-in-this-kernel">6.2.1. How threads are organized in this kernel</a></li>
+<li><a class="reference internal" href="#warp-shuffle-reduction">6.2.2. Warp Shuffle Reduction</a></li>
+<li><a class="reference internal" href="#cross-warp-reduction">6.2.3. Cross-Warp Reduction</a></li>
+<li><a class="reference internal" href="#two-pass-structure">6.2.4. Two-Pass Structure</a></li>
+<li><a class="reference internal" href="#bar-sync-vs-cta-sync">6.2.5. bar.sync vs cta_sync</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#extension-operator-fusion">5.3. Extension: Operator Fusion</a></li>
-<li><a class="reference internal" href="#exercises">5.4. Exercises</a></li>
+<li><a class="reference internal" href="#extension-operator-fusion">6.3. Extension: Operator Fusion</a></li>
+<li><a class="reference internal" href="#exercises">6.4. Exercises</a></li>
 </ul>
 </li>
 </ul>
@@ -581,14 +584,14 @@ with the same final sum?”</em></p>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>4. Fused GELU-Tanh & Multiply</div>
+            <div>5. Fused GELU-Tanh & Multiply</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_gemm_basics/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>6. GEMM Steps 1–3: From Single Tile to Spatial Tiling</div>
+            <div>7. GEMM Steps 1–3: From Single Tile to Spatial Tiling</div>
         </div>
      </a>
   </div>
