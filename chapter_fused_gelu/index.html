@@ -218,7 +218,9 @@ matrix <code class="docutils literal notranslate"><span class="pre">[batch,</spa
 <p>Each thread handles exactly one element. The flat <code class="docutils literal notranslate"><span class="pre">gid</span></code> fills the
 matrix row by row: the first <code class="docutils literal notranslate"><span class="pre">out_dim</span></code> threads cover row 0, the next
 <code class="docutils literal notranslate"><span class="pre">out_dim</span></code> threads cover row 1, and so on.</p>
-<p><strong>APIs you’ll see in this kernel:</strong></p>
+</section>
+<section id="kernel-apis">
+<h3><span class="section-number">5.2.2. </span>Kernel APIs<a class="headerlink" href="#kernel-apis" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>``Tx.handle`` + ``Tx.match_buffer``</strong> — The function takes opaque
 pointer parameters. Inside the kernel, <code class="docutils literal notranslate"><span class="pre">match_buffer</span></code> binds them to
@@ -290,7 +292,9 @@ in fp16 arithmetic. <code class="docutils literal notranslate"><span class="pre"
     <span class="k">return</span> <span class="n">fused_gelu_tanh_multiply</span>
 </pre></div>
 </div>
-<p>Compile, verify, and benchmark:</p>
+</section>
+<section id="compile-verify-and-benchmark">
+<h3><span class="section-number">5.2.3. </span>Compile, Verify, and Benchmark<a class="headerlink" href="#compile-verify-and-benchmark" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">out_dim</span> <span class="o">=</span> <span class="mi">4096</span>
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
 <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
@@ -318,6 +322,9 @@ in fp16 arithmetic. <code class="docutils literal notranslate"><span class="pre"
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="expected-output-troubleshooting">
+<h3><span class="section-number">5.2.4. </span>Expected Output &amp; Troubleshooting<a class="headerlink" href="#expected-output-troubleshooting" title="Permalink to this heading">¶</a></h3>
 <p><strong>Expected output</strong>:</p>
 <ul class="simple">
 <li><p>Time: 0.003–0.010 ms (varies by GPU load)</p></li>
@@ -361,6 +368,9 @@ Why?</p></li>
 <li><a class="reference internal" href="#what-you-will-learn">5.1. What You Will Learn</a></li>
 <li><a class="reference internal" href="#implementation">5.2. Implementation</a><ul>
 <li><a class="reference internal" href="#d-thread-grid-to-2d-matrix-mapping">5.2.1. 1D Thread Grid to 2D Matrix Mapping</a></li>
+<li><a class="reference internal" href="#kernel-apis">5.2.2. Kernel APIs</a></li>
+<li><a class="reference internal" href="#compile-verify-and-benchmark">5.2.3. Compile, Verify, and Benchmark</a></li>
+<li><a class="reference internal" href="#expected-output-troubleshooting">5.2.4. Expected Output &amp; Troubleshooting</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#exercises">5.3. Exercises</a></li>

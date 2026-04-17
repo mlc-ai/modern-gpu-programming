@@ -71,7 +71,8 @@ Each thread handles exactly one element. The flat ``gid`` fills the
 matrix row by row: the first ``out_dim`` threads cover row 0, the next
 ``out_dim`` threads cover row 1, and so on.
 
-**APIs you’ll see in this kernel:**
+Kernel APIs
+~~~~~~~~~~~
 
 - **``Tx.handle`` + ``Tx.match_buffer``** — The function takes opaque
   pointer parameters. Inside the kernel, ``match_buffer`` binds them to
@@ -158,7 +159,8 @@ matrix row by row: the first ``out_dim`` threads cover row 0, the next
     
         return fused_gelu_tanh_multiply
 
-Compile, verify, and benchmark:
+Compile, Verify, and Benchmark
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: latex
 
@@ -191,6 +193,9 @@ Compile, verify, and benchmark:
     print(f"Max error vs numpy reference: {max_err:.6f}")
     assert max_err < 0.05, f"FAIL: max_err={max_err}"
     print("PASS")
+
+Expected Output & Troubleshooting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Expected output**:
 
