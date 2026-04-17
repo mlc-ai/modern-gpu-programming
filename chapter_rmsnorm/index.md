@@ -58,7 +58,7 @@ tx, ty = Tx.thread_id([bdx, bdy], parent="cta")
 # ty: warp index (0 to bdy-1)
 ```
 
-Passing a **2D list `[bdx, bdy]`** means the CTA's threads are logically arranged as a 2D grid of size `bdx × bdy`, and the call returns **two indices** `(tx, ty)`. Compare this to Chapter 4's `Tx.thread_id([256])`, which is 1D and returns a single `tid`.
+Passing a **2D list `[bdx, bdy]`** means the CTA's threads are logically arranged as a 2D grid of size `bdx × bdy`, and the call returns **two indices** `(tx, ty)`. Compare this to the `Tx.thread_id([NUM_THREADS])` call in :numref:`chap_fused_gelu`, which is 1D and returns a single `tid`.
 
 - `bdx = 32` — one warp (32 threads). `tx` is the lane ID within the warp.
 - `bdy = ceildiv(block_size, 32)` — how many warps per CTA. `ty` is the warp index.

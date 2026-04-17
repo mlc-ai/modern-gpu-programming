@@ -3,6 +3,8 @@
 
 This chapter covers three major optimizations that transform a naive GEMM into a high-performance kernel: asynchronous TMA loads, software pipelining, and persistent kernel scheduling. Each builds directly on the previous step.
 
+> **Layout recap.** The SMEM/TMEM/register layouts used below follow the same patterns as Step 1 in :numref:`chap_gemm_basics`; for the semantics of `tma_shared_layout`, the TMEM `(1@TLane, 1@TCol)` axes, and the warpgroup view `(1@tid_in_wg, 1)`, see :numref:`chap_layouts`.
+
 ## Step 4: TMA Async Load
 :label:`chap_tma_async`
 
@@ -101,7 +103,7 @@ from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
 from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
 ```
 
-Constants and swizzled layouts for A, B, and D tiles:
+Constants and swizzled SMEM layouts for A, B, and D tiles (see :numref:`chap_layouts` for the helper and swizzle modes):
 
 ```{.python .input}
 a_type = tvm.DataType("float16")
@@ -325,7 +327,7 @@ with Tx.warpgroup():
     Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
 ```
 
-The layout `1@tid_in_wg` maps 128 warpgroup threads (4 warps x 32 lanes) to 128 TMEM rows — each thread reads one row. TMEM reads **must** use warpgroup scope because TMEM is a warpgroup-level resource.
+The layout `1@tid_in_wg` maps 128 warpgroup threads to 128 TMEM rows; axis matching with the TMEM `(1@TLane, 1@TCol)` layout is what lets `Tx.copy` lower to a `tcgen05.ld` instruction (see :numref:`chap_layouts`, section *RF Layouts and TMEM–RF Matching*). TMEM reads **must** use warpgroup scope because TMEM is a warpgroup-level resource.
 
 Note: If the K-loop runs inside an `elect_sync` or `tid == 0` scope, other threads skip ahead to the writeback. Always ensure `cta_sync()` is called **outside** any thread-guarded scope before reading TMEM — otherwise `fence.after_thread_sync()` won't cover MMA writes for all threads.
 

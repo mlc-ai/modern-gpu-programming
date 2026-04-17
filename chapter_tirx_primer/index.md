@@ -85,13 +85,13 @@ TIRX uses a hierarchical scope system to control which threads execute a block o
 | Scope | Threads | Use case |
 |-------|---------|----------|
 | `with Tx.kernel():` | Kernel launch scope | Top-level scope for all CTAs |
-| `with Tx.cta():` | All 128 threads in CTA | Cooperative SMEM copy |
+| `with Tx.cta():` | All threads in the CTA (128 in single-warpgroup kernels, up to 512 in warp-specialized ones) | Cooperative SMEM copy across the entire CTA |
 | `with Tx.warpgroup():` | 128 threads (4 warps) | TMEM reads |
 | `with Tx.warp():` | 32 threads | Warp-level operations |
 | `with Tx.thread():` | Each thread independently | Per-element operations |
 | `with Tx.thread()[cond]:` | Threads where `cond` is true | Predicated execution for a subset of threads |
 
-The scope determines how an operation is parallelized. For example, `Tx.copy` inside `with Tx.cta():` means all 128 threads cooperate on the copy, while `Tx.copy` inside `with Tx.thread():` means each thread copies independently.
+The scope determines how an operation is parallelized. For example, `Tx.copy` inside `with Tx.cta():` means all threads of the CTA cooperate on the copy (128 threads in a single-warpgroup CTA, more in warp-specialized kernels), while `Tx.copy` inside `with Tx.thread():` means each thread copies independently.
 
 Note that `Tx.ptx.elect_sync()` is not a scope — it is a per-warp intrinsic that selects one thread. It is typically combined with a thread scope as `with Tx.thread()[Tx.ptx.elect_sync()]:` to dispatch TMA or MMA operations from a single elected thread.
 
@@ -114,9 +114,11 @@ pool.commit()             # Finalize all SMEM allocations
 **Register buffers** (per-thread). A per-thread register buffer can be reinterpreted as a warpgroup-level logical tile through a layout view:
 
 ```python
-reg = Tx.alloc_local((128,), acc_type)           # Per-thread register buffer
-reg_wg = reg.view(128, 128, layout=wg_layout)    # Warpgroup view for cooperative TMEM reads
+reg = Tx.alloc_local((128,), acc_type)                      # Per-thread register buffer
+reg_wg = reg.view(128, 128, layout=wg_local_layout(128))    # Warpgroup view for cooperative TMEM reads
 ```
+
+The `wg_local_layout(N)` helper expands to `TileLayout(S[(128, N) : (1@tid_in_wg, 1)])` — a 128-row tile whose row dimension is sharded across the 128 threads of a warpgroup. See :numref:`chap_layouts` for a full derivation of this pattern.
 
 **TMEM** is declared as a 2D buffer over Blackwell's native TMEM axes (`TLane` for rows, `TCol` for columns):
 
@@ -168,32 +170,26 @@ Tx.copy(Asmem[:], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K])
 **Important**: Variables assigned inside `@Tx.prim_func` become TIR dynamic variables. Constants such as `BLK_M`, `PIPE_DEPTH`, and `EPI_N` must remain Python constants defined outside the function.
 
 
-## Axe Layout
+## TIRX Layout (Preview)
 
-These kernels use **Axe Layout** ([Hou et al., 2026](https://arxiv.org/abs/2601.19092)), a hardware-aware layout abstraction that maps logical tensor coordinates onto named hardware axes. Instead of manually computing memory addresses, you declare a layout on each buffer and the compiler generates the correct address arithmetic.
+TIRX uses the **TIRX Layout** system, a hardware-aware layout abstraction that maps logical tensor coordinates onto *named hardware axes* — `TLane`, `TCol`, `tid_in_wg`, `cbx`, and so on. Instead of encoding strides into a memory-address calculation, you declare a layout on each buffer and the compiler generates the correct SMEM / TMEM / register access code.
 
-**Syntax.** The layout spec `S[shape : stride@axis]` reads as "map each dimension to a named hardware axis":
+The essential syntax `S[shape : stride@axis]` reads as "map each dimension to a named hardware axis":
 
 ```python
-S[(128, 512) : (1@TLane, 1@TCol)]
-#  ^^^  ^^^     ^^^^^^^^  ^^^^^^^^
-#  rows cols    row axis  col axis
-# "128 rows on TLane, 512 cols on TCol"
+S[(128, 512) : (1@TLane, 1@TCol)]   # 128 TMEM rows × 512 TMEM columns
+S[(128, N)   : (1@tid_in_wg, 1)]    # 128 warpgroup threads × N memory cols
 ```
 
-**Quick reference — layouts used in the GEMM kernels:**
+The three layouts used throughout Part III are:
 
-| Buffer type | Layout | Example |
-|---|---|---|
-| **SMEM** (TMA-compatible) | `tma_shared_layout(dtype, SWIZZLE_128B_ATOM, shape)` | K-major with 128B swizzle |
-| **TMEM** | `TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])` | 128 lanes × N columns, flat 2D |
-| **Register** (warpgroup view) | `TileLayout(S[(128, N) : (1@axis_tid_in_wg, 1)])` | Per-thread view via warpgroup tid |
+| Buffer type | Layout helper / spec |
+|---|---|
+| **SMEM** (TMA-compatible) | `tma_shared_layout(dtype, SWIZZLE_128B_ATOM, shape)` |
+| **TMEM** | `TileLayout(S[(128, N) : (1@TLane, 1@TCol)])` |
+| **Register** (warpgroup view) | `TileLayout(S[(128, N) : (1@tid_in_wg, 1)])` |
 
-- `tma_shared_layout` creates a swizzled layout for bank-conflict-free access — just call this helper with your dtype, swizzle mode, and buffer shape.
-
-- `@TLane` and `@TCol` are Blackwell TMEM's native 2D addressing axes.
-
-- `@axis_tid_in_wg` means "distribute rows across the 128 threads in a warpgroup." When you write `Tx.copy(Dreg_wg, tmem)`, the compiler matches `tid_in_wg` to `TLane` and generates the correct TMEM load instructions.
+This snippet is only a speed reference. :numref:`chap_layouts` covers the full semantics: why named axes replace bare strides, how to pick a swizzle mode, how TMEM–RF axis matching generates `tcgen05.ld`, and how cluster-level layouts drive TMA multicast. Read that chapter before attempting a non-standard kernel.
 
 
 ## Inline Functions

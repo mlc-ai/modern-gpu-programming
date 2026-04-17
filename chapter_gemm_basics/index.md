@@ -3,6 +3,8 @@
 
 *This is the start of Part III: GEMM Deep Dive. Unlike Part II's standalone operators, the next 3 chapters (9 steps) tell a single continuous story --- one GEMM kernel, progressively optimized from 70ms to 0.11ms. Each step builds on the previous one.*
 
+> **Layout recap.** Every step in Part III uses three recurring layout patterns: a swizzled `tma_shared_layout` for SMEM, `S[(128, N) : (1@TLane, 1@TCol)]` for TMEM, and `S[(128, N) : (1@tid_in_wg, 1)]` for the warpgroup register view. The full semantics of these layouts — named axes, swizzle modes, TMEM–RF matching — are covered in :numref:`chap_layouts`; here we reuse them without re-explaining each time.
+
 ## What is GEMM
 
 GEMM (General Matrix Multiplication) is the fundamental operation: $D = A \times B^T$ where:
@@ -72,7 +74,7 @@ Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)  # 128×64 fp16
 pool.commit()
 ```
 
-The `pool.move_base_to(1024)` ensures Asmem/Bsmem start at offset 1024, leaving room for metadata. The `layout=A_layout` uses `tma_shared_layout` to create a swizzled layout for bank-conflict-free access.
+The `pool.move_base_to(1024)` ensures Asmem/Bsmem start at offset 1024, leaving room for metadata. The `layout=A_layout` uses `tma_shared_layout` for a swizzled, bank-conflict-free SMEM placement; see :numref:`chap_layouts` (SMEM Layouts and Swizzling) for why swizzle matters.
 
 #### Synchronous Load
 
@@ -124,7 +126,7 @@ from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import tma_shared_layout
 from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
 ```
 
-Constants and swizzled layouts for the A and B tiles:
+Constants and swizzled SMEM layouts for the A and B tiles (the `tma_shared_layout` helper is introduced in :numref:`chap_layouts`):
 
 ```{.python .input}
 a_type = tvm.DataType("float16")

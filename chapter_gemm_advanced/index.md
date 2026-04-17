@@ -3,6 +3,8 @@
 
 This chapter covers the three advanced GEMM optimizations that bridge the gap from a basic tiled kernel to cuBLAS-level performance. We start with warp specialization and software pipelining (Step 7), introduce CTA clusters for cooperative MMA (Step 8), and finish with multi-consumer warp specialization (Step 9).
 
+> **Layout recap.** The per-step SMEM / TMEM / register layouts repeat the pattern established in :numref:`chap_gemm_basics` and :numref:`chap_gemm_async`. Step 8 additionally uses cluster-scope buffers; for the `cbx` / `cby` axes and how a single layout can span two CTAs, refer to :numref:`chap_layouts`, section *Cluster and Remote Layouts*.
+
 
 ## Step 7: Warp Specialization + Pipeline
 :label:`chap_warp_specialization`
@@ -279,7 +281,7 @@ with target:
     mod = tvm.IRModule({"main": kernel})
     lib = tvm.compile(mod, target=target, tir_pipeline="tirx")
 
-device = torch.device("cuda")
+device = torch.device('cuda')  # gpu(0)
 A_tensor = torch.randn(M, K, dtype=torch.float16, device=device)
 B_tensor = torch.randn(N, K, dtype=torch.float16, device=device)
 D_tensor = torch.zeros(M, N, dtype=torch.float16, device=device)
@@ -524,7 +526,7 @@ If you see specific mismatch counts like 128, 253, or 381 (multiples of 128 = co
 
 
 
-**Pipeline depth tuning**: The demo above uses `PIPE_DEPTH=2` (the minimum). In production, increasing `PIPE_DEPTH` to 4 or 6 lets the TMA producer get further ahead of the MMA consumer, better hiding memory latency. B200 has 192 KB SMEM per SM. With `BLK_M=BLK_N=128, BLK_K=64, fp16`, each pipeline stage uses `(128*64 + 128*64) * 2 = 32 KB` for A+B. `PIPE_DEPTH=4` uses 128 KB for A+B, leaving room for Dsmem (32 KB) and barrier metadata. `PIPE_DEPTH=6` uses 192 KB for A+B alone, so it requires shrinking or eliminating the Dsmem buffer (e.g., writing back to GMEM directly from registers instead of via TMA store).
+**Pipeline depth tuning**: The demo above uses `PIPE_DEPTH=2` (the minimum). In production, increasing `PIPE_DEPTH` to 4 or 6 lets the TMA producer get further ahead of the MMA consumer, better hiding memory latency. B200 has 228 KB SMEM per SM (see :numref:`chap_background`, *Numbers to Remember*). With `BLK_M=BLK_N=128, BLK_K=64, fp16`, each pipeline stage uses `(128*64 + 128*64) * 2 = 32 KB` for A+B, and the `Dsmem` writeback staging buffer consumes `128*128*2 = 32 KB`. `PIPE_DEPTH=4` uses 128 KB for A+B, leaving ~68 KB for Dsmem and metadata. `PIPE_DEPTH=6` pushes total SMEM usage to ~224 KB (192 KB A+B + 32 KB Dsmem), fitting just inside the 228 KB budget. Going deeper (e.g., `PIPE_DEPTH=7` needing 256 KB) requires shrinking or eliminating the Dsmem buffer — for example, writing back to GMEM directly from registers instead of staging through SMEM+TMA store.
 
 ---
 

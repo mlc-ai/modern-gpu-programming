@@ -451,7 +451,7 @@ with target:
 
 # Prepare data (Q, K, V, O are CPU tensors)
 Q, K, V, O = prepare_data(batch_size, seq_len, seq_len, num_qo_heads, num_kv_heads, head_dim)
-device = torch.device("cuda")
+device = torch.device('cuda')  # gpu(0)
 Q, K, V, O = Q.to(device), K.to(device), V.to(device), O.to(device)
 profiler_buf = tvm.runtime.tensor(
     np.zeros(PROFILER_BUFFER_SIZE, dtype=np.uint64), tvm.cuda(0)
