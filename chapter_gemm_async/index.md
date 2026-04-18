@@ -65,25 +65,22 @@ These two APIs have fundamentally different execution models:
 1. Elected thread issues `copy_async` for A and B
 2. Elected thread calls `arrive.expect_tx(bytes)` to tell the mbarrier how many bytes to expect
 3. TMA hardware automatically arrives on the mbarrier when transfer completes
-4. All threads call `try_wait(phase)` to block until data is ready
-5. After wait, `fence.after_thread_sync()` makes SMEM data visible to MMA hardware
+4. All threads call `try_wait(phase)` to block until data is ready. Once the wait returns, the SMEM data is visible to every thread in the CTA, and the subsequent MMA issued from within the same CTA can safely read it — the mbarrier completion itself carries the necessary release→acquire edge between the TMA engine and downstream consumers.
 
-### Understanding the Three Synchronization Primitives
+### Understanding the Two Synchronization Primitives
 
-Step 4 introduces `mbarrier.try_wait` alongside the existing `cta_sync` and `fence`. These serve different purposes:
+Step 4 introduces `mbarrier.try_wait` alongside `cta_sync`. They serve different purposes:
 
-**`cta_sync()`** = thread synchronization. All 128 CTA threads must reach this point before any can proceed. This is `__syncthreads()` in CUDA. It says nothing about whether *data* is ready — only that all threads have arrived.
+**`cta_sync()`** = thread synchronization. All 128 CTA threads must reach this point before any can proceed. This is `__syncthreads()` in CUDA. `bar.sync` also carries an implicit release/acquire fence, so prior SMEM writes become visible to any thread (and to async engines reading SMEM within the CTA) that crosses the barrier. It says nothing about whether *async hardware* has finished work it was handed earlier — only that threads have arrived.
 
-**`mbarrier.try_wait(phase)`** = event synchronization. Waits for a specific event to complete (e.g., "TMA finished loading" or "MMA finished computing"). Phase-based: each wait/signal cycle flips the phase (0 → 1 → 0). Does not require all threads to participate — any thread can wait on any barrier.
-
-**`fence.after_thread_sync()`** = memory visibility. This is NOT a thread barrier. TMEM and the tensor core have their own memory subsystem, separate from registers and SMEM. Even after `cta_sync()` confirms all threads have arrived, tensor core writes to TMEM may still be in flight. The fence ensures those writes are visible to subsequent TMEM reads. Think of it as: `cta_sync` = "all passengers arrived at the gate", `fence` = "all luggage also arrived on the belt".
+**`mbarrier.try_wait(phase)`** = event synchronization. Waits for a specific event to complete (e.g., "TMA finished loading" or "MMA finished computing"). Phase-based: each wait/signal cycle flips the phase (0 → 1 → 0). Does not require all threads to participate — any thread can wait on any barrier. Crucially, an mbarrier arrival from the async engine (TMA completion, or `tcgen05.commit` from an MMA) establishes a release→acquire edge: after `try_wait` returns, the waiter sees all of the producer's memory effects.
 
 ### TMA Store Writeback
 
 Instead of writing directly from registers to GMEM (slow, uncoalesced), Step 4 also introduces TMA store:
 
 1. Read TMEM -> registers (warpgroup read)
-2. `cta_sync()` + `fence.after_thread_sync()` — ensure TMEM read completes and data is visible in registers
+2. `cta_sync()` — ensure all warpgroup threads have completed the TMEM read before reuse
 3. Cast fp32 -> fp16 in registers
 4. Write registers -> Dsmem (shared memory, with swizzled layout)
 5. `fence.proxy_async("shared::cta")` + `warpgroup_sync(10)` — flush SMEM writes and ensure all threads are done
@@ -208,9 +205,9 @@ def hgemm_v4(
             with Tx.thread(parent="warpgroup")[tid == 0]:
                 tma_load(k_st)
 
-            # Wait for TMA to finish
+            # Wait for TMA to finish; the mbarrier release carries SMEM
+            # visibility to the subsequent MMA, so no extra fence is needed.
             Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)
-            Tx.ptx.tcgen05.fence.after_thread_sync()
 
             # Single thread issues MMA
             with Tx.thread(parent="warpgroup")[tid == 0]:
@@ -231,7 +228,6 @@ def hgemm_v4(
         with Tx.warpgroup():
             Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
             Tx.cuda.cta_sync()
-            Tx.ptx.tcgen05.fence.after_thread_sync()
         # Cast fp32 -> fp16
         with Tx.thread():
             Tx.cast(Dreg_f16[:], Dreg[:])
@@ -309,7 +305,7 @@ Note: The `max_err < 0.5` check is a **smoke test**, not a strict numerical veri
 
 - **`@Tx.inline`**: Helper functions are inlined at compile time and can capture outer variables.
 
-- **TMA store writeback sync**: After TMEM read, `cta_sync()` + `fence.after_thread_sync()` ensures data is visible. After Dsmem write, `fence.proxy_async` + `warpgroup_sync` flushes writes. TMA store is issued via `elect_sync()` and must be followed by `commit_group()` + `wait_group(0)` + `warpgroup_sync` before proceeding.
+- **TMA store writeback sync**: After TMEM read, `cta_sync()` ensures all warpgroup threads have copied TMEM into their registers before downstream reuse. After Dsmem write, `fence.proxy_async` + `warpgroup_sync` flushes the thread-proxy SMEM writes so the TMA engine sees them. TMA store is issued via `elect_sync()` and must be followed by `commit_group()` + `wait_group(0)` + `warpgroup_sync` before proceeding.
 
 ### Understanding TMEM
 
@@ -327,9 +323,9 @@ with Tx.warpgroup():
     Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
 ```
 
-The layout `1@tid_in_wg` maps 128 warpgroup threads to 128 TMEM rows; axis matching with the TMEM `(1@TLane, 1@TCol)` layout is what lets `Tx.copy` lower to a `tcgen05.ld` instruction (see :numref:`chap_layouts`, section *RF Layouts and TMEM–RF Matching*). TMEM reads **must** use warpgroup scope because TMEM is a warpgroup-level resource.
+The layout `1@tid_in_wg` maps 128 warpgroup threads to 128 TMEM rows; axis matching with the TMEM `(1@TLane, 1@TCol)` layout is what lets `Tx.copy` lower to a `tcgen05.ld` instruction (see the RF subsection of :numref:`chap_layouts` for the full axis-pairing table). TMEM reads **must** use warpgroup scope because TMEM is a warpgroup-level resource.
 
-Note: If the K-loop runs inside an `elect_sync` or `tid == 0` scope, other threads skip ahead to the writeback. Always ensure `cta_sync()` is called **outside** any thread-guarded scope before reading TMEM — otherwise `fence.after_thread_sync()` won't cover MMA writes for all threads.
+Note: If the K-loop runs inside an `elect_sync` or `tid == 0` scope, other threads skip ahead to the writeback. Always ensure `cta_sync()` is called **outside** any thread-guarded scope before reading TMEM, so the whole warpgroup is aligned on the same MMA epoch.
 
 ---
 
@@ -474,7 +470,6 @@ def hgemm_v5(M, N, K):
 
                 # Wait for TMA to finish loading this stage
                 Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([stage]), phase_tma)
-                Tx.ptx.tcgen05.fence.after_thread_sync()
 
                 # MMA on this stage's data
                 with Tx.thread(parent="warpgroup")[tid == 0]:
@@ -501,7 +496,6 @@ def hgemm_v5(M, N, K):
             with Tx.warpgroup():
                 Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
                 Tx.cuda.cta_sync()
-                Tx.ptx.tcgen05.fence.after_thread_sync()
             with Tx.thread():
                 Tx.cast(Dreg_f16[:], Dreg[:])
             with Tx.thread():
@@ -761,7 +755,6 @@ def hgemm_v6(M, N, K):
                 for k in range(K_TILES):
                     stage = k % PIPE_DEPTH
                     Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([stage]), phase_tma)
-                    Tx.ptx.tcgen05.fence.after_thread_sync()
                     with Tx.thread(parent="warpgroup")[tid == 0]:
                         mma(stage, accum=(k != 0))
                     Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
@@ -781,7 +774,6 @@ def hgemm_v6(M, N, K):
                 with Tx.warpgroup():
                     Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
                     Tx.cuda.cta_sync()
-                    Tx.ptx.tcgen05.fence.after_thread_sync()
                 with Tx.thread():
                     Tx.cast(Dreg_f16[:], Dreg[:])
                 with Tx.thread():

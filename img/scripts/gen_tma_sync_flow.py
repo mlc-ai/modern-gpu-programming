@@ -72,21 +72,20 @@ y = 6.6
 action_arrow(y, bar_x, et_x, 'phase complete!', '#27ae60')
 
 y = 7.8
-step_label(y, 5, 'Make visible')
-ax.text(et_x, y, 'fence.after_thread_sync()', ha='center', va='center', fontsize=8, fontweight='bold',
-        color='#4a90d9',
-        bbox=dict(boxstyle='round,pad=0.3', fc='#e8f4fd', ec='#4a90d9', lw=1.5))
-
-y = 9.2
-step_label(y, 6, 'Issue MMA')
+step_label(y, 5, 'Issue MMA')
 action_arrow(y, et_x, mma_x, 'gemm_async + commit', '#4a90d9')
 
-ax.add_patch(mpatches.FancyBboxPatch((mma_x - 0.55, 9.6), 1.1, 1.0, boxstyle='round,pad=0.05',
+ax.add_patch(mpatches.FancyBboxPatch((mma_x - 0.55, 8.2), 1.1, 1.0, boxstyle='round,pad=0.05',
              fc='#27ae60', ec='black', lw=1.5, alpha=0.3))
-ax.text(mma_x, 10.1, 'MMA compute\n(SMEM->TMEM)', ha='center', va='center', fontsize=7, color='#1a7a1a', style='italic')
+ax.text(mma_x, 8.7, 'MMA compute\n(SMEM->TMEM)', ha='center', va='center', fontsize=7, color='#1a7a1a', style='italic')
+
+ax.text(et_x, 9.6,
+        'The mbarrier try_wait\nalready carries the\nrelease->acquire edge:\nno extra fence needed\non this TMA->MMA path.',
+        ha='center', va='center', fontsize=7, color='#555', style='italic',
+        bbox=dict(boxstyle='round,pad=0.3', fc='#f8f8f8', ec='#cccccc', lw=1))
 
 ax.set_xlim(-2.0, 15.0)
-ax.set_ylim(-0.5, 11.5)
+ax.set_ylim(-0.5, 11.0)
 ax.invert_yaxis()
 ax.set_title('TMA Async Load: Synchronization Flow', fontsize=15, fontweight='bold', pad=15)
 

@@ -67,8 +67,8 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 |-----|-------------|
 | `for i in Tx.unroll(N):` | Explicit unrolled loop with `i` usable for buffer slicing |
 | `for i in Tx.serial(N):` | Sequential loop (not unrolled), `i` is a TIR variable |
-| `Tx.meta_var(expr)` | Compile-time alias for an expression (required for buffer slice offsets) |
-| `@Tx.inline` | Decorator for inline helper functions within the kernel |
+
+For `Tx.meta_var` and `@Tx.inline`, see the *Syntactic Sugar* section at the end of this chapter — they are not part of the programming model.
 
 
 ## Synchronization
@@ -79,7 +79,7 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 | `Tx.ptx.mbarrier.try_wait(ptr, phase)` | Wait for mbarrier phase |
 | `Tx.ptx.mbarrier.arrive.expect_tx(ptr, bytes)` | Set expected TMA byte count |
 | `Tx.ptx.tcgen05.commit(ptr, cta_group, cta_mask)` | tcgen05 commit (auto-arrive on completion) |
-| `Tx.ptx.tcgen05.fence.after_thread_sync()` | Fence before accessing TMEM after sync |
+| `Tx.ptx.tcgen05.fence.after_thread_sync()` | Epilogue-only fence: order prior MMA writes to TMEM against subsequent `tcgen05.ld` reads |
 | `Tx.ptx.fence.proxy_async("shared::cta")` | Shared memory fence |
 | `Tx.ptx.fence.mbarrier_init()` | Fence after mbarrier initialization |
 | `Tx.ptx.cp_async.bulk.commit_group()` | Commit pending TMA store operations |
@@ -126,10 +126,42 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 
 - **TMA store must be followed by `commit_group()` + `wait_group(0)`**: Without waiting, the next iteration may overwrite Dsmem.
 
-- **`fence.after_thread_sync()` required before reading TMEM**: After any mbarrier wait, call this before reading TMEM.
+- **`fence.after_thread_sync()` is only needed in the epilogue**: In the writeback path, after `mma2ld.wait(phase)` and immediately before the first `tcgen05.ld`, call `fence.after_thread_sync()` to order prior MMA writes to TMEM against the upcoming thread-proxy reads. Do *not* add it on the TMA→MMA edge; the TMA-completion mbarrier already orders SMEM writes against the subsequent MMA, and the same applies to `cta_sync()` after a synchronous SMEM copy.
 
 - **Constants must be defined outside `@Tx.prim_func`**: Variables like `EPI_N`, `TMEM_LD_N`, `MMA_N` must be Python constants.
 
 - **`pool.move_base_to(1024)`**: Reserves the first 1024 bytes for metadata (TMEM address, barriers). All data buffers (Asmem, Bsmem, Dsmem) are allocated sequentially after this offset.
 
 - **GPU flakiness**: If tests fail intermittently, check `nvidia-smi` and switch to an idle GPU.
+
+
+## Syntactic Sugar
+
+*The constructs in this section are **not** part of the TIRX programming model* (see :numref:`chap_tirx_primer` for the three pillars). They are convenience — removing them changes how the code looks, not what it means. They show up in Part III because real kernels use them to stay readable.
+
+### `Tx.meta_var`: compile-time alias
+
+`Tx.meta_var(expr)` names a compile-time expression so it can be reused in buffer slicing without becoming a TIR dynamic variable:
+
+```python
+m_st = Tx.meta_var(bx * BLK_M)
+n_st = Tx.meta_var(by * BLK_N)
+Tx.copy(Asmem[:, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K])
+```
+
+Any variable *assigned* inside `@Tx.prim_func` that is not wrapped with `meta_var` becomes a TIR dynamic variable. Constants such as `BLK_M`, `PIPE_DEPTH`, and `EPI_N` must stay Python constants defined outside the function.
+
+### `@Tx.inline`: compile-time helper
+
+`@Tx.inline` marks a helper as inlined at compile time. It can close over outer kernel variables, which is useful for packaging repeated load / MMA / writeback boilerplate:
+
+```python
+@Tx.inline
+def tma_load(stage, k):
+    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+        tma_bar.arrive(stage, bytes=total_bytes)
+        Tx.copy_async(Asmem[stage], A[m_st : m_st + BLK_M, k : k + BLK_K],
+                      dispatch="tma", mbar=tma_bar.ptr_to([stage]))
+```
+
+There is no runtime function-call overhead and no new semantics — just a reusable code region.

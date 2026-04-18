@@ -7,7 +7,7 @@
 
 ## What is GEMM
 
-GEMM (General Matrix Multiplication) is the fundamental operation: $D = A \times B^T$ where:
+GEMM (General Matrix Multiplication) is the fundamental operation: $D = A B^{\top}$ where:
 
 - $A$ is $M \times K$ (M rows of K-dimensional vectors)
 
@@ -15,7 +15,7 @@ GEMM (General Matrix Multiplication) is the fundamental operation: $D = A \times
 
 - $D$ is $M \times N$ (output)
 
-- Operation: $D[m,n] = \sum_k A[m,k] \times B[n,k]$ (i.e., $D = A \times B^T$ since B is stored as N rows of K columns)
+- Operation: $D[m,n] = \sum_k A[m,k] \cdot B[n,k]$ (i.e., $D = A B^{\top}$ since B is stored as N rows of K columns)
 
 GEMM is the workhorse of deep learning --- every linear layer, attention computation, and convolution reduces to GEMM. Optimizing GEMM is critical for both training and inference performance.
 
@@ -74,7 +74,7 @@ Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)  # 128×64 fp16
 pool.commit()
 ```
 
-The `pool.move_base_to(1024)` ensures Asmem/Bsmem start at offset 1024, leaving room for metadata. The `layout=A_layout` uses `tma_shared_layout` for a swizzled, bank-conflict-free SMEM placement; see :numref:`chap_layouts` (SMEM Layouts and Swizzling) for why swizzle matters.
+The `pool.move_base_to(1024)` ensures Asmem/Bsmem start at offset 1024, leaving room for metadata. The `layout=A_layout` uses `tma_shared_layout` for a swizzled, bank-conflict-free SMEM placement; see the SMEM subsection of :numref:`chap_layouts` for why swizzle matters.
 
 #### Synchronous Load
 
@@ -82,8 +82,9 @@ The `pool.move_base_to(1024)` ensures Asmem/Bsmem start at offset 1024, leaving 
 with Tx.cta():  # All 128 threads cooperate
     Tx.copy(Asmem[:, :], A[:, :])
     Tx.copy(Bsmem[:, :], B[:, :])
-Tx.cuda.cta_sync()                           # Wait for all threads
-Tx.ptx.tcgen05.fence.after_thread_sync()     # Make SMEM visible to MMA HW
+Tx.cuda.cta_sync()                           # Wait for all threads; bar.sync
+                                             # also releases the SMEM writes
+                                             # to the subsequent MMA.
 ```
 
 Step 1 only has one tile (M=N=128, K=64), so we copy the entire A and B. `with Tx.cta()` is a **scope marker** that means all 128 threads in the CTA participate — every thread executes the `Tx.copy` inside, each handling a portion of the data. This is the simplest but least efficient approach: 128 threads each compute addresses and issue load/store instructions. In Step 4, we'll replace this with TMA where a single thread issues the copy and dedicated hardware does the rest.
@@ -201,7 +202,6 @@ def hgemm_v1(
             Tx.copy(Asmem[:, :], A[:, :])
             Tx.copy(Bsmem[:, :], B[:, :])
         Tx.cuda.cta_sync()
-        Tx.ptx.tcgen05.fence.after_thread_sync()
 
         # --- Compute: single elected thread issues MMA ---
         if warp_id == 0:
@@ -382,7 +382,6 @@ def hgemm_v2(M, N, K):
                     Tx.copy(Bsmem[:, :], B[:, i*BLK_K:(i+1)*BLK_K])
 
                 Tx.cuda.cta_sync()
-                Tx.ptx.tcgen05.fence.after_thread_sync()
 
                 # MMA: accum=False for first tile, True for rest
                 if warp_id == 0:
@@ -404,7 +403,6 @@ def hgemm_v2(M, N, K):
             with Tx.warpgroup():
                 Tx.copy(reg_wg[:], tmem[:, :128])
                 Tx.cuda.cta_sync()
-                Tx.ptx.tcgen05.fence.after_thread_sync()
 
             with Tx.thread():
                 Tx.cast(reg_f16[:], reg[:])
@@ -556,7 +554,6 @@ def hgemm_v3(M, N, K):
                     Tx.copy(Bsmem[:, :], B[n_st:n_st+BLK_N, i*BLK_K:(i+1)*BLK_K])
 
                 Tx.cuda.cta_sync()
-                Tx.ptx.tcgen05.fence.after_thread_sync()
 
                 if warp_id == 0:
                     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
@@ -576,7 +573,6 @@ def hgemm_v3(M, N, K):
             with Tx.warpgroup():
                 Tx.copy(reg_wg[:], tmem[:, :128])
                 Tx.cuda.cta_sync()
-                Tx.ptx.tcgen05.fence.after_thread_sync()
 
             with Tx.thread():
                 Tx.cast(reg_f16[:], reg[:])
@@ -634,7 +630,7 @@ The K-loop body is identical to Step 2 --- only the grid dimensions and offset c
 
 ## Exercises
 
-1. Why is `cta_sync() + fence.after_thread_sync()` needed between the sync copy and the MMA? What could go wrong without it?
+1. Why is `cta_sync()` needed between the synchronous SMEM copy and the MMA? What could go wrong without it?
 2. What happens if you remove `phase_mma ^= 1` in Step 2's K-loop? Will the kernel deadlock, produce wrong results, or both?
 3. For M=N=4096 with BLK_M=BLK_N=128, how many CTAs are launched in Step 3? Do adjacent CTAs share any data from GMEM?
 

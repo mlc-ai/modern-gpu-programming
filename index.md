@@ -31,7 +31,7 @@ New here? Follow this path:
 
 ## Tutorial Structure
 
-- **Part I: Fundamentals** (Ch 1–4) — Blackwell GPU architecture, TIRX programming model, environment setup, and TIRX Layout — the hardware-aware tensor-layout abstraction that every later kernel relies on.
+- **Part I: Fundamentals** (Ch 1–4) — Blackwell GPU architecture, environment setup, and the TIRX programming model — the three explicit interfaces (tensor layout, execution scope, tile primitive dispatch) that every later kernel is built on, with a dedicated chapter drilling into the layout interface.
 
 - **Part II: Entry-Level Kernels** (Ch 5–6) — Learn TIRX basics through two self-contained operators: Fused GELU (elementwise + fusion) and RMSNorm (warp reduction + shared memory).
 

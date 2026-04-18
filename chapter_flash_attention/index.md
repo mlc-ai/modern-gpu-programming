@@ -98,7 +98,7 @@ The Blackwell Flash Attention 4 kernel uses 4 warpgroups (512 threads) with full
 | **WG1** | Softmax | Same as WG0 but handles Q stage 1 (double-buffered Q) |
 | **WG2** | Correction + Epilogue | Rescales O accumulator in TMEM, normalizes, writes to SMEM |
 
-**All MMA instructions are issued by WG3's warp 0** — this is different from the warp role table description in some papers. WG0 and WG1 are purely softmax warpgroups: they read scores from TMEM, compute softmax (row_max, row_sum, exp), and write the probability matrix P back to TMEM. They do **not** issue any MMA instructions.
+**All MMA instructions are issued from WG3's warp 0** — strictly one elected thread in that warp (via `elect.sync`) issues each `tcgen05.mma`, as required by Blackwell's single-thread issue rule. This is different from the warp role table description in some papers. WG0 and WG1 are purely softmax warpgroups: they read scores from TMEM, compute softmax (row_max, row_sum, exp), and write the probability matrix P back to TMEM. They do **not** issue any MMA instructions.
 
 WG0 and WG1 each handle one of two Q pipeline stages. While WG0 processes Q stage 0 through softmax, WG1 processes Q stage 1. This is a form of **Q double-buffering** at the warpgroup level.
 
@@ -123,7 +123,7 @@ Flash Attention 4 requires two distinct MMA operations per KV block, creating a 
 
 The first MMA computes attention scores:
 
-$$S = Q_{\text{block}} \times K_{\text{block}}^T \quad [\text{BLK}_M \times \text{BLK}_N]$$
+$$S = Q_{\text{block}} K_{\text{block}}^{\top} \quad [\text{BLK}_M \times \text{BLK}_N]$$
 
 This writes the score matrix $S$ into TMEM. WG3's MMA warp (warp 0) issues the Score MMA for both Q stages sequentially, then the `bar_s_full` barrier signals that scores are ready for WG0/WG1 to run softmax.
 
