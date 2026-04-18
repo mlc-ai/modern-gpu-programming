@@ -7,7 +7,13 @@ requirements = [
     'matplotlib',
     'requests',
     'pandas',
-    'sphinx',
+    'sphinx==5.3.0',
+    # Pin sphinxcontrib-bibtex and pybtex together: newer sphinxcontrib-bibtex
+    # (>=2.6) relies on a private symbol `_FakeEntryPoint` that only exists in
+    # pybtex 0.24.x. Mismatched versions break `import sphinxcontrib.bibtex`,
+    # which d2lbook always triggers via _build/rst/conf.py.
+    'sphinxcontrib-bibtex<2.6',
+    'pybtex<0.25',
 ]
 
 setup(
