@@ -46,7 +46,7 @@ Each axis is a concrete hardware resource with a fixed range:
 | `laneid` | Thread index within a warp (0…31) | RF |
 | `warpid` | Warp index within a CTA | RF |
 | `cbx`, `cby` | CTA index within a cluster | Cross-CTA SMEM |
-| *(unnamed)* | Logical memory offset (default axis `m`) | GMEM, SMEM, RF |
+| `m` | Logical memory offset; the default axis used when a stride has no `@axis` suffix | GMEM, SMEM, RF |
 
 When you tag a stride with `@TLane`, you tell the compiler: "this dimension maps one-for-one to the `TLane` axis of TMEM." The axes are a fixed vocabulary; you do not invent new ones.
 
@@ -173,12 +173,12 @@ for no in Tx.unroll(MMA_N // N):
 
 ### Where Replicas Show Up
 
-You rarely write `R[...]` from scratch — two places in this tutorial use it, both composed by helpers:
+You rarely write `R[...]` from scratch — the tutorial uses it in one place, and in one more place it is conceptually implicit:
 
-- **TMA multicast** across a CTA cluster: the 2-CTA cooperative GEMM (:numref:`chap_gemm_advanced`) broadcasts one tile to 4 receiver CTAs with a layout like `S[... : (..., 1@cbx, ...)] + R[4 : 1@cby]`. A single TMA instruction feeds all receivers.
-- **Scale/scalar broadcasts**: the softmax scale vector in Flash Attention (:numref:`chap_flash_attention`) is a length-`N` buffer broadcast to all 128 warpgroup threads via `S[(N,):(1,)] + R[128 : 1@tid_in_wg]`.
+- **Scale / scalar broadcasts.** The softmax scale vector in Flash Attention (:numref:`chap_flash_attention`) is a length-`N` buffer broadcast to all 128 warpgroup threads via `S[(N,):(1,)] + R[128 : 1@tid_in_wg]`. This is the one explicit replica you will read in user code.
+- **TMA multicast across a CTA cluster** (feature-level, not used by the kernels in this tutorial). A single TMA instruction can deliver the same tile to every CTA in the cluster; TIRX expresses the receiver set as a replica on a cluster axis such as `R[2 : 1@cbx]`, and lowers the copy to `cp.async.bulk.tensor.multicast`. In practice the user passes a cluster mask like `cta_mask=3` to `Tx.copy_async(..., dispatch="tma", ...)` and the dispatcher synthesises the layout; the clustered GEMM in :numref:`chap_gemm_advanced` (Step 8) uses `cta_group=2` for cooperative MMA but does *not* multicast the A / B tiles, so this layout pattern does not appear in its code.
 
-`Tx.copy_async(..., cta_group=2)` and `smem_pipe.full.remote_view(...)` compose these layouts for you; you only need to read them when debugging.
+The explicit replica you will actually see is therefore the Flash-Attention scale vector. For the clustered GEMM, `Tx.copy_async(..., cta_group=2)` and `smem_pipe.full.remote_view(...)` compose any cluster-aware layouts for you.
 
 
 ## Summary

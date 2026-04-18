@@ -7,7 +7,7 @@
 
 ---
 
-Flash Attention 4 is the Blackwell-native implementation of Flash Attention, designed specifically for SM100a GPUs. It fuses the entire attention computation ($QK^T \to \text{softmax} \to \times V$) into a single kernel, avoiding materializing the full $N \times N$ attention matrix. This chapter explores how Flash Attention 4 maps to Blackwell hardware using TIRX.
+Flash Attention 4 is the Blackwell-native implementation of Flash Attention, designed specifically for SM100a GPUs. It fuses the entire attention computation $O = \text{softmax}(QK^{\top})\,V$ into a single kernel, avoiding materializing the full $N \times N$ attention matrix. This chapter explores how Flash Attention 4 maps to Blackwell hardware using TIRX.
 
 
 ## What You Will Learn
@@ -63,7 +63,7 @@ The final softmax values are $e^{x_i - 8} / 1.053$ for each element, which match
 
 In Flash Attention 4, we track not just $(m, \ell)$ but also an output accumulator $O$. When the maximum changes, $O$ must be rescaled by the same factor:
 
-$$O = O \cdot e^{m_{\text{old}} - m_{\text{new}}} + P_{\text{new}} \times V_{\text{block}}$$
+$$O = O \cdot e^{m_{\text{old}} - m_{\text{new}}} + P_{\text{new}} V_{\text{block}}$$
 
 where $P_{\text{new}} = e^{S_{\text{block}} - m_{\text{new}}}$ are the softmax weights for the current block. After processing all KV blocks, the final output is $O / \ell$ (dividing each row by its accumulated sum).
 
@@ -87,16 +87,16 @@ All operations on `max`, `sum`, and `O` are **per-row** — each of the BLK_M ro
 
 ## Kernel Architecture
 
-The Blackwell Flash Attention 4 kernel uses 4 warpgroups (512 threads) with full warp specialization:
+The Blackwell Flash Attention 4 kernel uses 4 warpgroups (512 threads) with full warp specialization. WG3 is further specialized into three single-warp roles; WG0 / WG1 / WG2 each occupy a whole warpgroup:
 
-| Warpgroup | Role | Description |
-|-----------|------|-------------|
-| **WG3, warp 0** | MMA warp | Issues **both** Score MMA (Q@K^T) and Value MMA (P@V) via `tcgen05.mma` |
-| **WG3, warp 1** | TMA Load | Loads Q, K, V tiles from GMEM to SMEM via TMA |
-| **WG3, warp 2** | TMA Store | Stores O tiles from SMEM to GMEM via TMA |
-| **WG0** | Softmax | Runs online softmax on scores (Q stage 0), writes P to TMEM |
-| **WG1** | Softmax | Same as WG0 but handles Q stage 1 (double-buffered Q) |
-| **WG2** | Correction + Epilogue | Rescales O accumulator in TMEM, normalizes, writes to SMEM |
+| Owner | Role | Description |
+|-------|------|-------------|
+| **WG3, warp 0** | MMA warp | Issues **both** Score MMA ($QK^{\top}$) and Value MMA ($PV$) via `tcgen05.mma` |
+| **WG3, warp 1** | TMA Load warp | Loads Q, K, V tiles from GMEM to SMEM via TMA |
+| **WG3, warp 2** | TMA Store warp | Stores O tiles from SMEM to GMEM via TMA |
+| **WG0 (full warpgroup)** | Softmax | Runs online softmax on scores (Q stage 0), writes P to TMEM |
+| **WG1 (full warpgroup)** | Softmax | Same as WG0 but handles Q stage 1 (double-buffered Q) |
+| **WG2 (full warpgroup)** | Correction + Epilogue | Rescales O accumulator in TMEM, normalizes, writes to SMEM |
 
 **All MMA instructions are issued from WG3's warp 0** — strictly one elected thread in that warp (via `elect.sync`) issues each `tcgen05.mma`, as required by Blackwell's single-thread issue rule. This is different from the warp role table description in some papers. WG0 and WG1 are purely softmax warpgroups: they read scores from TMEM, compute softmax (row_max, row_sum, exp), and write the probability matrix P back to TMEM. They do **not** issue any MMA instructions.
 
@@ -161,7 +161,7 @@ The exp2 emulation is a custom polynomial approximation (degree 3 Horner evaluat
 
 The second MMA accumulates the weighted values:
 
-$$O = O + P_{\text{block}} \times V_{\text{block}} \quad [\text{BLK}_M \times \text{HEAD}_{\text{DIM}}]$$
+$$O = O + P_{\text{block}} V_{\text{block}} \quad [\text{BLK}_M \times \text{HEAD}_{\text{DIM}}]$$
 
 This is issued by WG3's MMA warp (warp 0). P lives in TMEM as float16 (written there by WG0/WG1), while V lives in SMEM. The result accumulates into O in TMEM as float32.
 
@@ -402,7 +402,7 @@ while scheduler.valid():
 | Masking | None | Causal block skipping + R2P masking |
 | Thread count | 128-256 | 512 (4 warpgroups) |
 | Pipeline structure | Uniform depth | Heterogeneous (Q depth 2, KV depth 3, TMEM depth 2) |
-| Barrier count | 4 (full/empty x 2) | 12+ barriers with mixed types |
+| Barrier count | 4 named mbarriers (producer-consumer chain) | 12+ barriers with mixed types |
 | Epilogue complexity | O = TMEM -> SMEM -> TMA | Rescale O, normalize by sum, then TMEM -> SMEM -> TMA |
 | Warp roles | TMA producer, MMA consumer | TMA, Score MMA, Softmax, Value MMA, Correction, Writeback |
 

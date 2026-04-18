@@ -603,7 +603,7 @@ Tx.cuda.cluster_sync()
 
 - **Cluster CTA ID**: `cbx` tells each CTA its position in the cluster (0 or 1). CTA-0 handles A rows 0-127, CTA-1 handles rows 128-255.
 
-- **Remote barrier view**: In a cluster, each CTA has its own SMEM and barriers. To synchronize across CTAs, CTA-1 needs to access CTA-0's barrier. `map_shared_rank(tma2mma.ptr_to([0]), 0)` returns a pointer to CTA-0's barrier that is accessible from any CTA in the cluster. The TIRx wrapper is `tma2mma.remote_view(0)`. All barrier operations (arrive, wait) target CTA-0's barriers — this is the coordination point.
+- **Remote barrier view**: In a cluster, each CTA has its own SMEM and barriers. To synchronize across CTAs, CTA-1 needs to access CTA-0's barrier. `map_shared_rank(tma2mma.ptr_to([0]), 0)` returns a pointer to CTA-0's barrier that is accessible from any CTA in the cluster. The TIRX wrapper is `tma2mma.remote_view(0)`. All barrier operations (arrive, wait) target CTA-0's barriers — this is the coordination point.
 
 - **MMA dispatch from CTA-0 only**: With `cta_group=2`, CTA-0 issues one `tcgen05.mma` instruction, and the hardware automatically dispatches the computation to **both** CTAs' tensor cores simultaneously. CTA-1 does not issue any MMA instruction — the hardware handles this coordination internally. This is why the code guards MMA with `if cbx == 0:`.
 
@@ -1153,7 +1153,7 @@ with target:
     lib = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
 
 # Time the kernel
-device = torch.device('cuda')
+device = torch.device('cuda')  # gpu(0)
 A = torch.randn(M, K, dtype=torch.float16, device=device)
 B = torch.randn(N, K, dtype=torch.float16, device=device)
 D = torch.zeros(M, N, dtype=torch.float16, device=device)

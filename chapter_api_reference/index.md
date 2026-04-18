@@ -58,7 +58,7 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 | `Tx.copy(dst, src)` | Synchronous copy |
 | `Tx.copy_async(dst, src, dispatch="tma", ...)` | TMA async copy (load or store) |
 | `Tx.cast(dst, src)` | Element-wise type cast |
-| `Tx.gemm_async(C, A, B, accum, dispatch="tcgen05", cta_group)` | tcgen05 MMA |
+| `Tx.gemm_async(C, A, B, *, transA=False, transB=False, accum=False, dispatch="tcgen05", **kwargs)` | tcgen05 MMA. `accum` is keyword-only (default `False`); backend-specific options such as `cta_group=` flow through `**kwargs` into the op config. |
 
 
 ## Control Flow
@@ -100,7 +100,7 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 | `MBarrier(pool, depth, name)` | Manual mbarrier array (threads arrive explicitly) |
 | `bar.init(count)` | Initialize barrier with expected arrival count |
 | `bar.wait(stage, phase)` | Wait for barrier at given stage and phase |
-| `TMABar.arrive(stage, bytes)` | Arrive with expected byte count (TMA load) |
+| `TMABar.arrive(stage, tx_count)` | Arrive with expected transaction-byte count (TMA load). `tx_count` is the total bytes the TMA engine will deposit into SMEM for this stage. |
 | `TCGen05Bar.arrive(stage, cta_group=, cta_mask=)` | Arrive via tcgen05 commit |
 | `MBarrier.arrive(stage, cta_id=, pred=)` | Thread-level arrive |
 | `bar.ptr_to([stage])` | Get pointer to barrier at given stage |
@@ -126,7 +126,7 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 
 - **TMA store must be followed by `commit_group()` + `wait_group(0)`**: Without waiting, the next iteration may overwrite Dsmem.
 
-- **`fence.after_thread_sync()` is only needed in the epilogue**: In the writeback path, after `mma2ld.wait(phase)` and immediately before the first `tcgen05.ld`, call `fence.after_thread_sync()` to order prior MMA writes to TMEM against the upcoming thread-proxy reads. Do *not* add it on the TMA→MMA edge; the TMA-completion mbarrier already orders SMEM writes against the subsequent MMA, and the same applies to `cta_sync()` after a synchronous SMEM copy.
+- **`fence.after_thread_sync()` is rarely needed**: The MMA-completion mbarrier already carries release→acquire semantics, so most kernels — including the early Steps in this tutorial and most of CUTLASS — omit it entirely. The `tirx-kernels` reference kernels take a more conservative stance and insert it in the writeback path, after `mma2ld.wait(phase)` and immediately before the first `tcgen05.ld`, to make the ordering between prior tcgen05 writes to TMEM and the upcoming thread-proxy reads explicit. It is **never** needed on the TMA→MMA edge — the TMA-completion mbarrier and `cta_sync()` after a synchronous SMEM copy already cover that case.
 
 - **Constants must be defined outside `@Tx.prim_func`**: Variables like `EPI_N`, `TMEM_LD_N`, `MMA_N` must be Python constants.
 
@@ -159,7 +159,7 @@ Any variable *assigned* inside `@Tx.prim_func` that is not wrapped with `meta_va
 @Tx.inline
 def tma_load(stage, k):
     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
-        tma_bar.arrive(stage, bytes=total_bytes)
+        tma_bar.arrive(stage, tx_count=total_bytes)
         Tx.copy_async(Asmem[stage], A[m_st : m_st + BLK_M, k : k + BLK_K],
                       dispatch="tma", mbar=tma_bar.ptr_to([stage]))
 ```

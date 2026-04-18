@@ -41,7 +41,7 @@ Hardware constraints:
 
 - mbarrier arrives from async engines (TMA completion, tcgen05.commit) carry release→acquire ordering; after try_wait returns, the waiter sees the producer's memory effects. Extra fences on the TMA→MMA edge are unnecessary.
 
-- The one exception: in the epilogue, after `mma2ld.wait(phase)` and before reading TMEM (`tcgen05.ld`), insert `fence.after_thread_sync()` to order the prior MMA writes against the thread-proxy TMEM reads.
+- `fence.after_thread_sync()` is rarely needed. The MMA-completion mbarrier already orders MMA writes against downstream reads, so most kernels (including CUTLASS) omit it. The `tirx-kernels` reference kernels take a conservative stance and insert it in the writeback path after `mma2ld.wait(phase)` and before the first `tcgen05.ld`; if you are mirroring that style, add it there.
 
 Here is my kernel:
 [paste code]
@@ -67,7 +67,7 @@ Before prompting an LLM, it helps to narrow down the category of bug yourself. T
 
 | Symptom | Likely Cause | What to Check |
 |---------|-------------|---------------|
-| Output is all zeros | TMEM read before MMA completes | `tcgen05.commit` outside `elect_sync`; missing epilogue `fence.after_thread_sync` before `tcgen05.ld` |
+| Output is all zeros | TMEM read before MMA completes | `tcgen05.commit` outside `elect_sync`; missing `mma2ld.wait()` on the writeback path |
 | Output is random garbage | SMEM overwritten before MMA reads it | Barrier count too high (premature arrive); wrong pipeline stage index |
 | Deadlock (kernel hangs) | Barrier wait with no matching arrive | Missing arrive on one code path; phase init mismatch; `MBarrier.init` from wrong warp |
 | NaN in output | Uninitialized memory or overflow | Missing `accum=False` on first MMA iteration; softmax without max subtraction |
@@ -178,7 +178,7 @@ When reviewing LLM-generated TIRX code, watch for these signals that the model i
 2. **Treating `elect_sync()` as warpgroup-level** — `elect_sync()` elects one thread per *warp* (32 threads), not per warpgroup (128 threads). With 4 warps you get 4 elected threads.
 3. **Inventing TIRX APIs** — names like `Tx.barrier()`, `Tx.async_copy()`, or `Tx.shared_memory()` that don't exist. Always verify function names against the API Reference.
 4. **Wrong barrier arrival counts** — e.g., suggesting `init(128)` for a barrier that only one elected thread arrives on, or `init(1)` for a barrier where all 128 warpgroup threads arrive.
-5. **Missing epilogue `fence.after_thread_sync()`** — the model writes the writeback path but forgets the fence between `mma2ld.wait` and the first `tcgen05.ld`. This is the only place the fence is actually required (the mbarrier itself orders the TMA→MMA edge), and it's a common silent correctness bug in LLM-generated kernels. If you see the model adding this fence everywhere (e.g., between TMA wait and MMA issue), that's a sign it learned from stale examples rather than current best practice.
+5. **Sprinkling `fence.after_thread_sync()` everywhere** — models trained on older examples often insert this fence on every MMA boundary (e.g. between TMA wait and MMA issue). That is wrong: the TMA-completion and MMA-completion mbarriers already carry release→acquire ordering, and the fence is not required for correctness on those edges. The fence *only* appears in the writeback path of some conservative reference kernels (between `mma2ld.wait` and the first `tcgen05.ld`); if the model adds it elsewhere, strip it.
 
 
 ## Generating Test Harnesses
@@ -317,14 +317,15 @@ Symptom: kernel hangs (deadlock).
 Cause: init() uses threadIdx.x < 1 internally. If called from wg_id==1, thread 0 is in WG0.
 Fix: call init at CTA level (before any wg_id branch), or ensure warp_id==0 in WG0.
 
-### Missing fence.after_thread_sync in the epilogue
-Symptom: stale/partial data in writeback output.
-Cause: In the writeback path the thread proxy reads TMEM (tcgen05.ld) after waiting on
-       the MMA-completion mbarrier. Without fence.after_thread_sync, prior MMA writes
-       to TMEM may not be ordered against the upcoming thread-proxy reads.
-Fix: add Tx.ptx.tcgen05.fence.after_thread_sync() after mma2ld.wait, before tcgen05.ld.
-       Do NOT add this fence on the TMA->MMA edge; the TMA-completion mbarrier
-       already orders SMEM writes against the subsequent MMA.
+### fence.after_thread_sync is rarely needed (don't over-add it)
+Symptom: model-generated code sprinkles fence.after_thread_sync() around every
+         MMA, or you see it on the TMA->MMA edge.
+Cause: mbarrier arrives from async engines already carry release->acquire ordering,
+       so fences on the TMA->MMA edge and after cta_sync-guarded SMEM copies are
+       unnecessary. Most production kernels (including CUTLASS) omit the fence
+       entirely; only tirx-kernels' conservative writeback path inserts it.
+Fix: strip stray fence.after_thread_sync() calls. If you are mirroring tirx-kernels,
+     keep exactly one - after mma2ld.wait() and before the first tcgen05.ld.
 ```
 
 Format tips:

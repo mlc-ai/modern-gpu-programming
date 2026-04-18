@@ -312,7 +312,7 @@ Note: The `max_err < 0.5` check is a **smoke test**, not a strict numerical veri
 TMEM (Tensor Memory) is a special memory owned by each warpgroup, with 128 rows x 512 columns. Two key properties:
 
 - **`.shape`** determines how many bits per element. For fp32 accumulators, each cell is 32 bits.
-- **`.num`** determines how many `.shape`-sized entries fit. The TIRx compiler maps these to TMEM columns.
+- **`.num`** determines how many `.shape`-sized entries fit. The TIRX compiler maps these to TMEM columns.
 
 When you declare `tmem = Tx.decl_buffer((128, 512), "float32", scope="tmem", ...)`, this allocates a 128-row x 512-column TMEM region. To read TMEM into registers:
 

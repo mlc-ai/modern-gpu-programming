@@ -1,7 +1,7 @@
 # GEMM Steps 1--3: From Single Tile to Spatial Tiling
 :label:`chap_gemm_basics`
 
-*This is the start of Part III: GEMM Deep Dive. Unlike Part II's standalone operators, the next 3 chapters (9 steps) tell a single continuous story --- one GEMM kernel, progressively optimized from 70ms to 0.11ms. Each step builds on the previous one.*
+*This is the start of Part III: GEMM Deep Dive. Unlike Part II's standalone operators, the next 3 chapters (9 steps) tell a single continuous story --- one GEMM kernel, progressively optimized from 70 ms down to ~0.12 ms, within 10% of cuBLAS (0.11 ms). Each step builds on the previous one.*
 
 > **Layout recap.** Every step in Part III uses three recurring layout patterns: a swizzled `tma_shared_layout` for SMEM, `S[(128, N) : (1@TLane, 1@TCol)]` for TMEM, and `S[(128, N) : (1@tid_in_wg, 1)]` for the warpgroup register view. The full semantics of these layouts — named axes, swizzle modes, TMEM–RF matching — are covered in :numref:`chap_layouts`; here we reuse them without re-explaining each time.
 
@@ -104,7 +104,7 @@ if warp_id == 0:
 #### Writeback
 
 ```python
-Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(([128, BLK_N], [1@tid_in_wg, 1])))
+Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1@tid_in_wg, 1)]))
 with Tx.warpgroup():          # All 128 threads cooperate on TMEM read
     Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
 with Tx.thread():             # Each thread writes its row
@@ -145,11 +145,13 @@ B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_
 
 ### Thread hierarchy in GEMM kernels
 
-GEMM kernels use the full thread hierarchy from :numref:`chap_background` (CTA → Warpgroup → Warp → Thread). Unlike the earlier elementwise kernels that only needed `cta_id` + `thread_id`, GEMM requires all three levels because tcgen05 MMA operates at the **warpgroup** level — all 128 threads must cooperate to read TMEM results:
+GEMM kernels use the full thread hierarchy from :numref:`chap_background` (CTA → Warpgroup → Warp → Thread). Unlike the earlier elementwise kernels that only needed `cta_id` + `thread_id`, GEMM touches every level: a single elected thread *issues* each `tcgen05.mma`, but the resulting TMEM tile spans 128 rows — a full warpgroup cooperates to read it back via `tcgen05.ld`, and per-warp / per-lane IDs partition the writeback rows across threads:
 
-- **`wg_id = Tx.warpgroup_id([1])`** — Which warpgroup (Step 1 uses only 1). Later steps use 2 warpgroups for warp specialization.
-- **`warp_id = Tx.warp_id([4])`** — Which warp within the warpgroup (0-3).
-- **`lane_id = Tx.thread_id([32])`** — Which thread within the warp (0-31).
+- **`wg_id = Tx.warpgroup_id([1], parent="cta")`** — Which warpgroup (Step 1 uses only 1). Later steps use 2 warpgroups for warp specialization.
+- **`warp_id = Tx.warp_id([4], parent="warpgroup")`** — Which warp within the warpgroup (0-3).
+- **`lane_id = Tx.thread_id([32], parent="warp")`** — Which thread within the warp (0-31).
+
+The `parent=` argument is mandatory: it names the enclosing scope from which this coordinate is drawn (so `warp_id` with `parent="warpgroup"` enumerates the 4 warps inside each warpgroup, while `parent="cta"` would enumerate all 16 warps of a 4-warpgroup CTA).
 
 The `warp_id` and `lane_id` are used for thread-level operations like data loading and writeback (each thread handles a different row: `row = warp_id * 32 + lane_id`).
 
@@ -163,6 +165,9 @@ def hgemm_v1(
     D: Tx.Buffer((M, N), d_type),
 ):
     with Tx.kernel():
+        # Step 1 is a single-tile kernel: M = BLK_M and N = BLK_N, so the grid
+        # is 1x1. Starting with a 1x1 grid keeps the per-CTA tile offsets
+        # (m_st, n_st) trivially zero; Steps 3+ generalise this to larger M / N.
         bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
         wg_id = Tx.warpgroup_id([1], parent="cta")
         warp_id = Tx.warp_id([4], parent="warpgroup")
@@ -197,10 +202,12 @@ def hgemm_v1(
         phase_mma: Tx.int32
         phase_mma = 0
 
-        # --- Load: all threads copy global -> shared (synchronous) ---
+        # --- Load: all threads copy global -> shared (synchronous).
+        # With M=BLK_M and N=BLK_N the slices below cover the full matrices;
+        # the slice form is kept so the diff to Step 3 (multi-tile) is minimal.
         with Tx.cta():
-            Tx.copy(Asmem[:, :], A[:, :])
-            Tx.copy(Bsmem[:, :], B[:, :])
+            Tx.copy(Asmem[:, :], A[m_st:m_st + BLK_M, :])
+            Tx.copy(Bsmem[:, :], B[n_st:n_st + BLK_N, :])
         Tx.cuda.cta_sync()
 
         # --- Compute: single elected thread issues MMA ---

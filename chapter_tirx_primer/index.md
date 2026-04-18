@@ -33,7 +33,7 @@ These three pillars are what make TIRX a compiler rather than a thin wrapper ove
 TIRX extends the classical shape-and-stride layout of NumPy and PyTorch with two additions, forming a *shard + replica + offset* triple. Every operand buffer carries such a layout, declaring how its logical indices map onto **named hardware axes**.
 
 - **S (Shard).** A list of `(extent, stride, axis)` iters. This is the familiar shape-and-stride, except each stride is tagged with the axis it steps along. For example `S[(128, 512) : (1@TLane, 1@TCol)]` says logical dim 0 runs along the `TLane` (TMEM row) axis with stride 1, and logical dim 1 runs along `TCol` (TMEM column) with stride 1.
-- **R (Replica).** A *set* of iters that enumerate broadcast offsets independent of the logical index. `R[4 : 1@warp]` replicates the same data across 4 consecutive warps. This is what makes Blackwell scale-factor tiles, cluster-wide multicast buffers, and distributed tensors expressible without shape hacks.
+- **R (Replica).** A *set* of iters that enumerate broadcast offsets independent of the logical index. `R[4 : 1@warpid]` replicates the same data across 4 consecutive warps. This is what makes Blackwell scale-factor tiles, cluster-wide multicast buffers, and distributed tensors expressible without shape hacks.
 - **O (Offset).** A constant coordinate offset added to every result. Typical use: pin a TMEM buffer to a specific base column.
 
 The tutorial uses the symbol `S` for the shard list, matching :numref:`chap_layouts`. The TIRX research paper calls it `D` in its formal notation; the two are interchangeable.
@@ -42,10 +42,10 @@ The axes available in TIRX form a fixed vocabulary — the compiler understands 
 
 | Axis | Meaning |
 |:--|:--|
-| `m` | ordinary memory offset (SMEM / GMEM / RF element stride) |
-| `tid`, `tid_in_wg`, `lane`, `warp`, `warp_in_wg`, `wg_id` | thread-hierarchy axes |
-| `TLane`, `TCol` | Blackwell TMEM 2D axes |
-| `cta`, `cbx`, `cby` | CTA and cluster axes (for TMA multicast, DSMEM, cluster-wide tiles) |
+| `m` | default memory offset (SMEM / GMEM / RF element stride); used when a stride has no `@axis` suffix |
+| `tid_in_wg`, `warpid`, `laneid` | thread-hierarchy axes (warpgroup thread, warp within CTA, lane within warp) |
+| `TLane`, `TCol` | Blackwell TMEM 2D axes (0…127 rows × 0…511 cols) |
+| `cbx`, `cby` | CTA axes within a cluster (for TMA multicast, DSMEM, cluster-wide tiles) |
 | `pid` | device-mesh axis for multi-GPU tensors |
 
 A tensor's layout is the *declarative* part of the programming model. Pillars 2 and 3 read the layout to decide what instructions to emit; the programmer never derives offsets or thread-work-assignments by hand. The three layouts you will see repeatedly in Part III are:
@@ -127,7 +127,7 @@ The same `Tx.copy(dst, src)` call is dispatched to different PTX depending on th
 
 | Team kind | `dst` layout | `src` layout | Lowered to |
 |:--|:--|:--|:--|
-| thread (elected), `cta_group=2` | SMEM with cluster axes (`1@cbx` shard + `R[4 : 1@cby]`) | GMEM tile | **TMA multicast** (`cp.async.bulk.tensor.multicast`) |
+| thread (elected), `cta_group=2` | SMEM whose receiver set covers more than one CTA of the cluster (e.g. `R[2 : 1@cbx]` for a 2-CTA broadcast) | GMEM tile | **TMA multicast** (`cp.async.bulk.tensor.multicast`) |
 | thread (elected), single CTA | SMEM tile (swizzled) | GMEM tile | **TMA unicast** (`cp.async.bulk.tensor`) |
 | warpgroup | RF warpgroup view `(1@tid_in_wg, 1)` | TMEM tile `(1@TLane, 1@TCol)` | **`tcgen05.ld`** (warpgroup-cooperative TMEM → RF) |
 | thread | RF per-thread flat | GMEM / SMEM flat | plain vectorised **LDG / LDS / STS / STG** |
@@ -153,15 +153,15 @@ The primitive says "accumulate $A B$ into `tmem`". The compiler consults:
 
 - `tmem`'s layout `S[(128, N) : (1@TLane, 1@TCol)]` → the target lives in TMEM, so choose a `tcgen05.mma` variant.
 - `Asmem` / `Bsmem` SMEM layouts (including swizzle mode) → build the SMEM matrix descriptors and set transpose flags required by `tcgen05.mma`.
-- `cta_group=1` → single-CTA instance. Passing `cta_group=2`, together with SMEM layouts that carry `1@cbx` + `R[... : 1@cby]`, produces the 2-CTA cooperative form that reaches up to $M=256$.
-- Tile shape inferred from the layouts → select a valid `tcgen05.mma` M-N-K shape ($M \in \{64, 128, 256\}$, $N$ multiple of 8 up to 256, $K$ set by element type).
+- `cta_group=1` → single-CTA instance. Passing `cta_group=2` on a clustered launch (`Tx.cta_id([2, 1], parent="cluster")`) produces the 2-CTA cooperative form, in which the MMA proxy reads the peer CTA's SMEM via cross-CTA access; the `M` axis doubles to up to $256$.
+- Tile shape inferred from the layouts → select a valid `tcgen05.mma` M-N-K shape ($M \in \{64, 128\}$ for single-CTA or $\{128, 256\}$ with `cta_group=2`, $N$ any multiple of 8 up to 256, $K$ set by element type).
 
 A single primitive call emits one — or, for large tiles, a short loop of — `tcgen05.mma` instructions with the right bit-packed instruction and SMEM descriptors. The descriptor encoding, the transpose handling, and the instruction loop all live in the dispatcher, not in the user kernel. That is why the 2-line MMA in :numref:`chap_gemm_basics` expands to 20+ lines of PTX without the user ever opening a PTX manual.
 
 ### What to internalise
 
 - **Declarativity.** The primitive says *what*; the scope and layouts say *for which team and where the data is*; the dispatcher says *how*. Changing the lowering strategy — for instance switching a TMA copy between unicast and multicast — is a layout edit, not a rewrite of the operation.
-- **Layout selects the instruction family.** `cbx` / `cby` axes → cluster instructions; `TLane` / `TCol` → `tcgen05` instructions; `tid` / `tid_in_wg` + `m` → ordinary per-thread LDG / STS / STG. The named-axis vocabulary is the user's way to *select* a lowering.
+- **Layout selects the instruction family.** `cbx` / `cby` axes → cluster instructions; `TLane` / `TCol` → `tcgen05` instructions; `tid_in_wg` / `warpid` / `laneid` + `m` → ordinary per-thread LDG / STS / STG. The named-axis vocabulary is the user's way to *select* a lowering.
 - **Scope gates which primitives are legal.** Some primitives only make sense under a specific team kind — e.g. `tcgen05.ld` requires a warpgroup-cooperative read, so calling it from `with Tx.thread():` is a compile-time error.
 
 

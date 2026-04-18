@@ -74,7 +74,7 @@ This is in contrast to **CUDA cores**, the GPU's classic general-purpose ALUs th
 | Granularity | 1 scalar FMA per instruction | $M \times N \times K$ FMAs per instruction |
 | Execution model | SIMT: 32 threads per warp, each issues its own instruction | Single thread (or 2-CTA pair) issues one MMA; hardware runs the tile asynchronously |
 | Operands live in | Register file | SMEM (via matrix descriptors) and/or TMEM |
-| Accumulator in | Register file | **TMEM** on Blackwell (off-chip-register scratchpad) |
+| Accumulator in | Register file | **TMEM** on Blackwell (on-chip SM-local scratchpad, separate from the register file) |
 | Typical dtypes | fp32 / fp64 / int32 — general-purpose | fp16 / bf16 / fp8 / fp4 / tf32 — low-precision GEMM-friendly |
 | Used for | elementwise, reductions, index math, control flow, everything non-GEMM | dense matrix multiply, convolution, attention $QK^{\top}$ and $PV$ |
 | Peak on HGX B200 | ~75 TFLOPS (fp32) | ~2.25 PFLOPS (fp16/bf16) &rarr; up to ~9 PFLOPS (fp4) |
@@ -253,12 +253,12 @@ Blackwell has multiple asynchronous hardware units (threads, TMA, tcgen05 MMA) t
 |:-:|:-:|
 | Threads write SMEM → MMA reads SMEM (sync copy) | `cta_sync()` |
 | TMA writes SMEM → MMA reads SMEM (async copy) | `mbarrier.try_wait` on the TMA completion barrier |
-| MMA writes TMEM → Threads read TMEM (epilogue) | `mbarrier.try_wait` + `fence.after_thread_sync()` |
+| MMA writes TMEM → Threads read TMEM (epilogue) | `mbarrier.try_wait` (optionally followed by `fence.after_thread_sync()`) |
 | Threads write SMEM → TMA reads SMEM (store) | `fence.proxy_async("shared::cta")` |
 | Alloc barriers/TMEM → Use them | `fence.proxy_async` + `fence.mbarrier_init` + `cta_sync()` |
 | All work done → Deallocate TMEM | `cta_sync()` (single-CTA) or `cluster_sync()` (cluster) |
 
-A few words on why this table is shorter than it looks. `cta_sync()` is a thread barrier *and* a release/acquire fence over shared memory, so the subsequent MMA issued by the same CTA sees earlier SMEM writes. An mbarrier arrival from an async engine (TMA completion, or `tcgen05.commit` from an MMA) likewise carries release→acquire semantics: once `try_wait` returns, the waiter sees all of the producer's memory effects. The one remaining case where we need an explicit fence is the writeback path: `fence.after_thread_sync()` after the MMA-completion wait orders the prior tcgen05 writes to TMEM against the upcoming thread-proxy reads (`tcgen05.ld`). `fence.proxy_async("shared::cta")` plays the analogous role on the thread→TMA-store edge in SMEM.
+A few words on why this table is shorter than it looks. `cta_sync()` is a thread barrier *and* a release/acquire fence over shared memory, so the subsequent MMA issued by the same CTA sees earlier SMEM writes. An mbarrier arrival from an async engine (TMA completion, or `tcgen05.commit` from an MMA) likewise carries release→acquire semantics: once `try_wait` returns, the waiter sees all of the producer's memory effects — including MMA writes to TMEM. In practice the mbarrier alone is enough to make the early-step kernels in this tutorial (and most of CUTLASS) correct without any explicit fence. `fence.after_thread_sync()` is a conservative extra between the MMA-completion wait and the first `tcgen05.ld`, added in some reference kernels (the `tirx-kernels` writeback path used from Step 8 onward) to make the ordering between prior tcgen05 writes and the upcoming thread-proxy reads explicit; it is not needed on the TMA→MMA edge. `fence.proxy_async("shared::cta")` plays the analogous role on the thread→TMA-store edge in SMEM, where no mbarrier is involved.
 
 Before deallocating TMEM, all CTAs that may still read or write it must be finished. For a single-CTA kernel, `cta_sync()` is sufficient; for clustered kernels, `cluster_sync()` is required.
 
@@ -290,7 +290,7 @@ Throughout Part III we benchmark kernels against the Blackwell hardware limits. 
 | FP8 / FP4 Tensor Core throughput | ~4.5 / ~9 PFLOPS (dense) | mixed-precision GEMM |
 | HBM3e bandwidth | ~8 TB/s | bandwidth roof |
 | L2 cache | ~100 MB | where tile operands actually live after warm-up |
-| HBM cold-miss break-even AI | ~280 FLOP/B | only binds if L2 reuse fails |
+| HBM cold-miss break-even AI | ~281 FLOP/B | only binds if L2 reuse fails |
 | One fp16 128×64 tile in SMEM | 16 KB | TMA transfer granularity |
 
 Two rules of thumb follow directly from the table:
