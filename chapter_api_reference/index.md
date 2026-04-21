@@ -114,8 +114,6 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 
 ## Common Pitfalls
 
-- **Do NOT use Python `and`/`or` in `if` statements on TIR variables**: `if wg_id == 1 and warp_id == 0:` does NOT work. Python `and` on TIR expression objects uses truthiness (always True), so `A and B and C` silently returns `C`. For example, `wg_id == 1 and warp_id == 0 and lane_id == 0` effectively becomes `if lane_id == 0:` — all WGs and warps enter. **Fix**: Use nested `if` statements: `if wg_id == 1:` then `if warp_id == 0:`. Note: `and` works inside `Tx.thread(parent=...)[cond]` scope selectors because they handle TIR expressions differently.
-
 - **`accum` must be boolean-compatible**: Use `False` (not `0`) for the first MMA iteration.
 
 - **Fence API**: Use `Tx.ptx.fence.proxy_async("shared::cta")` — positional argument, not keyword `scope=`.

@@ -96,7 +96,7 @@ for k in range(K_TILES):
             cta_group=1,
         )
     # BUG: arrive is outside the elected-thread scope
-    mma2tma.arrive(mma_ps.stage)
+    mma2tma.arrive(mma_ps.stage, cta_group=1, cta_mask=0)
     mma_ps.move_to_next_stage()
 ```
 
@@ -131,7 +131,7 @@ for k in range(K_TILES):
             cta_group=1,
         )
         # Now only the elected thread (with a non-empty commit group) arrives
-        mma2tma.arrive(mma_ps.stage)
+        mma2tma.arrive(mma_ps.stage, cta_group=1, cta_mask=0)
     mma_ps.move_to_next_stage()
 ```
 

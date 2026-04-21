@@ -14,7 +14,7 @@ The single biggest optimization: replacing synchronous `Tx.copy` with TMA hardwa
 
 - Replacing synchronous `Tx.copy` with asynchronous TMA: `Tx.copy_async(..., dispatch="tma")`
 
-- Single-thread TMA dispatch via `elect_sync()`
+- Single-thread TMA load dispatch via a `tid == 0` predicate (and why `elect_sync()` alone is subtly wrong here)
 
 - mbarrier-based byte-counting synchronization: `arrive.expect_tx` / `try_wait`
 
@@ -32,14 +32,17 @@ with Tx.cta():
 Tx.cuda.cta_sync()
 ```
 
-**After (Step 4)** — single thread issues TMA, mbarrier synchronizes:
+**After (Step 4)** — a single thread issues TMA, mbarrier synchronizes:
 ```python
-with Tx.thread()[elect_sync()]:      # hardware selects 1 thread
+tid = warp_id * 32 + lane_id                 # 0..127 within the warpgroup
+with Tx.thread(parent="warpgroup")[tid == 0]:   # exactly 1 thread
     Tx.copy_async(Asmem, A[...], dispatch="tma")
     Tx.copy_async(Bsmem, B[...], dispatch="tma")
-    mbarrier.arrive.expect_tx(byte_count)    # tell barrier how many bytes
-mbarrier.try_wait(phase)            # all threads wait until TMA completes
+    mbarrier.arrive.expect_tx(byte_count)       # tell barrier how many bytes
+mbarrier.try_wait(phase)                         # all threads wait until TMA completes
 ```
+
+A common pitfall is to reach for `elect_sync()` here. `elect.sync` is a *per-warp* PTX instruction, so `with Tx.thread(parent="warpgroup")[Tx.ptx.elect_sync()]` gives you **one elected thread per warp = 4 threads in a 4-warp warpgroup**, not 1. That is fine for TMA *stores* (the four identical stores are idempotent) but would cause an `expect_tx` byte-count mismatch on the load side, so on the load side the kernels in this tutorial pick a single thread directly with `tid == 0`.
 
 **Why faster**: The speedup is not from load/compute overlap (there is none yet — threads still wait after TMA). It comes from *how* data is moved:
 
@@ -56,7 +59,7 @@ These two APIs have fundamentally different execution models:
 | **Who executes** | All threads in the scope (`Tx.cta()`, `Tx.warpgroup()`, or `Tx.thread()`) | TMA hardware engine — one thread issues, hardware does the rest |
 | **Dispatch** | Default (software) | `dispatch="tma"` |
 | **Synchronization** | `cta_sync()` — wait for all threads to finish | `mbarrier.try_wait(phase)` — wait for TMA hardware to signal completion |
-| **Thread scope** | `with Tx.cta():` (128 threads) | `with Tx.thread()[elect_sync()]:` (1 thread) |
+| **Thread scope** | `with Tx.cta():` (128 threads) | `with Tx.thread(parent="warpgroup")[tid == 0]:` (1 thread) |
 
 ### TMA Synchronization Flow
 
@@ -309,7 +312,7 @@ Note: The `max_err < 0.5` check is a **smoke test**, not a strict numerical veri
 
 ### Understanding TMEM
 
-TMEM (Tensor Memory) is a special memory owned by each warpgroup, with 128 rows x 512 columns. Two key properties:
+TMEM (Tensor Memory) is a Tensor-Core-private scratchpad that is **per-SM** (not per-warpgroup): one SM has exactly one 128-row × 512-column TMEM region, shared by whichever warpgroups of the resident CTA(s) need it. The 128-row extent is a hardware constant tied to the `TLane` axis, and it happens to match one warpgroup's 128 threads — which is what makes the `tcgen05.ld` TMEM→RF read a warpgroup-cooperative operation. Two further properties of the allocation call itself:
 
 - **`.shape`** determines how many bits per element. For fp32 accumulators, each cell is 32 bits.
 - **`.num`** determines how many `.shape`-sized entries fit. The TIRX compiler maps these to TMEM columns.
@@ -323,7 +326,7 @@ with Tx.warpgroup():
     Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])
 ```
 
-The layout `1@tid_in_wg` maps 128 warpgroup threads to 128 TMEM rows; axis matching with the TMEM `(1@TLane, 1@TCol)` layout is what lets `Tx.copy` lower to a `tcgen05.ld` instruction (see the RF subsection of :numref:`chap_layouts` for the full axis-pairing table). TMEM reads **must** use warpgroup scope because TMEM is a warpgroup-level resource.
+The layout `1@tid_in_wg` maps 128 warpgroup threads to 128 TMEM rows; axis matching with the TMEM `(1@TLane, 1@TCol)` layout is what lets `Tx.copy` lower to a `tcgen05.ld` instruction (see the RF subsection of :numref:`chap_layouts` for the full axis-pairing table). TMEM reads **must** use warpgroup scope because `tcgen05.ld` is a warpgroup-cooperative instruction that consumes all 128 `TLane` rows in one shot — not because TMEM itself is "owned" by a warpgroup (it is not; TMEM is SM-level).
 
 Note: If the K-loop runs inside an `elect_sync` or `tid == 0` scope, other threads skip ahead to the writeback. Always ensure `cta_sync()` is called **outside** any thread-guarded scope before reading TMEM, so the whole warpgroup is aligned on the same MMA epoch.
 

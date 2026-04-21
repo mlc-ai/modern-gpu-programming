@@ -311,15 +311,16 @@ print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 
 ### Epilogue (Writeback) Details
 
-The writeback warpgroup processes the output in `EPI_N`-column chunks rather than writing the full `BLK_N=128` columns at once. This is because reading all 128 columns of TMEM into registers at once would require too many registers per thread (128 x fp32 = 512 bytes), causing register spills to local memory and killing performance. By processing in smaller chunks (e.g., `EPI_N=64`), each iteration only needs a fraction of the registers, and the Dsmem buffer is also smaller:
+Step 7 keeps the epilogue simple: the writeback warpgroup reads the full `BLK_N=128` columns of TMEM into registers in one pass, then issues a single TMA store per tile. The sequence is:
 
-1. Wait for MMA: `mma2ld.wait(phase)` + `fence.after_thread_sync()` — ensure TMEM writes are visible
-2. Loop over `BLK_N // EPI_N` chunks:
-   - Read `EPI_N` columns of TMEM -> registers
-   - Cast fp32 -> fp16
-   - Write to Dsmem (`EPI_N` columns, not the full `BLK_N`)
-   - TMA store: `Tx.copy_async(D[..., col_st:col_st+EPI_N], Dsmem, dispatch="tma")`
-3. Signal MMA: `ld2mma.arrive()` (all 128 threads arrive) — TMEM is now free for the next tile
+1. Wait for MMA: `mma2ld.wait(phase)`. The `tirx-kernels` reference inserts `fence.after_thread_sync()` here as a conservative extra — the MMA-completion mbarrier already covers the ordering, and most kernels (including CUTLASS) omit it.
+2. Read TMEM -> registers (128 fp32 per thread, warpgroup scope via `Tx.copy(reg_wg, tmem[:, :BLK_N])`).
+3. Signal MMA: `ld2mma.arrive()` (all 128 threads arrive) — TMEM is now free for the next tile.
+4. Cast fp32 -> fp16 in registers.
+5. Write registers -> Dsmem, then `fence.proxy_async("shared::cta") + warpgroup_sync(10)` to flush.
+6. TMA store Dsmem -> GMEM via `cp_async.bulk.commit_group() + wait_group(0)`.
+
+Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) revisit this epilogue and split the writeback into `EPI_N`-column chunks (`EPI_N=64`). The reason is register pressure: reading 256 fp32 per thread (256 * 4 = 1024 bytes, distributed across 128 threads and their registers) risks spills to local memory, and it also forces a larger Dsmem buffer. By chunking into 64-column groups, each iteration keeps only `EPI_N` fp32 registers live and issues a smaller TMA store.
 
 ### Key Points
 
@@ -511,7 +512,7 @@ If you see specific mismatch counts like 128, 253, or 381 (multiples of 128 = co
 
 **Common causes:**
 
-1. **Missing fence.after_thread_sync() in the epilogue**: In the writeback path, after `mma2ld.wait(phase)` and immediately before the first `tcgen05.ld` into registers, call `fence.after_thread_sync()`. Without it, threads may read stale TMEM data from a previous MMA epoch. This is the only place the fence is needed; on the TMA→MMA edge the mbarrier already orders things correctly.
+1. **Writeback-path ordering (`fence.after_thread_sync()` — optional, conservative)**: The `tirx-kernels` reference kernels insert `fence.after_thread_sync()` in the writeback path, after `mma2ld.wait(phase)` and immediately before the first `tcgen05.ld` into registers. Strictly speaking the MMA-completion mbarrier already carries release→acquire semantics against the downstream thread-proxy reads, so most production kernels (including CUTLASS) omit this fence entirely and still produce correct results. If you are mirroring the `tirx-kernels` style, keep the fence exactly there; do **not** add it on the TMA→MMA edge, where the mbarrier alone is sufficient. Stale TMEM data almost always has a different root cause — a missing `mma2ld.wait`, `tcgen05.commit` issued outside `elect_sync`, or the consumer running ahead of the MMA epoch.
 
 2. **Missing fence.proxy_async("shared::cta") before TMA store**: TMA engine doesn't see the SMEM writes from threads.
 
@@ -838,13 +839,13 @@ print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 
 - `tcgen05.alloc` and `tcgen05.dealloc` must use `cta_group=2`
 
-- Writeback uses `EPI_N=64` --- reading all 256 TMEM columns at once exceeds register capacity
+- Writeback splits the 256 output columns into two 128-column chunks --- reading all 256 TMEM columns at once exceeds register capacity. Step 9 shrinks the chunk further to `EPI_N=64`
 
 - `cluster_sync()` replaces `cta_sync()` at the end (ensures all CTAs are done before TMEM dealloc)
 
 With the final multi-consumer optimization (Step 9), we reach **0.12 ms** --- within 10% of cuBLAS.
 
-If Step 8 is slower than Step 7, check: (1) TMA arrive byte count should be `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`, (2) tile scheduler dimensions should be `num_m_tiles=M//256, num_n_tiles=N//256` for the 256x256 cluster tile, (3) writeback has 4 TMA stores (256 cols / EPI_N=64) — make sure each one completes before reusing Dsmem.
+If Step 8 is slower than Step 7, check: (1) TMA arrive byte count should be `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`, (2) tile scheduler dimensions should be `num_m_tiles=M//256, num_n_tiles=N//256` for the 256x256 cluster tile, (3) writeback issues 2 TMA stores (one per 128-column chunk) — make sure each one completes before reusing Dsmem.
 
 ---
 

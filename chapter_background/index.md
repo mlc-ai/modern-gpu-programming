@@ -28,7 +28,7 @@ For TIRX kernels on Blackwell, it is useful to think about memory as a hierarchy
 |--------|-----------|---------|-------------|
 | **Global Memory (GMEM)** | Device-wide | High | Large capacity (HBM), bandwidth-limited |
 | **Shared Memory (SMEM)** | Per-CTA (on one SM) | Low | 228 KB per SM, low-latency scratchpad |
-| **Tensor Memory (TMEM)** | Per-SM | Very low | Private high-bandwidth accumulator memory for Tensor Cores |
+| **Tensor Memory (TMEM)** | Per-SM | Very low | Private high-bandwidth Tensor-Core scratchpad; holds MMA accumulators and, for some `tcgen05.mma` variants, the A operand |
 | **Register File (RF)** | Per-thread | Lowest | Fastest storage, per-thread |
 
 The typical data flow for a kernel that uses Tensor Cores:
@@ -99,7 +99,7 @@ A kernel that does not use Tensor Cores throws away over 95% of the chip. Every 
 A single MMA instruction operates on a fixed-shape tile. On Blackwell `tcgen05.mma` with fp16/bf16 operands:
 
 - $M \in \{64, 128\}$ (row tile; the $M$ dimension of $A$ and $D$). With 2-CTA cooperation $M$ doubles to 128 or 256.
-- $N$ is any multiple of 8 up to 256, i.e. $N \in \{8, 16, 24, \dots, 256\}$ (column tile; the most flexible dimension).
+- $N \le 256$ (column tile; the most flexible dimension). The exact step depends on $M$ and the CTA group: $M=64$ single-CTA allows multiples of $8$; $M=128$ single-CTA requires multiples of $16$; 2-CTA cooperative mode requires multiples of $32$.
 - $K = 16$ (inner-product dimension, fixed for fp16/bf16 operands).
 
 A GEMM loop builds a larger computation by stepping along $K$ and accumulating. Kernels written later in this tutorial choose $M_{\text{mma}} = 128$ or $256$ (with 2-CTA cooperation) and $N_{\text{mma}} = 128, 256$, but always $K_{\text{mma}} = 16$. The block-level tile `BLK_M × BLK_N × BLK_K` is then a multiple of the instruction tile along each dimension.
@@ -141,7 +141,7 @@ Three trends drive the API you will use in TIRX:
 
 The most radical change on Blackwell is the accumulator location. A Hopper `wgmma` tile with $M=64, N=256$ and FP32 accumulation produces $64 \times 256 = 16384$ accumulator values, which at 128 threads per warpgroup means **128 FP32 registers per thread**. The architectural register file is capped at 255 × 32-bit registers per thread; roughly half of that budget is already gone, and we have not started loading operands or intermediate results. In practice Hopper kernels spend substantial effort managing this pressure (multiple smaller MMAs, register reuse tricks).
 
-Blackwell solves the problem structurally by adding **TMEM** — a 128 × 512 32-bit scratchpad per SM dedicated to accumulators. `tcgen05.mma` writes its output to TMEM, not to registers. The warpgroup only pulls data into registers (`tcgen05.ld`) during the writeback epilogue, when it actually needs to apply activation or cast to the output dtype. Registers are now free for operand pipelining.
+Blackwell solves the problem structurally by adding **TMEM** — a 128 × 512 32-bit scratchpad per SM, primarily used as the MMA accumulator (and, for `tcgen05.mma` variants with operand A in TMEM, as an A-operand staging area; Flash Attention in :numref:`chap_flash_attention` exploits this to keep the P matrix between the two MMAs inside TMEM). `tcgen05.mma` writes its accumulator output to TMEM, not to registers. The warpgroup only pulls data into registers (`tcgen05.ld`) during the writeback epilogue, when it actually needs to apply activation or cast to the output dtype. Registers are now free for operand pipelining.
 
 This is why every GEMM kernel in Part III follows the same three-stage data flow already sketched in the *Memory Hierarchy* figure above: **TMA** moves GMEM → SMEM, `tcgen05.mma` computes into TMEM, `tcgen05.ld` pulls results back into RF, and a final store returns them to GMEM. Each arrow is a different hardware unit with its own synchronization primitive. The next two sections introduce the Blackwell MMA (`tcgen05`) and the barrier system (`mbarrier`) that stitch this pipeline together.
 
@@ -196,7 +196,7 @@ For $128\times128$ that is 64 FLOP/B; for $256\times256$, 128 FLOP/B. Neither cl
 
 ### The L2 cache is what makes small tiles viable
 
-Blackwell's B200 has on the order of 100 MB of L2 (NVIDIA's Blackwell tuning guide lists 126 MB on GB200), and the L2's delivered bandwidth into the SM array is several times HBM's. A sensibly scheduled GEMM reuses heavily at L2: along a row of the output grid every tile shares the same A-rows; along a column every tile shares the same B-columns. Persistent tile schedulers (introduced in :numref:`chap_gemm_advanced`) visit tiles in an order that keeps these hot operands resident. Measured L2 hit rates for well-scheduled GEMMs on B200 are typically 70–90%, so the *effective* bandwidth an SM sees sits much closer to L2 bandwidth than to HBM bandwidth.
+Blackwell's B200 has on the order of 100 MB of L2 (NVIDIA's Blackwell tuning guide lists 126 MB on GB200), and the L2's delivered bandwidth into the SM array is several times HBM's. A sensibly scheduled GEMM reuses heavily at L2: along a row of the output grid every tile shares the same A-rows; along a column every tile shares the same B-columns. Persistent tile schedulers (introduced in :numref:`chap_persistent_kernel`) visit tiles in an order that keeps these hot operands resident. Measured L2 hit rates for well-scheduled GEMMs on B200 are typically 70–90%, so the *effective* bandwidth an SM sees sits much closer to L2 bandwidth than to HBM bandwidth.
 
 The practical consequence is that the $MN/(M+N) \geq 281$ inequality is the wrong condition to design around. It is the HBM-cold-miss worst case. The condition that actually matters is: can the *L2-hit* tile-load time be hidden behind the tile-compute time? Because L2 bandwidth per SM is substantially higher than HBM bandwidth per SM, 128×128 tiles (with 64 FLOP/B) are fully viable once L2 reuse is working.
 
@@ -273,7 +273,7 @@ Blackwell supports **CTA clusters**: groups of CTAs that can cooperate more tigh
 
 - **Cross-CTA barrier signaling**: mbarrier arrive/wait can be used across CTAs in the same cluster, enabling producer-consumer synchronization beyond a single CTA.
 
-Clustering enables hardware units such as tcgen05 MMA to read data from both CTAs' shared memory, effectively doubling the working set without additional global memory bandwidth.
+Clustering gives hardware units such as tcgen05 MMA access to every CTA's shared memory in the cluster, so a single MMA instance can read an operand tile that spans multiple SMs' SMEM and grows the effective MMA working set beyond one SM's 228 KB budget. The global-memory bandwidth used is still the sum of each CTA's own loads — cooperative MMA itself does not reduce GMEM traffic. TMA *multicast* is the complementary feature that actually does save GMEM bandwidth, by delivering one GMEM tile to every CTA in the cluster from a single load.
 
 
 ## Numbers to Remember

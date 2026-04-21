@@ -92,8 +92,8 @@ with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:   # exactly one thread per w
 with Tx.warp()[0:1]:                                   # first warp only
     Tx.ptx.tcgen05.alloc(...)                          # TMEM alloc instruction
 
-with Tx.thread(parent="warpgroup")[warp_id == 0 and lane_id == 0]:  # single thread in a warpgroup
-    mma_bar.init(arrive_count=1)
+with Tx.thread(parent="warpgroup")[0:1]:               # first thread of this warpgroup
+    Tx.ptx.mbarrier.init(bar.ptr_to([0]), 1)            # raw mbarrier.init(ptr, count)
 ```
 
 `elect_sync()` is the most common filter — paired with `Tx.thread(parent="warp")` it gives exactly one thread per warp, which matches how TMA issues and `tcgen05.commit` want to be dispatched.
@@ -154,7 +154,7 @@ The primitive says "accumulate $A B$ into `tmem`". The compiler consults:
 - `tmem`'s layout `S[(128, N) : (1@TLane, 1@TCol)]` → the target lives in TMEM, so choose a `tcgen05.mma` variant.
 - `Asmem` / `Bsmem` SMEM layouts (including swizzle mode) → build the SMEM matrix descriptors and set transpose flags required by `tcgen05.mma`.
 - `cta_group=1` → single-CTA instance. Passing `cta_group=2` on a clustered launch (`Tx.cta_id([2, 1], parent="cluster")`) produces the 2-CTA cooperative form, in which the MMA proxy reads the peer CTA's SMEM via cross-CTA access; the `M` axis doubles to up to $256$.
-- Tile shape inferred from the layouts → select a valid `tcgen05.mma` M-N-K shape ($M \in \{64, 128\}$ for single-CTA or $\{128, 256\}$ with `cta_group=2`, $N$ any multiple of 8 up to 256, $K$ set by element type).
+- Tile shape inferred from the layouts → select a valid `tcgen05.mma` M-N-K shape ($M \in \{64, 128\}$ for single-CTA or $\{128, 256\}$ with `cta_group=2`; $N \le 256$ with a step that depends on $M$ and CTA group — see :numref:`chap_background`; $K$ set by element type).
 
 A single primitive call emits one — or, for large tiles, a short loop of — `tcgen05.mma` instructions with the right bit-packed instruction and SMEM descriptors. The descriptor encoding, the transpose handling, and the instruction loop all live in the dispatcher, not in the user kernel. That is why the 2-line MMA in :numref:`chap_gemm_basics` expands to 20+ lines of PTX without the user ever opening a PTX manual.
 

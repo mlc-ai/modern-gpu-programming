@@ -14,10 +14,10 @@ By the end you will be able to read every `layout=` expression in the GEMM, RMSN
 
 A tensor on paper is indexed by logical coordinates such as `A[m, k]`. A tensor in a GPU is indexed by *physical* coordinates that depend on where it lives:
 
-- In **global memory (GMEM)** a tensor is a flat byte array; `A[m, k]` becomes a byte offset.
-- In **shared memory (SMEM)** a tensor lives in a 32-bank scratchpad with 4-byte banks; `A[m, k]` becomes a (bank, bank-offset) pair.
-- In **tensor memory (TMEM)** a tensor is a 2D array addressed by `(TLane, TCol)`; `A[m, k]` becomes a `(TLane, TCol)` pair.
-- In **registers (RF)** a tensor is sharded across 128 threads of a warpgroup; `A[m, k]` becomes a (thread-id, register-index) pair.
+- In **global memory (GMEM)** a tensor is a flat byte array; `A[m, k]` becomes a single byte offset.
+- In **shared memory (SMEM)** a tensor is *also* a flat per-CTA byte array, but the bytes are physically interleaved across 32 memory banks of 4 B each. `A[m, k]` is still a byte offset; the bank number is just the low bits of that offset, and bad layouts show up as *bank conflicts* (a warp's 32 lanes colliding on the same bank).
+- In **tensor memory (TMEM)** a tensor is a genuinely 2D scratchpad of 32-bit cells addressed by `(TLane, TCol)`; `A[m, k]` becomes a `(TLane, TCol)` pair.
+- In **registers (RF)** the register file is per-thread, so there is no "the" address for `A[m, k]` at all. A logical tile has to be *distributed* across the threads of a cooperating team (a single thread, a warp, a warpgroup, or the whole CTA), and the layout declares which thread holds which element and at which register offset.
 
 A **layout** is the function that performs this translation. The same logical tile has four very different layouts across these spaces, and the same memory space can use many different layouts for the same tile. The choice is never cosmetic — a wrong layout produces one of three failures:
 
@@ -136,7 +136,7 @@ TileLayout(S[(128, N) : (1@TLane, 1@TCol)])
 
 Row dimension pinned to `TLane` with stride 1; column dimension pinned to `TCol` with stride 1. This is the only layout `tcgen05.mma` can write directly. Two rules:
 
-- **The row extent is always 128.** `TLane` has 128 physical lanes. Even a 64-row MMA instruction writes into 128 TMEM rows via a 64×N logical view over a 128-row physical backing. You *slice* the column dimension to match an MMA instruction (`N = 128, 256, …`), but the row dimension is always 128.
+- **The row extent is always 128.** `TLane` has 128 physical lanes, and TMEM allocations are always declared against this full 128-row backing. An `.m128n*` MMA instruction fills all 128 rows of its tile; an `.m64n*` MMA instruction only uses the first 64 `TLane` rows, leaving rows 64–127 untouched (available for an independent 64-row MMA to share the same allocation). You *slice* the column dimension to match an MMA instruction (`N = 128, 256, …`), but the row dimension of the declared TMEM buffer is always 128.
 - **Axis order matters.** Swapping to `(1@TCol, 1@TLane)` transposes the tile in TMEM — correct-looking code, transposed output.
 
 ### RF: `(1@tid_in_wg, 1)` and the TMEM→RF Match
@@ -178,7 +178,7 @@ You rarely write `R[...]` from scratch — the tutorial uses it in one place, an
 - **Scale / scalar broadcasts.** The softmax scale vector in Flash Attention (:numref:`chap_flash_attention`) is a length-`N` buffer broadcast to all 128 warpgroup threads via `S[(N,):(1,)] + R[128 : 1@tid_in_wg]`. This is the one explicit replica you will read in user code.
 - **TMA multicast across a CTA cluster** (feature-level, not used by the kernels in this tutorial). A single TMA instruction can deliver the same tile to every CTA in the cluster; TIRX expresses the receiver set as a replica on a cluster axis such as `R[2 : 1@cbx]`, and lowers the copy to `cp.async.bulk.tensor.multicast`. In practice the user passes a cluster mask like `cta_mask=3` to `Tx.copy_async(..., dispatch="tma", ...)` and the dispatcher synthesises the layout; the clustered GEMM in :numref:`chap_gemm_advanced` (Step 8) uses `cta_group=2` for cooperative MMA but does *not* multicast the A / B tiles, so this layout pattern does not appear in its code.
 
-The explicit replica you will actually see is therefore the Flash-Attention scale vector. For the clustered GEMM, `Tx.copy_async(..., cta_group=2)` and `smem_pipe.full.remote_view(...)` compose any cluster-aware layouts for you.
+The explicit replica you will actually see is therefore the Flash-Attention scale vector. For the clustered GEMM, `Tx.copy_async(..., cta_group=2)` and the barrier helpers (`TMABar.remote_view(0)` etc.) compose any cluster-aware layouts for you.
 
 
 ## Summary
