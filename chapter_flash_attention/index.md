@@ -1,7 +1,7 @@
 # Flash Attention 4
 :label:`chap_flash_attention`
 
-*Prerequisites: You should be comfortable with Step 7 (Warp Specialization) — specifically warp specialization, the 4-barrier producer-consumer pattern, PipelineState, and TMA/tcgen05 pipelining. If Step 7 still feels unclear, go back and re-read it before continuing.*
+*Prerequisites: You should be comfortable with Step 7 (Warp Specialization) — specifically warp specialization, the 4-barrier producer-consumer pattern, RingState, and TMA/tcgen05 pipelining. If Step 7 still feels unclear, go back and re-read it before continuing.*
 
 *This chapter explains how the same TIRX patterns from GEMM generalize to attention kernels. The focus is on architecture and algorithm design rather than line-by-line code.*
 
@@ -425,7 +425,7 @@ The complete Flash Attention 4 kernel (~1000 lines) is in `tirx_tutorial/flash_a
 
 Note: The kernel signature has 5 arguments `(Q, K, V, O, profiler_buffer)` — the extra `profiler_buffer` is used for optional profiling instrumentation and must always be provided.
 
-```python
+```{.python .input}
 import torch
 import numpy as np
 import tvm
@@ -445,7 +445,7 @@ is_causal = False
 kernel = get_flash_attention4_kernel(
     batch_size, seq_len, seq_len, num_qo_heads, num_kv_heads, head_dim, is_causal
 )
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")
 with target:
     lib = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
 
@@ -480,15 +480,17 @@ print("PASS")
 # Benchmark
 args = [tvm.runtime.from_dlpack(Q), tvm.runtime.from_dlpack(K),
         tvm.runtime.from_dlpack(V), tvm.runtime.from_dlpack(O), profiler_buf]
-for _ in range(10):
+ITERS = 10
+for _ in range(3):
     f(*args)
+torch.cuda.synchronize()
 start = torch.cuda.Event(enable_timing=True)
 end = torch.cuda.Event(enable_timing=True)
 start.record()
-for _ in range(100):
+for _ in range(ITERS):
     f(*args)
 end.record()
 torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
+ms = start.elapsed_time(end) / ITERS
 print(f"Performance: {ms:.3f} ms")
 ```

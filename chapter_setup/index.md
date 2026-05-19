@@ -26,28 +26,40 @@ pip install numpy
 
 ## Your First Kernel
 
-The best way to verify your setup is to compile and run a real TIRX kernel. This minimal kernel doubles every element of an array on the GPU:
+The best way to verify your setup is to compile and run a real TIRX kernel. This minimal kernel doubles every element of an array on the GPU.
+
+Before reading the code, three TIRX primitives that will appear in every kernel in the rest of the tutorial:
+
+- **`with Tx.kernel():`** opens the kernel-launch scope. Everything inside it runs on the GPU. Outside this block you are still on the host.
+- **`Tx.cta_id([num_blocks])`** declares the CTA (CUDA block) grid extent and returns a symbolic block index, exactly like `blockIdx.x` in raw CUDA. `[num_blocks]` becomes the grid size.
+- **`Tx.thread_id([num_threads_per_cta])`** declares the per-CTA thread extent and returns the symbolic thread index (like `threadIdx.x`). The CTA size is `num_threads_per_cta`.
+- **`with Tx.thread():`** opens a thread-level execution scope — every thread runs the body independently. Other scopes (`Tx.warp()`, `Tx.warpgroup()`, `Tx.cta()`) exist for cooperative tile primitives and are introduced in :numref:`chap_layouts`.
+
+With those in hand, the kernel maps a length-`n` array to a 1-D grid of CTAs, each with 256 threads, and has every thread double one element:
 
 ```{.python .input}
 import tvm
 from tvm.script import tirx as Tx
 import torch
 
-@Tx.prim_func(tirx=True)
+BLOCK = 256
+
+@Tx.prim_func
 def double_it(A_ptr: Tx.handle, B_ptr: Tx.handle):
     n = Tx.int32()
     A = Tx.match_buffer(A_ptr, [n], "float32")
     B = Tx.match_buffer(B_ptr, [n], "float32")
     with Tx.kernel():
-        bx = Tx.cta_id([148], parent="kernel")
-        tid = Tx.thread_id([256], parent="cta")
+        # Launch ceildiv(n, BLOCK) CTAs of BLOCK threads each.
+        bx = Tx.cta_id([(n + BLOCK - 1) // BLOCK])
+        tid = Tx.thread_id([BLOCK])
         with Tx.thread():
-            i = bx * 256 + tid
-            if i < n:
+            i = bx * BLOCK + tid
+            if i < n:                       # tail-guard for non-multiples of BLOCK
                 B[i] = A[i] * 2.0
 
 # Compile
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")  # defaults to sm_100a on Blackwell
 with target:
     lib = tvm.compile(tvm.IRModule({"main": double_it}), target=target, tir_pipeline="tirx")
 
@@ -65,6 +77,12 @@ print(f"Match:  {match}")
 assert match, "FAIL: output does not match a * 2"
 print("\nSetup verified! Your TIRX environment is working correctly.")
 ```
+
+A few observations:
+
+- The grid extent is a TIR expression — `(n + BLOCK - 1) // BLOCK` is computed at launch time from the runtime value of `n`, not baked into the binary. The same compiled kernel handles any `n`.
+- `Tx.int32()` (no argument) declares a *symbolic* runtime parameter, similar to a `tl::Tensor` shape parameter in TVM TensorIR.
+- `Tx.match_buffer` binds a `Tx.handle` (a raw pointer passed from the host) to a strided tensor view — there is no shape-checking at the C ABI; the host is responsible for passing the right `n`.
 
 If you see `Setup verified!`, you're ready to start the tutorial. If not:
 

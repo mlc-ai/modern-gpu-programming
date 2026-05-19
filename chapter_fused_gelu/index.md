@@ -16,7 +16,7 @@ This is an example of **operator fusion**: combining two operations (GELU activa
 
 ## What You Will Learn
 
-- Basic TIRX kernel structure: `@Tx.prim_func(tirx=True)`, `Tx.kernel()`, `Tx.cta_id()`, `Tx.thread_id()`
+- Basic TIRX kernel structure: `@Tx.prim_func`, `Tx.kernel()`, `Tx.cta_id()`, `Tx.thread_id()`
 
 - How to launch a 1D grid of threads where each thread computes one output element
 
@@ -63,8 +63,6 @@ import torch
 
 def ceildiv(a, b):
     return (a + b - 1) // b
-
-SM_COUNT = 148  # Number of SMs on NVIDIA B200 GPU
 ```
 
 ```{.python .input}
@@ -73,14 +71,14 @@ def fused_gelu_kernel(input_cat, out_dim, batch_size):
     NUM_THREADS = 256
     NUM_BLOCKS = ceildiv(total, NUM_THREADS)
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def fused_gelu_tanh_multiply(input_cat_ptr: Tx.handle, output_ptr: Tx.handle):
         input_buf = Tx.match_buffer(input_cat_ptr, [batch_size, out_dim * 2], "float16")
         output_buf = Tx.match_buffer(output_ptr, [batch_size, out_dim], "float16")
 
         with Tx.kernel():
-            bx = Tx.cta_id([NUM_BLOCKS], parent="kernel")
-            tid = Tx.thread_id([NUM_THREADS], parent="cta")
+            bx = Tx.cta_id([NUM_BLOCKS])
+            tid = Tx.thread_id([NUM_THREADS])
 
             with Tx.thread():
                 gid = bx * NUM_THREADS + tid
@@ -107,7 +105,7 @@ def fused_gelu_kernel(input_cat, out_dim, batch_size):
 out_dim = 4096
 batch_size = 64
 device = torch.device('cuda')  # gpu(0)
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")
 
 # Compile
 kernel = fused_gelu_kernel(None, out_dim, batch_size)

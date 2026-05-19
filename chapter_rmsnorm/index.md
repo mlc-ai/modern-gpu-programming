@@ -50,10 +50,10 @@ Computing RMS requires summing $x^2$ across the entire hidden dimension — a gl
 
 ### How threads are organized in this kernel
 
-Each CTA has `bdx * bdy` threads, arranged in a 2D layout via `Tx.thread_id([bdx, bdy], parent="cta")`:
+Each CTA has `bdx * bdy` threads, arranged in a 2D layout via `Tx.thread_id([bdx, bdy])`:
 
 ```python
-tx, ty = Tx.thread_id([bdx, bdy], parent="cta")
+tx, ty = Tx.thread_id([bdx, bdy])
 # tx: lane ID within the warp (0-31)
 # ty: warp index (0 to bdy-1)
 ```
@@ -156,7 +156,7 @@ def get_rmsnorm_kernel(hidden_size):
     bdx = 32                          # threads per warp (always 32)
     bdy = ceildiv(block_size, 32)     # number of warps per CTA
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def rmsnorm(input_ptr: Tx.handle, weight_ptr: Tx.handle, out_ptr: Tx.handle):
         batch_size = Tx.int32()       # determined at runtime from buffer shape
         input_global = Tx.match_buffer(input_ptr, [batch_size, hidden_size], "float16")
@@ -164,12 +164,12 @@ def get_rmsnorm_kernel(hidden_size):
         out_global = Tx.match_buffer(out_ptr, [batch_size, hidden_size], "float16")
 
         with Tx.kernel():
-            bx = Tx.cta_id([SM_COUNT], parent="kernel")
-            tx, ty = Tx.thread_id([bdx, bdy], parent="cta")  # tx=lane, ty=warp
+            bx = Tx.cta_id([SM_COUNT])
+            tx, ty = Tx.thread_id([bdx, bdy])  # tx=lane, ty=warp
             thread_id = Tx.meta_var(ty * bdx + tx)
 
             with Tx.cta():
-                pool = Tx.PoolAllocator()
+                pool = Tx.SMEMPool()
                 x_smem = pool.alloc([hidden_size], "float32")   # cache x for Pass 2
                 sum_sq_smem = pool.alloc([bdy], "float32")      # one partial sum per warp
                 pool.commit()
@@ -271,7 +271,7 @@ import torch
 hidden_size = 4096
 batch_size = 64
 device = torch.device('cuda')  # gpu(0)
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")
 
 # Compile
 kernel = get_rmsnorm_kernel(hidden_size)

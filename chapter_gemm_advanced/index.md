@@ -17,7 +17,7 @@ This is the biggest architectural change: instead of all threads doing load-then
 
 - High-level barrier abstractions: `TMABar`, `TCGen05Bar`, `MBarrier`
 
-- `PipelineState` for automatic stage/phase management
+- `RingState` for automatic stage/phase management
 
 - Software pipelining with multi-buffered SMEM
 
@@ -57,22 +57,21 @@ The three actors are synchronized by four barrier types. The forward path (TMA �
 
 Note the different barrier types: **TMA Loads** use `TMABar` (mbarrier with byte counting) — the TMA hardware automatically arrives on the barrier when the transfer completes, notifying consumers. **TMA Stores** use a completely different mechanism: `cp_async.bulk.commit_group()` + `wait_group(0)`. There is no mbarrier involved because stores don't need to notify other actors — the issuing thread just waits for completion. **MMA operations** use `TCGen05Bar` — the `tcgen05.commit()` instruction signals the barrier when MMA finishes.
 
-### PipelineState
+### RingState
 
-`PipelineState` manages stage indices and phase counters:
+`RingState` manages stage indices and phase counters for a software-pipelined ring buffer:
 
 ```python
-tma_ps = PipelineState("tma", PIPE_DEPTH)
-tma_ps.init(is_producer=True)   # Producer starts ready (phase=1)
+tma_ps = RingState(PIPE_DEPTH, phase=1)   # Producer starts ready (phase=1)
 # tma_ps.stage = current stage index
 # tma_ps.phase = current phase (0 or 1)
-tma_ps.move_to_next_stage()     # Advance to next stage
+tma_ps.advance()                          # Advance to next stage
 ```
 
-**`is_producer` controls the initial phase:**
-- `is_producer=True` -> phase starts at 1 -> first `wait(phase=1)` sees barrier phase 0 != 1, so it **passes immediately** (buffers start empty, producer can write)
+**The initial `phase` argument controls when the first `wait` passes:**
+- `phase=1` (producer) -> first `wait(phase=1)` sees barrier phase 0 != 1, so it **passes immediately** (buffers start empty, producer can write)
 
-- `is_producer=False` -> phase starts at 0 -> first `wait(phase=0)` sees barrier phase 0 == 0, so it **blocks** (consumer waits for data)
+- `phase=0` (consumer) -> first `wait(phase=0)` sees barrier phase 0 == 0, so it **blocks** (consumer waits for data)
 
 Getting this wrong causes deadlock or data corruption.
 
@@ -88,8 +87,8 @@ The complete Step 7 kernel. `PIPE_DEPTH=2` for clarity (production kernels use `
 import tvm
 from tvm.script import tirx as Tx
 from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
-from tvm.tirx.operator.scope_op_dispatch.cuda.tma_utils import tma_shared_layout, SwizzleMode
-from tvm.tirx.lang.pipeline import TMABar, TCGen05Bar, MBarrier, PipelineState
+from tvm.tirx.operator.tile_primitive.cuda.tma_utils import tma_shared_layout, SwizzleMode
+from tvm.tirx.lang.pipeline import TMABar, TCGen05Bar, MBarrier, RingState
 from tvm.tirx.lang.tile_scheduler import ClusterPersistentScheduler2D
 
 SM_COUNT = 148  # Number of SMs on NVIDIA B200 GPU
@@ -110,25 +109,25 @@ def hgemm_v7(M, N, K):
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_N))
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def kernel(
         A: Tx.Buffer((M, K), a_type),
         B: Tx.Buffer((N, K), b_type),
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            bx = Tx.cta_id([SM_COUNT], parent="kernel")
-            wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
-            warp_id = Tx.warp_id([4], parent="warpgroup")
-            lane_id = Tx.thread_id([32], parent="warp")
+            bx = Tx.cta_id([SM_COUNT])
+            wg_id = Tx.warpgroup_id([WG_NUMBER])
+            warp_id = Tx.warp_id_in_wg([4])
+            lane_id = Tx.lane_id([32])
 
             # --- Allocation ---
-            pool = Tx.PoolAllocator()
+            pool = Tx.SMEMPool()
             tmem_addr = pool.alloc((1,), "uint32")
-            tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")
-            mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")
-            mma2ld  = TCGen05Bar(pool, 1, "mma2ld")
-            ld2mma  = MBarrier(pool, 1, "ld2mma")
+            tma2mma = TMABar(pool, PIPE_DEPTH)
+            mma2tma = TCGen05Bar(pool, PIPE_DEPTH)
+            mma2ld  = TCGen05Bar(pool, 1)
+            ld2mma  = MBarrier(pool, 1)
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
@@ -167,8 +166,7 @@ def hgemm_v7(M, N, K):
             if wg_id == 1:
                 if warp_id == 3:
                     # === TMA Producer ===
-                    tma_ps = PipelineState("tma", PIPE_DEPTH)
-                    tma_ps.init(is_producer=True)
+                    tma_ps = RingState(PIPE_DEPTH, phase=1)
 
                     @Tx.inline
                     def tma_load(k_offset):
@@ -181,28 +179,26 @@ def hgemm_v7(M, N, K):
                                       dispatch="tma", cta_group=1,
                                       mbar=tma2mma.ptr_to([tma_ps.stage]))
 
-                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                         while tile_scheduler.valid():
                             for k in range(K_TILES):
                                 mma2tma.wait(tma_ps.stage, tma_ps.phase)
                                 tma_load(k * BLK_K)
                                 tma2mma.arrive(tma_ps.stage,
                                                (BLK_M * BLK_K + BLK_N * BLK_K) * F16_SIZE)
-                                tma_ps.move_to_next_stage()
+                                tma_ps.advance()
                             tile_scheduler.next_tile()
 
                 elif warp_id == 0:
                     # === MMA Consumer ===
-                    mma_ps = PipelineState("mma", PIPE_DEPTH)
-                    mma_ps.init(is_producer=False)
-                    ld_ps = PipelineState("ld", 1)
-                    ld_ps.init(is_producer=True)
+                    mma_ps = RingState(PIPE_DEPTH, phase=0)
+                    ld_ps = RingState(1, phase=1)
 
-                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                         while tile_scheduler.valid():
                             # Wait for TMEM to be free from previous tile's writeback
                             ld2mma.wait(ld_ps.stage, ld_ps.phase)
-                            ld_ps.move_to_next_stage()
+                            ld_ps.advance()
 
                             for k in range(K_TILES):
                                 tma2mma.wait(mma_ps.stage, mma_ps.phase)
@@ -212,7 +208,7 @@ def hgemm_v7(M, N, K):
                                     Bsmem[mma_ps.stage, :, :],
                                     accum=(k != 0), dispatch="tcgen05", cta_group=1)
                                 mma2tma.arrive(mma_ps.stage, cta_group=1, cta_mask=0)
-                                mma_ps.move_to_next_stage()
+                                mma_ps.advance()
 
                             # Signal results ready for writeback
                             mma2ld.arrive(0, cta_group=1, cta_mask=0)
@@ -222,21 +218,21 @@ def hgemm_v7(M, N, K):
             # Warpgroup 0: Writeback
             # =============================================
             elif wg_id == 0:
-                wb_ps = PipelineState("wb", 1)
-                wb_ps.init(is_producer=False)
+                wb_ps = RingState(1, phase=0)
                 reg_f16 = Tx.alloc_local((BLK_N,), d_type)
 
                 while tile_scheduler.valid():
                     # Wait for MMA results
                     mma2ld.wait(wb_ps.stage, wb_ps.phase)
-                    wb_ps.move_to_next_stage()
+                    wb_ps.advance()
 
                     # Read TMEM -> registers (warpgroup scope)
                     reg = Tx.alloc_local((BLK_N,), acc_type)
                     reg_wg = reg.view(128, BLK_N,
                         layout=TileLayout(S[(128, BLK_N) : (1@tid_in_wg, 1)]))
                     with Tx.warpgroup():
-                        Tx.copy(reg_wg[:], tmem[:, :BLK_N])
+                        Tx.copy_async(reg_wg[:], tmem[:, :BLK_N])
+                        Tx.ptx.tcgen05.wait.ld()
 
                     # Signal TMEM free (all 128 threads arrive)
                     ld2mma.arrive(0, cta_id=0, pred=True)
@@ -250,7 +246,7 @@ def hgemm_v7(M, N, K):
                         Tx.copy(Dsmem[warp_id * 32 + lane_id, :], reg_f16[:])
                         Tx.ptx.fence.proxy_async("shared::cta")
                         Tx.cuda.warpgroup_sync(10)
-                    with Tx.thread(parent="warpgroup")[Tx.ptx.elect_sync()]:
+                    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                         Tx.copy_async(D[m_st:m_st+BLK_M, n_st:n_st+BLK_N],
                                       Dsmem[:, :], dispatch="tma")
                         Tx.ptx.cp_async.bulk.commit_group()
@@ -275,12 +271,14 @@ import torch
 
 M, N, K = 4096, 4096, 4096
 kernel = hgemm_v7(M, N, K)
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")
 with target:
     mod = tvm.IRModule({"main": kernel})
     lib = tvm.compile(mod, target=target, tir_pipeline="tirx")
 
 device = torch.device('cuda')  # gpu(0)
+torch.cuda.empty_cache()
+torch.cuda.synchronize()
 A_tensor = torch.randn(M, K, dtype=torch.float16, device=device)
 B_tensor = torch.randn(N, K, dtype=torch.float16, device=device)
 D_tensor = torch.zeros(M, N, dtype=torch.float16, device=device)
@@ -295,16 +293,18 @@ assert max_err < 0.5, f"FAIL: max_err={max_err}"  # smoke test; fp16 4096x4096 t
 print("PASS")
 
 args = [tvm.runtime.from_dlpack(A_tensor), tvm.runtime.from_dlpack(B_tensor), tvm.runtime.from_dlpack(D_tensor)]
-for _ in range(10):
+ITERS = 10
+for _ in range(3):
     lib["main"](*args)
+torch.cuda.synchronize()
 start = torch.cuda.Event(enable_timing=True)
 end = torch.cuda.Event(enable_timing=True)
 start.record()
-for _ in range(100):
+for _ in range(ITERS):
     lib["main"](*args)
 end.record()
 torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
+ms = start.elapsed_time(end) / ITERS
 tflops = 2 * M * N * K / ms / 1e9
 print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
@@ -314,7 +314,7 @@ print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 Step 7 keeps the epilogue simple: the writeback warpgroup reads the full `BLK_N=128` columns of TMEM into registers in one pass, then issues a single TMA store per tile. The sequence is:
 
 1. Wait for MMA: `mma2ld.wait(phase)`. The `tirx-kernels` reference inserts `fence.after_thread_sync()` here as a conservative extra — the MMA-completion mbarrier already covers the ordering, and most kernels (including CUTLASS) omit it.
-2. Read TMEM -> registers (128 fp32 per thread, warpgroup scope via `Tx.copy(reg_wg, tmem[:, :BLK_N])`).
+2. Read TMEM -> registers (128 fp32 per thread, warpgroup scope via `Tx.copy_async(reg_wg, tmem[:, :BLK_N])` followed by `Tx.ptx.tcgen05.wait.ld()`).
 3. Signal MMA: `ld2mma.arrive()` (all 128 threads arrive) — TMEM is now free for the next tile.
 4. Cast fp32 -> fp16 in registers.
 5. Write registers -> Dsmem, then `fence.proxy_async("shared::cta") + warpgroup_sync(10)` to flush.
@@ -324,208 +324,17 @@ Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) revisit thi
 
 ### Key Points
 
-- **Persistent kernel**: `bx = Tx.cta_id([SM_COUNT], parent="kernel")` --- one CTA per SM, loops over tiles
+- **Persistent kernel**: `bx = Tx.cta_id([SM_COUNT])` --- one CTA per SM, loops over tiles
 
 - **L2-friendly scheduling**: `ClusterPersistentScheduler2D` orders tiles for cache locality
 
 - This pattern --- warp specialization + software pipeline --- is used in **ALL production GPU kernels** (CUTLASS, cuBLAS, etc.)
 
-### Debugging Guide
+### When Step 7 misbehaves
 
-This is the most bug-prone step. Warp specialization introduces concurrency between TMA, MMA, and writeback — if any barrier is misconfigured, the kernel deadlocks, crashes, or silently produces wrong results.
+Warp specialization is the most bug-prone step in the tutorial: TMA, MMA, and writeback now run concurrently, and any barrier mistake either deadlocks, crashes the CUDA context, or silently corrupts the output. The exact same failure modes resurface in Steps 8 and 9, so we collect the debugging playbook in one place — see :numref:`chap_warp_spec_debug` at the end of this chapter when something goes wrong.
 
-#### Inspecting Generated Code
-
-The first debugging tool is reading the generated CUDA source. After compiling any kernel:
-
-```python
-cuda_source = lib.mod.imports[0].inspect_source()
-print(cuda_source)
-```
-
-The generated code maps TIRX constructs to CUDA like this:
-
-| TIRX | Generated CUDA |
-|------|---------------|
-| `wg_id == 0` | `(warp_id_in_cta >> 2) == 0` |
-| `wg_id == 1` | `(warp_id_in_cta >> 2) == 1` |
-| `warp_id == 0` | `(warp_id_in_cta & 3) == 0` |
-| `warp_id == 3` | `(warp_id_in_cta & 3) == 3` |
-| `lane_id == 0` | `(((int)threadIdx.x) % 32) == 0` |
-| `.init()` internal guard | `((int)threadIdx.x) < 1` (CTA thread 0 only) |
-| `elect_sync()` | `tvm_builtin_elect_one_sync_op()` |
-
-#### Reference: Correct Step 7 Generated CUDA
-
-A correctly compiled Step 7 kernel produces CUDA code with this structure. Comparing your generated code against this reference is the fastest way to find bugs:
-
-```c
-// ---- Barrier inits: threadIdx.x < 1 guard (CTA thread 0 only) ----
-if (((int)threadIdx.x) < 1) {
-  tvm_builtin_ptx_mbarrier_init(&s_buf[4], 1);   // tma2mma slot 0
-  tvm_builtin_ptx_mbarrier_init(&s_buf[5], 1);   // tma2mma slot 1
-}
-if (((int)threadIdx.x) < 1) {
-  tvm_builtin_ptx_mbarrier_init(&s_buf[6], 1);   // mma2tma slot 0
-  tvm_builtin_ptx_mbarrier_init(&s_buf[7], 1);   // mma2tma slot 1
-}
-if (((int)threadIdx.x) < 1) {
-  tvm_builtin_ptx_mbarrier_init(&s_buf[8], 1);   // mma2ld
-}
-if (((int)threadIdx.x) < 1) {
-  tvm_builtin_ptx_mbarrier_init(&s_buf[9], 128); // ld2mma
-}
-
-// ---- TMEM alloc: WG0 warp0 (all 32 lanes, no lane guard) ----
-if ((warp_id_in_cta >> 2) == 0) {       // wg_id == 0
-  if ((warp_id_in_cta % 4) == 0) {      // warp_id == 0
-    tvm_builtin_ptx_tcgen05_alloc_cta_group_1(&s_buf[0], 512);
-  }
-}
-
-// ---- Fences + sync ----
-tvm_builtin_ptx_fence_proxy_async_shared_cta();
-tvm_builtin_ptx_fence_mbarrier_init();
-tvm_builtin_cuda_cta_sync();
-
-// ---- Pipeline phase init ----
-tma_phase_ptr[0] = 1;     // producer: starts at phase 1 (first wait passes)
-mma_phase_ptr[0] = 0;     // consumer: starts at phase 0 (first wait blocks)
-ld_phase_ptr[0] = 1;      // producer
-wb_phase_ptr[0] = 0;      // consumer
-
-// ---- WG1: TMA warp (warp 3) ----
-if ((warp_id_in_cta >> 2) == 1) {       // wg_id == 1
-  if ((warp_id_in_cta & 3) == 3) {      // warp_id == 3
-    if (tvm_builtin_elect_one_sync_op()) {
-      while (valid) {
-        for (int k = 0; k < 16; ++k) {  // K_TILES iterations
-          mbarrier_wait(mma2tma[stage], phase);   // wait for SMEM free
-          cp_async_bulk_tensor(Asmem[stage], ...); // TMA load A
-          cp_async_bulk_tensor(Bsmem[stage], ...); // TMA load B
-          mbarrier_arrive_expect_tx(tma2mma[stage], 32768); // signal MMA
-          stage = (stage + 1) % 2;
-          if (stage == 0) phase ^= 1;
-        }
-        next_tile();
-      }
-    }
-  } else {
-    // ---- WG1: MMA warp (warp 0) ----
-    if ((warp_id_in_cta % 4) == 0) {    // warp_id == 0
-      if (tvm_builtin_elect_one_sync_op()) {
-        while (valid) {
-          mbarrier_wait(ld2mma, ld_phase);         // wait for TMEM free
-          for (int k = 0; k < 16; ++k) {           // K_TILES iterations
-            mbarrier_wait(tma2mma[stage], phase);   // wait for data
-            tcgen05_mma(...);                       // MMA
-            tcgen05_commit(mma2tma[stage]);          // signal TMA
-            stage = (stage + 1) % 2;
-            if (stage == 0) phase ^= 1;
-          }
-          tcgen05_commit(mma2ld);                   // signal writeback
-          next_tile();
-        }
-      }
-    }
-  }
-} else {
-  // ---- WG0: Writeback ----
-  if ((warp_id_in_cta >> 2) == 0) {     // wg_id == 0
-    while (valid) {
-      mbarrier_wait(mma2ld, wb_phase);             // wait for MMA done
-      tcgen05_ld(...);                              // read TMEM -> registers
-      mbarrier_arrive_remote(ld2mma, 0, true);     // signal MMA: TMEM free
-      // ... cast, write to Dsmem, TMA store ...
-      next_tile();
-    }
-  }
-}
-
-// ---- Cleanup ----
-cta_sync();
-if ((warp_id_in_cta % 4) == 0) {       // warp_id == 0 (all 32 lanes)
-  tcgen05_relinquish_alloc_permit();
-  tcgen05_dealloc(s_buf[0], 512);
-}
-```
-
-Key things to verify in your generated code:
-- Barrier inits are at **top level** (not inside a `wg_id` guard)
-- `tcgen05_alloc` has a warp guard but **no lane guard** (all 32 lanes participate)
-- TMA and MMA both loop `K_TILES` times (same `k < 16`)
-- Phase init: producer=1, consumer=0
-
-#### Debugging Deadlocks
-
-**How to tell it's a deadlock**: The kernel hangs for ~30 seconds, then reports "unspecified launch failure." A crash (XID 43) fails instantly.
-
-**Step 1: Verify barrier arrival counts match init counts.**
-
-| Barrier | init(count) | Who arrives | Expected arrivals |
-|---------|-------------|-------------|-------------------|
-| tma2mma (TMABar) | init(1) | TMA warp via arrive(stage, bytes) | 1 |
-| mma2tma (TCGen05Bar) | init(1) | MMA warp via tcgen05.commit | 1 |
-| mma2ld (TCGen05Bar) | init(1) | MMA warp via tcgen05.commit | 1 |
-| ld2mma (MBarrier) | init(128) | All Warpgroup 0 threads via arrive | 128 |
-
-Common mistake: `ld2mma.init(128)` but `arrive` is guarded by `if warp_id == 0: if lane_id == 0:` — only 1 thread arrives, barrier never completes.
-
-**Step 2: Check barrier inits actually execute.** The `.init()` wrapper uses `threadIdx.x < 1` internally. If you nest it inside `if wg_id == 1:`, no thread satisfies both conditions — thread 0 is in Warpgroup 0. Search the generated code:
-
-```python
-# This should show mbarrier_init at TOP level, not inside a wg_id guard
-for i, line in enumerate(cuda_source.split("\n")):
-    if "mbarrier_init" in line:
-        # Print surrounding context to check nesting
-        for j in range(max(0,i-5), i+1):
-            print(f"  {cuda_source.split(chr(10))[j].rstrip()}")
-        print()
-```
-
-**Step 3: Check cta_sync is not inside a warpgroup branch.** `cta_sync()` = `__syncthreads()`, requires ALL CTA threads. If called inside `if wg_id == 0:`, WG1 threads never reach it — instant deadlock. Fix: use `Tx.cuda.warpgroup_sync(10)` instead.
-
-**Step 4: Check tile_scheduler.next_tile() is called by all threads.** `tile_scheduler` tracks per-thread state. If only one thread calls `next_tile()`, other threads loop forever.
-
-**Step 5: Check both TMA and MMA iterate the same number of K tiles.** If MMA does `K_TILES - 1` iterations instead of `K_TILES`, barrier phases drift and the second tile deadlocks.
-
-**Step 6: Check PipelineState is_producer settings.** Producer starts at phase 1 (first wait passes immediately). Consumer starts at phase 0 (first wait blocks until data arrives). If both start at the same phase, they deadlock on the first iteration.
-
-#### Debugging Crashes (XID 43 / Illegal Memory Access)
-
-These corrupt the CUDA context — even `torch.randn` fails afterward.
-
-**Common causes:**
-
-1. **pool.alloc after pool.commit()**: Barrier wrappers (`TMABar`, `TCGen05Bar`, `MBarrier`) call `pool.alloc()` internally. If created after `pool.commit()`, their SMEM addresses are invalid. Correct order:
-```
-tmem_addr → barrier wrappers → move_base_to(1024) → Asmem/Bsmem/Dsmem → commit()
-```
-
-2. **tcgen05.alloc/dealloc with lane guard**: These need all 32 lanes in the warp to participate. A `if lane_id == 0:` guard means only 1 thread executes — hardware requires all 32.
-
-3. **Missing cta_sync() before tcgen05.dealloc**: TMEM freed while writeback still reading.
-
-#### Debugging Wrong Results
-
-If you see specific mismatch counts like 128, 253, or 381 (multiples of 128 = corrupted rows), it's a synchronization bug, not an arithmetic error.
-
-**Common causes:**
-
-1. **Writeback-path ordering (`fence.after_thread_sync()` — optional, conservative)**: The `tirx-kernels` reference kernels insert `fence.after_thread_sync()` in the writeback path, after `mma2ld.wait(phase)` and immediately before the first `tcgen05.ld` into registers. Strictly speaking the MMA-completion mbarrier already carries release→acquire semantics against the downstream thread-proxy reads, so most production kernels (including CUTLASS) omit this fence entirely and still produce correct results. If you are mirroring the `tirx-kernels` style, keep the fence exactly there; do **not** add it on the TMA→MMA edge, where the mbarrier alone is sufficient. Stale TMEM data almost always has a different root cause — a missing `mma2ld.wait`, `tcgen05.commit` issued outside `elect_sync`, or the consumer running ahead of the MMA epoch.
-
-2. **Missing fence.proxy_async("shared::cta") before TMA store**: TMA engine doesn't see the SMEM writes from threads.
-
-3. **Missing cp_async.bulk.commit_group() / wait_group(0) after TMA store**: The store doesn't complete before SMEM is reused for the next tile.
-
-4. **tcgen05.commit outside elect_sync guard**: All 32 threads create commit groups, but only the elected thread has a non-empty one. The 31 empty commits signal the mbarrier immediately — TMA overwrites SMEM before MMA finishes reading it. Output is zeros or garbage.
-
-5. **Persistent kernel: intermittent failures at small sizes (e.g., 1024x1024)**: If mismatch counts are multiples of 128 (128, 253, 254, 381 = corrupted rows), this is NOT GPU flakiness — it's a race condition. Barrier phases or TMA store synchronization are broken in the persistent tile loop. Larger sizes pass because longer K-loops change timing and mask the race. Verify that barrier phases are correctly reset between tiles, and that TMA stores complete (`commit_group` + `wait_group`) before the next tile starts.
-
-
-
-
-**Pipeline depth tuning**: The demo above uses `PIPE_DEPTH=2` (the minimum). In production, increasing `PIPE_DEPTH` to 4 or 6 lets the TMA producer get further ahead of the MMA consumer, better hiding memory latency. B200 has 228 KB SMEM per SM (see :numref:`chap_background`, *Numbers to Remember*). With `BLK_M=BLK_N=128, BLK_K=64, fp16`, each pipeline stage uses `(128*64 + 128*64) * 2 = 32 KB` for A+B, and the `Dsmem` writeback staging buffer consumes `128*128*2 = 32 KB`. `PIPE_DEPTH=4` uses 128 KB for A+B, leaving ~68 KB for Dsmem and metadata. `PIPE_DEPTH=6` pushes total SMEM usage to ~224 KB (192 KB A+B + 32 KB Dsmem), fitting just inside the 228 KB budget. Going deeper (e.g., `PIPE_DEPTH=7` needing 256 KB) requires shrinking or eliminating the Dsmem buffer — for example, writing back to GMEM directly from registers instead of staging through SMEM+TMA store.
+**Pipeline depth tuning.** The kernel above uses `PIPE_DEPTH=2` (the minimum). In production, increasing it to 4 or 6 lets the TMA producer get further ahead of the MMA consumer, hiding more memory latency. B200 has 228 KB SMEM per SM (see :numref:`chap_background`, *Numbers to Remember*). With `BLK_M=BLK_N=128, BLK_K=64, fp16`, each pipeline stage uses `(128*64 + 128*64) * 2 = 32 KB` for A+B, and the `Dsmem` writeback staging buffer consumes another 32 KB. `PIPE_DEPTH=4` ⇒ 128 KB A+B + 32 KB Dsmem ≈ 160 KB used. `PIPE_DEPTH=6` ⇒ 192 KB + 32 KB = 224 KB, fitting just inside the SMEM budget. Going to `PIPE_DEPTH=7` (256 KB) requires dropping the Dsmem staging buffer — e.g. writing back to GMEM directly from registers.
 
 ---
 
@@ -580,7 +389,7 @@ The changes are surprisingly small --- TIRX abstracts away most of the complexit
 
 ```python
 # 1. Cluster launch
-cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")   # cbx = CTA index within cluster (0 or 1)
+cbx, cby = Tx.cta_id_in_cluster([CTA_GROUP, 1])   # cbx = CTA index within cluster (0 or 1)
 
 # 2. Cooperative MMA (was cta_group=1)
 Tx.gemm_async(..., cta_group=2)
@@ -634,26 +443,26 @@ def hgemm_v8(M, N, K):
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, 128))
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def kernel(
         A: Tx.Buffer((M, K), a_type),
         B: Tx.Buffer((N, K), b_type),
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            bx = Tx.cta_id([SM_COUNT], parent="kernel")
-            cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
-            wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
-            warp_id = Tx.warp_id([4], parent="warpgroup")
-            lane_id = Tx.thread_id([32], parent="warp")
+            bx = Tx.cta_id([SM_COUNT])
+            cbx, cby = Tx.cta_id_in_cluster([CTA_GROUP, 1])
+            wg_id = Tx.warpgroup_id([WG_NUMBER])
+            warp_id = Tx.warp_id_in_wg([4])
+            lane_id = Tx.lane_id([32])
 
             # --- Allocation ---
-            pool = Tx.PoolAllocator()
+            pool = Tx.SMEMPool()
             tmem_addr = pool.alloc((1,), "uint32")
-            tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")
-            mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")
-            mma2ld  = TCGen05Bar(pool, 1, "mma2ld")
-            ld2mma  = MBarrier(pool, 1, "ld2mma")
+            tma2mma = TMABar(pool, PIPE_DEPTH)
+            mma2tma = TCGen05Bar(pool, PIPE_DEPTH)
+            mma2ld  = TCGen05Bar(pool, 1)
+            ld2mma  = MBarrier(pool, 1)
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
@@ -696,8 +505,7 @@ def hgemm_v8(M, N, K):
             # =============================================
             if wg_id == 1:
                 if warp_id == 3:
-                    tma_ps = PipelineState("tma", PIPE_DEPTH)
-                    tma_ps.init(is_producer=True)
+                    tma_ps = RingState(PIPE_DEPTH, phase=1)
 
                     @Tx.inline
                     def tma_load(k_offset):
@@ -710,7 +518,7 @@ def hgemm_v8(M, N, K):
                                       dispatch="tma", cta_group=CTA_GROUP,
                                       mbar=tma2mma_cta0.ptr_to([tma_ps.stage]))
 
-                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                         while tile_scheduler.valid():
                             for k in range(K_TILES):
                                 mma2tma.wait(tma_ps.stage, tma_ps.phase)
@@ -718,20 +526,18 @@ def hgemm_v8(M, N, K):
                                 if cbx == 0:
                                     tma2mma_cta0.arrive(tma_ps.stage,
                                         CTA_GROUP * (BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE)
-                                tma_ps.move_to_next_stage()
+                                tma_ps.advance()
                             tile_scheduler.next_tile()
 
                 elif warp_id == 0:
-                    mma_ps = PipelineState("mma", PIPE_DEPTH)
-                    mma_ps.init(is_producer=False)
-                    ld_ps = PipelineState("ld", 1)
-                    ld_ps.init(is_producer=True)
+                    mma_ps = RingState(PIPE_DEPTH, phase=0)
+                    ld_ps = RingState(1, phase=1)
 
                     if cbx == 0:
-                        with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                        with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                             while tile_scheduler.valid():
                                 ld2mma.wait(ld_ps.stage, ld_ps.phase)
-                                ld_ps.move_to_next_stage()
+                                ld_ps.advance()
 
                                 for k in range(K_TILES):
                                     tma2mma.wait(mma_ps.stage, mma_ps.phase)
@@ -741,7 +547,7 @@ def hgemm_v8(M, N, K):
                                         Bsmem[mma_ps.stage, :, :],
                                         accum=(k != 0), dispatch="tcgen05", cta_group=CTA_GROUP)
                                     mma2tma.arrive(mma_ps.stage, cta_group=CTA_GROUP, cta_mask=3)
-                                    mma_ps.move_to_next_stage()
+                                    mma_ps.advance()
 
                                 mma2ld.arrive(0, cta_group=CTA_GROUP, cta_mask=3)
                                 tile_scheduler.next_tile()
@@ -750,13 +556,12 @@ def hgemm_v8(M, N, K):
             # Warpgroup 0: Writeback (256 columns in 2 x 128-column chunks)
             # =============================================
             elif wg_id == 0:
-                wb_ps = PipelineState("wb", 1)
-                wb_ps.init(is_producer=False)
+                wb_ps = RingState(1, phase=0)
                 reg_f16 = Tx.alloc_local((128,), d_type)
 
                 while tile_scheduler.valid():
                     mma2ld.wait(wb_ps.stage, wb_ps.phase)
-                    wb_ps.move_to_next_stage()
+                    wb_ps.advance()
                     Tx.ptx.tcgen05.fence.after_thread_sync()
 
                     for no in Tx.unroll(2):  # 2 chunks of 128 columns = 256 total
@@ -764,14 +569,15 @@ def hgemm_v8(M, N, K):
                         reg_wg = reg.view(128, 128,
                             layout=TileLayout(S[(128, 128) : (1@tid_in_wg, 1)]))
                         with Tx.warpgroup():
-                            Tx.copy(reg_wg[:], tmem[:, no * 128:(no + 1) * 128])
+                            Tx.copy_async(reg_wg[:], tmem[:, no * 128:(no + 1) * 128])
+                            Tx.ptx.tcgen05.wait.ld()
                         with Tx.thread():
                             Tx.cast(reg_f16[:], reg[:])
                         with Tx.thread():
                             Tx.copy(Dsmem[warp_id * 32 + lane_id, :], reg_f16[:])
                             Tx.ptx.fence.proxy_async("shared::cta")
                             Tx.cuda.warpgroup_sync(10)
-                        with Tx.thread(parent="warpgroup")[Tx.ptx.elect_sync()]:
+                        with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                             n_st_epi = Tx.meta_var(n_idx * 256 + no * 128)
                             Tx.copy_async(D[m_st:m_st+BLK_M, n_st_epi:n_st_epi+128],
                                           Dsmem[:, :], dispatch="tma")
@@ -796,11 +602,13 @@ Compile and run:
 ```{.python .input}
 M, N, K = 4096, 4096, 4096
 kernel = hgemm_v8(M, N, K)
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")
 with target:
     mod = tvm.IRModule({"main": kernel})
     lib = tvm.compile(mod, target=target, tir_pipeline="tirx")
 
+torch.cuda.empty_cache()
+torch.cuda.synchronize()
 A_tensor = torch.randn(M, K, dtype=torch.float16, device=device)
 B_tensor = torch.randn(N, K, dtype=torch.float16, device=device)
 D_tensor = torch.zeros(M, N, dtype=torch.float16, device=device)
@@ -815,16 +623,18 @@ assert max_err < 0.5, f"FAIL: max_err={max_err}"  # smoke test; fp16 4096x4096 t
 print("PASS")
 
 args = [tvm.runtime.from_dlpack(A_tensor), tvm.runtime.from_dlpack(B_tensor), tvm.runtime.from_dlpack(D_tensor)]
-for _ in range(10):
+ITERS = 10
+for _ in range(3):
     lib["main"](*args)
+torch.cuda.synchronize()
 start = torch.cuda.Event(enable_timing=True)
 end = torch.cuda.Event(enable_timing=True)
 start.record()
-for _ in range(100):
+for _ in range(ITERS):
     lib["main"](*args)
 end.record()
 torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
+ms = start.elapsed_time(end) / ITERS
 tflops = 2 * M * N * K / ms / 1e9
 print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
@@ -923,26 +733,26 @@ def hgemm_v9(M, N, K):
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM,
                                  (NUM_CONSUMER, BLK_M, EPI_N))
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def kernel(
         A: Tx.Buffer((M, K), a_type),
         B: Tx.Buffer((N, K), b_type),
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            bx = Tx.cta_id([SM_COUNT], parent="kernel")
-            cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
-            wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
-            warp_id = Tx.warp_id([4], parent="warpgroup")
-            lane_id = Tx.thread_id([32], parent="warp")
+            bx = Tx.cta_id([SM_COUNT])
+            cbx, cby = Tx.cta_id_in_cluster([CTA_GROUP, 1])
+            wg_id = Tx.warpgroup_id([WG_NUMBER])
+            warp_id = Tx.warp_id_in_wg([4])
+            lane_id = Tx.lane_id([32])
 
             # --- Allocation ---
-            pool = Tx.PoolAllocator()
+            pool = Tx.SMEMPool()
             tmem_addr = pool.alloc((1,), "uint32")
-            tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")
-            mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")
-            mma2ld  = TCGen05Bar(pool, NUM_CONSUMER, "mma2ld")   # depth=2, one slot per consumer
-            ld2mma  = MBarrier(pool, NUM_CONSUMER, "ld2mma")     # depth=2, one slot per consumer
+            tma2mma = TMABar(pool, PIPE_DEPTH)
+            mma2tma = TCGen05Bar(pool, PIPE_DEPTH)
+            mma2ld  = TCGen05Bar(pool, NUM_CONSUMER)   # depth=2, one slot per consumer
+            ld2mma  = MBarrier(pool, NUM_CONSUMER)     # depth=2, one slot per consumer
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
@@ -985,8 +795,7 @@ def hgemm_v9(M, N, K):
             if wg_id == 2:
                 if warp_id == 3:
                     # === TMA Producer: loads 2 A blocks + 1 B block per stage ===
-                    tma_ps = PipelineState("tma", PIPE_DEPTH)
-                    tma_ps.init(is_producer=True)
+                    tma_ps = RingState(PIPE_DEPTH, phase=1)
 
                     @Tx.inline
                     def tma_load(k_offset):
@@ -1004,7 +813,7 @@ def hgemm_v9(M, N, K):
                                       dispatch="tma", cta_group=CTA_GROUP,
                                       mbar=tma2mma_cta0.ptr_to([tma_ps.stage]))
 
-                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                         while tile_scheduler.valid():
                             for k in range(K_TILES):
                                 mma2tma.wait(tma_ps.stage, tma_ps.phase)
@@ -1012,21 +821,19 @@ def hgemm_v9(M, N, K):
                                 if cbx == 0:
                                     tma2mma_cta0.arrive(tma_ps.stage,
                                         CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE)
-                                tma_ps.move_to_next_stage()
+                                tma_ps.advance()
                             tile_scheduler.next_tile()
 
                 elif warp_id < NUM_CONSUMER:
                     # === MMA Consumer: warp_id selects A block and TMEM range ===
-                    mma_ps = PipelineState("mma", PIPE_DEPTH)
-                    mma_ps.init(is_producer=False)
-                    ld_ps = PipelineState("ld", 1)
-                    ld_ps.init(is_producer=True)
+                    mma_ps = RingState(PIPE_DEPTH, phase=0)
+                    ld_ps = RingState(1, phase=1)
 
                     if cbx == 0:
-                        with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                        with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                             while tile_scheduler.valid():
                                 ld2mma.wait(warp_id, ld_ps.phase)
-                                ld_ps.move_to_next_stage()
+                                ld_ps.advance()
 
                                 for k in range(K_TILES):
                                     tma2mma.wait(mma_ps.stage, mma_ps.phase)
@@ -1036,7 +843,7 @@ def hgemm_v9(M, N, K):
                                         Bsmem[mma_ps.stage, :, :],
                                         accum=(k != 0), dispatch="tcgen05", cta_group=CTA_GROUP)
                                     mma2tma.arrive(mma_ps.stage, cta_group=CTA_GROUP, cta_mask=3)
-                                    mma_ps.move_to_next_stage()
+                                    mma_ps.advance()
 
                                 mma2ld.arrive(warp_id, cta_group=CTA_GROUP, cta_mask=3)
                                 tile_scheduler.next_tile()
@@ -1045,13 +852,12 @@ def hgemm_v9(M, N, K):
             # Warpgroup 0/1: Writeback (each reads its consumer's TMEM range)
             # =============================================
             elif wg_id < NUM_CONSUMER:
-                wb_ps = PipelineState("wb", 1)
-                wb_ps.init(is_producer=False)
+                wb_ps = RingState(1, phase=0)
                 reg_f16 = Tx.alloc_local((EPI_N,), d_type)
 
                 while tile_scheduler.valid():
                     mma2ld.wait(wg_id, wb_ps.phase)  # wait for THIS consumer
-                    wb_ps.move_to_next_stage()
+                    wb_ps.advance()
                     Tx.ptx.tcgen05.fence.after_thread_sync()
 
                     # Read TMEM in EPI_N=64 column chunks (4 iterations for 256 cols)
@@ -1062,14 +868,15 @@ def hgemm_v9(M, N, K):
                         with Tx.warpgroup():
                             col_st = Tx.meta_var(wg_id * MMA_N + i * EPI_N)
                             col_end = Tx.meta_var(wg_id * MMA_N + i * EPI_N + EPI_N)
-                            Tx.copy(reg_wg[:], tmem[:, col_st:col_end])
+                            Tx.copy_async(reg_wg[:], tmem[:, col_st:col_end])
+                            Tx.ptx.tcgen05.wait.ld()
                         with Tx.thread():
                             Tx.cast(reg_f16[:], reg[:])
                         with Tx.thread():
                             Tx.copy(Dsmem[wg_id, warp_id * 32 + lane_id, :], reg_f16[:])
                             Tx.ptx.fence.proxy_async("shared::cta")
                             Tx.cuda.warpgroup_sync(wg_id + 10)
-                        with Tx.thread(parent="warpgroup")[Tx.ptx.elect_sync()]:
+                        with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
                             m_st_epi = Tx.meta_var(
                                 (m_idx * NUM_CONSUMER * CTA_GROUP + wg_id * CTA_GROUP + cbx) * BLK_M)
                             n_st_epi = Tx.meta_var(n_idx * MMA_N + i * EPI_N)
@@ -1097,11 +904,13 @@ Compile and run:
 ```{.python .input}
 M, N, K = 4096, 4096, 4096
 kernel = hgemm_v9(M, N, K)
-target = tvm.target.Target("cuda -arch=sm_100a")
+target = tvm.target.Target("cuda")
 with target:
     mod = tvm.IRModule({"main": kernel})
     lib = tvm.compile(mod, target=target, tir_pipeline="tirx")
 
+torch.cuda.empty_cache()
+torch.cuda.synchronize()
 A_tensor = torch.randn(M, K, dtype=torch.float16, device=device)
 B_tensor = torch.randn(N, K, dtype=torch.float16, device=device)
 D_tensor = torch.zeros(M, N, dtype=torch.float16, device=device)
@@ -1116,16 +925,18 @@ assert max_err < 0.5, f"FAIL: max_err={max_err}"  # smoke test; fp16 4096x4096 t
 print("PASS")
 
 args = [tvm.runtime.from_dlpack(A_tensor), tvm.runtime.from_dlpack(B_tensor), tvm.runtime.from_dlpack(D_tensor)]
-for _ in range(10):
+ITERS = 10
+for _ in range(3):
     lib["main"](*args)
+torch.cuda.synchronize()
 start = torch.cuda.Event(enable_timing=True)
 end = torch.cuda.Event(enable_timing=True)
 start.record()
-for _ in range(100):
+for _ in range(ITERS):
     lib["main"](*args)
 end.record()
 torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
+ms = start.elapsed_time(end) / ITERS
 tflops = 2 * M * N * K / ms / 1e9
 print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
@@ -1137,47 +948,122 @@ print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 - This is the structure of production-grade Blackwell GEMM kernels
 
 
-## Exercises
+## Debugging Warp-Specialized Kernels
+:label:`chap_warp_spec_debug`
 
-1. What happens if you set `is_producer=False` for both the TMA and MMA pipeline states in Step 7? Draw the deadlock scenario.
-2. With `cta_group=2` in Step 8, the TMA arrive byte count is `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`. Why multiply by `CTA_GROUP` when each CTA loads its own data?
-3. In Step 9, each consumer handles different M rows but the same B tile. Why is sharing B (not A) the right choice?
+Steps 7, 8 and 9 all share the same set of failure modes: TMA, MMA, and writeback run concurrently and any barrier mistake either deadlocks, crashes the CUDA context, or silently corrupts the output. This section is the consolidated playbook — bookmark it; you will come back here.
 
+### Inspecting Generated Code
 
-**Benchmarking:**
+The first debugging tool is reading the generated CUDA source. After compiling any kernel:
 
 ```python
-M, N, K = 4096, 4096, 4096
-kernel = hgemm_v9(M, N, K)
-target = tvm.target.Target("cuda -arch=sm_100a")
-with target:
-    lib = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
-
-# Time the kernel
-device = torch.device('cuda')  # gpu(0)
-A = torch.randn(M, K, dtype=torch.float16, device=device)
-B = torch.randn(N, K, dtype=torch.float16, device=device)
-D = torch.zeros(M, N, dtype=torch.float16, device=device)
-f = lib["main"]
-args = [tvm.runtime.from_dlpack(A), tvm.runtime.from_dlpack(B), tvm.runtime.from_dlpack(D)]
-for _ in range(10):
-    f(*args)
-start = torch.cuda.Event(enable_timing=True)
-end = torch.cuda.Event(enable_timing=True)
-start.record()
-for _ in range(100):
-    f(*args)
-end.record()
-torch.cuda.synchronize()
-ms = start.elapsed_time(end) / 100
-tflops = 2 * M * N * K / ms / 1e9
-print(f"{ms:.3f} ms, {tflops:.1f} TFLOPS")
+cuda_source = lib.mod.imports[0].inspect_source()
+print(cuda_source)
 ```
 
+The generated code maps TIRX constructs to CUDA like this:
 
-### The Complete Journey
+| TIRX | Generated CUDA |
+|------|---------------|
+| `wg_id == 0` | `(warp_id_in_cta >> 2) == 0` |
+| `wg_id == 1` | `(warp_id_in_cta >> 2) == 1` |
+| `warp_id == 0` | `(warp_id_in_cta & 3) == 0` |
+| `warp_id == 3` | `(warp_id_in_cta & 3) == 3` |
+| `lane_id == 0` | `(((int)threadIdx.x) % 32) == 0` |
+| `.init()` internal guard | `((int)threadIdx.x) < 1` (CTA thread 0 only) |
+| `elect_sync()` | `tvm_builtin_elect_one_sync_op()` |
 
-Benchmarked on NVIDIA B200, M=N=K=4096, fp16:
+### Reference: Generated CUDA Skeleton
+
+A correctly compiled Step 7 kernel has the following top-level skeleton. When debugging, run `inspect_source()` and check that your output matches this structure:
+
+```c
+// (1) Barrier inits  — top level, CTA thread 0 only
+if (threadIdx.x < 1) {
+  mbarrier_init(tma2mma[0..1], 1);
+  mbarrier_init(mma2tma[0..1], 1);
+  mbarrier_init(mma2ld, 1);
+  mbarrier_init(ld2mma, 128);   // arrived by all 128 WG0 threads
+}
+
+// (2) TMEM alloc  — WG0 warp 0, all 32 lanes (no lane guard)
+if (wg_id == 0 && warp_id == 0) tcgen05_alloc(..., 512);
+
+// (3) Fences + cta_sync, then phase init: producer=1, consumer=0
+
+// (4) Warp-specialized loop
+if (wg_id == 1 && warp_id == 3 && elect_sync) { /* TMA  */ while(valid){ ... next_tile(); } }
+if (wg_id == 1 && warp_id == 0 && elect_sync) { /* MMA  */ while(valid){ ... next_tile(); } }
+if (wg_id == 0)                                { /* WB   */ while(valid){ ... next_tile(); } }
+
+// (5) Cleanup  — warp 0, no lane guard
+cta_sync();
+if (warp_id == 0) { tcgen05_relinquish_alloc_permit(); tcgen05_dealloc(..., 512); }
+```
+
+Things to verify in your generated code:
+
+- Barrier inits sit at **top level** (not inside a `wg_id` guard) — see *Debugging Deadlocks* below.
+- `tcgen05_alloc`/`dealloc` have a **warp guard but no lane guard** — all 32 lanes participate.
+- TMA and MMA loops both iterate `K_TILES` times.
+- Phase init: producer=`1`, consumer=`0`.
+
+### Symptom → Likely Cause
+
+First diagnose by the *shape* of the failure:
+
+| Symptom | Failure class | Section below |
+|---|---|---|
+| Kernel hangs ~30 s, then "unspecified launch failure" | Deadlock | *Deadlocks* |
+| Crash within ms; subsequent `torch.randn` also fails | XID 43 / illegal memory access | *Crashes* |
+| Output max-err in multiples of 128 (128 / 253 / 381 rows) | Sync race | *Wrong results* |
+| Output `NaN` everywhere | MMA descriptor / TMA descriptor mismatch | *Wrong results* |
+
+### Deadlocks
+
+Most deadlocks are *one* of these — work through the list:
+
+- **Arrival count ≠ init count.** Common case: `MBarrier.init(128)` but `arrive` is guarded by `if warp_id == 0: if lane_id == 0:` — only 1 thread arrives, the wait never returns. Reference:
+
+  | Barrier | init(count) | Who arrives | Arrivals |
+  |---|---|---|---|
+  | `TMABar` (tma→mma) | 1 | TMA engine via `arrive(stage, bytes)` | 1 |
+  | `TCGen05Bar` (mma→tma, mma→ld) | 1 | MMA warp via `tcgen05.commit` | 1 |
+  | `MBarrier` (ld→mma) | 128 | All WG0 threads via `arrive` | 128 |
+
+- **Barrier init nested inside a `wg_id` guard.** `.init()` lowers to `if threadIdx.x < 1:` (i.e., thread 0 of the CTA, which lives in WG0). Nest it inside `if wg_id == 1:` and **no** thread satisfies both — barrier stays uninitialized. Inits must be at top level; `grep mbarrier_init` in `inspect_source()` to verify.
+
+- **`cta_sync()` inside a warpgroup branch.** `cta_sync` is `__syncthreads()` — requires *all* CTA threads. Inside `if wg_id == 0:`, WG1 never reaches it. Use `Tx.cuda.warpgroup_sync(10)` instead.
+
+- **`tile_scheduler.next_tile()` not called by all threads in the consumer warpgroup.** The scheduler tracks per-thread state; threads that skip it loop forever.
+
+- **TMA and MMA disagree on K-tile count.** If MMA does `K_TILES - 1` instead of `K_TILES`, barrier phases drift and the second outer tile deadlocks.
+
+- **`RingState` initial phase wrong.** Producer must start at `phase=1` (first wait passes); consumer at `phase=0` (first wait blocks). Same starting phase ⇒ instant deadlock.
+
+### Crashes (XID 43 / illegal memory access)
+
+These corrupt the CUDA context — subsequent `torch.randn` will also fail.
+
+- **`pool.alloc` after `pool.commit()`.** Barrier wrappers call `alloc` internally. Correct order: `tmem_addr → barrier wrappers → move_base_to(1024) → Asmem / Bsmem / Dsmem → commit()`.
+- **`tcgen05.alloc` / `dealloc` with a lane guard.** They require all 32 lanes of the warp to participate; `if lane_id == 0:` runs one thread and the hardware traps.
+- **Missing `cta_sync()` before `tcgen05.dealloc`** — TMEM is freed while writeback is still reading.
+
+### Wrong results
+
+If you see mismatch counts that are exact multiples of 128 (128 / 253 / 381 rows), it's a sync race, not an arithmetic error.
+
+- **`tcgen05.commit` outside `elect_sync`** — all 32 threads create commit groups; the 31 empty ones signal the mbarrier immediately. TMA overwrites SMEM before MMA reads it. Output is zeros or garbage.
+- **Missing `fence.proxy_async("shared::cta")` before TMA store** — TMA engine doesn't see SMEM writes from threads.
+- **Missing `cp_async.bulk.commit_group()` + `wait_group(0)` after TMA store** — next tile reuses Dsmem before the store drains.
+- **Persistent kernel, intermittent fails at small sizes (e.g., 1024×1024)** — not GPU flakiness. Larger sizes mask the race with longer K-loops. Re-check phase reset between tiles and the TMA-store commit/wait.
+- **`fence.after_thread_sync()` is *almost never* the cause.** The MMA-completion mbarrier already carries release→acquire semantics, so most production kernels (including CUTLASS) omit it. The `tirx-kernels` reference kernels add it as a conservative measure on the writeback edge (after `mma2ld.wait`, before the first `tcgen05.ld`). Do **not** add it on the TMA→MMA edge. If your output is wrong, the cause is almost certainly one of the bullets above.
+
+
+## The Complete Journey
+
+Reference numbers on NVIDIA B200, M=N=K=4096, fp16, locked clocks, 1000-iteration timed benchmark:
 
 | Step | Technique | Time | Speedup |
 |------|-----------|------|---------|
@@ -1192,12 +1078,22 @@ Benchmarked on NVIDIA B200, M=N=K=4096, fp16:
 | 9 | Multi-consumer | 0.12 ms | 582x |
 | --- | cuBLAS (reference) | 0.11 ms | 614x |
 
+The `{.python .input}` benchmark cells embedded in each step above ran a short 10-iteration timed loop without clock locking, so the numbers you saw printed are typically 2-5× slower than the table on a casual GPU — same ordering, same trends, just not peak.
+
 The 4 key optimization techniques that deliver the biggest gains:
-1. **TMA Async Data Movement** --- hardware copy engine replaces software copy (141x speedup)
-2. **Software Pipelining + Warp Specialization** --- overlap load and compute with dedicated roles (2x over TMA alone)
-3. **CTA Clusters** --- 2-SM cooperative MMA doubles arithmetic intensity (2x speedup)
-4. **Multi-Consumer** --- 2 MMA warps for higher compute density (additional ~10% over Step 8)
+
+1. **TMA Async Data Movement** — hardware copy engine replaces software copy (141× from Step 1 → Step 4).
+2. **Software Pipelining + Warp Specialization** — overlap load and compute with dedicated roles (~2× from Step 4 → Step 7).
+3. **CTA Clusters** — 2-SM cooperative MMA doubles arithmetic intensity (~2× from Step 7 → Step 8).
+4. **Multi-Consumer** — two MMA warps for higher compute density (~10% from Step 8 → Step 9).
 
 ![GEMM Optimization Journey](../img/gemm_perf.png)
 
-582x speedup: from 70 ms to 0.12 ms --- within 10% of cuBLAS!
+582× total speedup: from 70 ms to 0.12 ms — within 10% of cuBLAS.
+
+
+## Exercises
+
+1. What happens if you set the initial `phase` to `0` for both the TMA and MMA `RingState` in Step 7? Draw the deadlock scenario.
+2. With `cta_group=2` in Step 8, the TMA arrive byte count is `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`. Why multiply by `CTA_GROUP` when each CTA loads its own data?
+3. In Step 9, each consumer handles different M rows but the same B tile. Why is sharing B (not A) the right choice?

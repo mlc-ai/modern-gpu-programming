@@ -8,17 +8,24 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 
 | API | Description |
 |-----|-------------|
-| `Tx.prim_func(tirx=True)` | Declare a TIRX primitive function |
+| `@Tx.prim_func` | Declare a TIRX primitive function |
 | `Tx.kernel()` | Kernel execution scope |
+| `Tx.cluster()` | Cluster execution scope (clustered launches only) |
 | `with Tx.cta():` | Scope: all threads in the CTA execute this block |
 | `with Tx.warpgroup():` | Scope: all 128 threads in the warpgroup execute this block |
 | `with Tx.warp():` | Scope: all 32 threads in the warp execute this block |
 | `with Tx.thread():` | Scope: each thread executes independently |
-| `with Tx.thread(parent="warp")[cond]:` | Scope: only threads where `cond` is true execute |
-| `Tx.cta_id(shape, parent=...)` | CTA index in grid or cluster |
-| `Tx.warpgroup_id(shape, parent=...)` | Warpgroup index within CTA |
-| `Tx.warp_id(shape, parent=...)` | Warp index within warpgroup |
-| `Tx.thread_id(shape, parent=...)` | Thread index within the scope specified by `parent` (e.g., `parent="warp"` gives lane ID 0-31; `parent="cta"` gives CTA-level thread ID 0-127) |
+| `with Tx.thread(cond):` | Scope: only threads where `cond` is true execute |
+| `Tx.filter(var, lo, hi)` / `Tx.filter(var, cond)` | Active-thread filter — narrow the current scope to `var ∈ [lo, hi)` or `cond` true. Use as the scope argument: `with Tx.warp(Tx.filter(warp_id, 0, 1)):` |
+| `Tx.cta_id([Gx, Gy, ...])` | CTA index in the grid (kernel → cta) |
+| `Tx.cta_id_in_cluster([Cx, Cy])` | CTA index within the cluster (cluster → cta) |
+| `Tx.warpgroup_id([Nw])` | Warpgroup index within the CTA (cta → warpgroup) |
+| `Tx.warp_id([Nw])` | Warp index within the CTA (cta → warp) |
+| `Tx.warp_id_in_wg([4])` | Warp index within the warpgroup (warpgroup → warp; always 4) |
+| `Tx.thread_id([Nt])` | Thread index within the CTA (cta → thread) |
+| `Tx.thread_id_in_wg([128])` | Thread index within the warpgroup (warpgroup → thread; always 128) |
+| `Tx.lane_id([32])` | Thread index within a warp (warp → thread; always 32) |
+| `Tx.cuda.thread_rank()` | Linear thread index within the CTA (i.e., `threadIdx.x + threadIdx.y * blockDim.x + ...`). Used as the default `leader` predicate for one-thread-per-CTA work such as `MBarrier.init`. |
 | `Tx.ptx.elect_sync()` | Elect one thread in a warp (for single-thread dispatch) |
 
 
@@ -36,10 +43,11 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 
 | API | Description |
 |-----|-------------|
-| `Tx.PoolAllocator()` | Shared memory pool allocator |
+| `Tx.SMEMPool()` | Shared memory pool allocator |
 | `pool.alloc(shape, dtype, layout=...)` | Allocate buffer from pool |
 | `pool.move_base_to(offset)` | Set next allocation offset (for overlapping buffers) |
 | `pool.commit()` | Finalize all allocations |
+| `Tx.TMEMPool(smem_pool, total_cols, cta_group, tmem_addr)` | TMEM pool. Wraps one `tcgen05.alloc` of `total_cols` columns whose returned base address is written to `tmem_addr[0]`; subsequent `alloc(shape, dtype, layout=...)` calls hand out `Tx.decl_buffer(scope="tmem", allocated_addr=...)` slices into that region. |
 | `Tx.alloc_local(shape, dtype)` | Allocate per-thread register buffer |
 | `buf.view(shape, layout=...)` | Create a view of a register buffer with a different layout |
 | `Tx.decl_buffer(shape, dtype, scope="tmem", ...)` | Declare a TMEM buffer |
@@ -55,10 +63,20 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 
 | API | Description |
 |-----|-------------|
-| `Tx.copy(dst, src)` | Synchronous copy |
+| `Tx.copy(dst, src)` | Synchronous copy (LDG / STG / LDS / STS variants) |
 | `Tx.copy_async(dst, src, dispatch="tma", ...)` | TMA async copy (load or store) |
+| `Tx.copy_async(reg, tmem)` / `Tx.copy_async(tmem, reg)` | `tcgen05.ld` / `tcgen05.st` (warpgroup scope); follow with `Tx.ptx.tcgen05.wait.ld()` / `wait.st()` |
 | `Tx.cast(dst, src)` | Element-wise type cast |
 | `Tx.gemm_async(C, A, B, *, transA=False, transB=False, accum=False, dispatch="tcgen05", **kwargs)` | tcgen05 MMA. `accum` is keyword-only (default `False`); backend-specific options such as `cta_group=` flow through `**kwargs` into the op config. |
+
+
+## Math
+
+| API | Description |
+|-----|-------------|
+| `Tx.tanh(x)` | Element-wise tanh; preserves dtype of `x` |
+| `Tx.rsqrt(x)` | Element-wise reciprocal square root, `1 / sqrt(x)`; preserves dtype of `x` |
+| `Tx.exp(x)` / `Tx.log(x)` / `Tx.sqrt(x)` | Standard transcendentals lowered to their fast CUDA intrinsics |
 
 
 ## Control Flow
@@ -84,6 +102,7 @@ For `Tx.meta_var` and `@Tx.inline`, see the *Syntactic Sugar* section at the end
 | `Tx.ptx.fence.mbarrier_init()` | Fence after mbarrier initialization |
 | `Tx.ptx.cp_async.bulk.commit_group()` | Commit pending TMA store operations |
 | `Tx.ptx.cp_async.bulk.wait_group(n)` | Wait until at most `n` TMA store groups remain |
+| `Tx.ptx.bar.sync(barrier_id, thread_count)` | Named-barrier `__syncthreads`. Synchronizes exactly `thread_count` threads on barrier `barrier_id` (0–15). Useful when only a subset of the CTA participates — e.g., a `bdx * bdy` grid that does not fill 128/256 threads — where plain `cta_sync()` would hang. |
 | `Tx.cuda.cta_sync()` | CTA-wide barrier (like `__syncthreads`) |
 | `Tx.cuda.warpgroup_sync(barrier_id)` | Warpgroup-level barrier |
 | `Tx.cuda.cluster_sync()` | Cluster-wide barrier |
@@ -95,21 +114,54 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 
 | API | Description |
 |-----|-------------|
-| `TMABar(pool, depth, name)` | TMA barrier array (auto-arrive via byte counting) |
-| `TCGen05Bar(pool, depth, name)` | tcgen05 barrier array (auto-arrive via commit) |
-| `MBarrier(pool, depth, name)` | Manual mbarrier array (threads arrive explicitly) |
+| `TMABar(pool, depth)` | Barrier signaled by TMA (`mbarrier.arrive.expect_tx`) |
+| `TCGen05Bar(pool, depth)` | Barrier signaled by `tcgen05.commit` |
+| `MBarrier(pool, depth, phase_offset=0, leader=None)` | Plain mbarrier — threads arrive explicitly |
 | `bar.init(count)` | Initialize barrier with expected arrival count |
 | `bar.wait(stage, phase)` | Wait for barrier at given stage and phase |
-| `TMABar.arrive(stage, tx_count)` | Arrive with expected transaction-byte count (TMA load). `tx_count` is the total bytes the TMA engine will deposit into SMEM for this stage. |
-| `TCGen05Bar.arrive(stage, cta_group=, cta_mask=)` | Arrive via tcgen05 commit |
+| `TMABar.arrive(stage, tx_count=, cta_id=, pred=)` | Arrive with expected transaction-byte count. `tx_count` is the total bytes TMA will deposit for this stage. |
+| `TCGen05Bar.arrive(stage, cta_group=, cta_mask=)` | Arrive via `tcgen05.commit`. Must run under `elect_sync` (commit is per-thread). |
 | `MBarrier.arrive(stage, cta_id=, pred=)` | Thread-level arrive |
 | `bar.ptr_to([stage])` | Get pointer to barrier at given stage |
-| `TMABar.remote_view(cta_id)` | Access another CTA's barrier (cross-CTA) |
-| `PipelineState(name, depth)` | Manages pipeline stage index and phase |
-| `PipelineState.init(is_producer=)` | Initialize phase tracking |
-| `PipelineState.stage` / `.phase` | Current stage index and phase value |
-| `PipelineState.move_to_next_stage()` | Advance to next pipeline stage |
-| `ClusterPersistentScheduler2D(...)` | L2-friendly tile scheduler for persistent kernels |
+| `MBarrier.remote_view(rank)` / `TMABar.remote_view(rank)` | View a barrier mapped to another CTA's SMEM (cluster kernels) |
+| `Pipe(pool, stages, full_type=, empty_type=, init_full=, init_empty=, ...)` | Full+empty barrier pair for a software-pipelined data flow |
+| `Pipe.tma(pool, stages, ...)` / `Pipe.tcgen05(...)` / `Pipe.mbar(...)` | Factory shortcuts for the three common pipe topologies |
+| `pipe.producer()` / `pipe.consumer()` | Return a `_PipeEndpoint` with `.wait()` / `.signal()` / `.advance()` |
+| `RingState(depth, phase=)` | Tracks stage index and phase for a ring buffer (no barrier inside) |
+| `RingState.init(phase)` | Initialize phase tracking (1 for producer, 0 for consumer) |
+| `RingState.stage` / `.phase` | Current stage index and phase value |
+| `RingState.advance()` | Advance to next stage; flip phase when wrapping |
+
+
+## Tile Scheduling
+
+| API | Description |
+|-----|-------------|
+| `ClusterPersistentScheduler2D(name, num_m_tiles, num_n_tiles, l2_group_size=, num_clusters=)` | L2-friendly persistent scheduler — assigns `(m_idx, n_idx)` blocks round-robin across `num_clusters` CTAs. |
+| `scheduler.init(cta_id)` | Bind this CTA's starting tile |
+| `scheduler.valid()` | True while this CTA still has tiles |
+| `scheduler.m_idx` / `scheduler.n_idx` / `scheduler.tile_idx` | Current tile coordinates (mutable local scalars) |
+| `scheduler.next_tile()` | Advance to this CTA's next tile |
+| `FlashAttentionLinearScheduler(...)` | Per-task linear schedule for non-causal FA |
+| `FlashAttentionLPTScheduler(...)` | Longest-processing-time-first for causal FA |
+
+
+## Layout
+
+The layout namespace is `tvm.tirx.layout` (also re-exported on `Tx` for the common helpers used in this tutorial).
+
+| API | Description |
+|-----|-------------|
+| `TileLayout(spec)` | Build a layout from `S[...]` / `R[...]` / `O[...]` segments |
+| `S[(extents...) : (strides...)]` | Sharded segment — distribute extents across the axes given by the stride list |
+| `R[N : axis]` | Replica — broadcast across `N` lanes of `axis` |
+| `O[offset]` | Offset segment (rare; used inside `TileLayout` to skip leading bytes) |
+| `TLane`, `TCol` | Named TMEM hardware axes (rows × columns of tensor memory) |
+| `tid_in_wg`, `laneid`, `warpid` | Named axes for the warpgroup-level thread coordinate, the in-warp lane, and the warp-in-CTA index |
+| `cbx`, `cby` | Named cluster axes (cluster block x / y) |
+| `wg_local_layout(cols, rows=128)` | Shorthand for `TileLayout(S[(rows, cols) : (1@tid_in_wg, 1)])` — a warpgroup-wide RF tile |
+| `tma_shared_layout(dtype, swizzle_mode, shape)` | Produce a TMA-compatible swizzled SMEM layout. Wrapper around `tma_utils`. |
+| `SwizzleMode.SWIZZLE_128B_ATOM` / `SWIZZLE_64B_ATOM` / etc. | TMA swizzle modes for SMEM atoms |
 
 
 ## Common Pitfalls
@@ -135,7 +187,7 @@ These abstractions are introduced in Step 7 (Warp Specialization) and used throu
 
 ## Syntactic Sugar
 
-*The constructs in this section are **not** part of the TIRX programming model* (see :numref:`chap_tirx_primer` for the three pillars). They are convenience — removing them changes how the code looks, not what it means. They show up in Part III because real kernels use them to stay readable.
+*The constructs in this section are **not** part of the TIRX tile primitive layer* (see :numref:`chap_layouts` for execution scope, tensor layout, and tile primitive dispatch). They are parser-time convenience — removing them changes how the code looks, not what it means. They show up in Part III because real kernels use them to stay readable. A brief introduction to the metaprogramming trio lives in :numref:`chap_tirx_primer`; this section is the full reference.
 
 ### `Tx.meta_var`: compile-time alias
 
@@ -151,15 +203,17 @@ Any variable *assigned* inside `@Tx.prim_func` that is not wrapped with `meta_va
 
 ### `@Tx.inline`: compile-time helper
 
-`@Tx.inline` marks a helper as inlined at compile time. It can close over outer kernel variables, which is useful for packaging repeated load / MMA / writeback boilerplate:
+`@Tx.inline` marks a helper as inlined at compile time. It can close over outer kernel variables, which is useful for packaging repeated load / MMA / writeback boilerplate. The conventional order in a TMA load is **issue the copies, then arrive with the byte count** — the TMA engine increments the barrier as bytes land, and `expect_tx` only sets the target count:
 
 ```python
 @Tx.inline
 def tma_load(stage, k):
-    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
-        tma_bar.arrive(stage, tx_count=total_bytes)
+    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
         Tx.copy_async(Asmem[stage], A[m_st : m_st + BLK_M, k : k + BLK_K],
                       dispatch="tma", mbar=tma_bar.ptr_to([stage]))
+        Tx.copy_async(Bsmem[stage], B[n_st : n_st + BLK_N, k : k + BLK_K],
+                      dispatch="tma", mbar=tma_bar.ptr_to([stage]))
+        tma_bar.arrive(stage, tx_count=total_bytes)
 ```
 
 There is no runtime function-call overhead and no new semantics — just a reusable code region.

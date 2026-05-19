@@ -34,7 +34,7 @@ except ImportError:
     CudaProfiler = None
     ProtonContext = None
     bench = None
-from tvm.tirx.lang.pipeline import MBarrier, PipelineState, TCGen05Bar, TMABar
+from tvm.tirx.lang.pipeline import MBarrier, RingState, TCGen05Bar, TMABar
 from tvm.tirx.lang.tile_scheduler import (  # fmt: skip
     FlashAttentionLinearScheduler,
     FlashAttentionLPTScheduler,
@@ -285,7 +285,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
     K_layout = Tx.ComposeLayout(Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True), Tx.TileLayout(Tx.S[(SMEM_PIPE_DEPTH_KV, BLK_N, NUM_BLK_K, BLK_K) : (BLK_N * HEAD_DIM, BLK_K, BLK_N * BLK_K, 1)]))
     O_layout = Tx.ComposeLayout(Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True), Tx.TileLayout(Tx.S[(TMEM_PIPE_DEPTH, BLK_M, NUM_EPI_TILE, EPI_TILE) : (BLK_M * HEAD_DIM, EPI_TILE, BLK_M * EPI_TILE, 1)]))
 
-    @Tx.prim_func(tirx=True, persistent=True)
+    @Tx.prim_func(persistent=True)
     def flash_attention4(
         Q: Tx.Buffer((BATCH_SIZE, SEQ_LEN_Q, NUM_QO_HEADS, HEAD_DIM), "float16"),
         K: Tx.Buffer((BATCH_SIZE, SEQ_LEN_KV, NUM_KV_HEADS, HEAD_DIM), "float16"),
@@ -306,13 +306,13 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
         cta_count: Tx.let = Tx.min(max_ctas, num_total_tasks) if not is_causal else num_total_tasks
 
         with Tx.kernel():
-            bx = Tx.cta_id([cta_count], parent="kernel")
-            wg_id = Tx.warpgroup_id([4], parent="cta")
-            warp_id = Tx.warp_id([4], parent="warpgroup")
-            lane_id = Tx.thread_id([32], parent="warp")
-            tid_in_wg = Tx.thread_id([128], parent="warpgroup")
+            bx = Tx.cta_id([cta_count])
+            wg_id = Tx.warpgroup_id([4])
+            warp_id = Tx.warp_id_in_wg([4])
+            lane_id = Tx.lane_id([32])
+            tid_in_wg = Tx.thread_id_in_wg([128])
             with Tx.cta():
-                pool = Tx.PoolAllocator()
+                pool = Tx.SMEMPool()
                 # Allocate Q buffer with alignment
                 Q_smem = pool.alloc((SMEM_PIPE_DEPTH_Q, BLK_M, HEAD_DIM), "float16", layout=Q_layout, align=1024)
                 # Allocate K and V buffers (they share the same offset)
@@ -329,7 +329,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
 
 
                 # Phase/stage scalars
-                kv_pipe = PipelineState("kv", SMEM_PIPE_DEPTH_KV)
+                kv_pipe = RingState(SMEM_PIPE_DEPTH_KV)
                 phase_q: Tx.int32
                 phase_s_full: Tx.int32
                 phase_tmem: Tx.int32
@@ -399,7 +399,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                 elif wg_id == 2:
                     profiler.init(5)
 
-                kv_pipe.init(is_producer=False)
+                kv_pipe.init(0)
                 phase_q = 0
                 phase_tmem = 0
                 phase_s_full = 0
@@ -460,12 +460,13 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                         # SMEM layout: row i corresponds to (seq = i // GQA_RATIO, head = i % GQA_RATIO)
                                         profiler.start(ProfileEventType.IssueTMA_Q, lane_id == 0)
                                         Q_smem_3d = Q_smem.view(SMEM_PIPE_DEPTH_Q, SEQ_Q_PER_TILE, GQA_RATIO, HEAD_DIM)
-                                        with Tx.elected():
-                                            Tx.copy_async(
-                                                Q_smem_3d[i_q, :, :, :], Q[batch_idx, m_start + i_q * SEQ_Q_PER_TILE : m_start + (i_q + 1) * SEQ_Q_PER_TILE, kv_head_idx * GQA_RATIO: (kv_head_idx + 1) * GQA_RATIO, :],
-                                                **tma_copy_q,
-                                            )
-                                            bar_load_q_full.arrive(i_q, CTA_GROUP * BLK_M * HEAD_DIM * F16_BYTES)  # ar(0,x)
+                                        if Tx.ptx.elect_sync():
+                                            with Tx.thread():
+                                                Tx.copy_async(
+                                                    Q_smem_3d[i_q, :, :, :], Q[batch_idx, m_start + i_q * SEQ_Q_PER_TILE : m_start + (i_q + 1) * SEQ_Q_PER_TILE, kv_head_idx * GQA_RATIO: (kv_head_idx + 1) * GQA_RATIO, :],
+                                                    **tma_copy_q,
+                                                )
+                                                bar_load_q_full.arrive(i_q, CTA_GROUP * BLK_M * HEAD_DIM * F16_BYTES)  # ar(0,x)
                                         profiler.end(ProfileEventType.IssueTMA_Q, lane_id == 0)
 
                                     @Tx.inline
@@ -473,28 +474,30 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                         bar_load_kv_empty.wait(kv_pipe.stage, kv_pipe.phase)
                                         tma_copy_k = Tx.meta_var({"dispatch": "tma", "mbar": bar_load_kv_full.buf.ptr_to([kv_pipe.stage]), "cta_group": CTA_GROUP})
                                         profiler.start(ProfileEventType.IssueTMA_K, lane_id == 0)
-                                        with Tx.elected():
-                                            Tx.copy_async(K_smem[kv_pipe.stage, :, :], K[batch_idx, i_kv * BLK_N : (i_kv + 1) * BLK_N, kv_head_idx, :],
-                                                **tma_copy_k,
-                                            )
-                                            bar_load_kv_full.arrive(kv_pipe.stage, CTA_GROUP * BLK_N * HEAD_DIM * F16_BYTES)
+                                        if Tx.ptx.elect_sync():
+                                            with Tx.thread():
+                                                Tx.copy_async(K_smem[kv_pipe.stage, :, :], K[batch_idx, i_kv * BLK_N : (i_kv + 1) * BLK_N, kv_head_idx, :],
+                                                    **tma_copy_k,
+                                                )
+                                                bar_load_kv_full.arrive(kv_pipe.stage, CTA_GROUP * BLK_N * HEAD_DIM * F16_BYTES)
                                         profiler.end(ProfileEventType.IssueTMA_K, lane_id == 0)
-                                        kv_pipe.move_to_next_stage()
+                                        kv_pipe.advance()
 
                                     @Tx.inline
                                     def load_v(i_kv):
                                         bar_load_kv_empty.wait(kv_pipe.stage, kv_pipe.phase)
                                         tma_copy_v = Tx.meta_var({"dispatch": "tma", "mbar": bar_load_kv_full.buf.ptr_to([kv_pipe.stage]), "cta_group": CTA_GROUP})
                                         profiler.start(ProfileEventType.IssueTMA_V, lane_id == 0)
-                                        with Tx.elected():
-                                            Tx.copy_async(
-                                                V_smem[kv_pipe.stage, :, :],
-                                                V[batch_idx, i_kv * BLK_N : (i_kv + 1) * BLK_N, kv_head_idx, :],
-                                                **tma_copy_v,
-                                            )
-                                            bar_load_kv_full.arrive(kv_pipe.stage, CTA_GROUP * BLK_N * HEAD_DIM * F16_BYTES)
+                                        if Tx.ptx.elect_sync():
+                                            with Tx.thread():
+                                                Tx.copy_async(
+                                                    V_smem[kv_pipe.stage, :, :],
+                                                    V[batch_idx, i_kv * BLK_N : (i_kv + 1) * BLK_N, kv_head_idx, :],
+                                                    **tma_copy_v,
+                                                )
+                                                bar_load_kv_full.arrive(kv_pipe.stage, CTA_GROUP * BLK_N * HEAD_DIM * F16_BYTES)
                                         profiler.end(ProfileEventType.IssueTMA_V, lane_id == 0)
-                                        kv_pipe.move_to_next_stage()
+                                        kv_pipe.advance()
 
                                     # For causal, compute reduced trip count for loads
                                     load_trip_count: Tx.int32
@@ -521,12 +524,13 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                         # TMA O store: Store each qo_head with 2D TMA copy
                                         # SMEM layout: row i corresponds to (seq = i // GQA_RATIO, head = i % GQA_RATIO)
                                         O_smem_3d = O_smem.view(TMEM_PIPE_DEPTH, SEQ_Q_PER_TILE, GQA_RATIO, HEAD_DIM)
-                                        with Tx.elected():
-                                            Tx.copy_async(
-                                                O[batch_idx, m_start_global : m_start_global + SEQ_Q_PER_TILE, kv_head_idx * GQA_RATIO: (kv_head_idx + 1) * GQA_RATIO, :],
-                                                O_smem_3d[i_q, :, :, :],
-                                                dispatch="tma",
-                                            )
+                                        if Tx.ptx.elect_sync():
+                                            with Tx.thread():
+                                                Tx.copy_async(
+                                                    O[batch_idx, m_start_global : m_start_global + SEQ_Q_PER_TILE, kv_head_idx * GQA_RATIO: (kv_head_idx + 1) * GQA_RATIO, :],
+                                                    O_smem_3d[i_q, :, :, :],
+                                                    dispatch="tma",
+                                                )
                                         Tx.ptx.cp_async.bulk.commit_group()
                                     for i_q in Tx.unroll(SMEM_PIPE_DEPTH_Q):
                                         Tx.ptx.cp_async.bulk.wait_group(1 - i_q)
@@ -591,7 +595,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                             # finish twice qk mma
                                             if Tx.ptx.elect_sync():
                                                 bar_load_kv_empty.arrive(kv_pipe.stage)
-                                    kv_pipe.move_to_next_stage()
+                                    kv_pipe.advance()
 
                                     # For causal, compute reduced trip count
                                     mma_trip_count: Tx.int32
@@ -602,7 +606,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                     ):
                                         stage_v: Tx.let = kv_pipe.stage
                                         phase_v: Tx.let = kv_pipe.phase
-                                        kv_pipe.move_to_next_stage()
+                                        kv_pipe.advance()
                                         stage_k = Tx.meta_var(kv_pipe.stage)
                                         phase_k = Tx.meta_var(kv_pipe.phase)
 
@@ -629,7 +633,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                                 if Tx.ptx.elect_sync():
                                                     bar_load_kv_empty.arrive(stage_k)
                                         acc = 1
-                                        kv_pipe.move_to_next_stage()
+                                        kv_pipe.advance()
                                         phase_tmem ^= 1
 
                                     for i_q in Tx.unroll(SMEM_PIPE_DEPTH_Q):
@@ -647,7 +651,7 @@ __forceinline__ __device__ uint64_t {func_name}(uint64_t desc_base, int32_t offs
                                                 bar_load_kv_empty.arrive(kv_pipe.stage)
                                         if Tx.ptx.elect_sync():
                                             bar_o_full.arrive(i_q)
-                                    kv_pipe.move_to_next_stage()
+                                    kv_pipe.advance()
                                     phase_tmem ^= 1
 
                                     for i_q in Tx.unroll(SMEM_PIPE_DEPTH_Q):

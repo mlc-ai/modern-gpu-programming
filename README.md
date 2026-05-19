@@ -23,20 +23,20 @@ import tvm
 from tvm.script import tirx as Tx
 import torch
 
-@Tx.prim_func(tirx=True)
+@Tx.prim_func
 def hello_gpu(A_ptr: Tx.handle, B_ptr: Tx.handle):
     n = Tx.int32()
     A = Tx.match_buffer(A_ptr, [n], 'float32')
     B = Tx.match_buffer(B_ptr, [n], 'float32')
     with Tx.kernel():
-        bx = Tx.cta_id([148], parent='kernel')
-        tid = Tx.thread_id([256], parent='cta')
+        bx = Tx.cta_id([148])
+        tid = Tx.thread_id([256])
         with Tx.thread():
             i = bx * 256 + tid
             if i < n:
                 B[i] = A[i] * 2.0
 
-target = tvm.target.Target('cuda -arch=sm_100a')
+target = tvm.target.Target('cuda')
 with target:
     lib = tvm.compile(tvm.IRModule({'main': hello_gpu}), target=target, tir_pipeline='tirx')
 a = torch.randn(1024, device='cuda')

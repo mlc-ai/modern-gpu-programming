@@ -2,8 +2,6 @@
 
 TIRX (Tensor IR neXt) is a Python DSL for writing high-performance GPU kernels on modern NVIDIA GPUs. It extends TensorIR with first-class support for hardware features such as TMA, tcgen05 MMA, mbarrier synchronization, and CTA clusters, making it easier to write kernels that map directly to hardware.
 
-**By the end of this tutorial, you will write a GEMM kernel that matches cuBLAS — the industry gold standard — from scratch.**
-
 
 ## Get Started
 
@@ -11,11 +9,13 @@ New here? Follow this path:
 
 1. **Ch 2 (Setup)** — Install TIRX and run your first GPU kernel in under 5 minutes
 
-2. **Ch 4 (TIRX Layout)** — Build a mental model of hardware-aware tensor layouts before touching real kernels
+2. **Ch 3 (Language Basics)** — Buffers, scopes, raw PTX, the compile pipeline, and metaprogramming
 
-3. **Ch 5 (Fused GELU)** — Write your first real operator kernel
+3. **Ch 4 (Tile Primitives)** — Start from a 130-line no-sugar Blackwell GEMM, then learn the three interfaces (scope / layout / dispatch) that cut it down to 40
 
-4. **Ch 7 (GEMM Steps 1–3)** — Start the GEMM optimization journey: 70 ms → 0.12 ms, within 10% of cuBLAS (0.11 ms)
+4. **Ch 5 (Fused GELU)** — Write your first real operator kernel
+
+5. **Ch 7 (GEMM Steps 1–3)** — Start the GEMM optimization journey: 70 ms → 0.12 ms, within 10% of cuBLAS (0.11 ms)
 
 
 ## Who Is This For
@@ -31,7 +31,7 @@ New here? Follow this path:
 
 ## Tutorial Structure
 
-- **Part I: Fundamentals** (Ch 1–4) — Blackwell GPU architecture, environment setup, and the TIRX programming model — the three explicit interfaces (tensor layout, execution scope, tile primitive dispatch) that every later kernel is built on, with a dedicated chapter drilling into the layout interface.
+- **Part I: Fundamentals** (Ch 1–4) — Blackwell GPU architecture, environment setup, the TIRX language layer (buffers, scopes, raw PTX, compile pipeline, metaprogramming), and the TIRX tile primitive layer (execution scope, tensor layout, tile primitive dispatch) motivated by a no-sugar Blackwell GEMM.
 
 - **Part II: Entry-Level Kernels** (Ch 5–6) — Learn TIRX basics through two self-contained operators: Fused GELU (elementwise + fusion) and RMSNorm (warp reduction + shared memory).
 

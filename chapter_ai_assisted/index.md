@@ -86,7 +86,7 @@ Consider this MMA loop from a warp-specialized GEMM (Step 7 style). This code ru
 # Broken MMA loop -- one bug
 for k in range(K_TILES):
     tma2mma.wait(mma_ps.stage, mma_ps.phase)
-    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
         Tx.gemm_async(
             tmem[:, :BLK_N],
             Asmem[mma_ps.stage],
@@ -97,7 +97,7 @@ for k in range(K_TILES):
         )
     # BUG: arrive is outside the elected-thread scope
     mma2tma.arrive(mma_ps.stage, cta_group=1, cta_mask=0)
-    mma_ps.move_to_next_stage()
+    mma_ps.advance()
 ```
 
 **Symptom:** Output is all zeros or random garbage, non-deterministically.
@@ -121,7 +121,7 @@ This gives the model the symptom (zeros), the structural observation (mismatch b
 # Fixed MMA loop
 for k in range(K_TILES):
     tma2mma.wait(mma_ps.stage, mma_ps.phase)
-    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+    with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
         Tx.gemm_async(
             tmem[:, :BLK_N],
             Asmem[mma_ps.stage],
@@ -132,15 +132,15 @@ for k in range(K_TILES):
         )
         # Now only the elected thread (with a non-empty commit group) arrives
         mma2tma.arrive(mma_ps.stage, cta_group=1, cta_mask=0)
-    mma_ps.move_to_next_stage()
+    mma_ps.advance()
 ```
 
 This is a very common bug pattern in Blackwell kernel development. It is also one of the easier cases for an LLM to catch, because the task is closer to recognizing a familiar structural mismatch than to reasoning through full phase-state behavior.
 
 
-### Real comparison: weak prompt vs strong prompt
+### Weak prompt vs strong prompt
 
-We tested the same bug with two different prompts using Claude Opus 4.6. The results illustrate why context matters.
+The same bug typically produces very different LLM responses depending on how it is asked. Two extremes:
 
 **Weak prompt** (code only, vague question):
 
@@ -150,24 +150,23 @@ My GEMM kernel output is all zeros. Here's the MMA loop:
 What's wrong?
 ```
 
-**Model response** (incorrect): The model guessed that `cta_group=1` was wrong and suggested changing it to `cta_group=2`. It never identified that `mma2tma.arrive()` was outside the `elect_sync` scope — the actual bug.
+The common failure mode is the model guessing at high-frequency knobs it has seen elsewhere — flipping `cta_group=1` to `cta_group=2`, tweaking `accum`, adjusting `PIPE_DEPTH` — without engaging the actual hardware constraint behind the bug.
 
-**Strong prompt** (with hardware constraints template from this chapter):
+**Strong prompt** (hardware constraint stated up front):
 
 ```
 I'm writing a TIRX kernel for GEMM. Target: Blackwell B200 (SM100a).
 
-Hardware constraints:
-- tcgen05.commit is per-thread; must be inside elect_sync() guard
-- ...
+Hardware constraint:
+- tcgen05.commit is per-thread; must be inside an elect_sync() guard.
 
 Symptom: Output is all zeros or random garbage, non-deterministically.
 Question: Is mma2tma.arrive() in the correct scope? It uses tcgen05.commit internally.
 ```
 
-**Model response** (correct): *"Yes, the scope is wrong. `mma2tma.arrive()` uses `tcgen05.commit` internally, and `tcgen05.commit` is per-thread and must be inside an `elect_sync()` guard. In your code, `mma2tma.arrive()` is outside the elected-thread block, so all 32 threads create empty commit groups that signal the mbarrier immediately."*
+Because the constraint is stated explicitly, a competent model can reason directly to the answer: the `arrive` sits outside the elected-thread block, so the 31 non-elected threads each create an empty commit group that signals the barrier instantly. The fix is to move `arrive` inside `with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):`.
 
-The weak prompt led the model down a wrong path (`cta_group` mismatch). The strong prompt — with the hardware constraint that `tcgen05.commit` is per-thread — let the model immediately identify the real issue. **The quality of your context determines whether the model finds the bug or invents a plausible-sounding wrong answer.**
+**Takeaway:** The model is not the bottleneck here — context is. If the prompt does not state that `tcgen05.commit` is per-thread, no amount of "be more careful" gets the model to that fact from scratch. The pitfall tables earlier in this chapter exist precisely so you can paste them as context.
 
 
 ### LLM output red flags
@@ -272,11 +271,11 @@ LLMs may suggest wrong TileLayout parameters, forget `allocated_addr`, or confus
 
 **3. TIRX API quirks.**
 LLMs have limited TIRX training data and may confuse TIRX APIs with CUTLASS or Triton equivalents. Examples of details that may not be represented reliably in the model's prior knowledge:
-- `MBarrier.init()` internally uses `Tx.thread()[0:1]`, which checks `threadIdx.x < 1`. This is always false when called from a non-warp-0 context.
+- `MBarrier.init()` guards on its `leader` predicate, which defaults to `Tx.cuda.thread_rank() == 0` — thread 0 of the enclosing CTA. If you call it from a region that does not include thread 0 (e.g., a `with Tx.warpgroup(): if wg_id == 1:` block where only warpgroup 1 is active), no thread will execute the init and the barrier silently stays uninitialized. Always initialize barriers from a region that includes thread 0 of the CTA, or override `leader` explicitly when constructing the barrier.
 
 - `Tx.copy_async` from TMEM to local dispatches `tcgen05.ld` but does NOT emit `tcgen05.wait.ld()`. If you read the register immediately, you get stale data.
 
-- `elect_sync()` elects one thread per **warp**, not per warpgroup. With 4 warps, you get 4 elected threads. LLMs sometimes conflate this with `Tx.thread()[0:1]` (one per warpgroup).
+- `elect_sync()` elects one thread per **warp**, not per warpgroup. With 4 warps, `Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync()))` gives you 4 elected threads (one per warp); for *exactly one* thread of a warpgroup, narrow further with `Tx.thread(tid_in_wg == 0)`.
 
 If an API call in the model's suggestion looks unfamiliar, grep the TIRX codebase to verify it exists before using it.
 
@@ -294,7 +293,7 @@ tcgen05.commit is per-thread, not warp-cooperative. If all 32 threads call it,
 only the elected thread has a non-empty commit group. The other 31 create empty
 commit groups that signal the mbarrier immediately.
 Fix: Always wrap TCGen05Bar.arrive() calls inside an elected-thread scope:
-with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):
 ```
 
 Then include this file (or relevant excerpts) in your prompt context. This has two benefits:
@@ -310,7 +309,7 @@ Here is a minimal starter template (`tirx_bugs.md`):
 ### tcgen05.commit outside elect_sync
 Symptom: zeros or garbage, non-deterministic.
 Cause: tcgen05.commit is per-thread. 31 empty commit groups signal mbarrier early.
-Fix: wrap TCGen05Bar.arrive() inside `with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:`.
+Fix: wrap TCGen05Bar.arrive() inside `with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):`.
 
 ### MBarrier.init from wrong warp
 Symptom: kernel hangs (deadlock).
@@ -353,7 +352,7 @@ The goal is not to have the LLM write your kernel. The goal is to spend your tim
 
 ## Exercises
 
-1. Take your Step 7 kernel and introduce the `elect_sync` bug from this chapter: move `mma2tma.arrive()` outside the `with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:` block. Run the test to confirm it produces wrong output. Then paste the buggy code to an LLM with the symptom description. Does the model identify the root cause?
+1. Take your Step 7 kernel and introduce the `elect_sync` bug from this chapter: move `mma2tma.arrive()` outside the `with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):` block. Run the test to confirm it produces wrong output. Then paste the buggy code to an LLM with the symptom description. Does the model identify the root cause?
 
 2. Ask an LLM to generate a numpy reference for the RMSNorm kernel from the RMSNorm chapter. Compare its output with your kernel's output on the same input. Do the results match to within fp16 tolerance?
 
