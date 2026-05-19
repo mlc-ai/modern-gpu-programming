@@ -370,7 +370,7 @@ With `cta_group=2`, the MMA hardware reads B from **both** CTAs' shared memory. 
 - With `cta_group=2`, the MMA hardware reads B from **both** CTAs' SMEM via cross-CTA shared memory access, so it sees all 256 columns of `[B0 | B1]`.
 - Result: `[A0; A1] × [B0 | B1]` = 256×256 output tile.
 
-Each CTA only loads 128×K of A and 128×K of B, but together they compute a 256×256 output — 2x arithmetic intensity with the same memory traffic.
+Each CTA still loads 128×K of A and 128×K of B (its own halves), but the cooperative MMA uses both CTAs' SMEM tiles to compute a 256×256 output — so the *flops per byte fetched by each CTA* roughly doubles.
 
 ### Tile Address Calculation
 
@@ -415,7 +415,7 @@ Tx.cuda.cluster_sync()
 
 - **Remote barrier view**: In a cluster, each CTA has its own SMEM and barriers. To synchronize across CTAs, CTA-1 needs to access CTA-0's barrier. `map_shared_rank(tma2mma.ptr_to([0]), 0)` returns a pointer to CTA-0's barrier that is accessible from any CTA in the cluster. The TIRX wrapper is `tma2mma.remote_view(0)`. All barrier operations (arrive, wait) target CTA-0's barriers — this is the coordination point.
 
-- **MMA dispatch from CTA-0 only**: With `cta_group=2`, CTA-0 issues one `tcgen05.mma` instruction, and the hardware automatically dispatches the computation to **both** CTAs' tensor cores simultaneously. CTA-1 does not issue any MMA instruction — the hardware handles this coordination internally. This is why the code guards MMA with `if cbx == 0:`.
+- **MMA dispatch from CTA-0 only**: With `cta_group=2`, CTA-0 issues one `tcgen05.mma`. The hardware drives a *single cooperative* MMA that spans both CTAs in the cluster — it reads operands from both SMs' SMEM and writes the accumulator across both SMs' TMEM. CTA-1 does not issue any MMA instruction. (Each SM still has only one `tcgen05` engine; "cta_group=2" is one cross-SM MMA, not two engines firing in parallel.) This is why the code guards MMA with `if cbx == 0:`.
 
 - **Multicast arrive**: Similarly, `tcgen05.commit(..., cta_group=2, cta_mask=3)` is issued only by CTA-0 but signals both CTAs' barriers. `cta_mask=3` (binary `11`) means both CTA-0 and CTA-1 are targeted.
 
@@ -1067,29 +1067,29 @@ Reference numbers on NVIDIA B200, M=N=K=4096, fp16, locked clocks, 1000-iteratio
 
 | Step | Technique | Time | Speedup |
 |------|-----------|------|---------|
-| 1 | Sync load + MMA | 70 ms | 1x |
+| 1 | Sync load + MMA | 70 ms | 1× |
 | 2 | K-loop accumulation | --- | Handle arbitrary K |
 | 3 | Spatial tiling | --- | Handle arbitrary M, N |
-| 4 | TMA async load | 0.50 ms | 141x |
+| 4 | TMA async load | 0.50 ms | ~140× |
 | 5 | Software pipeline | --- | Overlap load + compute |
 | 6 | Persistent kernel | --- | L2 cache locality |
-| 7 | Warp specialization | 0.23 ms | 300x |
-| 8 | 2-CTA cluster | 0.13 ms | 537x |
-| 9 | Multi-consumer | 0.12 ms | 582x |
-| --- | cuBLAS (reference) | 0.11 ms | 614x |
+| 7 | Warp specialization | 0.23 ms | ~304× |
+| 8 | 2-CTA cluster | 0.13 ms | ~538× |
+| 9 | Multi-consumer | 0.12 ms | ~583× |
+| --- | cuBLAS (reference) | 0.11 ms | ~636× |
 
 The `{.python .input}` benchmark cells embedded in each step above ran a short 10-iteration timed loop without clock locking, so the numbers you saw printed are typically 2-5× slower than the table on a casual GPU — same ordering, same trends, just not peak.
 
 The 4 key optimization techniques that deliver the biggest gains:
 
-1. **TMA Async Data Movement** — hardware copy engine replaces software copy (141× from Step 1 → Step 4).
-2. **Software Pipelining + Warp Specialization** — overlap load and compute with dedicated roles (~2× from Step 4 → Step 7).
-3. **CTA Clusters** — 2-SM cooperative MMA doubles arithmetic intensity (~2× from Step 7 → Step 8).
-4. **Multi-Consumer** — two MMA warps for higher compute density (~10% from Step 8 → Step 9).
+1. **TMA Async Data Movement** — hardware copy engine replaces software copy (~140× from Step 1 → Step 4).
+2. **Software Pipelining + Warp Specialization** — overlap load and compute with dedicated roles (~2.2× from Step 4 → Step 7).
+3. **CTA Clusters** — 2-SM cooperative MMA doubles per-CTA FLOPs/byte (~1.8× from Step 7 → Step 8).
+4. **Multi-Consumer** — two MMA warps for higher compute density (~8% from Step 8 → Step 9).
 
 ![GEMM Optimization Journey](../img/gemm_perf.png)
 
-582× total speedup: from 70 ms to 0.12 ms — within 10% of cuBLAS.
+~583× total speedup: 70 ms → 0.12 ms — within ~10% of cuBLAS (0.11 ms).
 
 
 ## Exercises

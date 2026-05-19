@@ -26,7 +26,7 @@ This chapter provides a comprehensive reference for the TIRX APIs used in this t
 | `Tx.thread_id_in_wg([128])` | Thread index within the warpgroup (warpgroup → thread; always 128) |
 | `Tx.lane_id([32])` | Thread index within a warp (warp → thread; always 32) |
 | `Tx.cuda.thread_rank()` | Linear thread index within the CTA (i.e., `threadIdx.x + threadIdx.y * blockDim.x + ...`). Used as the default `leader` predicate for one-thread-per-CTA work such as `MBarrier.init`. |
-| `Tx.ptx.elect_sync()` | Elect one thread in a warp (for single-thread dispatch) |
+| `Tx.ptx.elect_sync()` | Elect one thread *per warp* (so 4 threads in a 4-warp warpgroup). Good for `tcgen05.commit` and TMA stores; for TMA *loads* prefer `tid_in_wg == 0` so `expect_tx` is incremented exactly once. |
 
 
 ## Function Parameters

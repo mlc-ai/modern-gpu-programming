@@ -193,7 +193,7 @@ with Tx.thread(tid_in_wg == 0):                            # first thread of thi
     Tx.ptx.mbarrier.init(Tx.address_of(bar), 1)             # raw mbarrier.init(ptr, count)
 ```
 
-`Tx.ptx.elect_sync()` is the most common filter: it returns a mask with exactly one thread selected per warp, which is the granularity TMA and `tcgen05.commit` demand. You saw the ad-hoc version of this in the no-sugar GEMM as `if tx == 0:` — a correct predicate, but one that guards individual intrinsic calls instead of a full block of code.
+`Tx.ptx.elect_sync()` is the most common filter: it returns a mask with **exactly one thread selected per warp** (so 4 threads in a 4-warp warpgroup). That is the granularity `tcgen05.commit` and most TMA *stores* want. **TMA loads are a subtlety** — the byte counter (`expect_tx`) must be incremented exactly once per stage, so the load-side issue thread is usually picked with `tid_in_wg == 0` (one thread per warpgroup) rather than `elect_sync`; see :numref:`chap_gemm_async` Step 4 for the full discussion. You saw the ad-hoc version of this in the no-sugar GEMM as `if tx == 0:` — a correct predicate, but one that guards individual intrinsic calls instead of a full block of code.
 
 The `Tx.filter(var, ...)` form has two shapes: a range, `Tx.filter(var, lo, hi)`, and a predicate, `Tx.filter(var, cond_expr)`. The first argument is always a coordinate variable produced by `Tx.cta_id` / `Tx.warp_id` / `Tx.lane_id` / etc., so the compiler knows which axis is being narrowed.
 

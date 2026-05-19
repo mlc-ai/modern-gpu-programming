@@ -25,7 +25,7 @@ $$\text{TFLOPS} = \frac{2 \times M \times N \times K}{t_{\text{seconds}} \times 
 
 ## The Optimization Journey
 
-Over the next 3 chapters (9 steps), we will progressively optimize a GEMM kernel on Blackwell GPUs until it matches cuBLAS. The 4 key techniques are:
+Over the next 3 chapters (9 steps), we will progressively optimize a GEMM kernel on Blackwell GPUs to within ~10% of cuBLAS. The 4 key techniques are:
 - **Async Data Movement** --- let hardware (TMA) do the copying, freeing 127 threads
 - **Software Pipelining** --- overlap load and compute with multi-buffering
 - **Warp Specialization** --- dedicated warp roles for maximum parallelism
@@ -152,7 +152,7 @@ GEMM kernels use the full thread hierarchy from :numref:`chap_background` (CTA �
 - **`warp_id = Tx.warp_id_in_wg([4])`** — Which warp within the warpgroup (0-3).
 - **`lane_id = Tx.lane_id([32])`** — Which thread within the warp (0-31).
 
-Later steps that need warp specialisation (:numref:`chap_gemm_async` Step 7 onward) bind `Tx.warpgroup_id([2])` to a name and dispatch on it.
+Later steps that need warp specialisation (:numref:`chap_gemm_advanced` Step 7 onward) bind `Tx.warpgroup_id([2])` to a name and dispatch on it.
 
 The parent level is encoded in the function name itself (`*_in_wg` for warpgroup-scoped, `lane_id` for warp-scoped, `cta_id_in_cluster` for cluster-scoped). For example, `Tx.warp_id_in_wg([4])` enumerates the 4 warps inside each warpgroup, while `Tx.warp_id([8])` would enumerate all 8 warps of a 2-warpgroup CTA. See :numref:`chap_layouts` for the full coordinate table.
 

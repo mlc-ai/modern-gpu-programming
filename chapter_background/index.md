@@ -12,7 +12,7 @@ Blackwell organizes threads into a nested hierarchy:
 
 - **CTA** — short for *Cooperative Thread Array*, the same concept that CUDA programmers know as a thread block. It is the basic scheduling unit: a CTA runs on a single SM and has access to that SM's shared memory. A CTA contains one or more warpgroups of 128 threads each; most kernels in this tutorial use one warpgroup per CTA, and the warp-specialized kernels in :numref:`chap_gemm_advanced` and :numref:`chap_flash_attention` use up to four.
 
-- **Warpgroup**: 4 consecutive warps (128 threads). On Blackwell, the warpgroup is the cooperation unit for TMEM reads — the 128 `TLane` rows match the 128 threads one-to-one. `tcgen05.mma` itself is issued by a single elected thread, but its tile granularity along M matches a warpgroup, so the warpgroup remains the natural scope for a GEMM stage (see the *Tensor Core Generational Evolution* subsection below for details).
+- **Warpgroup**: 4 consecutive warps (128 threads). On Blackwell, the warpgroup is the cooperation unit for TMEM reads — the 128 `TLane` rows match the 128 threads one-to-one. `tcgen05.mma` itself is issued by a single elected thread; its $M$ dimension can be 64 or 128 (and up to 256 in 2-CTA cooperative mode), but a tile of $M=128$ matches the warpgroup row-for-row, so the warpgroup remains the natural scope for a GEMM stage (see the *Tensor Core Generational Evolution* subsection below for details).
 
 - **Warp**: A warp contains 32 threads and is the basic SIMT execution unit.
 
@@ -37,7 +37,7 @@ The typical data flow for a kernel that uses Tensor Cores:
 
 The key difference from earlier GPU generations is that tcgen05 writes accumulator results to TMEM first, and software later moves them to registers or shared memory as needed.
 
-**Tensor Memory (TMEM)** is new in Blackwell. It is a high-bandwidth scratchpad memory private to the Tensor Cores. The tcgen05 MMA unit writes its accumulator output directly to TMEM, not to registers or shared memory.
+**Tensor Memory (TMEM)** is new in Blackwell. It is a per-SM, high-bandwidth scratchpad memory used by the `tcgen05` MMA path. The MMA unit writes its accumulator output directly to TMEM, not to registers or shared memory.
 
 - **TMEM reads are explicit and cooperative.** To consume MMA results, software must explicitly load from TMEM into the register file. These reads are performed cooperatively by the full warpgroup (128 threads).
 
@@ -72,12 +72,12 @@ This is in contrast to **CUDA cores**, the GPU's classic general-purpose ALUs th
 | | **CUDA core** | **Tensor Core** ($\texttt{tcgen05}$ on Blackwell) |
 |:--|:--|:--|
 | Granularity | 1 scalar FMA per instruction | $M \times N \times K$ FMAs per instruction |
-| Execution model | SIMT: 32 threads per warp, each issues its own instruction | Single thread (or 2-CTA pair) issues one MMA; hardware runs the tile asynchronously |
+| Execution model | SIMT: 32 threads per warp, each issues its own instruction | A single elected thread issues one MMA (CTA-0 only when `cta_group=2`); hardware runs the tile asynchronously |
 | Operands live in | Register file | SMEM (via matrix descriptors) and/or TMEM |
 | Accumulator in | Register file | **TMEM** on Blackwell (on-chip SM-local scratchpad, separate from the register file) |
 | Typical dtypes | fp32 / fp64 / int32 — general-purpose | fp16 / bf16 / fp8 / fp4 / tf32 — low-precision GEMM-friendly |
 | Used for | elementwise, reductions, index math, control flow, everything non-GEMM | dense matrix multiply, convolution, attention $QK^{\top}$ and $PV$ |
-| Peak on HGX B200 | ~75 TFLOPS (fp32) | ~2.25 PFLOPS (fp16/bf16) &rarr; up to ~9 PFLOPS (fp4) |
+| Peak per B200 GPU (approx.) | ~75 TFLOPS (fp32) | ~2.25 PFLOPS (fp16/bf16) &rarr; up to ~9 PFLOPS (fp4) |
 
 The architectural motivation is simple: dense matrix multiplication dominates deep-learning workloads, has high arithmetic intensity ($O(N^3)$ FLOPs on $O(N^2)$ data), and is therefore compute-bound on a well-fed GPU. A dedicated MMA unit reaches peak throughput that scalar FMAs never can.
 
@@ -131,7 +131,7 @@ Understanding why Blackwell's MMA API looks the way it does is easier once you s
 
 Three trends drive the API you will use in TIRX:
 
-1. **Tile scope grew from warp to warpgroup to 2-CTA; issue scope shrank to a single thread.** Volta and Ampere treated MMA as a per-warp operation: all 32 threads in a warp collectively execute the instruction and pool their registers to hold A, B, and D. Hopper moved the *tile* scope to a warpgroup — a single `wgmma` spans 128 threads' worth of data — but the *issue* was still collective: all 128 threads had to execute the instruction. Blackwell decouples the two. `tcgen05.mma` is issued by a **single elected thread**, which frees the other 127 threads of the warpgroup to do TMA issuing, softmax, or the epilogue in parallel. The MMA tile still matches warpgroup granularity along $M$ (128 rows of `TLane`), and in *2-CTA* cooperative mode two SMs jointly produce a 256-row tile.
+1. **Tile scope grew from warp to warpgroup to 2-CTA; issue scope shrank to a single thread.** Volta and Ampere treated MMA as a per-warp operation: all 32 threads in a warp collectively execute the instruction and pool their registers to hold A, B, and D. Hopper moved the *tile* scope to a warpgroup — a single `wgmma` spans 128 threads' worth of data — but the *issue* was still collective: all 128 threads had to execute the instruction. Blackwell decouples the two. `tcgen05.mma` is issued by a **single elected thread**, which frees the other 127 threads of the warpgroup to do TMA issuing, softmax, or the epilogue in parallel. The MMA $M$ dimension is up to 128 (warpgroup-sized: $M \in \{64, 128\}$ for fp16/bf16 with `cta_group=1`; $M=128$ is the common choice and pairs the 128 `TLane` rows one-to-one with the warpgroup's 128 threads), and in *2-CTA* cooperative mode two SMs jointly produce a tile up to 256 rows.
 
 2. **Operands migrated from RF to SMEM (and TMEM).** Reading A and B from registers forced every thread to hold a share of the tile in its register file. As tile sizes grew, RF pressure became the binding constraint: Hopper's `wgmma` already reads B from SMEM, and one variant reads A from SMEM too. Blackwell completes the move by reading A from either SMEM or TMEM. The result: no matter how large the MMA tile, RF usage does not grow with it.
 
@@ -286,10 +286,10 @@ Throughout Part III we benchmark kernels against the Blackwell hardware limits. 
 | Shared memory per SM | 228 KB | SMEM budget for pipeline depth |
 | Tensor memory per SM | 128 lanes × 512 cols (32-bit) | TMEM accumulator budget |
 | Registers per thread (max) | 255 × 32-bit | why accumulators moved off-RF |
-| FP16/BF16 Tensor Core throughput | ~2.25 PFLOPS (dense) | GEMM roof |
-| FP8 / FP4 Tensor Core throughput | ~4.5 / ~9 PFLOPS (dense) | mixed-precision GEMM |
+| tcgen05 peak @ FP16/BF16 (dense) | ~2.25 PFLOPS | GEMM roof |
+| tcgen05 peak @ FP8 / FP4 (dense) | ~4.5 / ~9 PFLOPS | mixed-precision GEMM |
 | HBM3e bandwidth | ~8 TB/s | bandwidth roof |
-| L2 cache | ~100 MB | where tile operands actually live after warm-up |
+| L2 cache | ~100 MB (B200) / ~126 MB (GB200) | where tile operands actually live after warm-up |
 | HBM cold-miss break-even AI | ~281 FLOP/B | only binds if L2 reuse fails |
 | One fp16 128×64 tile in SMEM | 16 KB | TMA transfer granularity |
 
