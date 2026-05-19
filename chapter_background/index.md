@@ -83,16 +83,16 @@ The architectural motivation is simple: dense matrix multiplication dominates de
 
 ### Why You Cannot Ignore Them
 
-On a Blackwell B200:
+On a Blackwell B200 there is a single Tensor Core unit per SM (the `tcgen05` engine), but its peak throughput depends on the operand precision — narrower operands pack more MMAs per cycle:
 
-| Unit | Peak throughput (per GPU, approx.) | Ratio |
+| Unit | Peak throughput (per GPU, approx.) | Ratio vs FP32 CUDA |
 |:-:|:-:|:-:|
 | FP32 CUDA cores | ~75 TFLOPS | 1× |
-| FP16/BF16 Tensor Cores (dense) | ~2.25 PFLOPS | ~30× |
-| FP8 Tensor Cores (dense) | ~4.5 PFLOPS | ~60× |
-| FP4 Tensor Cores (dense) | ~9 PFLOPS | ~120× |
+| Tensor Core @ FP16 / BF16 (dense) | ~2.25 PFLOPS | ~30× |
+| Tensor Core @ FP8 (dense) | ~4.5 PFLOPS | ~60× |
+| Tensor Core @ FP4 (dense) | ~9 PFLOPS | ~120× |
 
-A kernel that does not use Tensor Cores throws away over 95% of the chip. Every GEMM, attention, and convolution kernel in this tutorial is written around the Tensor Core.
+A kernel that does not use the Tensor Core throws away over 95% of the chip. Every GEMM, attention, and convolution kernel in this tutorial is written around it.
 
 ### Instruction Shape ($M \times N \times K$)
 
