@@ -288,7 +288,7 @@ Note: The `max_err < 0.5` check is a **smoke test**, not a strict numerical veri
 
 ### Understanding TMEM
 
-TMEM (Tensor Memory) is a Tensor-Core-private scratchpad that is **per-SM** (not per-warpgroup): one SM has exactly one 128-row × 512-column TMEM region, shared by whichever warpgroups of the resident CTA(s) need it. The 128-row extent is a hardware constant tied to the `TLane` axis, and it happens to match one warpgroup's 128 threads — which is what makes the `tcgen05.ld` TMEM→RF read a warpgroup-cooperative operation. Two further properties of the allocation call itself:
+TMEM (Tensor Memory) is a **per-SM** scratchpad used by the `tcgen05` MMA path (not per-warpgroup): one SM has exactly one 128-row × 512-column TMEM region, shared by whichever warpgroups of the resident CTA(s) need it. The 128-row extent is a hardware constant tied to the `TLane` axis, and it happens to match one warpgroup's 128 threads — which is what makes the `tcgen05.ld` TMEM→RF read a warpgroup-cooperative operation. Two further properties of the allocation call itself:
 
 - **`.shape`** determines how many bits per element. For fp32 accumulators, each cell is 32 bits.
 - **`.num`** determines how many `.shape`-sized entries fit. The TIRX compiler maps these to TMEM columns.

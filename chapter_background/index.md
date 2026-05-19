@@ -28,7 +28,7 @@ For TIRX kernels on Blackwell, it is useful to think about memory as a hierarchy
 |--------|-----------|---------|-------------|
 | **Global Memory (GMEM)** | Device-wide | High | Large capacity (HBM), bandwidth-limited |
 | **Shared Memory (SMEM)** | Per-CTA (on one SM) | Low | 228 KB per SM, low-latency scratchpad |
-| **Tensor Memory (TMEM)** | Per-SM | Very low | Private high-bandwidth Tensor-Core scratchpad; holds MMA accumulators and, for some `tcgen05.mma` variants, the A operand |
+| **Tensor Memory (TMEM)** | Per-SM | Very low | Per-SM high-bandwidth scratchpad used by `tcgen05`; holds MMA accumulators and, for some `tcgen05.mma` variants, the A operand |
 | **Register File (RF)** | Per-thread | Lowest | Fastest storage, per-thread |
 
 The typical data flow for a kernel that uses Tensor Cores:

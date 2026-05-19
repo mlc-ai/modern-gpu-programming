@@ -653,7 +653,7 @@ print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 
 - `cluster_sync()` replaces `cta_sync()` at the end (ensures all CTAs are done before TMEM dealloc)
 
-With the final multi-consumer optimization (Step 9), we reach **0.12 ms** --- within 10% of cuBLAS.
+Step 8 brings us to **0.13 ms** at 4096³ (~538× over Step 1). Step 9 below adds a second MMA consumer to close the remaining gap to cuBLAS.
 
 If Step 8 is slower than Step 7, check: (1) TMA arrive byte count should be `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`, (2) tile scheduler dimensions should be `num_m_tiles=M//256, num_n_tiles=N//256` for the 256x256 cluster tile, (3) writeback issues 2 TMA stores (one per 128-column chunk) — make sure each one completes before reusing Dsmem.
 

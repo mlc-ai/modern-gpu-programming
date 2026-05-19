@@ -3,9 +3,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-steps = ['Step 1\nSync', 'Step 4\nTMA', 'Step 7\nWarp Spec', 'Step 9\n2-CTA', 'cuBLAS']
-times = [70.0, 0.50, 0.23, 0.12, 0.11]
-colors = ['#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#a0a0a0']
+steps = ['Step 1\nSync', 'Step 4\nTMA', 'Step 7\nWarp Spec', 'Step 8\n2-CTA', 'Step 9\nMulti-Cons.', 'cuBLAS']
+times = [70.0, 0.50, 0.23, 0.13, 0.12, 0.11]
+colors = ['#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#5352ed', '#a0a0a0']
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
