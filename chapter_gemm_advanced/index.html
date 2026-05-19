@@ -959,8 +959,8 @@ shrinks the chunk further to <code class="docutils literal notranslate"><span cl
 <li><p><code class="docutils literal notranslate"><span class="pre">cluster_sync()</span></code> replaces <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> at the end (ensures all
 CTAs are done before TMEM dealloc)</p></li>
 </ul>
-<p>With the final multi-consumer optimization (Step 9), we reach <strong>0.12
-ms</strong> — within 10% of cuBLAS.</p>
+<p>Step 8 brings us to <strong>0.13 ms</strong> at 4096³ (~538× over Step 1). Step 9
+below adds a second MMA consumer to close the remaining gap to cuBLAS.</p>
 <p>If Step 8 is slower than Step 7, check: (1) TMA arrive byte count should
 be <code class="docutils literal notranslate"><span class="pre">CTA_GROUP</span> <span class="pre">*</span> <span class="pre">(BLK_M*BLK_K</span> <span class="pre">+</span> <span class="pre">BLK_N*BLK_K)</span> <span class="pre">*</span> <span class="pre">F16_SIZE</span></code>, (2) tile
 scheduler dimensions should be

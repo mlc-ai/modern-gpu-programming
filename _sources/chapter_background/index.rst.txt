@@ -61,10 +61,10 @@ hierarchy spanning GMEM, SMEM, TMEM, and registers:
 | Memory      | SM)              |              | low-latency         |
 | (SMEM)**    |                  |              | scratchpad          |
 +-------------+------------------+--------------+---------------------+
-| **Tensor    | Per-SM           | Very low     | Private             |
+| **Tensor    | Per-SM           | Very low     | Per-SM              |
 | Memory      |                  |              | high-bandwidth      |
-| (TMEM)**    |                  |              | Tensor-Core         |
-|             |                  |              | scratchpad; holds   |
+| (TMEM)**    |                  |              | scratchpad used by  |
+|             |                  |              | ``tcgen05``; holds  |
 |             |                  |              | MMA accumulators    |
 |             |                  |              | and, for some       |
 |             |                  |              | ``tcgen05.mma``     |

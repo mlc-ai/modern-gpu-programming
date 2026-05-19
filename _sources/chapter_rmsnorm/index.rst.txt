@@ -410,7 +410,10 @@ Compile and verify:
     assert max_err < 0.05, f"FAIL: max_err={max_err}"
     print("PASS")
 
-**Expected output**: - Time: 0.004–0.010 ms - Max error: < 0.005
+**Expected output**: - ``PASS`` printed; max error < 0.005 vs numpy
+reference - Wall-clock on B200, batch=64, hidden=4096: typically
+0.004–0.010 ms (the cell prints correctness only; add a
+``torch.cuda.Event`` timed loop if you want to measure)
 
 **If something goes wrong**: - ``max_err > 0.1``: Check fp16->fp32 cast
 before accumulation (``Tx.cast(input_vec_f32, input_vec)``) - Kernel

@@ -507,7 +507,10 @@ with no computation inside the loop body.</p></li>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>Expected output</strong>: - Time: 0.004–0.010 ms - Max error: &lt; 0.005</p>
+<p><strong>Expected output</strong>: - <code class="docutils literal notranslate"><span class="pre">PASS</span></code> printed; max error &lt; 0.005 vs numpy
+reference - Wall-clock on B200, batch=64, hidden=4096: typically
+0.004–0.010 ms (the cell prints correctness only; add a
+<code class="docutils literal notranslate"><span class="pre">torch.cuda.Event</span></code> timed loop if you want to measure)</p>
 <p><strong>If something goes wrong</strong>: - <code class="docutils literal notranslate"><span class="pre">max_err</span> <span class="pre">&gt;</span> <span class="pre">0.1</span></code>: Check fp16-&gt;fp32 cast
 before accumulation (<code class="docutils literal notranslate"><span class="pre">Tx.cast(input_vec_f32,</span> <span class="pre">input_vec)</span></code>) - Kernel
 hangs / deadlock: Check <code class="docutils literal notranslate"><span class="pre">Tx.ptx.bar.sync(1,</span> <span class="pre">bdx</span> <span class="pre">*</span> <span class="pre">bdy)</span></code> – the count

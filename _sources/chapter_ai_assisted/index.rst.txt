@@ -77,7 +77,7 @@ Here is a prompt template that works well for TIRX debugging:
 
    - tcgen05.commit is per-thread; must be inside elect_sync() guard
 
-   - MBarrier.init() checks threadIdx.x < 1 -- only works from warp 0
+   - MBarrier.init() guards on its leader predicate (default: Tx.cuda.thread_rank() == 0) — only thread 0 of the CTA runs the init unless leader is overridden
 
    - mbarrier arrives from async engines (TMA completion, tcgen05.commit) carry release→acquire ordering; after try_wait returns, the waiter sees the producer's memory effects. Extra fences on the TMA→MMA edge are unnecessary.
 

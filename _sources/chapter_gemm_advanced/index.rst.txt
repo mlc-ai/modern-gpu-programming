@@ -849,8 +849,8 @@ Key Points
 - ``cluster_sync()`` replaces ``cta_sync()`` at the end (ensures all
   CTAs are done before TMEM dealloc)
 
-With the final multi-consumer optimization (Step 9), we reach **0.12
-ms** — within 10% of cuBLAS.
+Step 8 brings us to **0.13 ms** at 4096³ (~538× over Step 1). Step 9
+below adds a second MMA consumer to close the remaining gap to cuBLAS.
 
 If Step 8 is slower than Step 7, check: (1) TMA arrive byte count should
 be ``CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE``, (2) tile

@@ -523,8 +523,8 @@ followed by <code class="docutils literal notranslate"><span class="pre">commit_
 </section>
 <section id="understanding-tmem">
 <h3><span class="section-number">8.1.6. </span>Understanding TMEM<a class="headerlink" href="#understanding-tmem" title="Permalink to this heading">¶</a></h3>
-<p>TMEM (Tensor Memory) is a Tensor-Core-private scratchpad that is
-<strong>per-SM</strong> (not per-warpgroup): one SM has exactly one 128-row ×
+<p>TMEM (Tensor Memory) is a <strong>per-SM</strong> scratchpad used by the <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>
+MMA path (not per-warpgroup): one SM has exactly one 128-row ×
 512-column TMEM region, shared by whichever warpgroups of the resident
 CTA(s) need it. The 128-row extent is a hardware constant tied to the
 <code class="docutils literal notranslate"><span class="pre">TLane</span></code> axis, and it happens to match one warpgroup’s 128 threads —
