@@ -386,12 +386,15 @@ compute-bound on a well-fed GPU. A dedicated MMA unit reaches peak
 throughput that scalar FMAs never can.</p>
 <section id="why-you-cannot-ignore-them">
 <h3><span class="section-number">1.4.1. </span>Why You Cannot Ignore Them<a class="headerlink" href="#why-you-cannot-ignore-them" title="Permalink to this heading">¶</a></h3>
-<p>On a Blackwell B200:</p>
+<p>On a Blackwell B200 there is a single Tensor Core unit per SM (the
+<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> engine), but its peak throughput depends on the operand
+precision — narrower operands pack more MMAs per cycle:</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Unit</p></th>
-<th class="head"><p>Peak throughput (per GPU, approx.)</p></th>
-<th class="head"><p>Ratio</p></th>
+<th class="head"><p>Peak throughput (per
+GPU, approx.)</p></th>
+<th class="head"><p>Ratio vs FP32 CUDA</p></th>
 </tr>
 </thead>
 <tbody>
@@ -399,23 +402,26 @@ throughput that scalar FMAs never can.</p>
 <td><p>~75 TFLOPS</p></td>
 <td><p>1×</p></td>
 </tr>
-<tr class="row-odd"><td><p>FP16/BF16 Tensor Cores (dense)</p></td>
+<tr class="row-odd"><td><p>Tensor Core &#64; FP16 /
+BF16 (dense)</p></td>
 <td><p>~2.25 PFLOPS</p></td>
 <td><p>~30×</p></td>
 </tr>
-<tr class="row-even"><td><p>FP8 Tensor Cores (dense)</p></td>
+<tr class="row-even"><td><p>Tensor Core &#64; FP8
+(dense)</p></td>
 <td><p>~4.5 PFLOPS</p></td>
 <td><p>~60×</p></td>
 </tr>
-<tr class="row-odd"><td><p>FP4 Tensor Cores (dense)</p></td>
+<tr class="row-odd"><td><p>Tensor Core &#64; FP4
+(dense)</p></td>
 <td><p>~9 PFLOPS</p></td>
 <td><p>~120×</p></td>
 </tr>
 </tbody>
 </table>
-<p>A kernel that does not use Tensor Cores throws away over 95% of the
+<p>A kernel that does not use the Tensor Core throws away over 95% of the
 chip. Every GEMM, attention, and convolution kernel in this tutorial is
-written around the Tensor Core.</p>
+written around it.</p>
 </section>
 <section id="instruction-shape-m-times-n-times-k">
 <h3><span class="section-number">1.4.2. </span>Instruction Shape (<span class="math notranslate nohighlight">\(M \times N \times K\)</span>)<a class="headerlink" href="#instruction-shape-m-times-n-times-k" title="Permalink to this heading">¶</a></h3>
