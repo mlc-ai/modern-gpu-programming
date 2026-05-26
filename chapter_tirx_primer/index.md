@@ -1,6 +1,8 @@
 # TIRX Language Reference
 :label:`chap_tirx_primer`
 
+This is a reference, not required reading before the GEMM chapters. The main path introduces the small amount of TIRX syntax needed to read each kernel; come back here when you want the full language details.
+
 TIRX programs are GPU kernel IR written through a Python DSL. A `@Tx.prim_func` describes one kernel-level function: its buffers, symbolic launch coordinates, execution scopes, memory allocations, control flow, and calls to hardware operations. `tvm.compile(..., tir_pipeline="tirx")` lowers that function to ordinary TIR, then to CUDA host/device code.
 
 The **language layer** is the part every TIRX kernel uses before tile primitives enter the picture. :numref:`chap_layouts` adds the tile-primitive layer: scope-aware, layout-aware operations such as `Tx.copy`, `Tx.copy_async`, and `Tx.gemm_async`.

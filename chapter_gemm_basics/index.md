@@ -23,6 +23,16 @@ GEMM performance is measured in TFLOPS (Tera Floating-Point Operations Per Secon
 
 $$\text{TFLOPS} = \frac{2 \times M \times N \times K}{t_{\text{seconds}} \times 10^{12}}$$
 
+### GEMM Data Path
+
+A Blackwell GEMM kernel is organized around a tile data path:
+
+![*Memory Data Flow*](../img/memory_dataflow.png)
+
+Operand tiles move from GMEM to SMEM, `tcgen05.mma` consumes the SMEM operands and writes accumulators to TMEM, the epilogue reads TMEM back into registers, and the final result is stored to GMEM. Optimized kernels use TMA for the large GMEM <-> SMEM transfers and overlap those transfers with MMA.
+
+Step 1 below is not the fully optimized version of this picture. It is the smallest kernel that exposes the same main objects: SMEM operand tiles, a TMEM accumulator, a warpgroup TMEM readback, and a final GMEM store. Later steps replace the simple parts with TMA, pipelining, warp specialization, and CTA clusters.
+
 ## Optimization Path
 
 The optimization path adds hardware features one at a time:
@@ -35,10 +45,10 @@ Later chapters add persistent scheduling and multi-consumer execution on top of 
 
 ---
 
-## Step 1: Synchronous GEMM
+## Step 1: Sequential Single-Tile GEMM
 :label:`chap_single_tile`
 
-The first working GEMM kernel computes a single tile (M=N=128, K=64). All operations are synchronous.
+The first working GEMM kernel computes one output tile (M=N=128, K=64). It is sequential rather than pipelined: each async operation is explicitly waited on before the next dependent step starts.
 
 **Topics.**
 
@@ -48,13 +58,9 @@ The first working GEMM kernel computes a single tile (M=N=128, K=64). All operat
 
 - TMEM allocation/deallocation and writeback (TMEM → RF → GMEM)
 
-### Dataflow
+### Step 1 Dataflow
 
-The single-tile kernel follows the core Blackwell GEMM data path:
-
-![*Memory Data Flow*](../img/memory_dataflow.png)
-
-Each step happens **sequentially** --- the next step waits for the previous to complete.
+In Step 1, each step happens **sequentially** --- the next step waits for the previous to complete. Two parts are deliberately simpler than the optimized path above: GMEM -> SMEM uses synchronous `Tx.copy` instead of TMA, and writeback stores from registers directly to GMEM instead of staging through SMEM for a TMA store.
 
 1. **Allocate**: SMEM (pool allocator), TMEM (`tcgen05.alloc`), mbarrier
 2. **Load**: All 128 threads cooperatively copy A and B tiles from GMEM to SMEM (sync `Tx.copy`)
@@ -64,7 +70,53 @@ Each step happens **sequentially** --- the next step waits for the previous to c
 
 ### Kernel Pieces
 
-The kernel has four pieces.
+Before reading the full source, keep this code map in mind. It is not meant to compile by itself; it shows where the important objects and tile primitives appear in the real kernel below.
+
+```python
+@Tx.prim_func
+def hgemm_v1(A, B, D):
+    with Tx.kernel():
+        # 1. Identify this CTA and the threads inside it.
+        bx, by = Tx.cta_id([M // BLK_M, N // BLK_N])
+        warp_id = Tx.warp_id_in_wg([4])
+        lane_id = Tx.lane_id([32])
+
+        # 2. Allocate SMEM metadata, operand tiles, a TMEM accumulator,
+        #    and per-thread registers for readback.
+        pool = Tx.SMEMPool()
+        Asmem = pool.alloc(...)
+        Bsmem = pool.alloc(...)
+        tmem = Tx.decl_buffer(..., scope="tmem", ...)
+        Dreg = Tx.alloc_local(...)
+        Dreg_f16 = Tx.alloc_local(...)
+        Dreg_wg = Dreg.view(...)
+
+        # 3. Move operand tiles into SMEM.
+        with Tx.cta():
+            Tx.copy(Asmem[:, :], A[:, :])
+            Tx.copy(Bsmem[:, :], B[:, :])
+
+        # 4. One selected issuer starts tcgen05 MMA into TMEM,
+        #    then the CTA waits for MMA completion.
+        with Tx.thread(...):  # selected issuer only
+            Tx.gemm_async(tmem[:, :], Asmem[:, :], Bsmem[:, :],
+                          dispatch="tcgen05")
+            Tx.ptx.tcgen05.commit(...)
+        Tx.ptx.mbarrier.try_wait(...)
+
+        # 5. Read TMEM into registers, then store the result.
+        with Tx.warpgroup():
+            Tx.copy_async(Dreg_wg[:, :], tmem[:, :])
+            Tx.ptx.tcgen05.wait.ld()
+        with Tx.thread():
+            row = ...
+            Tx.cast(Dreg_f16[:], Dreg[:])
+            Tx.copy(D[row, :], Dreg_f16[:])
+```
+
+The rest of this section expands the code map one piece at a time.
+
+The walkthrough below groups the real kernel into four pieces.
 
 #### Memory Allocation
 

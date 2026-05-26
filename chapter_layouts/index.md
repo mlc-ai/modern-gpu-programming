@@ -204,6 +204,28 @@ Read this as: use Blackwell `tcgen05` MMA to multiply the two SMEM operand tiles
 So when you read GEMM code, do not read `Tx.copy_async` or `Tx.gemm_async` in isolation. Check the surrounding scope and the source/destination layouts. That local context tells you whether the primitive is asking for TMA, `tcgen05.ld`, `tcgen05.mma`, or ordinary load/store code.
 
 
+## How to Read the Code
+
+The next chapter starts showing real kernels. You do not need the full language reference before reading them. The following vocabulary is enough to follow the first GEMM:
+
+| Code | How to read it |
+|---|---|
+| `@Tx.prim_func` | defines one TIRX kernel function |
+| `Tx.Buffer(shape, dtype)` | typed input or output tensor |
+| `with Tx.kernel():` | begins the kernel body |
+| `Tx.cta_id(...)`, `Tx.warpgroup_id(...)`, `Tx.warp_id_in_wg(...)`, `Tx.lane_id(...)` | symbolic launch and thread coordinates |
+| `with Tx.cta()`, `with Tx.warpgroup()`, `with Tx.thread()` | which team cooperates on the code inside |
+| `Tx.SMEMPool().alloc(...)` | allocate shared-memory storage for tiles and barriers |
+| `Tx.alloc_local(...)` | allocate per-thread register storage |
+| `Tx.decl_buffer(..., scope="tmem", allocated_addr=...)` | create a view of a TMEM allocation |
+| `Tx.copy(...)` | synchronous copy or store |
+| `Tx.copy_async(...)` | asynchronous tile movement; look nearby for the matching wait or barrier |
+| `Tx.gemm_async(..., dispatch="tcgen05")` | tile-level Tensor Core MMA |
+| `Tx.meta_var(expr)` | keep an address expression inline instead of creating a separate TIR variable |
+
+Treat the code as a sequence of tile operations first. The parser details, dynamic buffers, and metaprogramming rules live in :numref:`chap_tirx_primer` for when you need a reference.
+
+
 ## Back to GEMM
 :label:`sec_sugared_rewrite`
 
@@ -233,4 +255,4 @@ Do not stop at the function name. Read the surrounding context:
 4. Which threads run it? Here the surrounding `Tx.warpgroup()` means 128 threads cooperate.
 5. Is there an async handoff? Here the code must call `Tx.ptx.tcgen05.wait.ld()` before reading `Dreg_wg`.
 
-The next chapter follows this data path once in a single-tile GEMM, then adds K-loop accumulation and spatial tiling across CTAs. Later chapters add TMA pipelining, warp specialization, and CTA clusters.
+The next chapter starts with a simplified single-tile version of this data path, then adds K-loop accumulation and spatial tiling across CTAs. Later chapters replace the synchronous copy/writeback pieces with TMA pipelining, warp specialization, and CTA clusters.
