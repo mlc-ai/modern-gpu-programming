@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>7.4. LLM-Assisted Kernel Debugging &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>7. Writing TIRX Kernels with Agents &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,16 +28,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="7.5. TIRX API Quick Reference" href="../chapter_api_reference/index.html" />
-    <link rel="prev" title="7.3. Practice Kernel: RMSNorm Reduction" href="../chapter_rmsnorm/index.html" /> 
+    <link rel="next" title="8. Appendix" href="../appendix/index.html" />
+    <link rel="prev" title="6. Flash Attention 4" href="../chapter_flash_attention/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">7. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">7.4. </span>LLM-Assisted Kernel Debugging</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">7. </span>Writing TIRX Kernels with Agents</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -97,17 +96,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -139,17 +139,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -163,197 +164,176 @@ Show Source
     <div class="document">
         <div class="page-content" role="main">
         
-  <section id="llm-assisted-kernel-debugging">
-<span id="chap-ai-assisted"></span><h1><span class="section-number">7.4. </span>LLM-Assisted Kernel Debugging<a class="headerlink" href="#llm-assisted-kernel-debugging" title="Permalink to this heading">¶</a></h1>
-<p><em>Assumed context: Step 7 warp specialization, including barrier
-patterns, ``tcgen05`` MMA, and TMA pipelining.</em></p>
-<hr class="docutils" />
-<p>Writing GPU kernels is slow, detail-heavy work. A misplaced barrier
-arrive or a wrong descriptor field can produce silent corruption that
-takes hours to debug. Large language models (LLMs) can help with
-boilerplate, known bug patterns, and test harnesses, but they need
-precise hardware context.</p>
-<p>Use LLMs for boilerplate, test scaffolding, and known-bug detection.
-Verify anything that touches barriers, descriptors, layouts, or
-performance against the generated code and the hardware rules.</p>
-<section id="llm-strengths-and-failure-modes">
-<h2><span class="section-number">7.4.1. </span>LLM Strengths and Failure Modes<a class="headerlink" href="#llm-strengths-and-failure-modes" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Works Well</p></th>
-<th class="head"><p>Needs Careful Verification</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Generating boilerplate (e.g.,
-SMEM allocation, barrier init,
-TMA config dictionaries)</p></td>
-<td><p>Reasoning about barrier phase
-state across loop iterations
-(easy to get off by one)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Spotting common bug patterns
-(e.g., missing <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>
-guard, wrong barrier count,
-<code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> inside a warpgroup
-branch)</p></td>
-<td><p>Predicting SMEM bank conflicts or
-performance behavior</p></td>
-</tr>
-<tr class="row-even"><td><p>Explaining existing kernel code
-(e.g., “what does this writeback
-section do?”)</p></td>
-<td><p>Designing pipeline topologies
-from scratch (e.g., barrier
-grouping and direction)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Generating NumPy/Torch reference
-implementations for verification</p></td>
-<td><p>Getting TMEM layout details
-exactly right (TileLayout,
-TLane/TCol, allocated_addr)</p></td>
-</tr>
-<tr class="row-even"><td><p>Translating between kernel styles
-(e.g., CUTLASS-style pseudocode
-to TIRX)</p></td>
-<td><p>Handling TIRX-specific API quirks
-without explicit context</p></td>
-</tr>
-</tbody>
-</table>
-<p>LLMs are good at <strong>matching familiar code patterns</strong>, but less reliable
-at <strong>multi-step reasoning over concurrent state</strong>. Barrier protocols,
-phase tracking, and TMEM layout arithmetic require manual checking.</p>
-</section>
-<section id="effective-prompting-for-tirx-kernels">
-<h2><span class="section-number">7.4.2. </span>Effective Prompting for TIRX Kernels<a class="headerlink" href="#effective-prompting-for-tirx-kernels" title="Permalink to this heading">¶</a></h2>
-<p>Prompt quality mostly comes from context quality. A vague prompt (“my
-kernel is broken, help”) gets a vague answer. A prompt with hardware
-constraints, code, and symptoms can point to a specific failure mode.</p>
-<p>Prompt template for TIRX debugging:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>I&#39;m writing a TIRX kernel for [operation]. Target: Blackwell B200 (SM100a).
-
-Hardware constraints:
-- TMEM: 128 rows x 512 cols, layout TileLayout(S[(128,512) : (1@TLane, 1@TCol)])
-
-- tcgen05.commit is per-thread; guard it so only the intended issuer calls it. These examples usually use elect_sync() because the MMA issue site does.
-
-- MBarrier.init() guards on its leader predicate (default: Tx.cuda.thread_rank() == 0) — only thread 0 of the CTA runs the init unless leader is overridden
-
-- mbarrier arrives from async engines (TMA completion, tcgen05.commit) carry release→acquire ordering; after try_wait returns, the waiter sees the producer&#39;s memory effects. The examples here do not add extra fences on the TMA→MMA edge.
-
-- `fence.after_thread_sync()` is rarely needed in these examples. The MMA-completion mbarrier already orders MMA writes against downstream reads. Some reference kernels take a conservative stance and insert it in the writeback path after `mma2ld.wait(phase)` and before the first `tcgen05.ld`; if you are mirroring that style, add it there.
-
-Here is my kernel:
-[paste code]
-
-Symptom: [zeros / NaN / deadlock / wrong values at specific indices]
-Question: [specific question]
+  <section id="writing-tirx-kernels-with-agents">
+<span id="chap-ai-assisted"></span><h1><span class="section-number">7. </span>Writing TIRX Kernels with Agents<a class="headerlink" href="#writing-tirx-kernels-with-agents" title="Permalink to this heading">¶</a></h1>
+<p>Before asking an agent to work on TIRX, give it the source code it must
+reason from. It should be able to read the <code class="docutils literal notranslate"><span class="pre">tvm</span></code> codebase for the TIRX
+DSL, layout objects, tile primitives, and lowering rules, and the
+<code class="docutils literal notranslate"><span class="pre">tirx-kernels-dev</span></code> codebase for real kernels, scheduler helpers, and
+barrier patterns. Without those references, the agent will fall back to
+generic CUDA, Triton, or Hopper assumptions, which are often wrong for
+Blackwell TIRX.</p>
+<p>There are two ways to use an agent. The first is delegation: give it a
+broad goal, such as “make the FA4 barrier section easier to understand,”
+and let it choose the method. That is useful for mechanical edits after
+you already know the direction, but it teaches you less because the
+important choices stay hidden. The second is learning-oriented: turn the
+broad goal into a specific instruction, such as “explain
+<code class="docutils literal notranslate"><span class="pre">bar_softmax_corr_full</span></code> and <code class="docutils literal notranslate"><span class="pre">bar_softmax_corr_empty</span></code> as a
+mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram,
+then rebuild the tutorial.” This is usually more effective for TIRX
+because the important work is not just changing text or code; it is
+learning what choices are possible and which hardware contracts those
+choices imply.</p>
+<p>When you do not yet know the right instruction, ask the agent for
+candidates first. A good prompt is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I want to make the FA4 barrier section clearer, but I do not know the best form yet.
+Give me 3 candidate rewrites. For each one, say what it explains well,
+what it hides, and what code or diagram evidence I should verify.
+Do not edit yet.
 </pre></div>
 </div>
-<p>Why each piece matters:</p>
+<p>After reading the candidates, choose one and turn it into an explicit
+instruction. The next time you face the same kind of problem, you should
+be able to write that instruction yourself. This is the real value of
+using agents while learning TIRX: they help you discover “what is
+possible” and convert vague goals into reusable engineering moves.</p>
+<p>The previous chapters built up a way to read Blackwell kernels: identify
+the tile path, then check scope, layout, dispatch, and synchronization.
+That same structure is also the right way to move from a vague goal to a
+useful agent instruction. The unit of interaction is not a Python
+function or a whole CUDA file. It is a TIRX kernel contract. TIRX
+kernels are full of local contracts:</p>
 <ul class="simple">
-<li><p><strong>“Target: B200 SM100a”</strong> prevents the model from suggesting Hopper
-(SM90) or Ampere (SM80) patterns. Without this, you may get
-<code class="docutils literal notranslate"><span class="pre">cp.async</span></code> suggestions instead of <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>.</p></li>
-<li><p><strong>Hardware constraints</strong> help prevent the model from suggesting wrong
-API semantics. LLMs have limited TIRX training data and may generate
-plausible-sounding but incorrect behavior.</p></li>
-<li><p><strong>Symptom</strong> narrows the search space dramatically. “Output is zeros”
-points to TMEM read-before-write. “Deadlock” points to barrier
-mismatch. “NaN” points to uninitialized memory or softmax overflow.
-“Wrong values at specific row offsets” points to descriptor or swizzle
-misconfiguration.</p></li>
-<li><p><strong>Specific question</strong> forces a focused answer instead of a broad code
-review that buries the real issue.</p></li>
+<li><p>which scope owns a tile operation,</p></li>
+<li><p>where each tile lives and how it is laid out,</p></li>
+<li><p>which dispatch path is requested,</p></li>
+<li><p>which barrier proves an async producer is complete,</p></li>
+<li><p>and whether the generated CUDA matches the intended hardware path.</p></li>
 </ul>
+<p>Those contracts, plus the source references above, are the context an
+agent needs.</p>
+<p>The agent can help you draft, compare, and execute choices. The
+programmer still owns the final contract.</p>
+<section id="workflow">
+<h2><span class="section-number">7.1. </span>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading">¶</a></h2>
+<figure class="align-default" id="id1">
+<img alt="../_images/ai_assisted_tirx_workflow.png" src="../_images/ai_assisted_tirx_workflow.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 7.1.1 </span><span class="caption-text">Writing TIRX Kernels with Agents Workflow</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>A practical workflow is:</p>
+<ol class="arabic simple">
+<li><p>Point the agent at <code class="docutils literal notranslate"><span class="pre">tvm</span></code> and <code class="docutils literal notranslate"><span class="pre">tirx-kernels-dev</span></code>.</p></li>
+<li><p>Start with the goal, but do not stop there.</p></li>
+<li><p>If the path is unclear, ask for candidate strategies and tradeoffs.</p></li>
+<li><p>Choose one strategy and rewrite it as a concrete TIRX instruction:
+tile path, roles, layouts, barriers, expected checks.</p></li>
+<li><p>Ask the agent to execute, explain, or review one local contract at a
+time.</p></li>
+<li><p>Confirm with generated CUDA, tests, and benchmarks.</p></li>
+<li><p>Record the instruction pattern you learned so future prompts start
+more precise.</p></li>
+</ol>
+<p>The agent is strongest when it helps you sharpen the instruction. Let it
+propose possibilities; do not let it silently decide the hardware
+contract.</p>
 </section>
-<section id="symptom-to-cause-map">
-<h2><span class="section-number">7.4.3. </span>Symptom-to-Cause Map<a class="headerlink" href="#symptom-to-cause-map" title="Permalink to this heading">¶</a></h2>
-<p>Narrowing down the bug category first makes the prompt much more
-effective. The table maps common symptoms to likely root causes:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Symptom</p></th>
-<th class="head"><p>Likely Cause</p></th>
-<th class="head"><p>What to Check</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Output is all
-zeros</p></td>
-<td><p>TMEM read before MMA
-completes</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> outside
-<code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>; missing
-<code class="docutils literal notranslate"><span class="pre">mma2ld.wait()</span></code> on the
-writeback path</p></td>
-</tr>
-<tr class="row-odd"><td><p>Output is random
-garbage</p></td>
-<td><p>SMEM overwritten
-before MMA reads it</p></td>
-<td><p>Barrier count too high
-(premature arrive); wrong
-pipeline stage index</p></td>
-</tr>
-<tr class="row-even"><td><p>Deadlock (kernel
-hangs)</p></td>
-<td><p>Barrier wait with no
-matching arrive</p></td>
-<td><p>Missing arrive on one code
-path; phase init mismatch;
-<code class="docutils literal notranslate"><span class="pre">MBarrier.init</span></code> from
-wrong warp</p></td>
-</tr>
-<tr class="row-odd"><td><p>NaN in output</p></td>
-<td><p>Uninitialized memory
-or overflow</p></td>
-<td><p>Missing <code class="docutils literal notranslate"><span class="pre">accum=False</span></code> on
-first MMA iteration;
-softmax without max
-subtraction</p></td>
-</tr>
-<tr class="row-even"><td><p>Correct values in
-wrong positions</p></td>
-<td><p>Descriptor or swizzle
-misconfiguration</p></td>
-<td><p>Wrong SwizzleLayout
-parameters; SMEM alignment
-&lt; 1024; wrong TMA
-descriptor shape</p></td>
-</tr>
-<tr class="row-odd"><td><p>Correct for small
-sizes, wrong for
-large</p></td>
-<td><p>Off-by-one in
-tile/block indexing</p></td>
-<td><p>Boundary condition in
-K-loop count; wrong tile
-scheduler dimensions</p></td>
-</tr>
-<tr class="row-even"><td><p>Non-deterministic
-correctness</p></td>
-<td><p>Race condition</p></td>
-<td><p>Missing barrier between
-producer and consumer;
-<code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> vs
-<code class="docutils literal notranslate"><span class="pre">cluster_sync</span></code> confusion</p></td>
-</tr>
-</tbody>
-</table>
-<p>Include this table (or a simplified version) in your prompt when
-debugging. It helps the LLM focus on the right area.</p>
+<section id="from-goal-to-instruction">
+<h2><span class="section-number">7.2. </span>From Goal to Instruction<a class="headerlink" href="#from-goal-to-instruction" title="Permalink to this heading">¶</a></h2>
+<p>For tutorial writing, the difference looks like this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Broad goal:
+Make the FA4 barrier section easier to understand.
+
+Candidate prompt:
+Give me three ways to explain bar_softmax_corr_empty:
+1. a full barrier DAG,
+2. a mailbox slot lifecycle,
+3. a wait/arrive table.
+For each option, say which misunderstanding it prevents and which detail it hides.
+Do not edit yet.
+
+Final instruction after choosing:
+Use the mailbox slot lifecycle. Explain that bar_softmax_corr_full means
+WG2 may read acc_scale or row_sum, while bar_softmax_corr_empty means
+softmax may reuse that SMEM slot. Keep bar_p_full_o_rescaled separate
+because it gates value MMA, not the scale slot.
+</pre></div>
+</div>
+<p>For kernel work, the same pattern applies:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Broad goal:
+Make this GEMM faster.
+
+Candidate prompt:
+List three possible next optimizations for this Step-4-style GEMM.
+For each one, name the tile path change, the new barriers, the SMEM/TMEM cost,
+and one generated-CUDA check. Do not edit yet.
+
+Final instruction after choosing:
+Implement PIPE_DEPTH=2 software pipelining. Add one SMEM stage dimension
+to A/B, use one TMA barrier per stage, prefetch the first two stages,
+then in the K loop wait current stage, run MMA, and prefetch the next tile
+into the stage being released. Explain the phase flips before editing.
+</pre></div>
+</div>
+<p>This pattern matters because it turns the agent into a learning tool.
+You are not only getting a patch. You are learning the vocabulary of
+possible patches.</p>
 </section>
-<section id="demo-debugging-a-broken-kernel">
-<h2><span class="section-number">7.4.4. </span>Demo: Debugging a Broken Kernel<a class="headerlink" href="#demo-debugging-a-broken-kernel" title="Permalink to this heading">¶</a></h2>
-<p>The following MMA loop comes from a warp-specialized GEMM (Step 7
-style). The code runs inside the MMA consumer warp
-(<code class="docutils literal notranslate"><span class="pre">wg_id</span> <span class="pre">==</span> <span class="pre">1,</span> <span class="pre">warp_id</span> <span class="pre">==</span> <span class="pre">0</span></code>). There is one deliberate bug:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Broken MMA loop -- one bug</span>
-<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
+<section id="the-tirx-contract-prompt">
+<h2><span class="section-number">7.3. </span>The TIRX Contract Prompt<a class="headerlink" href="#the-tirx-contract-prompt" title="Permalink to this heading">¶</a></h2>
+<p>When asking an agent about a TIRX kernel, do not start with only a code
+dump. Start with the kernel contract.</p>
+<p>Each field has a job. The tile path gives the data flow. Scopes and
+roles say who executes each tile operation. Layouts and dispatch say
+which lowering is legal. Barriers say which producer-consumer edges make
+the async work safe to consume. The example below is the kind of prompt
+you can derive from the warp-specialized GEMM chapter.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Target: NVIDIA Blackwell SM100a.
+Kernel: Step 7 warp-specialized GEMM.
+
+Tile path:
+GMEM -&gt; SMEM by TMA.
+SMEM -&gt; TMEM by tcgen05 MMA.
+TMEM -&gt; RF -&gt; SMEM -&gt; GMEM by epilogue.
+
+Scopes and roles:
+WG1 warp 3: TMA producer.
+WG1 warp 0: MMA consumer.
+WG0: writeback.
+
+Layouts:
+SMEM A/B use tma_shared_layout(...).
+TMEM accumulator uses TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]).
+RF readback uses TileLayout(S[(128, N) : (1@tid_in_wg, 1)]).
+
+Barriers:
+tma2mma: TMA -&gt; MMA.
+mma2tma: MMA -&gt; TMA.
+mma2ld: MMA -&gt; writeback.
+ld2mma: writeback -&gt; MMA.
+
+Symptom:
+kernel hangs after the first output tile.
+
+Question:
+Which handoff should I inspect first?
+</pre></div>
+</div>
+<p>This prompt gives the agent the same map a human reviewer would build
+before reading the code. Without it, the agent may guess from generic
+CUDA, Triton, or Hopper patterns and miss the Blackwell-specific issue.</p>
+</section>
+<section id="case-study-elected-mma-commit-bug">
+<h2><span class="section-number">7.4. </span>Case Study: Elected MMA Commit Bug<a class="headerlink" href="#case-study-elected-mma-commit-bug" title="Permalink to this heading">¶</a></h2>
+<p>This case shows why the prompt needs a hardware fact, not just code. The
+broken loop comes from a warp-specialized GEMM. The MMA is issued by one
+elected thread, but the barrier arrive is outside the elected-thread
+scope:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
     <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">lane_id</span><span class="p">,</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">())):</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)[</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()]:</span>
         <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
             <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span>
             <span class="n">Asmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
@@ -362,38 +342,33 @@ style). The code runs inside the MMA consumer warp
             <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
             <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="c1"># BUG: arrive is outside the elected-thread scope</span>
+
+    <span class="c1"># Broken: this commits from every lane in the warp.</span>
     <span class="n">mma2tma</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cta_mask</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">mma_ps</span><span class="o">.</span><span class="n">advance</span><span class="p">()</span>
 </pre></div>
 </div>
-<p><strong>Symptom:</strong> Output is all zeros or random garbage,
-non-deterministically.</p>
-<p><strong>Root cause:</strong> <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> internally calls
-<code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code>, which creates a commit group for the calling thread.
-But <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> is a <strong>per-thread</strong> instruction, not a
-warp-cooperative one. Only the elected thread (the one that issued the
-MMA via <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>) has a non-empty commit group. The other 31
-threads in the warp each create an empty commit group that signals the
-mbarrier immediately.</p>
-<p>The result: 31 empty commit groups fire the mbarrier almost instantly,
-well before the MMA completes. The TMA producer sees the barrier as
-arrived and starts overwriting SMEM with the next tile. The MMA is still
-reading the old tile from SMEM — data corruption.</p>
-<p><strong>How to prompt the LLM:</strong> Paste the snippet and add:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Output is zeros. The MMA uses elect_sync but the arrive() call does not.
-Is this correct?
+<p>In these TIRX wrappers, <code class="docutils literal notranslate"><span class="pre">TCGen05Bar.arrive()</span></code> lowers to
+<code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code>, and the caller must guard it so only the intended
+issuer calls it. Only the elected thread has the real MMA work in its
+commit group. The other lanes create empty commit groups, and those
+empty groups can signal the mbarrier before the MMA finishes. The TMA
+producer may then overwrite SMEM while the MMA still needs it.</p>
+<p>A useful agent prompt is not:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Why is my GEMM wrong?
 </pre></div>
 </div>
-<p>The prompt gives the model the symptom (zeros), the structural
-observation (mismatch between elect_sync scope and arrive scope), and a
-yes/no question. A good model should be much more likely to identify the
-commit-group issue with this level of context.</p>
-<p><strong>Fix:</strong> Move the arrive inside the <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> guard:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Fixed MMA loop</span>
-<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
+<p>It is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>The MMA issue uses elect_sync, but mma2tma.arrive is outside that elected scope.
+In these TIRX wrappers, TCGen05Bar.arrive lowers to tcgen05.commit.
+Can empty commit groups signal the barrier early?
+</pre></div>
+</div>
+<p>The fix is to keep the arrive in the same elected-thread scope as the
+MMA issue:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
     <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">lane_id</span><span class="p">,</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">())):</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)[</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()]:</span>
         <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
             <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span>
             <span class="n">Asmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
@@ -402,311 +377,348 @@ commit-group issue with this level of context.</p>
             <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
             <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="c1"># Now only the elected thread (with a non-empty commit group) arrives</span>
         <span class="n">mma2tma</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cta_mask</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">mma_ps</span><span class="o">.</span><span class="n">advance</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The bug pattern is common in Blackwell kernel development. It is also
-one of the easier cases for an LLM to catch, because the task is closer
-to recognizing a familiar structural mismatch than to reasoning through
-full phase-state behavior.</p>
-<section id="weak-prompt-vs-strong-prompt">
-<h3><span class="section-number">7.4.4.1. </span>Weak prompt vs strong prompt<a class="headerlink" href="#weak-prompt-vs-strong-prompt" title="Permalink to this heading">¶</a></h3>
-<p>The same bug typically produces very different LLM responses depending
-on how it is asked. Two extremes:</p>
-<p><strong>Weak prompt</strong> (code only, vague question):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">My</span> <span class="n">GEMM</span> <span class="n">kernel</span> <span class="n">output</span> <span class="ow">is</span> <span class="nb">all</span> <span class="n">zeros</span><span class="o">.</span> <span class="n">Here</span><span class="s1">&#39;s the MMA loop:</span>
-<span class="p">[</span><span class="n">paste</span> <span class="n">code</span><span class="p">]</span>
-<span class="n">What</span><span class="s1">&#39;s wrong?</span>
-</pre></div>
-</div>
-<p>The common failure mode is the model guessing at high-frequency knobs it
-has seen elsewhere — flipping <code class="docutils literal notranslate"><span class="pre">cta_group=1</span></code> to <code class="docutils literal notranslate"><span class="pre">cta_group=2</span></code>,
-tweaking <code class="docutils literal notranslate"><span class="pre">accum</span></code>, adjusting <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code> — without engaging the
-actual hardware constraint behind the bug.</p>
-<p><strong>Strong prompt</strong> (hardware constraint stated up front):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>I&#39;m writing a TIRX kernel for GEMM. Target: Blackwell B200 (SM100a).
-
-Hardware constraint:
-- tcgen05.commit is per-thread; it must be guarded so only the intended issuer calls it.
-
-Symptom: Output is all zeros or random garbage, non-deterministically.
-Question: Is mma2tma.arrive() in the correct scope? It uses tcgen05.commit internally.
-</pre></div>
-</div>
-<p>Because the constraint is stated explicitly, a competent model can
-reason directly to the answer: the <code class="docutils literal notranslate"><span class="pre">arrive</span></code> sits outside the
-elected-thread block, so the 31 non-elected threads each create an empty
-commit group that signals the barrier instantly. The fix is to move
-<code class="docutils literal notranslate"><span class="pre">arrive</span></code> inside
-<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread(Tx.filter(lane_id,</span> <span class="pre">Tx.ptx.elect_sync())):</span></code>.</p>
-<p><strong>Result:</strong> Context is the bottleneck. If the prompt does not state that
-<code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> is per-thread, no amount of “be more careful” gets
-the model to that fact from scratch. The pitfall tables are written so
-you can paste them as context.</p>
+<p>This is the pattern for the rest of the chapter: state the contract, ask
+the agent to check one edge, then verify the answer against source,
+generated CUDA, and a runnable test.</p>
 </section>
-<section id="llm-output-red-flags">
-<h3><span class="section-number">7.4.4.2. </span>LLM output red flags<a class="headerlink" href="#llm-output-red-flags" title="Permalink to this heading">¶</a></h3>
-<p>When reviewing LLM-generated TIRX code, watch for these signals that the
-model is guessing rather than reasoning from correct knowledge:</p>
-<ol class="arabic simple">
-<li><p><strong>Mixing Hopper and Blackwell APIs</strong> — suggests <code class="docutils literal notranslate"><span class="pre">cp.async</span></code> (Hopper)
-instead of <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> / TMA (Blackwell), or references <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>
-instead of <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>.</p></li>
-<li><p><strong>Treating ``elect_sync()`` as warpgroup-level</strong> — <code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code>
-elects one thread per <em>warp</em> (32 threads), not per warpgroup (128
-threads). With 4 warps you get 4 elected threads.</p></li>
-<li><p><strong>Inventing TIRX APIs</strong> — names like <code class="docutils literal notranslate"><span class="pre">Tx.barrier()</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.async_copy()</span></code>, or <code class="docutils literal notranslate"><span class="pre">Tx.shared_memory()</span></code> that don’t exist.
-Always verify function names against the API Reference.</p></li>
-<li><p><strong>Wrong barrier arrival counts</strong> — e.g., suggesting <code class="docutils literal notranslate"><span class="pre">init(128)</span></code> for
-a barrier that only one elected thread arrives on, or <code class="docutils literal notranslate"><span class="pre">init(1)</span></code> for
-a barrier where all 128 warpgroup threads arrive.</p></li>
-<li><p><strong>Sprinkling ``fence.after_thread_sync()`` everywhere</strong> — models
-trained on older examples often insert this fence on every MMA
-boundary (e.g. between TMA wait and MMA issue). In the kernels shown
-here, the TMA-completion and MMA-completion mbarriers already carry
-release→acquire ordering, so the fence is not part of those handoffs.
-Some conservative reference kernels use it on the writeback path
-(between <code class="docutils literal notranslate"><span class="pre">mma2ld.wait</span></code> and the first <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>); do not copy
-it to unrelated edges.</p></li>
-</ol>
+<section id="use-case-1-explain-a-kernel-as-tile-primitives">
+<h2><span class="section-number">7.5. </span>Use Case 1: Explain a Kernel as Tile Primitives<a class="headerlink" href="#use-case-1-explain-a-kernel-as-tile-primitives" title="Permalink to this heading">¶</a></h2>
+<p>The first useful task is explanation. Ask the agent to convert a code
+region into a tile-primitive table:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Read this TIRX code and make a table with:
+primitive, scope, source tile, destination tile, dispatch path,
+barrier waited before the primitive, and barrier signaled after it.
+</pre></div>
+</div>
+<p>For example, a good explanation of a GEMM writeback should look like:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Primitive</p></th>
+<th class="head"><p>Scope</p></th>
+<th class="head"><p>Source</p></th>
+<th class="head"><p>Destination</p></th>
+<th class="head"><p>Handoff</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(Dreg_wg,</span> <span class="pre">tmem)</span></code></p></td>
+<td><p>warpgroup</p></td>
+<td><p>TMEM
+accumulator</p></td>
+<td><p>warpgroup RF
+tile</p></td>
+<td><p>wait for MMA
+first, then
+<code class="docutils literal notranslate"><span class="pre">wait.ld()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cast(reg_f16,</span> <span class="pre">reg_f32)</span></code> +
+<code class="docutils literal notranslate"><span class="pre">Tx.copy(Dsmem,</span> <span class="pre">reg_f16)</span></code></p></td>
+<td><p>thread</p></td>
+<td><p>per-thread
+registers</p></td>
+<td><p>SMEM staging
+tile</p></td>
+<td><p>fence before
+TMA store</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(D,</span> <span class="pre">Dsmem,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code></p></td>
+<td><p>selected
+TMA
+issuer</p></td>
+<td><p>SMEM
+staging
+tile</p></td>
+<td><p>GMEM output</p></td>
+<td><p>commit the
+TMA store
+group and
+wait before
+SMEM reuse</p></td>
+</tr>
+</tbody>
+</table>
+<p>This is a better question than “explain this code” because it forces the
+answer to use the tutorial’s mental model. If the agent cannot identify
+the scope, layout, dispatch, or handoff, that is a sign the explanation
+is incomplete.</p>
+<p>For a line like <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(Dreg_wg,</span> <span class="pre">tmem)</span></code>, a weak explanation is
+“this copies data.” A useful explanation says: this runs under warpgroup
+scope, reads a TMEM accumulator tile, writes a warpgroup-distributed
+register view, lowers to a <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>-style readback, and needs
+<code class="docutils literal notranslate"><span class="pre">wait.ld()</span></code> before the registers are consumed.</p>
 </section>
-</section>
-<section id="generating-test-harnesses">
-<h2><span class="section-number">7.4.5. </span>Generating Test Harnesses<a class="headerlink" href="#generating-test-harnesses" title="Permalink to this heading">¶</a></h2>
-<p>Reference implementations are a good fit for LLMs. The model does not
-need full hardware understanding here; it only needs to implement the
-math correctly.</p>
-<p><strong>Prompt example:</strong></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Generate</span> <span class="n">a</span> <span class="n">numpy</span> <span class="n">reference</span> <span class="k">for</span> <span class="n">this</span> <span class="n">TIRX</span> <span class="n">kernel</span> <span class="n">signature</span><span class="p">:</span>
-<span class="o">-</span> <span class="n">Operation</span><span class="p">:</span> <span class="n">RMSNorm</span>
-
-<span class="o">-</span> <span class="n">Input</span><span class="p">:</span> <span class="n">x</span> <span class="p">[</span><span class="n">batch</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">]</span> <span class="n">float16</span><span class="p">,</span> <span class="n">weight</span> <span class="p">[</span><span class="n">hidden_size</span><span class="p">]</span> <span class="n">float16</span>
-
-<span class="o">-</span> <span class="n">Output</span><span class="p">:</span> <span class="n">out</span> <span class="p">[</span><span class="n">batch</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">]</span> <span class="n">float16</span>
-
-<span class="o">-</span> <span class="n">Formula</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">RMS</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">weight</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">RMS</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
-<span class="n">Use</span> <span class="n">float64</span> <span class="k">for</span> <span class="n">intermediate</span> <span class="n">computation</span> <span class="n">to</span> <span class="n">avoid</span> <span class="n">numerical</span> <span class="n">issues</span><span class="o">.</span>
-</pre></div>
-</div>
-<p><strong>Expected output:</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">rmsnorm_ref</span><span class="p">(</span><span class="n">x_f16</span><span class="p">,</span> <span class="n">weight_f16</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Numpy reference for RMSNorm. Computes in float64 for precision.&quot;&quot;&quot;</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">x_f16</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">weight_f16</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="n">rms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">rms</span><span class="p">)</span> <span class="o">*</span> <span class="n">w</span>
-    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Most LLMs can produce this correctly. The float64 intermediate trick
-avoids false mismatches from fp16 rounding in the reference.</p>
-<p>For GEMM verification, a torch reference on CUDA is even simpler:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-
-<span class="c1"># Reference for GEMM verification</span>
-<span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">64</span>
-<span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-<span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-<span class="n">D_ref</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span>  <span class="c1"># cuBLAS reference, float16 accumulation</span>
-</pre></div>
-</div>
-<p>The torch path calls cuBLAS under the hood, giving you a
-hardware-verified reference.</p>
-<p>For FP8 kernels with block scaling, the reference is more involved. LLM
-assistance pays off when the task is mostly dtype conversion
-boilerplate:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ml_dtypes</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">fp8_block_scaled_gemm_ref</span><span class="p">(</span><span class="n">A_fp8</span><span class="p">,</span> <span class="n">B_fp8</span><span class="p">,</span> <span class="n">sfa</span><span class="p">,</span> <span class="n">sfb</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reference for FP8 block-scaled GEMM. A_fp8 and B_fp8 are int8 views.&quot;&quot;&quot;</span>
-    <span class="n">A</span> <span class="o">=</span> <span class="n">A_fp8</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">ml_dtypes</span><span class="o">.</span><span class="n">float8_e4m3fn</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="n">B</span> <span class="o">=</span> <span class="n">B_fp8</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">ml_dtypes</span><span class="o">.</span><span class="n">float8_e4m3fn</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="c1"># Apply per-block scale factors</span>
-    <span class="n">M</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span>
-    <span class="n">N</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
-            <span class="n">A</span><span class="p">[</span><span class="n">m</span><span class="p">:</span><span class="n">m</span><span class="o">+</span><span class="n">block_size</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="n">block_size</span><span class="p">]</span> <span class="o">*=</span> <span class="n">sfa</span><span class="p">[</span><span class="n">m</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">k</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">block_size</span><span class="p">):</span>
-            <span class="n">B</span><span class="p">[</span><span class="n">n</span><span class="p">:</span><span class="n">n</span><span class="o">+</span><span class="n">block_size</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="n">block_size</span><span class="p">]</span> <span class="o">*=</span> <span class="n">sfb</span><span class="p">[</span><span class="n">n</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">k</span> <span class="o">//</span> <span class="n">block_size</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>For higher precision, accumulate in float32:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">D_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>  <span class="c1"># float32 accumulation, cast back</span>
-</pre></div>
-</div>
-<p>Use these references with three-way comparison: your TIRX kernel output
-vs numpy reference vs torch/cuBLAS. If all three agree, you have high
-confidence. If your kernel disagrees with both references, the bug is in
-your kernel. If numpy and torch disagree with each other, check your
-accumulation precision.</p>
-</section>
-<section id="when-to-be-cautious-with-llm-suggestions">
-<h2><span class="section-number">7.4.6. </span>When to Be Cautious with LLM Suggestions<a class="headerlink" href="#when-to-be-cautious-with-llm-suggestions" title="Permalink to this heading">¶</a></h2>
-<p>The checklist covers failure modes seen in kernel debugging.</p>
-<p><strong>1. Phase tracking.</strong> Current LLMs often struggle with barrier phase
-initialization. The <code class="docutils literal notranslate"><span class="pre">is_producer</span></code> flag, the initial phase value, and
-the skip-first-wait pattern interact subtly. If the model suggests a
-phase init, always verify with this test: “If both producer and consumer
-start with the same phase, do they deadlock on the first iteration?” If
-yes, one of them needs to skip the first wait or use a different initial
-phase.</p>
-<p><strong>2. TMEM layout arithmetic.</strong> LLMs may suggest wrong TileLayout
-parameters, forget <code class="docutils literal notranslate"><span class="pre">allocated_addr</span></code>, or confuse physical TMEM rows
-with logical rows. TMEM has a fixed 128-row x 512-column structure, and
-the mapping from logical indices to physical rows is hardware-defined.
-If the model suggests a TMEM layout, verify that <code class="docutils literal notranslate"><span class="pre">allocated_addr</span></code> is
-set correctly and that the <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> dimensions match the declared
-buffer shape.</p>
-<p><strong>3. TIRX API quirks.</strong> LLMs have limited TIRX training data and may
-confuse TIRX APIs with CUTLASS or Triton equivalents. Examples of
-details that may not be represented reliably in the model’s prior
-knowledge: - <code class="docutils literal notranslate"><span class="pre">MBarrier.init()</span></code> guards on its <code class="docutils literal notranslate"><span class="pre">leader</span></code> predicate,
-which defaults to <code class="docutils literal notranslate"><span class="pre">Tx.cuda.thread_rank()</span> <span class="pre">==</span> <span class="pre">0</span></code> — thread 0 of the
-enclosing CTA. If you call it from a region that does not include thread
-0 (e.g., a <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warpgroup():</span> <span class="pre">if</span> <span class="pre">wg_id</span> <span class="pre">==</span> <span class="pre">1:</span></code> block where only
-warpgroup 1 is active), no thread will execute the init and the barrier
-can remain uninitialized. Initialize barriers from a region that
-includes thread 0 of the CTA, or override <code class="docutils literal notranslate"><span class="pre">leader</span></code> explicitly when
-constructing the barrier.</p>
+<section id="use-case-2-review-a-kernel-change">
+<h2><span class="section-number">7.6. </span>Use Case 2: Review a Kernel Change<a class="headerlink" href="#use-case-2-review-a-kernel-change" title="Permalink to this heading">¶</a></h2>
+<p>Agent review works best when the change has a small, checkable contract.
+Examples:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> from TMEM to local dispatches <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> but
-does NOT emit <code class="docutils literal notranslate"><span class="pre">tcgen05.wait.ld()</span></code>. If you read the register
-immediately, you get stale data.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> elects one thread per <strong>warp</strong>, not per warpgroup.
-With 4 warps, <code class="docutils literal notranslate"><span class="pre">Tx.thread(Tx.filter(lane_id,</span> <span class="pre">Tx.ptx.elect_sync()))</span></code>
-gives you 4 elected threads (one per warp); for <em>exactly one</em> thread
-of a warpgroup, narrow further with <code class="docutils literal notranslate"><span class="pre">Tx.thread(tid_in_wg</span> <span class="pre">==</span> <span class="pre">0)</span></code>.</p></li>
+<li><p>change <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code> from 2 to 4,</p></li>
+<li><p>change <code class="docutils literal notranslate"><span class="pre">cta_group=1</span></code> to <code class="docutils literal notranslate"><span class="pre">cta_group=2</span></code>,</p></li>
+<li><p>add a second MMA consumer,</p></li>
+<li><p>replace synchronous copy with TMA,</p></li>
+<li><p>move writeback through SMEM and TMA store.</p></li>
 </ul>
-<p>If an API call in the model’s suggestion looks unfamiliar, grep the TIRX
-codebase to verify it exists before using it.</p>
-<p><strong>4. Performance advice.</strong> “Use <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=8</span></code> for better performance”
-— LLMs generally cannot reason about the SMEM budget vs occupancy
-tradeoff. Deeper pipelines use more SMEM, which may reduce occupancy,
-which may hurt performance. Always profile with <code class="docutils literal notranslate"><span class="pre">torch.cuda.Event</span></code>
-timing or Proton. Performance intuition from an LLM should be verified
-empirically.</p>
-</section>
-<section id="building-a-persistent-context-file">
-<h2><span class="section-number">7.4.7. </span>Building a Persistent Context File<a class="headerlink" href="#building-a-persistent-context-file" title="Permalink to this heading">¶</a></h2>
-<p>A <strong>persistent context file</strong> is a plain text bug log for LLM prompts.
-Every time a non-obvious bug turns up, add a short entry:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">### tcgen05.commit Must Be Guarded</span>
-<span class="n">tcgen05</span><span class="o">.</span><span class="n">commit</span> <span class="ow">is</span> <span class="n">per</span><span class="o">-</span><span class="n">thread</span><span class="p">,</span> <span class="ow">not</span> <span class="n">warp</span><span class="o">-</span><span class="n">cooperative</span><span class="o">.</span> <span class="n">If</span> <span class="nb">all</span> <span class="mi">32</span> <span class="n">threads</span> <span class="n">call</span> <span class="n">it</span><span class="p">,</span>
-<span class="n">only</span> <span class="n">the</span> <span class="n">elected</span> <span class="n">thread</span> <span class="n">has</span> <span class="n">a</span> <span class="n">non</span><span class="o">-</span><span class="n">empty</span> <span class="n">commit</span> <span class="n">group</span><span class="o">.</span> <span class="n">The</span> <span class="n">other</span> <span class="mi">31</span> <span class="n">create</span> <span class="n">empty</span>
-<span class="n">commit</span> <span class="n">groups</span> <span class="n">that</span> <span class="n">signal</span> <span class="n">the</span> <span class="n">mbarrier</span> <span class="n">immediately</span><span class="o">.</span>
-<span class="n">Fix</span><span class="p">:</span> <span class="n">guard</span> <span class="n">TCGen05Bar</span><span class="o">.</span><span class="n">arrive</span><span class="p">()</span> <span class="n">so</span> <span class="n">only</span> <span class="n">the</span> <span class="n">intended</span> <span class="n">issuer</span> <span class="n">calls</span> <span class="n">it</span><span class="o">.</span> <span class="n">In</span> <span class="n">these</span>
-<span class="n">examples</span> <span class="n">that</span> <span class="n">means</span> <span class="n">wrapping</span> <span class="n">it</span> <span class="n">inside</span> <span class="n">the</span> <span class="n">same</span> <span class="n">elected</span><span class="o">-</span><span class="n">thread</span> <span class="n">scope</span> <span class="k">as</span> <span class="n">MMA</span><span class="p">:</span>
-<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">lane_id</span><span class="p">,</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">())):</span>
+<p>Ask for invariant checks, not a broad review:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I changed a Step-7-style single-CTA GEMM into the Step 8 clustered form with CTA_GROUP=2.
+Check only the cluster invariants:
+- tcgen05.alloc / gemm_async / commit / dealloc cta_group values
+- scheduler tile shape
+- TMA byte count
+- remote barrier view
+- cluster_sync before cleanup
 </pre></div>
 </div>
-<p>Include this file (or relevant excerpts) in your prompt context. It
-serves two roles:</p>
-<ol class="arabic simple">
-<li><p><strong>The LLM learns from your past bugs.</strong> It will not suggest patterns
-you have already proven incorrect.</p></li>
-<li><p><strong>The team keeps a bug log.</strong> Six months later, when a similar bug
-appears in a different kernel, the context file records the fix.</p></li>
-</ol>
-<p>A minimal starter template (<code class="docutils literal notranslate"><span class="pre">tirx_bugs.md</span></code>):</p>
-<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gh"># TIRX Bug Log (Blackwell SM100a)</span>
-
-<span class="gu">### tcgen05.commit outside issuer guard</span>
-Symptom: zeros or garbage, non-deterministic.
-Cause: tcgen05.commit is per-thread. 31 empty commit groups signal mbarrier early.
-Fix: wrap TCGen05Bar.arrive() inside <span class="sb">`with Tx.thread(Tx.filter(lane_id, Tx.ptx.elect_sync())):`</span>.
-
-<span class="gu">### MBarrier.init from wrong warp</span>
-Symptom: kernel hangs (deadlock).
-Cause: init() uses threadIdx.x &lt; 1 internally. If called from wg_id==1, thread 0 is in WG0.
-Fix: call init at CTA level (before any wg_id branch), or ensure warp_id==0 in WG0.
-
-<span class="gu">### fence.after_thread_sync is rarely needed (don&#39;t over-add it)</span>
-Symptom: model-generated code sprinkles fence.after_thread_sync() around every
-         MMA, or you see it on the TMA-&gt;MMA edge.
-Cause: mbarrier arrives from async engines already carry release-&gt;acquire ordering,
-       so these examples do not need fences on the TMA-&gt;MMA edge or after
-       cta_sync-guarded SMEM copies. Some conservative writeback paths still
-       insert the fence before tcgen05.ld.
-Fix: strip stray fence.after_thread_sync() calls. If you are mirroring that style,
-     keep exactly one - after mma2ld.wait() and before the first tcgen05.ld.
+<p>For warp-specialized GEMM, useful review questions are:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Change</p></th>
+<th class="head"><p>What to ask the agent to check</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Increase
+pipeline
+depth</p></td>
+<td><p>barrier array depth, stage index, phase flip point,
+SMEM budget</p></td>
+</tr>
+<tr class="row-odd"><td><p>Add TMA
+store</p></td>
+<td><p>RF -&gt; SMEM fence, warpgroup sync, commit group, store
+wait before SMEM reuse</p></td>
+</tr>
+<tr class="row-even"><td><p>Add CTA
+cluster</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cta_group</span></code>, remote barriers, cluster tile shape,
+cleanup sync</p></td>
+</tr>
+<tr class="row-odd"><td><p>Add
+consumer</p></td>
+<td><p>per-consumer barrier slots, TMEM ranges, scheduler M
+tile factor</p></td>
+</tr>
+</tbody>
+</table>
+<p>The agent is not deciding the design. It is checking whether the code
+still matches the design. For example, <code class="docutils literal notranslate"><span class="pre">cta_group=2</span></code> is not just one
+keyword on <code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code>; it also changes TMEM allocation, MMA
+issue, commit, deallocation, remote barriers, and scheduler tile shape.</p>
+</section>
+<section id="use-case-3-debug-from-symptoms">
+<h2><span class="section-number">7.7. </span>Use Case 3: Debug from Symptoms<a class="headerlink" href="#use-case-3-debug-from-symptoms" title="Permalink to this heading">¶</a></h2>
+<p>When a kernel fails, first classify the symptom. Then ask the agent to
+map the symptom back to the nearest producer-consumer handoff. The
+detailed GEMM debugging checklist lives in the appendix; the table here
+is the prompt-level version.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Symptom</p></th>
+<th class="head"><p>Likely area</p></th>
+<th class="head"><p>First checks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Kernel hangs</p></td>
+<td><p>missing arrive, wrong
+phase, wrong init count</p></td>
+<td><p>barrier producer/consumer
+pair</p></td>
+</tr>
+<tr class="row-odd"><td><p>Output all
+zeros</p></td>
+<td><p>TMEM read before MMA
+completes, early empty
+commit</p></td>
+<td><p>MMA commit guard,
+<code class="docutils literal notranslate"><span class="pre">mma2ld.wait</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Wrong rows in
+chunks of 128</p></td>
+<td><p>warpgroup handoff bug</p></td>
+<td><p>TMEM readback, writeback
+barrier, per-consumer
+slot</p></td>
+</tr>
+<tr class="row-odd"><td><p>Random garbage</p></td>
+<td><p>SMEM reused too early</p></td>
+<td><p>TMA/MMA empty barrier,
+TMA store drain</p></td>
+</tr>
+<tr class="row-even"><td><p>NaN everywhere</p></td>
+<td><p>invalid input to math
+or wrong descriptor</p></td>
+<td><p>softmax max subtraction,
+masks, SMEM layout, MMA
+descriptor</p></td>
+</tr>
+<tr class="row-odd"><td><p>Works for small
+sizes only</p></td>
+<td><p>scheduler or boundary
+bug</p></td>
+<td><p>tile count, phase reset,
+tail guard</p></td>
+</tr>
+</tbody>
+</table>
+<p>The prompt should include both the symptom and the code around the
+relevant barrier. For example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Symptom: output is zeros or random garbage.
+The MMA issue uses elect_sync, but mma2tma.arrive is outside that elected scope.
+Does this allow an empty commit group to signal the barrier early?
 </pre></div>
 </div>
-<p>Format tips: - One bug per entry, under 5 lines each - Include
-<strong>symptom</strong>, <strong>root cause</strong>, and <strong>fix</strong> - Include hardware-specific
-details (SM version, instruction name) - Paste relevant entries into
-your prompt when debugging similar issues</p>
+<p>This is the kind of question agents handle well: the local contract is
+explicit, and the agent only needs to check whether the code violates
+it.</p>
 </section>
-<section id="workflow">
-<h2><span class="section-number">7.4.8. </span>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading">¶</a></h2>
-<figure class="align-default" id="id1">
-<img alt="../_images/ai_assisted_workflow.png" src="../_images/ai_assisted_workflow.png" />
-<figcaption>
-<p><span class="caption-number">Fig. 7.4.1 </span><span class="caption-text">AI-Assisted Kernel Development Workflow</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
-</figcaption>
-</figure>
-<p>A workflow that combines human expertise with LLM assistance:</p>
-<ol class="arabic simple">
-<li><p><strong>Design</strong> the kernel yourself: warp roles, barrier topology,
-pipeline depth. Kernel design should still be driven by the
-programmer, with the LLM used mainly as an assistant rather than the
-source of the design.</p></li>
-<li><p><strong>Generate boilerplate</strong> with the LLM: SMEM allocation, TMA
-descriptor setup, barrier initialization. These are tedious and
-mechanical.</p></li>
-<li><p><strong>Write the core logic</strong> yourself: MMA dispatch, softmax, reductions.
-You need to understand what every line does.</p></li>
-<li><p><strong>Generate test harnesses</strong> with the LLM: numpy/torch references,
-input generation, comparison logic.</p></li>
-<li><p><strong>Debug</strong> with the LLM: paste the failing code + symptom. LLMs can
-match known bugs (missing <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code>, wrong barrier count, fence
-ordering), but novel bugs still need manual analysis.</p></li>
-<li><p><strong>Profile</strong> yourself: LLMs generally cannot tell you whether your
-kernel is fast. Use timing tools.</p></li>
-</ol>
-<p>Do not make the LLM responsible for the kernel. Spend your time on the
-hard parts (design, core logic, performance) and let the LLM handle the
-tedious parts (boilerplate, references, known-bug detection).</p>
+<section id="use-case-4-generate-reference-tests">
+<h2><span class="section-number">7.8. </span>Use Case 4: Generate Reference Tests<a class="headerlink" href="#use-case-4-generate-reference-tests" title="Permalink to this heading">¶</a></h2>
+<p>Test generation is one of the safest agent use cases. Let the agent
+write the reference, not the kernel. It does not need to understand
+Blackwell barriers to write a PyTorch or NumPy reference, but the prompt
+must still state the layout convention.</p>
+<p>Good prompt:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generate a PyTorch reference for this TIRX kernel.
+Operation: D = A @ B.T.
+A shape: [M, K], fp16.
+B shape: [N, K], fp16.
+D shape: [M, N], fp16.
+Use fp32 accumulation and cast to fp16.
+Return max absolute error and relative error.
+</pre></div>
+</div>
+<p>Expected reference shape:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">D_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">@</span> <span class="n">B</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>
+<span class="n">abs_err</span> <span class="o">=</span> <span class="p">(</span><span class="n">D</span> <span class="o">-</span> <span class="n">D_ref</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+<span class="n">max_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">abs_err</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+<span class="n">rel_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">abs_err</span> <span class="o">/</span> <span class="n">D_ref</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">))</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>For Flash Attention, ask for the exact tensor layout:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Q, K, V are [batch, seq, heads, dim].
+The kernel supports GQA: num_qo_heads may be larger than num_kv_heads.
+Convert Q/K/V to [batch, heads, seq, dim] before calling scaled_dot_product_attention.
+For GQA, repeat K/V along the head dimension after the transpose.
+Transpose the output back to [batch, seq, num_qo_heads, dim].
+If seq_len_q and seq_len_kv differ, verify causal-mask alignment explicitly.
+</pre></div>
+</div>
+<p>The generated test still needs review, especially dtype, accumulation
+precision, head layout, and tolerance. But this is far less risky than
+asking the agent to write the kernel itself.</p>
+</section>
+<section id="use-case-5-inspect-generated-cuda">
+<h2><span class="section-number">7.9. </span>Use Case 5: Inspect Generated CUDA<a class="headerlink" href="#use-case-5-inspect-generated-cuda" title="Permalink to this heading">¶</a></h2>
+<p>For scope guards and issued intrinsics, the generated CUDA is the ground
+truth. TIRX source expresses intent; generated CUDA shows the guards and
+instructions that will actually run. Agents can help read it if you ask
+a concrete question:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Here is the generated CUDA guard around tcgen05_alloc.
+Does it require all lanes of one warp, or only lane 0?
+</pre></div>
+</div>
+<p>Useful patterns to check:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>TIRX intent</p></th>
+<th class="head"><p>Generated-code clue</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>warpgroup branch</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(warp_id_in_cta</span> <span class="pre">&gt;&gt;</span> <span class="pre">2)</span> <span class="pre">==</span> <span class="pre">...</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>warp branch</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(warp_id_in_cta</span> <span class="pre">&amp;</span> <span class="pre">3)</span> <span class="pre">==</span> <span class="pre">...</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>lane 0 branch</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">threadIdx.x</span> <span class="pre">%</span> <span class="pre">32</span> <span class="pre">==</span> <span class="pre">0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>barrier init default leader</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">threadIdx.x</span> <span class="pre">&lt;</span> <span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>elected issue</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tvm_builtin_elect_one_sync_op()</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>If the agent’s explanation disagrees with the generated code, trust the
+generated code.</p>
+<p>The appendix has a fuller generated-CUDA checklist for warp-specialized
+GEMM debugging.</p>
+</section>
+<section id="agent-review-boundaries">
+<h2><span class="section-number">7.10. </span>Agent Review Boundaries<a class="headerlink" href="#agent-review-boundaries" title="Permalink to this heading">¶</a></h2>
+<p>The risky cases are the ones where the agent has to invent the hardware
+contract.</p>
+<ul class="simple">
+<li><p>Do not ask “fix the barriers.” Ask “who arrives at this barrier, and
+how many arrivals does init expect?”</p></li>
+<li><p>Do not ask “add the right fence.” Ask “which producer-consumer edge
+does this fence order?”</p></li>
+<li><p>Do not ask “is this phase right?” Ask “what happens on the first wait,
+and when does the phase flip?”</p></li>
+<li><p>Do not accept invented TIRX APIs. Verify unfamiliar names with the API
+reference or <code class="docutils literal notranslate"><span class="pre">rg</span></code>.</p></li>
+<li><p>Do not accept an <code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> explanation unless it says the
+election is one thread per warp.</p></li>
+<li><p>Do not accept performance advice without measurement. Pipeline depth,
+SMEM use, occupancy, and Tensor Core utilization must be profiled.</p></li>
+</ul>
+<p>The boundary is not “agent versus human” in the abstract. It is whether
+the contract is already explicit. If the contract is explicit, the agent
+can check it. If the contract is missing, do not let the agent silently
+choose one. Ask for candidate contracts, compare their tradeoffs, then
+choose and state the contract yourself.</p>
+</section>
+<section id="project-context-file">
+<h2><span class="section-number">7.11. </span>Project Context File<a class="headerlink" href="#project-context-file" title="Permalink to this heading">¶</a></h2>
+<p>A project context file is a short bug log that you paste into future
+prompts. It prevents the agent from rediscovering or contradicting
+lessons you already learned.</p>
+<p>Example:</p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gh"># TIRX Blackwell Bug Notes</span>
+
+<span class="gu">### tcgen05.commit outside elected scope</span>
+Symptom: zeros or random garbage.
+Cause: only the elected thread has a non-empty commit group; other lanes can signal early.
+Fix: keep TCGen05Bar.arrive inside the same elect_sync scope as gemm_async.
+
+<span class="gu">### MBarrier.init from wrong warpgroup</span>
+Symptom: deadlock.
+Cause: default leader is CTA thread 0. If init is inside wg_id == 1, no thread runs it.
+Fix: initialize barriers at CTA level before role branches.
+
+<span class="gu">### TMA store reused Dsmem too early</span>
+Symptom: intermittent wrong rows.
+Cause: the TMA store group was not committed or waited far enough before Dsmem reuse.
+Fix: commit the store group and wait far enough for the staging SMEM buffer&#39;s reuse pattern.
+</pre></div>
+</div>
+<p>Keep entries short: symptom, cause, fix. These notes are more useful to
+an agent than a long chat history.</p>
 </section>
 <section id="exercises">
-<h2><span class="section-number">7.4.9. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">7.12. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
-<li><p>Take your Step 7 kernel and introduce the <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> bug from the
-demo: move <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> outside the
-<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread(Tx.filter(lane_id,</span> <span class="pre">Tx.ptx.elect_sync())):</span></code> block.
-Run the test to confirm it produces wrong output. Then paste the
-buggy code to an LLM with the symptom description. Does the model
-identify the root cause?</p></li>
-<li><p>Ask an LLM to generate a numpy reference for the RMSNorm kernel from
-<a class="reference internal" href="../chapter_rmsnorm/index.html#chap-rmsnorm"><span class="std std-numref">Section 7.3</span></a>. Compare its output with your kernel’s
-output on the same input. Do the results match to within fp16
-tolerance?</p></li>
-<li><p>Ask an LLM to explain the barrier flow in Step 8 (2-CTA cluster):
-“Each CTA’s TMA warp loads both its own A tile and B tile into local
-SMEM, then CTA-0’s MMA warp issues the cooperative MMA that reads B
-from both CTAs’ SMEM. Trace which barriers fire in what order.”
-Verify the explanation against the actual code.</p></li>
-<li><p>Try asking an LLM to write a complete Step 7 kernel from scratch.
-Give it only the API reference from <a class="reference internal" href="../chapter_api_reference/index.html#chap-api-reference"><span class="std std-numref">Section 7.5</span></a>
-and the warp role table from Step 7 (Warp Specialization). What does
-it get right? What does it get wrong? The answer marks the boundary
-between pattern matching and hardware reasoning.</p></li>
+<li><p>Take Step 7 and ask an agent to produce a tile-primitive table:
+primitive, scope, layout, dispatch, wait-before, signal-after. Which
+entries did it miss?</p></li>
+<li><p>Move <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> outside the elected MMA issue scope in a
+local experiment. Ask the agent to diagnose the failure using only
+the symptom, then ask again with the <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> hardware
+constraint. Compare the answers.</p></li>
+<li><p>Ask for a PyTorch reference for the Flash Attention kernel with GQA.
+Check whether the agent handles <code class="docutils literal notranslate"><span class="pre">repeat_interleave</span></code> for K/V heads
+correctly.</p></li>
+<li><p>Give the agent the generated CUDA for a warp-specialized kernel and
+ask it to identify the TMA, MMA, and writeback branches. Verify
+against the source.</p></li>
 </ol>
-<blockquote>
-<div><p><strong>Try with your agent</strong>: Paste your most confusing kernel bug (the
-one that took you the longest to find) and describe only the symptom.
-See if the model can identify the root cause. Then try again with the
-hardware constraints template. Compare the quality of the two
-responses.</p>
-</div></blockquote>
 </section>
 </section>
 
@@ -719,20 +731,19 @@ responses.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">7.4. LLM-Assisted Kernel Debugging</a><ul>
-<li><a class="reference internal" href="#llm-strengths-and-failure-modes">7.4.1. LLM Strengths and Failure Modes</a></li>
-<li><a class="reference internal" href="#effective-prompting-for-tirx-kernels">7.4.2. Effective Prompting for TIRX Kernels</a></li>
-<li><a class="reference internal" href="#symptom-to-cause-map">7.4.3. Symptom-to-Cause Map</a></li>
-<li><a class="reference internal" href="#demo-debugging-a-broken-kernel">7.4.4. Demo: Debugging a Broken Kernel</a><ul>
-<li><a class="reference internal" href="#weak-prompt-vs-strong-prompt">7.4.4.1. Weak prompt vs strong prompt</a></li>
-<li><a class="reference internal" href="#llm-output-red-flags">7.4.4.2. LLM output red flags</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#generating-test-harnesses">7.4.5. Generating Test Harnesses</a></li>
-<li><a class="reference internal" href="#when-to-be-cautious-with-llm-suggestions">7.4.6. When to Be Cautious with LLM Suggestions</a></li>
-<li><a class="reference internal" href="#building-a-persistent-context-file">7.4.7. Building a Persistent Context File</a></li>
-<li><a class="reference internal" href="#workflow">7.4.8. Workflow</a></li>
-<li><a class="reference internal" href="#exercises">7.4.9. Exercises</a></li>
+<li><a class="reference internal" href="#">7. Writing TIRX Kernels with Agents</a><ul>
+<li><a class="reference internal" href="#workflow">7.1. Workflow</a></li>
+<li><a class="reference internal" href="#from-goal-to-instruction">7.2. From Goal to Instruction</a></li>
+<li><a class="reference internal" href="#the-tirx-contract-prompt">7.3. The TIRX Contract Prompt</a></li>
+<li><a class="reference internal" href="#case-study-elected-mma-commit-bug">7.4. Case Study: Elected MMA Commit Bug</a></li>
+<li><a class="reference internal" href="#use-case-1-explain-a-kernel-as-tile-primitives">7.5. Use Case 1: Explain a Kernel as Tile Primitives</a></li>
+<li><a class="reference internal" href="#use-case-2-review-a-kernel-change">7.6. Use Case 2: Review a Kernel Change</a></li>
+<li><a class="reference internal" href="#use-case-3-debug-from-symptoms">7.7. Use Case 3: Debug from Symptoms</a></li>
+<li><a class="reference internal" href="#use-case-4-generate-reference-tests">7.8. Use Case 4: Generate Reference Tests</a></li>
+<li><a class="reference internal" href="#use-case-5-inspect-generated-cuda">7.9. Use Case 5: Inspect Generated CUDA</a></li>
+<li><a class="reference internal" href="#agent-review-boundaries">7.10. Agent Review Boundaries</a></li>
+<li><a class="reference internal" href="#project-context-file">7.11. Project Context File</a></li>
+<li><a class="reference internal" href="#exercises">7.12. Exercises</a></li>
 </ul>
 </li>
 </ul>
@@ -743,18 +754,18 @@ responses.</p>
 
       <div class="clearer"></div>
     </div><div class="pagenation">
-     <a id="button-prev" href="../chapter_rmsnorm/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+     <a id="button-prev" href="../chapter_flash_attention/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>7.3. Practice Kernel: RMSNorm Reduction</div>
+            <div>6. Flash Attention 4</div>
          </div>
      </a>
-     <a id="button-next" href="../chapter_api_reference/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+     <a id="button-next" href="../appendix/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>7.5. TIRX API Quick Reference</div>
+            <div>8. Appendix</div>
         </div>
      </a>
   </div>

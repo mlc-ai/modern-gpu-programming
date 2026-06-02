@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>6. Flash Attention on Blackwell &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>6. Flash Attention 4 &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -29,15 +29,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="7. Appendix" href="../appendix/index.html" />
-    <link rel="prev" title="5. Warp-Specialized and Clustered GEMM" href="../chapter_gemm_advanced/index.html" /> 
+    <link rel="next" title="7. Writing TIRX Kernels with Agents" href="../chapter_ai_assisted/index.html" />
+    <link rel="prev" title="5. Scaling GEMM with Warp Specialization and Clusters" href="../chapter_gemm_advanced/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">6. </span>Flash Attention on Blackwell</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">6. </span>Flash Attention 4</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -97,17 +97,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -139,17 +140,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -163,655 +165,771 @@ Show Source
     <div class="document">
         <div class="page-content" role="main">
         
-  <section id="flash-attention-on-blackwell">
-<span id="chap-flash-attention"></span><h1><span class="section-number">6. </span>Flash Attention on Blackwell<a class="headerlink" href="#flash-attention-on-blackwell" title="Permalink to this heading">¶</a></h1>
-<p>Attention kernels reuse the same TIRX patterns as GEMM: tiled data
-movement, warp specialization, asynchronous barriers, and <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>
-MMA.</p>
-<hr class="docutils" />
-<p>Flash Attention 4 is a Blackwell-oriented Flash Attention implementation
-for SM100a GPUs. It fuses the attention computation
-<span class="math notranslate nohighlight">\(O = \text{softmax}(QK^{\top})\,V\)</span> into a single kernel, avoiding
-materializing the full <span class="math notranslate nohighlight">\(N \times N\)</span> attention matrix. TIRX
-expresses that fused algorithm through Blackwell tile movement,
-<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA, barriers, and warp-specialized roles.</p>
-<p><strong>Topics.</strong></p>
-<ul class="simple">
-<li><p>How online softmax works, step by step with a numeric example</p></li>
-<li><p>How Flash Attention 4’s tiled algorithm maps to TIRX’s
-warp-specialized architecture</p></li>
-<li><p>The two MMA phases (Score and Value) and the dataflow between them</p></li>
-<li><p>The barrier topology connecting 4 warpgroups (512 threads)</p></li>
-<li><p>Writeback and adaptive rescaling</p></li>
-<li><p>Causal masking and Grouped Query Attention (GQA)</p></li>
-</ul>
-<section id="online-softmax">
-<h2><span class="section-number">6.1. </span>Online Softmax<a class="headerlink" href="#online-softmax" title="Permalink to this heading">¶</a></h2>
-<p>Standard softmax requires two passes over the data: one to find the
-maximum (for numerical stability), and one to compute the exponentials
-and their sum. For a vector <span class="math notranslate nohighlight">\(x = [x_1, x_2, \ldots, x_N]\)</span>:</p>
+  <section id="flash-attention-4">
+<span id="chap-flash-attention"></span><h1><span class="section-number">6. </span>Flash Attention 4<a class="headerlink" href="#flash-attention-4" title="Permalink to this heading">¶</a></h1>
+<p>We now move from GEMM to a more complex kernel: Flash Attention. It
+still uses the same tile-primitive machinery as the GEMM chapters: TMA
+tile movement, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA, TMEM, warpgroup-local register tiles,
+and explicit barriers. The extra complexity comes from the algorithm
+between the two MMA phases: online softmax, masking, rescaling, and
+final normalization.</p>
+<p>This chapter keeps enough of the Flash Attention 4 algorithm to make the
+kernel readable, then focuses on how that algorithm is expressed in
+TIRX.</p>
+<p>The easiest way to read the kernel is to follow the tile path. <code class="docutils literal notranslate"><span class="pre">Q</span></code>,
+<code class="docutils literal notranslate"><span class="pre">K</span></code>, and <code class="docutils literal notranslate"><span class="pre">V</span></code> start as input tiles loaded from GMEM into SMEM. The
+score MMA consumes <code class="docutils literal notranslate"><span class="pre">Q</span></code> and <code class="docutils literal notranslate"><span class="pre">K</span></code> to create the score tile <code class="docutils literal notranslate"><span class="pre">S</span></code> in
+TMEM. Softmax turns <code class="docutils literal notranslate"><span class="pre">S</span></code> into a numerator tile <code class="docutils literal notranslate"><span class="pre">P</span></code>, and the value MMA
+consumes <code class="docutils literal notranslate"><span class="pre">P</span></code> and <code class="docutils literal notranslate"><span class="pre">V</span></code> to update the output accumulator <code class="docutils literal notranslate"><span class="pre">O</span></code>. When
+the running softmax maximum changes, the old <code class="docutils literal notranslate"><span class="pre">O</span></code> tile must be rescaled
+before the next value MMA can accumulate into it. The sections below
+first explain this path, then show how TIRX assigns the work to
+warpgroups and connects the stages.</p>
+<section id="algorithm-shape">
+<h2><span class="section-number">6.1. </span>Algorithm Shape<a class="headerlink" href="#algorithm-shape" title="Permalink to this heading">¶</a></h2>
+<p>For one query block, Flash Attention computes:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-0">
-<span class="eqno">(6.1.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-0" title="Permalink to this equation">¶</a></span>\[\text{softmax}(x_i) = \frac{e^{x_i - \max(x)}}{\ \sum_j e^{x_j - \max(x)}}\]</div>
-<p>Attention makes this expensive: the score vector has length <span class="math notranslate nohighlight">\(N\)</span>
-(the sequence length), and materializing it requires <span class="math notranslate nohighlight">\(O(N^2)\)</span>
-memory across all query positions. Online softmax eliminates this by
-processing the scores in chunks, maintaining a running maximum and sum
-that get updated as each new chunk arrives.</p>
-<section id="online-recurrence">
-<h3><span class="section-number">6.1.1. </span>Online Recurrence<a class="headerlink" href="#online-recurrence" title="Permalink to this heading">¶</a></h3>
-<p>For each row, we maintain two running values: a maximum <span class="math notranslate nohighlight">\(m\)</span> and an
-exponential sum <span class="math notranslate nohighlight">\(\ell\)</span>. When a new chunk of scores arrives, we
-update both:</p>
-<ol class="arabic simple">
-<li><p>Compute the new maximum:
-<span class="math notranslate nohighlight">\(m_{\text{new}} = \max(m_{\text{old}}, \max(\text{chunk}))\)</span></p></li>
-<li><p>Rescale the old sum:
-<span class="math notranslate nohighlight">\(\ell = \ell \cdot e^{m_{\text{old}} - m_{\text{new}}}\)</span></p></li>
-<li><p>Add the new terms:
-<span class="math notranslate nohighlight">\(\ell = \ell + \sum_j e^{\text{chunk}_j - m_{\text{new}}}\)</span></p></li>
-</ol>
-<p>The rescaling in step 2 keeps the recurrence stable. Since
-<span class="math notranslate nohighlight">\(m_{\text{old}} \le m_{\text{new}}\)</span> (the maximum can only
-increase), the exponent <span class="math notranslate nohighlight">\(m_{\text{old}} - m_{\text{new}} \le 0\)</span>,
-so the rescaling factor
-<span class="math notranslate nohighlight">\(e^{m_{\text{old}} - m_{\text{new}}} \le 1\)</span>. This means we only
-ever multiply by values in <span class="math notranslate nohighlight">\([0, 1]\)</span>.</p>
-</section>
-<section id="numeric-example">
-<h3><span class="section-number">6.1.2. </span>Numeric example<a class="headerlink" href="#numeric-example" title="Permalink to this heading">¶</a></h3>
-<p>Consider computing softmax over 4 elements <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">5,</span> <span class="pre">1,</span> <span class="pre">8]</span></code> processed in
-two chunks of size 2.</p>
-<p><strong>Chunk 1:</strong> [2, 5]</p>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-1">
-<span class="eqno">(6.1.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-1" title="Permalink to this equation">¶</a></span>\[m = 5, \quad \ell = e^{2-5} + e^{5-5} = e^{-3} + 1 \approx 0.050 + 1.0 = 1.050\]</div>
-<p><strong>Chunk 2:</strong> [1, 8]</p>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-2">
-<span class="eqno">(6.1.3)<a class="headerlink" href="#equation-chapter-flash-attention-index-2" title="Permalink to this equation">¶</a></span>\[m_{\text{new}} = \max(5, 8) = 8\]</div>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-3">
-<span class="eqno">(6.1.4)<a class="headerlink" href="#equation-chapter-flash-attention-index-3" title="Permalink to this equation">¶</a></span>\[\ell = 1.050 \cdot e^{5-8} + e^{1-8} + e^{8-8} = 1.050 \cdot e^{-3} + e^{-7} + 1\]</div>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-4">
-<span class="eqno">(6.1.5)<a class="headerlink" href="#equation-chapter-flash-attention-index-4" title="Permalink to this equation">¶</a></span>\[\approx 0.0523 + 0.000912 + 1.0 = 1.053\]</div>
-<p>The final softmax values are <span class="math notranslate nohighlight">\(e^{x_i - 8} / 1.053\)</span> for each
-element, which matches the two-pass result.</p>
-</section>
-<section id="extending-to-flash-attention-4">
-<h3><span class="section-number">6.1.3. </span>Extending to Flash Attention 4<a class="headerlink" href="#extending-to-flash-attention-4" title="Permalink to this heading">¶</a></h3>
-<p>In Flash Attention 4, we track not just <span class="math notranslate nohighlight">\((m, \ell)\)</span> but also an
-output accumulator <span class="math notranslate nohighlight">\(O\)</span>. When the maximum changes, <span class="math notranslate nohighlight">\(O\)</span> must
-be rescaled by the same factor:</p>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-5">
-<span class="eqno">(6.1.6)<a class="headerlink" href="#equation-chapter-flash-attention-index-5" title="Permalink to this equation">¶</a></span>\[O_{\text{new}} = O_{\text{old}} \cdot e^{m_{\text{old}} - m_{\text{new}}} + P_{\text{new}} V_{\text{block}}\]</div>
-<p>where <span class="math notranslate nohighlight">\(P_{\text{new}} = e^{S_{\text{block}} - m_{\text{new}}}\)</span> is
-the unnormalized softmax numerator for the current block. After
-processing all KV blocks, the final output is <span class="math notranslate nohighlight">\(O / \ell\)</span> (dividing
-each row by its accumulated sum).</p>
-<p>Flash Attention 4 loop:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">For</span> <span class="n">each</span> <span class="n">Q</span> <span class="n">block</span> <span class="p">(</span><span class="n">BLK_M</span> <span class="n">rows</span><span class="p">):</span>
-    <span class="n">Initialize</span><span class="p">:</span> <span class="nb">max</span> <span class="o">=</span> <span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="nb">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">O</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">For</span> <span class="n">each</span> <span class="n">KV</span> <span class="n">block</span> <span class="p">(</span><span class="n">BLK_N</span> <span class="n">columns</span><span class="p">):</span>
-        <span class="n">S</span> <span class="o">=</span> <span class="n">Q_block</span> <span class="o">@</span> <span class="n">K_block</span><span class="o">^</span><span class="n">T</span>              <span class="c1"># Scores: [BLK_M, BLK_N]</span>
-        <span class="n">m_new</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">max</span><span class="p">,</span> <span class="n">rowmax</span><span class="p">(</span><span class="n">S</span><span class="p">))</span>          <span class="c1"># Update running max</span>
-        <span class="n">P</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="n">S</span> <span class="o">-</span> <span class="n">m_new</span><span class="p">)</span>                   <span class="c1"># Softmax numerator</span>
-        <span class="nb">sum</span> <span class="o">=</span> <span class="nb">sum</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="nb">max</span> <span class="o">-</span> <span class="n">m_new</span><span class="p">)</span> <span class="o">+</span> <span class="n">rowsum</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>  <span class="c1"># Rescale and update sum</span>
-        <span class="n">O</span> <span class="o">=</span> <span class="n">O</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="nb">max</span> <span class="o">-</span> <span class="n">m_new</span><span class="p">)</span> <span class="o">+</span> <span class="n">P</span> <span class="o">@</span> <span class="n">V_block</span>    <span class="c1"># Rescale and accumulate</span>
-        <span class="nb">max</span> <span class="o">=</span> <span class="n">m_new</span>
-    <span class="n">O</span> <span class="o">=</span> <span class="n">O</span> <span class="o">/</span> <span class="nb">sum</span>                              <span class="c1"># Final normalization</span>
+<span class="eqno">(6.1.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-0" title="Permalink to this equation">¶</a></span>\[O = \text{softmax}(QK^{\top} / \sqrt{d})V\]</div>
+<p>without materializing the full attention matrix. The kernel streams K/V
+blocks and keeps three per-row running states:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">row_max</span></code>: the maximum score seen so far.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">row_sum</span></code>: the running denominator of softmax.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">O</span></code>: the running output accumulator.</p></li>
+</ul>
+<p>For each K/V block, the update is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>S = Q_block @ K_block.T
+m_new = max(row_max, rowmax(S))
+scale = exp((row_max - m_new) / sqrt(d))
+P = exp((S - m_new) / sqrt(d))
+row_sum = row_sum * scale + rowsum(P)
+O = O * scale + P @ V_block
+row_max = m_new
 </pre></div>
 </div>
-<p>All operations on <code class="docutils literal notranslate"><span class="pre">max</span></code>, <code class="docutils literal notranslate"><span class="pre">sum</span></code>, and <code class="docutils literal notranslate"><span class="pre">O</span></code> are <strong>per-row</strong> — each of
-the BLK_M rows maintains its own running state independently.</p>
+<p>Here <code class="docutils literal notranslate"><span class="pre">P</span></code> is not the final normalized attention matrix. It is the
+softmax numerator tile for the current K/V block. After all K/V blocks,
+the kernel writes <code class="docutils literal notranslate"><span class="pre">O</span> <span class="pre">/</span> <span class="pre">row_sum</span></code>.</p>
+<p>For TIRX, the key question is not only what the algorithm computes, but
+where each tile lives while the kernel runs. <code class="docutils literal notranslate"><span class="pre">S</span></code>, <code class="docutils literal notranslate"><span class="pre">P</span></code>, and <code class="docutils literal notranslate"><span class="pre">O</span></code> are
+tile values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">S</span></code> is the score tile. The score MMA writes it to TMEM.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">P</span></code> is the softmax numerator tile. Softmax reads <code class="docutils literal notranslate"><span class="pre">S</span></code> from TMEM
+into registers, computes <code class="docutils literal notranslate"><span class="pre">P</span> <span class="pre">=</span> <span class="pre">exp((S</span> <span class="pre">-</span> <span class="pre">m_new)</span> <span class="pre">/</span> <span class="pre">sqrt(d))</span></code>, and
+writes <code class="docutils literal notranslate"><span class="pre">P</span></code> back to TMEM.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">O</span></code> is the output accumulator tile. The value MMA reads <code class="docutils literal notranslate"><span class="pre">P</span></code> from
+TMEM and <code class="docutils literal notranslate"><span class="pre">V</span></code> from SMEM, then accumulates into <code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM.</p></li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">row_max</span></code> changes, the old <code class="docutils literal notranslate"><span class="pre">O</span></code> tile has to be rescaled before
+the next value MMA accumulates into it. That rescaling is also a tile
+operation: read <code class="docutils literal notranslate"><span class="pre">O</span></code> from TMEM, multiply in registers, and write <code class="docutils literal notranslate"><span class="pre">O</span></code>
+back to TMEM.</p>
 </section>
+<section id="tile-primitive-graph">
+<h2><span class="section-number">6.2. </span>Tile-Primitive Graph<a class="headerlink" href="#tile-primitive-graph" title="Permalink to this heading">¶</a></h2>
+<p>Start with the short version. For one K/V block, the kernel follows this
+tile path:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Q, K, V in GMEM
+  -&gt; Q, K, V in SMEM        by TMA load
+  -&gt; S in TMEM              by score MMA: QK^T
+  -&gt; P in TMEM              by softmax numerator: TMEM -&gt; RF -&gt; TMEM
+  -&gt; O in TMEM              by value MMA: P V
+  -&gt; O in GMEM              by normalization, SMEM staging, and TMA store
+</pre></div>
+</div>
+<p>This is the FA4 version of the GEMM data path. GEMM has one repeated MMA
+chain. FA4 has two MMA phases, and the middle of the chain is softmax.</p>
+<p>The full graph below expands that short path into producer-consumer
+edges:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Stage</p></th>
+<th class="head"><p>Tile movement or compute</p></th>
+<th class="head"><p>TIRX primitive</p></th>
+<th class="head"><p>Hardware path</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Load Q/K/V</p></td>
+<td><p>GMEM tiles -&gt; SMEM tiles</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code></p></td>
+<td><p>TMA load</p></td>
+</tr>
+<tr class="row-odd"><td><p>Score MMA</p></td>
+<td><p>Q in SMEM and K in SMEM -&gt;
+score tile <code class="docutils literal notranslate"><span class="pre">S</span></code> in TMEM</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.gemm_async(...,</span> <span class="pre">dispatch=&quot;tcgen05&quot;)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Softmax
+read</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">S</span></code> in TMEM -&gt; warpgroup
+register tile</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(reg,</span> <span class="pre">tmem)</span></code> under
+<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Softmax
+write</p></td>
+<td><p>numerator tile <code class="docutils literal notranslate"><span class="pre">P</span></code> in
+registers -&gt; fp16 TMEM
+view</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(tmem_as_f16,</span> <span class="pre">reg)</span></code></p></td>
+<td><p>TMEM store, followed
+by
+<code class="docutils literal notranslate"><span class="pre">tcgen05.wait.st()</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Value MMA</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">P</span></code> in TMEM and V in
+SMEM -&gt; output accumulator
+<code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tx.gemm_async(...,</span> <span class="pre">dispatch=&quot;tcgen05&quot;)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> with
+a TMEM operand</p></td>
+</tr>
+<tr class="row-odd"><td><p>Correction</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM -&gt; registers
+-&gt; <code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM</p></td>
+<td><p>TMEM readback, register multiply, TMEM
+store</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> / TMEM
+store</p></td>
+</tr>
+<tr class="row-even"><td><p>Epilogue</p></td>
+<td><p>final <code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM -&gt;
+registers -&gt; SMEM -&gt; GMEM</p></td>
+<td><p>TMEM readback, <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code>, TMA store</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> + TMA
+store</p></td>
+</tr>
+</tbody>
+</table>
+<p>The middle steps are still tile operations. Softmax reads a score tile
+from TMEM into warpgroup registers, does row-wise math, and writes a
+<code class="docutils literal notranslate"><span class="pre">P</span></code> tile back to TMEM. Correction reads an <code class="docutils literal notranslate"><span class="pre">O</span></code> tile from TMEM,
+rescales it, and writes it back.</p>
+<p><strong>Try with your agent</strong>: Ask it to trace only the short path above. For
+each arrow, name the producer role, consumer role, source tile,
+destination tile, and hardware path. Then ask which arrows did not exist
+in the GEMM chapters.</p>
 </section>
-<section id="kernel-architecture">
-<h2><span class="section-number">6.2. </span>Kernel Architecture<a class="headerlink" href="#kernel-architecture" title="Permalink to this heading">¶</a></h2>
-<p>The Blackwell Flash Attention 4 kernel uses 4 warpgroups (512 threads)
-with full warp specialization. WG3 is further specialized into three
-single-warp roles; WG0 / WG1 / WG2 each occupy a whole warpgroup:</p>
+<section id="warp-roles-and-scopes">
+<h2><span class="section-number">6.3. </span>Warp Roles and Scopes<a class="headerlink" href="#warp-roles-and-scopes" title="Permalink to this heading">¶</a></h2>
+<p>Each CTA in this FA4 kernel has 4 warpgroups, 512 threads total. The
+split is easier to read as two groups:</p>
+<ul class="simple">
+<li><p>WG3 drives the hardware engines: TMA load, MMA, and TMA store.</p></li>
+<li><p>WG0, WG1, and WG2 do the register-heavy work between hardware
+operations: softmax, correction, and epilogue.</p></li>
+</ul>
+<p>The exact role table is:</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Owner</p></th>
 <th class="head"><p>Role</p></th>
-<th class="head"><p>Description</p></th>
+<th class="head"><p>What it does</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>WG3, warp 0</strong></p></td>
-<td><p>MMA warp</p></td>
-<td><p>Issues <strong>both</strong> Score MMA
-(<span class="math notranslate nohighlight">\(QK^{\top}\)</span>) and Value MMA
-(<span class="math notranslate nohighlight">\(PV\)</span>) via <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code></p></td>
+<tr class="row-even"><td><p>WG3, warp 1</p></td>
+<td><p>TMA load</p></td>
+<td><p>Loads Q, K, and V tiles from GMEM
+to SMEM</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>WG3, warp 1</strong></p></td>
-<td><p>TMA Load warp</p></td>
-<td><p>Loads Q, K, V tiles from GMEM to
-SMEM via TMA</p></td>
+<tr class="row-odd"><td><p>WG3, warp 0</p></td>
+<td><p>MMA</p></td>
+<td><p>Issues both score MMA and value
+MMA</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>WG3, warp 2</strong></p></td>
-<td><p>TMA Store
-warp</p></td>
-<td><p>Stores O tiles from SMEM to GMEM
-via TMA</p></td>
+<tr class="row-even"><td><p>WG3, warp 2</p></td>
+<td><p>TMA store</p></td>
+<td><p>Stores final O tiles from SMEM to
+GMEM</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>WG0 (full
-warpgroup)</strong></p></td>
-<td><p>Softmax</p></td>
-<td><p>Runs online softmax on scores (Q
-stage 0), writes P to TMEM</p></td>
+<tr class="row-odd"><td><p>WG0</p></td>
+<td><p>Softmax for Q
+stage 0</p></td>
+<td><p>Reads S from TMEM, computes P,
+writes P to TMEM</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>WG1 (full
-warpgroup)</strong></p></td>
-<td><p>Softmax</p></td>
-<td><p>Same as WG0 but handles Q stage 1
-(double-buffered Q)</p></td>
+<tr class="row-even"><td><p>WG1</p></td>
+<td><p>Softmax for Q
+stage 1</p></td>
+<td><p>Same work for the second Q
+pipeline stage</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>WG2 (full
-warpgroup)</strong></p></td>
-<td><p>Correction +
-Epilogue</p></td>
-<td><p>Rescales O accumulator in TMEM,
-normalizes, writes to SMEM</p></td>
+<tr class="row-odd"><td><p>WG2</p></td>
+<td><p>Correction
+and epilogue</p></td>
+<td><p>Rescales O in TMEM, normalizes,
+stages output</p></td>
 </tr>
 </tbody>
 </table>
-<p><strong>All MMA instructions are issued from WG3’s warp 0</strong> — strictly one
-elected thread in that warp (via <code class="docutils literal notranslate"><span class="pre">elect.sync</span></code>) issues each
-<code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>, as required by Blackwell’s single-thread issue rule.
-Some papers describe the warp roles differently. WG0 and WG1 are purely
-softmax warpgroups: they read scores from TMEM, compute softmax
-(row_max, row_sum, exp), and write the probability matrix P back to
-TMEM. They do <strong>not</strong> issue any MMA instructions.</p>
-<p>WG0 and WG1 each handle one of two Q pipeline stages. While WG0
-processes Q stage 0 through softmax, WG1 processes Q stage 1. This is a
-form of <strong>Q double-buffering</strong> at the warpgroup level.</p>
-<p><strong>Key constants</strong> (from <code class="docutils literal notranslate"><span class="pre">flash_attention4.py</span></code>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">64</span>    <span class="c1"># Tile dimensions</span>
-<span class="n">WG_NUMBER</span> <span class="o">=</span> <span class="mi">4</span>                           <span class="c1"># 4 warpgroups = 512 threads</span>
-<span class="n">TMEM_PIPE_DEPTH</span> <span class="o">=</span> <span class="mi">2</span>                     <span class="c1"># Double-buffered TMEM</span>
-<span class="n">SMEM_PIPE_DEPTH_Q</span> <span class="o">=</span> <span class="mi">2</span>                   <span class="c1"># Q pipeline stages</span>
-<span class="n">SMEM_PIPE_DEPTH_KV</span> <span class="o">=</span> <span class="mi">3</span>                  <span class="c1"># KV pipeline stages</span>
-<span class="n">SM_NUMBER</span> <span class="o">=</span> <span class="mi">148</span>                         <span class="c1"># B200 SM count</span>
-<span class="n">N_COLS_TMEM</span> <span class="o">=</span> <span class="mi">512</span>                       <span class="c1"># Total TMEM columns allocated</span>
+<p>The two Q stages are the two entries in the Q pipeline. WG0 handles one
+stage while WG1 handles the other. They are not different attention
+heads; they are two pipeline slots for different Q tiles.</p>
+<p>The code selects these roles with symbolic coordinates:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+<span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>When reading the code, first identify the role branch. That branch tells
+you which execution team owns the tile primitive inside it:</p>
+<ul class="simple">
+<li><p>WG3 warp 1 starts TMA load commands. One elected lane issues the copy,
+and the TMA engine moves the tile.</p></li>
+<li><p>WG3 warp 0 issues the <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> instructions.</p></li>
+<li><p>WG0 and WG1 run softmax under full warpgroup scope.</p></li>
+<li><p>WG2 runs correction and epilogue work under full warpgroup scope.</p></li>
+</ul>
+<p>All MMA instructions are issued from WG3 warp 0. WG0 and WG1 do not
+issue MMA. They consume the score tile, run softmax, and write the <code class="docutils literal notranslate"><span class="pre">P</span></code>
+tile back to TMEM.</p>
+<p>This matters for barriers. <code class="docutils literal notranslate"><span class="pre">s_ready.full</span></code> connects score MMA to
+softmax. <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code> connects softmax and correction back to
+the value MMA.</p>
 </section>
 <section id="the-two-mma-phases">
-<h2><span class="section-number">6.3. </span>The Two MMA Phases<a class="headerlink" href="#the-two-mma-phases" title="Permalink to this heading">¶</a></h2>
-<p>Flash Attention uses two MMA phases per KV block, unlike the GEMM loop’s
-single MMA phase.</p>
-<section id="score-mma">
-<h3><span class="section-number">6.3.1. </span>Score MMA<a class="headerlink" href="#score-mma" title="Permalink to this heading">¶</a></h3>
-<p>The first MMA computes attention scores:</p>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-6">
-<span class="eqno">(6.3.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-6" title="Permalink to this equation">¶</a></span>\[S = Q_{\text{block}} K_{\text{block}}^{\top} \quad [\text{BLK}_M \times \text{BLK}_N]\]</div>
-<p>The Score MMA writes the score matrix <span class="math notranslate nohighlight">\(S\)</span> into TMEM. WG3’s MMA
-warp (warp 0) issues the Score MMA for both Q stages sequentially, then
-the <code class="docutils literal notranslate"><span class="pre">bar_s_full</span></code> barrier signals that scores are ready for WG0/WG1 to
-run softmax.</p>
-<p>Simplified excerpt (the real implementation wraps <code class="docutils literal notranslate"><span class="pre">arrive</span></code> in an
-<code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> guard and handles both Q stages in an unrolled loop — see
-<code class="docutils literal notranslate"><span class="pre">flash_attention4.py</span></code> for full details):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG3, warp 0: Issues Score MMA (simplified)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">gemm_qk</span><span class="p">(</span><span class="n">q_stage</span><span class="p">,</span> <span class="n">kv_stage</span><span class="p">,</span> <span class="n">tmem_col_s</span><span class="p">,</span> <span class="n">bar_s_full</span><span class="p">):</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp</span><span class="p">():</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
-            <span class="n">tmem</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_s</span> <span class="p">:</span> <span class="n">tmem_col_s</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">],</span>
-            <span class="n">Q_smem</span><span class="p">[</span><span class="n">q_stage</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_M</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
-            <span class="n">K_smem</span><span class="p">[</span><span class="n">kv_stage</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
-            <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="c1"># In the real code: wrapped in elect_sync()</span>
-    <span class="n">bar_s_full</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">q_stage</span><span class="p">)</span>  <span class="c1"># Signal: scores ready in TMEM</span>
+<h2><span class="section-number">6.4. </span>The Two MMA Phases<a class="headerlink" href="#the-two-mma-phases" title="Permalink to this heading">¶</a></h2>
+<p>For each streamed K/V tile, Flash Attention runs two MMA phases with
+softmax in between:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Q, K -&gt; score MMA -&gt; S
+S    -&gt; softmax   -&gt; P
+P, V -&gt; value MMA -&gt; O
 </pre></div>
 </div>
+<p>The first MMA produces attention scores. The second MMA consumes the
+softmax numerator tile and updates the output accumulator. Final
+normalization by <code class="docutils literal notranslate"><span class="pre">row_sum</span></code> happens in the epilogue.</p>
+<section id="score-mma">
+<h3><span class="section-number">6.4.1. </span>Score MMA<a class="headerlink" href="#score-mma" title="Permalink to this heading">¶</a></h3>
+<p>The score MMA computes:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-1">
+<span class="eqno">(6.4.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-1" title="Permalink to this equation">¶</a></span>\[S = Q_{\text{block}}K_{\text{block}}^{\top}\]</div>
+<p>and writes the <code class="docutils literal notranslate"><span class="pre">128</span> <span class="pre">x</span> <span class="pre">128</span></code> score tile to TMEM:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp</span><span class="p">():</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
+        <span class="n">tmem</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_s</span> <span class="p">:</span> <span class="n">tmem_col_s</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">],</span>
+        <span class="n">Q_smem</span><span class="p">[</span><span class="n">q_stage</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_M</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
+        <span class="n">K_smem</span><span class="p">[</span><span class="n">kv_stage</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
+        <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
+        <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="k">if</span> <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">():</span>
+    <span class="n">s_ready</span><span class="o">.</span><span class="n">full</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">q_stage</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read this with the same rules as GEMM:</p>
+<ul class="simple">
+<li><p>source tiles: Q and K in SMEM,</p></li>
+<li><p>destination tile: <code class="docutils literal notranslate"><span class="pre">S</span></code> in TMEM,</p></li>
+<li><p>dispatch path: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>,</p></li>
+<li><p>handoff after compute: <code class="docutils literal notranslate"><span class="pre">s_ready.full</span></code>.</p></li>
+</ul>
+<p>The elected thread arrival on <code class="docutils literal notranslate"><span class="pre">s_ready.full</span></code> says this score tile is
+ready for the softmax warpgroup.</p>
 </section>
-<section id="softmax-in-registers">
-<h3><span class="section-number">6.3.2. </span>Softmax in Registers<a class="headerlink" href="#softmax-in-registers" title="Permalink to this heading">¶</a></h3>
-<p>WG0/WG1 wait on <code class="docutils literal notranslate"><span class="pre">bar_s_full</span></code>, then read <span class="math notranslate nohighlight">\(S\)</span> from TMEM into
-registers and run online softmax:</p>
+<section id="softmax-between-mmas">
+<h3><span class="section-number">6.4.2. </span>Softmax Between MMAs<a class="headerlink" href="#softmax-between-mmas" title="Permalink to this heading">¶</a></h3>
+<p>Softmax is the part that makes FA4 different from GEMM. WG0/WG1 wait for
+the score tile, then read it from TMEM in register chunks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span>
+    <span class="n">s_chunk</span><span class="p">[:,</span> <span class="n">chunk_start</span> <span class="p">:</span> <span class="n">chunk_end</span><span class="p">],</span>
+    <span class="n">tmem</span><span class="p">[:,</span> <span class="n">tmem_col_s</span> <span class="o">+</span> <span class="n">chunk_start</span> <span class="p">:</span> <span class="n">tmem_col_s</span> <span class="o">+</span> <span class="n">chunk_end</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>This is a TMEM-to-RF tile read under warpgroup scope. After the read,
+the softmax warpgroup does three things:</p>
 <ol class="arabic simple">
-<li><p><strong>Read S from TMEM</strong> in chunks of 32 columns via <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code>
-(TMEM -&gt; registers)</p></li>
-<li><p><strong>Compute row max</strong> and update the running maximum</p></li>
-<li><p><strong>Compute rescaling factor</strong>
-<span class="math notranslate nohighlight">\(e^{m_{\text{old}} - m_{\text{new}}}\)</span> using an exp2 polynomial
-approximation</p></li>
-<li><p><strong>Write acc_scale to SMEM</strong> for WG2 (the correction warpgroup) to
-rescale O in TMEM</p></li>
-<li><p><strong>Compute
-:math:`P = e^{(S - m_{text{new}}) cdot text{scale_log2}}`</strong> using
-exp2 emulation, cast to float16</p></li>
-<li><p><strong>Write P to TMEM</strong> (as float16) via <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> (registers -&gt;
-TMEM)</p></li>
-<li><p><strong>Signal ``bar_p_full_o_rescaled``</strong> so that the Value MMA can begin</p></li>
+<li><p>computes the row max and row sum,</p></li>
+<li><p>computes the softmax numerator tile <code class="docutils literal notranslate"><span class="pre">P</span></code>,</p></li>
+<li><p>writes <code class="docutils literal notranslate"><span class="pre">P</span></code> back to TMEM as fp16.</p></li>
 </ol>
-<p>The exp2 emulation is a custom polynomial approximation (degree 3 Horner
-evaluation) implemented with packed f32x2 PTX instructions. The kernel
-computes <span class="math notranslate nohighlight">\(2^{x}\)</span> rather than <span class="math notranslate nohighlight">\(e^x\)</span> and adjusts the scale
-factor accordingly (<span class="math notranslate nohighlight">\(\text{scale\_log2} = \log_2(e) / \sqrt{d}\)</span>).</p>
+<p>The writeback looks like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span>
+    <span class="n">tmem_as_f16</span><span class="p">[:,</span> <span class="n">tmem_col_p</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">p_start</span> <span class="p">:</span> <span class="n">tmem_col_p</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">p_end</span><span class="p">],</span>
+    <span class="n">p_chunk</span><span class="p">[:,</span> <span class="n">p_start</span> <span class="p">:</span> <span class="n">p_end</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The writeback matters because the value MMA needs <code class="docutils literal notranslate"><span class="pre">P</span></code> as a tile
+operand. It cannot consume <code class="docutils literal notranslate"><span class="pre">P</span></code> as unrelated per-thread scalar
+registers. In this kernel, the MMA-readable form of <code class="docutils literal notranslate"><span class="pre">P</span></code> is the fp16
+TMEM view <code class="docutils literal notranslate"><span class="pre">tmem_as_f16</span></code>.</p>
 </section>
 <section id="value-mma">
-<h3><span class="section-number">6.3.3. </span>Value MMA<a class="headerlink" href="#value-mma" title="Permalink to this heading">¶</a></h3>
-<p>The second MMA accumulates the weighted values:</p>
-<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-7">
-<span class="eqno">(6.3.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-7" title="Permalink to this equation">¶</a></span>\[O = O + P_{\text{block}} V_{\text{block}} \quad [\text{BLK}_M \times \text{HEAD}_{\text{DIM}}]\]</div>
-<p>WG3’s MMA warp (warp 0) issues this operation. P lives in TMEM as
-float16 (written there by WG0/WG1), while V lives in SMEM. The result
-accumulates into O in TMEM as float32.</p>
-<p>Simplified excerpt (barrier waits and elect_sync guards omitted — see
-<code class="docutils literal notranslate"><span class="pre">flash_attention4.py:gemm_pv</span></code> for the full version):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG3, warp 0: Issues Value MMA (simplified)</span>
-<span class="c1"># P is read from TMEM (A operand), V from SMEM (B operand, transposed)</span>
-<span class="n">K_SPLIT</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">MMA_K</span>  <span class="c1"># 96 — first 6 of 8 MMA iterations</span>
-
-<span class="c1"># Part 1: P columns 0..95 x V rows 0..95 (can start before softmax finishes last quarter)</span>
-<span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
-    <span class="n">tmem</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_o</span> <span class="p">:</span> <span class="n">tmem_col_o</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">],</span>
-    <span class="n">tmem_as_f16</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_p</span><span class="o">*</span><span class="mi">2</span> <span class="p">:</span> <span class="n">tmem_col_p</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="n">K_SPLIT</span><span class="p">],</span>
-    <span class="n">V_smem</span><span class="p">[</span><span class="n">kv_stage</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">K_SPLIT</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
-    <span class="n">transB</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="n">should_accumulate</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="c1"># Wait for softmax to finish writing last quarter of P (barrier omitted here)</span>
-
-<span class="c1"># Part 2: P columns 96..127 x V rows 96..127</span>
-<span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
-    <span class="n">tmem</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_o</span> <span class="p">:</span> <span class="n">tmem_col_o</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">],</span>
-    <span class="n">tmem_as_f16</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_p</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="n">K_SPLIT</span> <span class="p">:</span> <span class="n">tmem_col_p</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">],</span>
-    <span class="n">V_smem</span><span class="p">[</span><span class="n">kv_stage</span><span class="p">,</span> <span class="n">K_SPLIT</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
-    <span class="n">transB</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
+<h3><span class="section-number">6.4.3. </span>Value MMA<a class="headerlink" href="#value-mma" title="Permalink to this heading">¶</a></h3>
+<p>The value MMA computes:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-2">
+<span class="eqno">(6.4.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-2" title="Permalink to this equation">¶</a></span>\[O = O + P_{\text{block}}V_{\text{block}}\]</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">O</span></code> has already been initialized or rescaled for this K/V block.
+The A operand is <code class="docutils literal notranslate"><span class="pre">P</span></code> in TMEM, the B operand is <code class="docutils literal notranslate"><span class="pre">V</span></code> in SMEM, and the
+output accumulator is <code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp</span><span class="p">():</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
+        <span class="n">tmem</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_o</span> <span class="p">:</span> <span class="n">tmem_col_o</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">],</span>
+        <span class="n">tmem_as_f16</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">128</span><span class="p">,</span> <span class="n">tmem_col_p</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">tmem_col_p</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">K_SPLIT</span><span class="p">],</span>
+        <span class="n">V_smem</span><span class="p">[</span><span class="n">kv_stage</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">K_SPLIT</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">HEAD_DIM</span><span class="p">],</span>
+        <span class="n">transB</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">accum</span><span class="o">=</span><span class="n">should_accumulate</span><span class="p">,</span>
+        <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
+        <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>This is the main hardware difference from the score MMA:</p>
+<ul class="simple">
+<li><p>Score MMA reads both operands from SMEM: Q and K.</p></li>
+<li><p>Value MMA reads one operand from TMEM: <code class="docutils literal notranslate"><span class="pre">P</span></code>.</p></li>
+<li><p>Value MMA reads the other operand from SMEM: V.</p></li>
+<li><p>The result accumulates into <code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">accum=should_accumulate</span></code> controls whether this K/V tile initializes
+the output accumulator or adds into the existing <code class="docutils literal notranslate"><span class="pre">O</span></code> tile.</p>
+<p>The value MMA is split into a <code class="docutils literal notranslate"><span class="pre">96</span> <span class="pre">+</span> <span class="pre">32</span></code> schedule:</p>
+<ol class="arabic simple">
+<li><p>Softmax writes <code class="docutils literal notranslate"><span class="pre">P</span></code> in four 32-column chunks.</p></li>
+<li><p>After the first three chunks are ready, the value MMA starts on the
+first 96 columns of <code class="docutils literal notranslate"><span class="pre">P</span></code> and the matching rows of <code class="docutils literal notranslate"><span class="pre">V</span></code>.</p></li>
+<li><p>The final 32 columns wait for <code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code>.</p></li>
+<li><p>A second MMA consumes that final chunk and finishes the tile.</p></li>
+</ol>
+<p>This lets value MMA begin before the last part of the softmax-to-TMEM
+writeback is done.</p>
+</section>
+</section>
+<section id="tmem-layout-and-reuse">
+<h2><span class="section-number">6.5. </span>TMEM Layout and Reuse<a class="headerlink" href="#tmem-layout-and-reuse" title="Permalink to this heading">¶</a></h2>
+<p>The kernel uses one <code class="docutils literal notranslate"><span class="pre">128</span> <span class="pre">x</span> <span class="pre">512</span></code> TMEM allocation:</p>
+<figure class="align-default" id="id1">
+<img alt="../_images/tmem_layout_v3.png" src="../_images/tmem_layout_v3.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 6.5.1 </span><span class="caption-text">TMEM Layout</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>The figure is easiest to read as a set of tile slots:</p>
+<ul class="simple">
+<li><p>Score slots hold <code class="docutils literal notranslate"><span class="pre">S</span> <span class="pre">=</span> <span class="pre">QK^T</span></code>.</p></li>
+<li><p>Numerator slots hold the <code class="docutils literal notranslate"><span class="pre">P</span></code> tile after the softmax exponentiation
+step.</p></li>
+<li><p>Output slots hold the fp32 <code class="docutils literal notranslate"><span class="pre">O</span></code> accumulator.</p></li>
+</ul>
+<p>These are not independent buffers in global memory. They are regions of
+the same TMEM allocation. The schedule is valid because each region is
+reused only after the previous consumer has finished. That is why
+barriers are part of the layout story: TMEM reuse is safe only when the
+producer-consumer handoff is complete.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tmem</span></code> is declared as fp32 for score and output accumulator views:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N_COLS_TMEM</span><span class="p">),</span>
+    <span class="s2">&quot;float32&quot;</span><span class="p">,</span>
+    <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span>
+    <span class="n">allocated_addr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N_COLS_TMEM</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">@</span> <span class="n">TLane</span><span class="p">,</span> <span class="mi">1</span> <span class="o">@</span> <span class="n">TCol</span><span class="p">)]),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>P&#64;V is split into two parts (first 96 columns, then last 32 columns).
-The split lets the Value MMA start before the softmax warpgroup finishes
-writing the last quarter of P to TMEM, overlapping computation with the
-TMEM store.</p>
+<p>The same physical allocation also has an fp16 view for <code class="docutils literal notranslate"><span class="pre">P</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem_as_f16</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N_COLS_TMEM</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;float16&quot;</span><span class="p">,</span>
+    <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span>
+    <span class="n">allocated_addr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N_COLS_TMEM</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">@</span> <span class="n">TLane</span><span class="p">,</span> <span class="mi">1</span> <span class="o">@</span> <span class="n">TCol</span><span class="p">)]),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The fp16 view has twice as many indexable columns. This is why the code
+indexes <code class="docutils literal notranslate"><span class="pre">P</span></code> with <code class="docutils literal notranslate"><span class="pre">tmem_col_p</span> <span class="pre">*</span> <span class="pre">2</span></code>: <code class="docutils literal notranslate"><span class="pre">tmem_col_p</span></code> is the base slot
+used in the TMEM layout, while <code class="docutils literal notranslate"><span class="pre">tmem_as_f16</span></code> is indexed through the
+fp16 view.</p>
+<p><strong>Try with your agent</strong>: Ask it to explain the fp32 and fp16 TMEM views
+in this FA4 kernel. Which physical TMEM regions hold <code class="docutils literal notranslate"><span class="pre">S</span></code>, <code class="docutils literal notranslate"><span class="pre">P</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">O</span></code>, why is <code class="docutils literal notranslate"><span class="pre">P</span></code> indexed with <code class="docutils literal notranslate"><span class="pre">tmem_col_p</span> <span class="pre">*</span> <span class="pre">2</span></code>, and which consumers
+must finish before each region can be reused?</p>
 </section>
-<section id="tmem-layout">
-<h3><span class="section-number">6.3.4. </span>TMEM Layout<a class="headerlink" href="#tmem-layout" title="Permalink to this heading">¶</a></h3>
-<p>The kernel uses a single TMEM allocation of 128 rows x 512 columns,
-partitioned as:</p>
-<figure class="align-default" id="id1">
-<img alt="../_images/tmem_layout.png" src="../_images/tmem_layout.png" />
+<section id="how-barriers-connect-the-roles">
+<h2><span class="section-number">6.6. </span>How Barriers Connect the Roles<a class="headerlink" href="#how-barriers-connect-the-roles" title="Permalink to this heading">¶</a></h2>
+<p>The barrier graph is the hardest part of the kernel. Do not try to
+memorize the full table first. Start with the data-ready handoffs on the
+main compute path:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Handoff</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>TMA load -&gt; score/value MMA</p></td>
+<td><p>Q, K, or V has arrived in SMEM
+and can feed MMA</p></td>
+</tr>
+<tr class="row-odd"><td><p>score MMA -&gt; softmax</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">S</span></code> is ready in TMEM</p></td>
+</tr>
+<tr class="row-even"><td><p>softmax/correction -&gt; value MMA</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">P</span></code> is ready in TMEM, and <code class="docutils literal notranslate"><span class="pre">O</span></code>
+is safe for accumulation</p></td>
+</tr>
+<tr class="row-odd"><td><p>value MMA -&gt; epilogue</p></td>
+<td><p>final <code class="docutils literal notranslate"><span class="pre">O</span></code> is ready in TMEM</p></td>
+</tr>
+<tr class="row-even"><td><p>epilogue -&gt; TMA store</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">O_smem</span></code> is ready to store</p></td>
+</tr>
+</tbody>
+</table>
+<p>The rest of the barriers are mostly pipeline bookkeeping: they release
+SMEM, TMEM, or staging buffers so another role can reuse them.</p>
+<p>Read each barrier as a tile handoff: which role produced data, which
+role consumes it, and which buffer becomes reusable afterward.</p>
+<figure class="align-default" id="id2">
+<img alt="../_images/flash_attention_main_handoff.png" src="../_images/flash_attention_main_handoff.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 6.3.1 </span><span class="caption-text">TMEM Layout</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 6.6.1 </span><span class="caption-text">Flash Attention 4 MMA Input Gates</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<p>Each Q stage uses <code class="docutils literal notranslate"><span class="pre">tmem_offset=128</span></code> columns of f32 (or 256 columns of
-f16 for P). The S and P regions partially overlap in TMEM column space;
-the schedule reads S before reusing that region for P.</p>
-</section>
-</section>
-<section id="barrier-topology">
-<h2><span class="section-number">6.4. </span>Barrier Topology<a class="headerlink" href="#barrier-topology" title="Permalink to this heading">¶</a></h2>
-<p>Flash Attention 4’s barrier system is more complex than GEMM’s because
-of the two MMA phases and the softmax computation between them.</p>
-<section id="barrier-table">
-<h3><span class="section-number">6.4.1. </span>Barrier Table<a class="headerlink" href="#barrier-table" title="Permalink to this heading">¶</a></h3>
+<p>This diagram is about correctness gates, not scheduling. It shows what
+must be ready before each MMA phase may run. Score MMA waits for Q and K
+in SMEM, then produces <code class="docutils literal notranslate"><span class="pre">S</span></code>. Value MMA waits for V in SMEM, the <code class="docutils literal notranslate"><span class="pre">P</span></code>
+tile from softmax, and an <code class="docutils literal notranslate"><span class="pre">O</span></code> slot that WG2 has either released or
+rescaled. The softmax-to-value gate is split because value MMA can start
+after the first 96 columns of <code class="docutils literal notranslate"><span class="pre">P</span></code>, while the final 32 columns are
+released by <code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code>.</p>
+<p>The softmax/correction handoff needs a different view. It uses a small
+SMEM slot as a mailbox between the softmax warpgroup and WG2. That
+mailbox carries either <code class="docutils literal notranslate"><span class="pre">acc_scale</span></code> during the K/V loop or final
+<code class="docutils literal notranslate"><span class="pre">row_sum</span></code> during the epilogue. The <code class="docutils literal notranslate"><span class="pre">full</span></code> and <code class="docutils literal notranslate"><span class="pre">empty</span></code> barriers
+protect that mailbox slot:</p>
+<figure class="align-default" id="id3">
+<img alt="../_images/flash_attention_softmax_correction.png" src="../_images/flash_attention_softmax_correction.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 6.6.2 </span><span class="caption-text">Flash Attention 4 Softmax Scale-Slot Handshake</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Read <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code> and <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> as a
+producer-consumer pair:</p>
+<ol class="arabic simple">
+<li><p>Softmax waits for <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> before reusing the scale/sum
+slot.</p></li>
+<li><p>Softmax writes <code class="docutils literal notranslate"><span class="pre">acc_scale</span></code> or final <code class="docutils literal notranslate"><span class="pre">row_sum</span></code> into that slot.</p></li>
+<li><p>Softmax arrives on <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code>.</p></li>
+<li><p>WG2 waits on <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code>, then reads the slot.</p></li>
+<li><p>WG2 arrives on <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code>.</p></li>
+<li><p>The softmax warpgroup may reuse the slot in the next phase.</p></li>
+</ol>
+<p>That is all <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> means: WG2 has consumed the SMEM
+scale/sum slot. It does not mean <code class="docutils literal notranslate"><span class="pre">P</span></code> is ready, and it does not mean
+value MMA may start. The value-MMA gate is <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code>: the
+first 96 columns of <code class="docutils literal notranslate"><span class="pre">P</span></code> are ready, and WG2 has made the <code class="docutils literal notranslate"><span class="pre">O</span></code> slot
+safe to accumulate into.</p>
+<p>The full barrier list is still useful as a reference:</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Barrier</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Direction</p></th>
-<th class="head"><p>Init Count</p></th>
-<th class="head"><p>Purpose</p></th>
+<th class="head"><p>Producer -&gt; consumer</p></th>
+<th class="head"><p>What becomes safe</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bar_load_q_full</span></code></p></td>
-<td><p>ExpectTx</p></td>
-<td><p>TMA -&gt; MMA
-warp</p></td>
-<td><p>1</p></td>
-<td><p>Q tile
-loaded
-into SMEM</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">q_load.full</span></code></p></td>
+<td><p>TMA load -&gt; score MMA</p></td>
+<td><p>Q SMEM tile can feed MMA</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bar_load_q_empty</span></code></p></td>
-<td><p>Commit</p></td>
-<td><p>MMA warp -&gt;
-TMA</p></td>
-<td><p>1</p></td>
-<td><p>Q SMEM
-buffer
-consumed
-by Score
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">q_load.empty</span></code></p></td>
+<td><p>all score MMAs for this Q
+stage -&gt; TMA load</p></td>
+<td><p>Q SMEM stage can be
+reused for the next task</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kv_load.full</span></code></p></td>
+<td><p>TMA load -&gt; score/value MMA</p></td>
+<td><p>K or V SMEM tile can
+feed MMA</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kv_load.empty</span></code></p></td>
+<td><p>score/value MMA -&gt; TMA load</p></td>
+<td><p>K/V SMEM stage can be
+reused</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s_ready.full</span></code></p></td>
+<td><p>score MMA -&gt; softmax</p></td>
+<td><p>S TMEM tile can be read</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code></p></td>
+<td><p>softmax + WG2 -&gt; value MMA</p></td>
+<td><p>first 96 columns of P
+are in TMEM, and the O
+slot is safe for value
 MMA</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bar_load_kv_full</span></code></p></td>
-<td><p>ExpectTx</p></td>
-<td><p>TMA -&gt; MMA
-warp</p></td>
-<td><p>1</p></td>
-<td><p>K or V
-tile
-loaded
-into SMEM</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code></p></td>
+<td><p>softmax -&gt; value MMA</p></td>
+<td><p>final quarter of P is in
+TMEM</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bar_load_kv_empty</span></code></p></td>
-<td><p>Commit</p></td>
-<td><p>MMA warp -&gt;
-TMA</p></td>
-<td><p>1</p></td>
-<td><p>K/V SMEM
-buffer
-consumed
-by MMA</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">o_ready.full</span></code></p></td>
+<td><p>value MMA -&gt; epilogue</p></td>
+<td><p>final O accumulator is
+ready</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bar_s_full</span></code></p></td>
-<td><p>Commit</p></td>
-<td><p>MMA warp -&gt;
-WG0/WG1</p></td>
-<td><p>1</p></td>
-<td><p>Score MMA
-complete,
-S in TMEM</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code></p></td>
+<td><p>softmax -&gt; WG2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">acc_scale</span></code> or final
+<code class="docutils literal notranslate"><span class="pre">row_sum</span></code> is ready in
+the SMEM mailbox</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bar_p_full_o_rescaled</span></code></p></td>
-<td><p>Arrive</p></td>
-<td><p>WG0/WG1 + WG2
--&gt; MMA warp</p></td>
-<td><p>256</p></td>
-<td><p>P in TMEM
-+ O
-rescaled,
-ready for
-Value MMA</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code></p></td>
+<td><p>WG2 -&gt; softmax</p></td>
+<td><p>the same SMEM mailbox
+slot can be reused after
+WG2 reads it</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bar_p_full_2</span></code></p></td>
-<td><p>Arrive</p></td>
-<td><p>WG0/WG1 -&gt;
-MMA warp</p></td>
-<td><p>128</p></td>
-<td><p>Last
-quarter of
-P written
-to TMEM</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">corr_epi.full</span></code></p></td>
+<td><p>epilogue -&gt; TMA store</p></td>
+<td><p>O_smem is ready to store</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bar_o_full</span></code></p></td>
-<td><p>Commit</p></td>
-<td><p>MMA warp -&gt;
-WG2</p></td>
-<td><p>1</p></td>
-<td><p>Value MMA
-complete
-(last KV
-block), O
-in TMEM</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bar_softmax_corr_full</span></code></p></td>
-<td><p>Arrive</p></td>
-<td><p>WG0/WG1 -&gt;
-WG2</p></td>
-<td><p>128</p></td>
-<td><p>acc_scale
-/ row_sum
-written to
-SMEM</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bar_softmax_corr_empty</span></code></p></td>
-<td><p>Arrive</p></td>
-<td><p>WG2 -&gt;
-WG0/WG1</p></td>
-<td><p>128</p></td>
-<td><p>WG2 done
-reading
-acc_scale
-from SMEM</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bar_corr_epi_full</span></code></p></td>
-<td><p>Arrive</p></td>
-<td><p>WG2 -&gt; TMA
-store</p></td>
-<td><p>128</p></td>
-<td><p>O
-normalized
-and in
-O_smem,
-ready for
-TMA store</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bar_corr_epi_empty</span></code></p></td>
-<td><p>Arrive</p></td>
-<td><p>TMA store -&gt;
-WG2</p></td>
-<td><p>32</p></td>
-<td><p>TMA store
-complete,
-O_smem
-buffer
-free</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">corr_epi.empty</span></code></p></td>
+<td><p>TMA store -&gt; epilogue</p></td>
+<td><p>O_smem stage can be
+reused</p></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Barrier types</strong>: <code class="docutils literal notranslate"><span class="pre">Commit</span></code> barriers use <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> (signals
-when MMA completes asynchronously). <code class="docutils literal notranslate"><span class="pre">ExpectTx</span></code> barriers track TMA byte
-counts. <code class="docutils literal notranslate"><span class="pre">Arrive</span></code> barriers use simple <code class="docutils literal notranslate"><span class="pre">mbarrier.arrive</span></code>.</p>
-</section>
-<section id="barrier-flow-diagram">
-<h3><span class="section-number">6.4.2. </span>Barrier Flow Diagram<a class="headerlink" href="#barrier-flow-diagram" title="Permalink to this heading">¶</a></h3>
-<figure class="align-default" id="id2">
-<img alt="../_images/flash_attention_barrier_flow.png" src="../_images/flash_attention_barrier_flow.png" />
-<figcaption>
-<p><span class="caption-number">Fig. 6.4.1 </span><span class="caption-text">Flash Attention 4 Barrier Flow</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
-</figcaption>
-</figure>
-</section>
-<section id="comparison-with-gemm-barriers">
-<h3><span class="section-number">6.4.3. </span>Comparison with GEMM barriers<a class="headerlink" href="#comparison-with-gemm-barriers" title="Permalink to this heading">¶</a></h3>
-<p>In GEMM, the barrier system has <code class="docutils literal notranslate"><span class="pre">full</span></code> and <code class="docutils literal notranslate"><span class="pre">empty</span></code> barriers between
-TMA producer and MMA consumer, with the epilogue as a TMEM-&gt;SMEM-&gt;TMA
-store. Flash Attention 4 adds:</p>
+<p>The barrier type follows the producer:</p>
 <ul class="simple">
-<li><p><strong>bar_s_full / bar_p_full_o_rescaled</strong>: An intermediate
-producer-consumer pair <em>within the MMA pipeline itself</em> (Score MMA
-produces S, softmax consumes it and produces P, Value MMA consumes P)</p></li>
-<li><p><strong>bar_softmax_corr_full / bar_softmax_corr_empty</strong>: Coordination
-between softmax warpgroups and the correction warpgroup for O
-rescaling</p></li>
-<li><p><strong>bar_o_full</strong>: Only fires on the last KV block iteration (unlike GEMM
-where every MMA signals completion)</p></li>
+<li><p>TMA loads use <code class="docutils literal notranslate"><span class="pre">TMABar</span></code>, because completion is byte-counted by the
+TMA engine.</p></li>
+<li><p>MMA completion uses <code class="docutils literal notranslate"><span class="pre">TCGen05Bar</span></code>, because <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> signals
+the completion group.</p></li>
+<li><p>Pure thread-to-thread handoffs use <code class="docutils literal notranslate"><span class="pre">MBarrier</span></code>, where the
+participating threads arrive explicitly.</p></li>
 </ul>
-</section>
-</section>
-<section id="writeback-and-rescaling">
-<h2><span class="section-number">6.5. </span>Writeback and Rescaling<a class="headerlink" href="#writeback-and-rescaling" title="Permalink to this heading">¶</a></h2>
-<p>After all KV blocks have been processed, the O accumulator in TMEM
-contains unnormalized values. The writeback process involves three
-steps:</p>
-<section id="final-normalization">
-<h3><span class="section-number">6.5.1. </span>Final Normalization<a class="headerlink" href="#final-normalization" title="Permalink to this heading">¶</a></h3>
-<p>WG0/WG1 write the final <code class="docutils literal notranslate"><span class="pre">row_sum</span></code> to SMEM. WG2 reads it and computes
-<code class="docutils literal notranslate"><span class="pre">norm_scale</span> <span class="pre">=</span> <span class="pre">1.0</span> <span class="pre">/</span> <span class="pre">row_sum</span></code> (with a guard for zero/NaN rows):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG2 epilogue: normalize O</span>
-<span class="n">acc_O_is_zero_or_nan</span> <span class="o">=</span> <span class="p">(</span><span class="n">row_sum</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">row_sum</span> <span class="o">!=</span> <span class="n">row_sum</span><span class="p">)</span>
-<span class="n">norm_scale</span> <span class="o">=</span> <span class="n">rcp</span><span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">acc_O_is_zero_or_nan</span> <span class="k">else</span> <span class="n">row_sum</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="tmem-to-smem-transfer">
-<h3><span class="section-number">6.5.2. </span>TMEM to SMEM Transfer<a class="headerlink" href="#tmem-to-smem-transfer" title="Permalink to this heading">¶</a></h3>
-<p>WG2 reads O from TMEM in chunks of 16 columns, multiplies each element
-by <code class="docutils literal notranslate"><span class="pre">norm_scale</span></code>, casts from float32 to float16, and writes to O_smem:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG2: Read O from TMEM, normalize, write to SMEM</span>
-<span class="k">for</span> <span class="n">d_tile</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">HEAD_DIM</span> <span class="o">//</span> <span class="n">TMEM_EPI_LD_SIZE</span><span class="p">):</span>
-    <span class="n">o_row_f32</span> <span class="o">=</span> <span class="n">tmem_load</span><span class="p">(</span><span class="n">tmem_col_o</span> <span class="o">+</span> <span class="n">d_tile</span> <span class="o">*</span> <span class="mi">16</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
-    <span class="n">o_row_f32</span> <span class="o">*=</span> <span class="n">norm_scale</span>           <span class="c1"># Normalize</span>
-    <span class="n">o_row_f16</span> <span class="o">=</span> <span class="n">cast_to_f16</span><span class="p">(</span><span class="n">o_row_f32</span><span class="p">)</span>
-    <span class="n">O_smem</span><span class="p">[</span><span class="n">i_q</span><span class="p">,</span> <span class="n">tid_in_wg</span><span class="p">,</span> <span class="n">d_tile</span><span class="o">*</span><span class="mi">16</span> <span class="p">:</span> <span class="n">d_tile</span><span class="o">*</span><span class="mi">16</span><span class="o">+</span><span class="mi">16</span><span class="p">]</span> <span class="o">=</span> <span class="n">o_row_f16</span>
-</pre></div>
-</div>
-</section>
-<section id="tma-store">
-<h3><span class="section-number">6.5.3. </span>TMA Store<a class="headerlink" href="#tma-store" title="Permalink to this heading">¶</a></h3>
-<p>WG3’s TMA store warp (warp 2) waits on <code class="docutils literal notranslate"><span class="pre">bar_corr_epi_full</span></code>, then
-issues a TMA store from O_smem to global memory. The pattern matches
-GEMM’s epilogue.</p>
-</section>
-<section id="o-rescaling-during-iteration">
-<h3><span class="section-number">6.5.4. </span>O rescaling during iteration<a class="headerlink" href="#o-rescaling-during-iteration" title="Permalink to this heading">¶</a></h3>
-<p>Between KV blocks, the O accumulator must be rescaled when the running
-maximum changes. <strong>WG2</strong> (the correction warpgroup) handles rescaling,
-not the softmax warpgroups. WG0/WG1 are busy computing softmax and
-writing P to TMEM, while O is also in TMEM. Having a separate warpgroup
-read O, multiply by acc_scale, and write it back allows the rescaling to
-overlap with softmax computation.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WG2: Rescale O accumulator in TMEM (only when acc_scale &lt; 1.0)</span>
-<span class="k">if</span> <span class="n">any_thread_needs_rescale</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">d_tile</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">HEAD_DIM</span> <span class="o">//</span> <span class="mi">16</span><span class="p">):</span>
-        <span class="n">o_row</span> <span class="o">=</span> <span class="n">tmem_load</span><span class="p">(</span><span class="n">tmem_col_o</span> <span class="o">+</span> <span class="n">d_tile</span> <span class="o">*</span> <span class="mi">16</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
-        <span class="n">o_row</span> <span class="o">*=</span> <span class="n">acc_scale</span>
-        <span class="n">tmem_store</span><span class="p">(</span><span class="n">tmem_col_o</span> <span class="o">+</span> <span class="n">d_tile</span> <span class="o">*</span> <span class="mi">16</span><span class="p">,</span> <span class="n">o_row</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The kernel optimizes this by checking <code class="docutils literal notranslate"><span class="pre">any_needs_rescale</span></code> via
-<code class="docutils literal notranslate"><span class="pre">Tx.ptx.any_sync</span></code> — if no thread in the warp needs rescaling (because
-the maximum did not change), the entire TMEM read-modify-write is
-skipped.</p>
-<p><strong>Adaptive rescaling threshold</strong>: This implementation uses a thresholded
-max update. Small max changes are absorbed by keeping the old row max,
-which avoids a TMEM read-modify-write of O. This is a
-performance/accuracy trade-off controlled by <code class="docutils literal notranslate"><span class="pre">rescale_threshold</span></code> (set
-to 8.0 in the implementation).</p>
-</section>
-<section id="lse-for-backward-pass">
-<h3><span class="section-number">6.5.5. </span>LSE for backward pass<a class="headerlink" href="#lse-for-backward-pass" title="Permalink to this heading">¶</a></h3>
-<p>In a full training pipeline, the log-sum-exp
-<span class="math notranslate nohighlight">\(\text{LSE} = \log(\ell) + m\)</span> would be stored as an auxiliary
-output for the backward pass. After the last KV block,
-<span class="math notranslate nohighlight">\(\text{LSE}_i = \log(\text{row\_sum}_i) + \text{row\_max}_i\)</span> for
-each row <span class="math notranslate nohighlight">\(i\)</span>. <strong>The current kernel does not output LSE</strong> — it only
-computes the forward attention output O. A backward kernel would need an
-additional output buffer for LSE.</p>
-</section>
+<p>Two barriers split the softmax-to-value handoff. <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code>
+lets the value MMA start once the first 96 columns of <code class="docutils literal notranslate"><span class="pre">P</span></code> are written
+and the <code class="docutils literal notranslate"><span class="pre">O</span></code> tile is safe to accumulate into. On the first K/V block,
+WG2 pre-arrives this barrier because there is no old <code class="docutils literal notranslate"><span class="pre">O</span></code> to rescale.
+On later K/V blocks, WG2 arrives after it has either skipped an
+unnecessary rescale or finished rescaling the old <code class="docutils literal notranslate"><span class="pre">O</span></code>.
+<code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code> releases the last 32 columns of <code class="docutils literal notranslate"><span class="pre">P</span></code>. This matches
+the <code class="docutils literal notranslate"><span class="pre">96</span> <span class="pre">+</span> <span class="pre">32</span></code> value-MMA schedule from the previous section.</p>
+<p>Compared with GEMM, the new barriers are the ones around softmax:
+<code class="docutils literal notranslate"><span class="pre">s_ready.full</span></code>, <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code>, <code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code>, and the
+softmax/correction pair. They exist because the score MMA and value MMA
+are separated by register math, TMEM rewrites, and output rescaling.</p>
+<p><strong>Try with your agent</strong>: Ask it to trace one K/V block through
+<code class="docutils literal notranslate"><span class="pre">s_ready.full</span></code>, <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code>, <code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">o_ready.full</span></code>. For each barrier, ask who waits, who arrives, what
+tile becomes safe to read, and what storage can be reused afterward.</p>
 </section>
 <section id="pipelining-structure">
-<h2><span class="section-number">6.6. </span>Pipelining Structure<a class="headerlink" href="#pipelining-structure" title="Permalink to this heading">¶</a></h2>
-<p>The kernel uses <strong>three independent pipeline depths</strong>:</p>
+<h2><span class="section-number">6.7. </span>Pipelining Structure<a class="headerlink" href="#pipelining-structure" title="Permalink to this heading">¶</a></h2>
+<p>The previous section answered: what must be ready before a role may
+consume a tile? This section answers a different question: which roles
+can run at the same time?</p>
+<p>The kernel does not have one single pipeline depth. It has separate
+rings for the tile streams that move at different rates:</p>
 <ul class="simple">
-<li><p><strong>Q pipeline</strong> (depth 2): Q tiles change infrequently (only when
-moving to the next Q block). WG0 and WG1 each handle one Q stage.</p></li>
-<li><p><strong>KV pipeline</strong> (depth 3): K and V tiles stream continuously as we
-iterate over the sequence length. Depth 3 provides enough buffering to
-hide TMA latency while MMA is in progress.</p></li>
-<li><p><strong>TMEM pipeline</strong> (depth 2): Double-buffered TMEM for Score/P/O across
-the two Q stages.</p></li>
+<li><p>Q pipeline depth 2: one CTA works on two Q stages. WG0 handles one
+stage, and WG1 handles the other.</p></li>
+<li><p>KV pipeline depth 3: K and V blocks stream through the inner loop
+while the same Q stages are reused.</p></li>
+<li><p>TMEM pipeline depth 2: each Q stage has its own S/P/O TMEM slots, and
+those slots are reused after the matching barriers fire.</p></li>
 </ul>
-<figure class="align-default" id="id3">
-<img alt="../_images/flash_attention_pipeline.png" src="../_images/flash_attention_pipeline.png" />
+<figure class="align-default" id="id4">
+<img alt="../_images/flash_attention_pipeline_v2.png" src="../_images/flash_attention_pipeline_v2.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 6.6.1 </span><span class="caption-text">Flash Attention 4 Pipeline Structure</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 6.7.1 </span><span class="caption-text">Flash Attention 4 Pipeline Structure</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<p>Note that the KV blocks are iterated in <strong>reverse order</strong> (from
-<code class="docutils literal notranslate"><span class="pre">n_block_max</span> <span class="pre">-</span> <span class="pre">1</span></code> down to 0). This is an optimization for causal
-attention where the last block is most likely to need masking.</p>
-</section>
-<section id="causal-masking">
-<h2><span class="section-number">6.7. </span>Causal Masking<a class="headerlink" href="#causal-masking" title="Permalink to this heading">¶</a></h2>
-<p>For causal (autoregressive) attention, positions can only attend to
-earlier positions. The kernel implements this at two granularities:</p>
-<section id="block-level-skipping">
-<h3><span class="section-number">6.7.1. </span>Block-level skipping<a class="headerlink" href="#block-level-skipping" title="Permalink to this heading">¶</a></h3>
-<p>Entire KV blocks that are fully above the diagonal are skipped:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_n_block_max</span><span class="p">(</span><span class="n">m_block_idx</span><span class="p">,</span> <span class="n">causal</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Maximum KV block index (exclusive) for this Q block.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">causal</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ceildiv</span><span class="p">(</span><span class="n">SEQ_LEN_KV</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">)</span>
-    <span class="n">m_idx_max</span> <span class="o">=</span> <span class="p">(</span><span class="n">m_block_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">SEQ_Q_PER_TILE</span> <span class="o">*</span> <span class="n">SMEM_PIPE_DEPTH_Q</span>
-    <span class="n">n_idx</span> <span class="o">=</span> <span class="n">m_idx_max</span> <span class="o">+</span> <span class="n">SEQ_LEN_KV</span> <span class="o">-</span> <span class="n">SEQ_LEN_Q</span>
-    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_kv_blocks</span><span class="p">,</span> <span class="n">ceildiv</span><span class="p">(</span><span class="n">n_idx</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">))</span>
+<p>This figure is a timeline, not a barrier graph. Use it to see which role
+is active at roughly the same time; use the previous barrier-flow figure
+to check the exact producer-consumer waits.</p>
+<p>The rows in the figure match the code’s role branches:</p>
+<ul class="simple">
+<li><p>WG3 warp 1 issues TMA loads.</p></li>
+<li><p>WG3 warp 0 issues both score MMA and value MMA.</p></li>
+<li><p>WG0 and WG1 run softmax for the two Q stages.</p></li>
+<li><p>WG2 releases or rescales <code class="docutils literal notranslate"><span class="pre">O</span></code>, then later normalizes the final
+output.</p></li>
+<li><p>WG3 warp 2 issues the TMA store.</p></li>
+</ul>
+<p>Read the figure left to right as a representative pipeline wave. The
+load warp first loads <code class="docutils literal notranslate"><span class="pre">Q0</span></code>, <code class="docutils literal notranslate"><span class="pre">K[n-1]</span></code>, <code class="docutils literal notranslate"><span class="pre">Q1</span></code>, and <code class="docutils literal notranslate"><span class="pre">V[n-1]</span></code>, then
+keeps streaming lower-index K/V blocks. The MMA warp first issues score
+MMAs to produce <code class="docutils literal notranslate"><span class="pre">S0</span></code> and <code class="docutils literal notranslate"><span class="pre">S1</span></code>. WG0 and WG1 turn those score tiles
+into <code class="docutils literal notranslate"><span class="pre">P0</span></code> and <code class="docutils literal notranslate"><span class="pre">P1</span></code>.</p>
+<p>After the first two score MMAs, the MMA warp does not switch into a
+separate value-only phase. It interleaves the two kinds of MMA: value
+MMA for the current <code class="docutils literal notranslate"><span class="pre">V</span></code> block, then score MMA for the next <code class="docutils literal notranslate"><span class="pre">K</span></code>
+block. A typical sequence is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>score Q0*K[n-1]
+score Q1*K[n-1]
+value P0*V[n-1]
+score Q0*K[n-2]
+value P1*V[n-1]
+score Q1*K[n-2]
+value P0*V[n-2]
+...
 </pre></div>
 </div>
-<p>Block-level skipping reduces work for causal attention. In the ideal
-square case, early Q blocks process far fewer KV blocks than later ones,
-so the average number of visited blocks is roughly half of the
-non-causal case. The realized speedup still depends on overheads and
-tile shape.</p>
+<p>That interleaving is why the score, softmax, correction, and value rows
+overlap in the figure.</p>
+<p>The WG2 row says <code class="docutils literal notranslate"><span class="pre">release</span> <span class="pre">/</span> <span class="pre">rescale</span></code> because the first K/V block has
+no old <code class="docutils literal notranslate"><span class="pre">O</span></code> to rescale, but WG2 still participates in the handoff that
+lets value MMA proceed. On later K/V blocks, WG2 may actually rescale
+the old <code class="docutils literal notranslate"><span class="pre">O</span></code> tile before value MMA accumulates into it. Normalization
+and TMA store happen only after the last K/V block for the current
+attention task.</p>
+<p>This is why a single GEMM-style pipeline is not enough. Q, K/V, and TMEM
+slots advance on different schedules. TIRX keeps those schedules visible
+as separate tile buffers, ring states, and barrier phases instead of
+hiding the whole attention kernel behind one monolithic primitive.</p>
 </section>
-<section id="three-phase-iteration">
-<h3><span class="section-number">6.7.2. </span>Three-phase iteration<a class="headerlink" href="#three-phase-iteration" title="Permalink to this heading">¶</a></h3>
-<p>KV blocks are processed in three phases:</p>
+<section id="rescaling-and-writeback">
+<h2><span class="section-number">6.8. </span>Rescaling and Writeback<a class="headerlink" href="#rescaling-and-writeback" title="Permalink to this heading">¶</a></h2>
+<p>Online softmax can change the per-row maximum after each new score tile.
+When that happens, the output accumulated from earlier K/V blocks is in
+the old scale and must be rescaled before the next value MMA adds into
+it:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-3">
+<span class="eqno">(6.8.1)<a class="headerlink" href="#equation-chapter-flash-attention-index-3" title="Permalink to this equation">¶</a></span>\[O_{\text{old}} \leftarrow O_{\text{old}} \cdot e^{(m_{\text{old}} - m_{\text{new}}) / \sqrt{d}}\]</div>
+<p>Softmax computes the per-row scale and writes it to SMEM. WG2 waits for
+that scale through <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code>, reads the current <code class="docutils literal notranslate"><span class="pre">O</span></code>
+accumulator from TMEM, multiplies by the per-row scale, and writes <code class="docutils literal notranslate"><span class="pre">O</span></code>
+back to TMEM:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">o_row_wg</span><span class="p">,</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="n">tmem_col_o_stage</span> <span class="o">+</span> <span class="n">d_start</span> <span class="p">:</span> <span class="n">tmem_col_o_stage</span> <span class="o">+</span> <span class="n">d_start</span> <span class="o">+</span> <span class="mi">16</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">o_row_buf</span><span class="p">,</span> <span class="n">o_row_buf</span><span class="p">,</span> <span class="n">acc_scale</span><span class="p">)</span>
+<span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">tmem</span><span class="p">[:,</span> <span class="n">tmem_col_o_stage</span> <span class="o">+</span> <span class="n">d_start</span> <span class="p">:</span> <span class="n">tmem_col_o_stage</span> <span class="o">+</span> <span class="n">d_start</span> <span class="o">+</span> <span class="mi">16</span><span class="p">],</span> <span class="n">o_row_wg</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">16</span><span class="p">])</span>
+<span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">wait</span><span class="o">.</span><span class="n">st</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is not scalar bookkeeping. It is another TMEM -&gt; RF -&gt; TMEM tile
+operation.</p>
+<p>The synchronization is:</p>
 <ol class="arabic simple">
-<li><p><strong>Phase 1</strong>: The last KV block (<code class="docutils literal notranslate"><span class="pre">n_block_max</span> <span class="pre">-</span> <span class="pre">1</span></code>), always with
-causal mask applied</p></li>
-<li><p><strong>Phase 2</strong>: Blocks that straddle the causal boundary
-(<code class="docutils literal notranslate"><span class="pre">n_block_min_causal</span></code> to <code class="docutils literal notranslate"><span class="pre">n_block_max</span> <span class="pre">-</span> <span class="pre">2</span></code>), with per-element
-masking via R2P (Register-to-Predicate) bit manipulation</p></li>
-<li><p><strong>Phase 3</strong>: Blocks fully below the diagonal (<code class="docutils literal notranslate"><span class="pre">0</span></code> to
-<code class="docutils literal notranslate"><span class="pre">n_block_min_causal</span> <span class="pre">-</span> <span class="pre">1</span></code>), no masking needed</p></li>
+<li><p>Softmax writes the scale value to SMEM.</p></li>
+<li><p>WG2 waits on <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code>.</p></li>
+<li><p>WG2 rescales <code class="docutils literal notranslate"><span class="pre">O</span></code> in TMEM.</p></li>
+<li><p>WG2 arrives on <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code>.</p></li>
+<li><p>WG3’s value MMA can now consume <code class="docutils literal notranslate"><span class="pre">P</span></code> and accumulate into the
+rescaled <code class="docutils literal notranslate"><span class="pre">O</span></code> tile.</p></li>
 </ol>
+<p>After WG2 reads the scale value, <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> releases that
+SMEM slot so the softmax warpgroup can reuse it.</p>
+<p>At the end of the K/V loop, WG2 switches from correction to epilogue. It
+waits for the final <code class="docutils literal notranslate"><span class="pre">row_sum</span></code> and <code class="docutils literal notranslate"><span class="pre">o_ready.full</span></code>, reads the final
+<code class="docutils literal notranslate"><span class="pre">O</span></code> accumulator from TMEM, multiplies by <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">row_sum</span></code>, casts to
+fp16, and writes <code class="docutils literal notranslate"><span class="pre">O_smem</span></code>. WG3’s TMA store warp then moves <code class="docutils literal notranslate"><span class="pre">O_smem</span></code>
+back to GMEM.</p>
+<p>The current kernel computes the forward output only. A training forward
+kernel would normally also store log-sum-exp for backward:</p>
+<div class="math notranslate nohighlight" id="equation-chapter-flash-attention-index-4">
+<span class="eqno">(6.8.2)<a class="headerlink" href="#equation-chapter-flash-attention-index-4" title="Permalink to this equation">¶</a></span>\[\mathrm{LSE}_i = \log(\mathrm{row\_sum}_i) + \mathrm{row\_max}_i\]</div>
+<p>This implementation is forward-output only and does not write LSE.</p>
 </section>
-<section id="r2p-masking">
-<h3><span class="section-number">6.7.3. </span>R2P masking<a class="headerlink" href="#r2p-masking" title="Permalink to this heading">¶</a></h3>
-<p>Rather than per-column comparisons, the kernel uses bit manipulation
-that compiles to the PTX <code class="docutils literal notranslate"><span class="pre">R2P</span></code> instruction:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create bitmask: col_limit=5 -&gt; 0b11111 (bits 0-4 set)</span>
-<span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">col_limit</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-<span class="c1"># Test bit i: compiles to R2P instruction</span>
+<section id="causal-masking">
+<h2><span class="section-number">6.9. </span>Causal Masking<a class="headerlink" href="#causal-masking" title="Permalink to this heading">¶</a></h2>
+<p>Causal attention changes which score elements are valid: a query
+position may only attend to keys at or before that position. In this
+kernel, causal handling appears in two places.</p>
+<p>First, the K/V loop can stop early for each Q block.
+<code class="docutils literal notranslate"><span class="pre">get_n_block_max(...)</span></code> computes the last K/V block that this Q block
+may need, so the kernel does not load or compute K/V blocks that are
+entirely above the causal diagonal.</p>
+<p>Second, blocks that cross the diagonal still run score MMA, but the
+softmax stage masks invalid columns before exponentiation. For each row,
+the code computes a column limit and sets scores beyond that limit to
+<code class="docutils literal notranslate"><span class="pre">-inf</span></code> in registers:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">col_limit</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
 <span class="n">in_bound</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">)</span>
 <span class="n">s_chunk</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">s_chunk</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">if</span> <span class="n">in_bound</span> <span class="k">else</span> <span class="o">-</span><span class="n">inf</span>
 </pre></div>
 </div>
-</section>
+<p>The real implementation applies this in chunks with <code class="docutils literal notranslate"><span class="pre">mask_r2p(...)</span></code>,
+which builds a bit mask instead of branching on every score element.
+Blocks fully below the diagonal do not need this register mask; blocks
+crossing the diagonal do.</p>
+<p>From the tile-primitive point of view, causal mode does not replace the
+main data path. It changes the K/V trip count and inserts masking into
+the RF softmax step between score MMA and <code class="docutils literal notranslate"><span class="pre">P</span></code> writeback.</p>
 </section>
 <section id="gqa-support">
-<h2><span class="section-number">6.8. </span>GQA Support<a class="headerlink" href="#gqa-support" title="Permalink to this heading">¶</a></h2>
-<p>Grouped Query Attention (GQA) shares K/V heads across multiple Q heads.
-The kernel handles this by packing multiple Q heads into the same BLK_M
-tile:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">GQA_RATIO</span> <span class="o">=</span> <span class="n">num_qo_heads</span> <span class="o">//</span> <span class="n">num_kv_heads</span>  <span class="c1"># e.g., 4</span>
-<span class="n">SEQ_Q_PER_TILE</span> <span class="o">=</span> <span class="n">BLK_M</span> <span class="o">//</span> <span class="n">GQA_RATIO</span>       <span class="c1"># e.g., 32 sequence positions per tile</span>
+<h2><span class="section-number">6.10. </span>GQA Support<a class="headerlink" href="#gqa-support" title="Permalink to this heading">¶</a></h2>
+<p>Grouped Query Attention shares one K/V head across multiple query heads.
+For a scheduled <code class="docutils literal notranslate"><span class="pre">kv_head_idx</span></code>, the kernel processes the corresponding
+group of query heads together:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">GQA_RATIO</span> <span class="o">=</span> <span class="n">num_qo_heads</span> <span class="o">//</span> <span class="n">num_kv_heads</span>
+<span class="n">SEQ_Q_PER_TILE</span> <span class="o">=</span> <span class="n">BLK_M</span> <span class="o">//</span> <span class="n">GQA_RATIO</span>
 </pre></div>
 </div>
-<p>With <code class="docutils literal notranslate"><span class="pre">GQA_RATIO=4</span></code> and <code class="docutils literal notranslate"><span class="pre">BLK_M=128</span></code>, each tile holds 32 sequence
-positions x 4 Q heads = 128 rows. The SMEM row index <code class="docutils literal notranslate"><span class="pre">i</span></code> maps to
-<code class="docutils literal notranslate"><span class="pre">(seq_pos</span> <span class="pre">=</span> <span class="pre">i</span> <span class="pre">//</span> <span class="pre">GQA_RATIO,</span> <span class="pre">head</span> <span class="pre">=</span> <span class="pre">i</span> <span class="pre">%</span> <span class="pre">GQA_RATIO)</span></code>. TMA loads use a 3D
-view to pack the GQA heads:</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">GQA_RATIO=4</span></code>, the 128 rows of the Q tile represent 32 sequence
+positions times 4 query heads. The packed row mapping is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>seq_pos = row // GQA_RATIO
+q_head  = row % GQA_RATIO
+</pre></div>
+</div>
+<p>The Q TMA load uses a 3D view to describe that packing. The source is
+<code class="docutils literal notranslate"><span class="pre">Q[batch,</span> <span class="pre">seq,</span> <span class="pre">qo_head,</span> <span class="pre">dim]</span></code>, while the destination is the same
+physical SMEM tile that the score MMA reads as a flat <code class="docutils literal notranslate"><span class="pre">128</span> <span class="pre">x</span> <span class="pre">HEAD_DIM</span></code>
+operand:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Q_smem_3d</span> <span class="o">=</span> <span class="n">Q_smem</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">SMEM_PIPE_DEPTH_Q</span><span class="p">,</span> <span class="n">SEQ_Q_PER_TILE</span><span class="p">,</span> <span class="n">GQA_RATIO</span><span class="p">,</span> <span class="n">HEAD_DIM</span><span class="p">)</span>
 <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span>
     <span class="n">Q_smem_3d</span><span class="p">[</span><span class="n">i_q</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:],</span>
-    <span class="n">Q</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">,</span> <span class="n">m_start</span> <span class="p">:</span> <span class="n">m_start</span> <span class="o">+</span> <span class="n">SEQ_Q_PER_TILE</span><span class="p">,</span>
-      <span class="n">kv_head_idx</span> <span class="o">*</span> <span class="n">GQA_RATIO</span> <span class="p">:</span> <span class="p">(</span><span class="n">kv_head_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">GQA_RATIO</span><span class="p">,</span> <span class="p">:],</span>
+    <span class="n">Q</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">,</span>
+      <span class="n">m_start</span> <span class="p">:</span> <span class="n">m_start</span> <span class="o">+</span> <span class="n">SEQ_Q_PER_TILE</span><span class="p">,</span>
+      <span class="n">kv_head_idx</span> <span class="o">*</span> <span class="n">GQA_RATIO</span> <span class="p">:</span> <span class="p">(</span><span class="n">kv_head_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">GQA_RATIO</span><span class="p">,</span>
+      <span class="p">:],</span>
     <span class="o">**</span><span class="n">tma_copy_q</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
+<p>K and V are not expanded in memory. The same K/V tile for
+<code class="docutils literal notranslate"><span class="pre">kv_head_idx</span></code> is reused by all <code class="docutils literal notranslate"><span class="pre">GQA_RATIO</span></code> query heads packed into
+the Q rows.</p>
+<p>The output side mirrors the input side. After the epilogue, the kernel
+uses a matching 3D view to store the packed rows back to
+<code class="docutils literal notranslate"><span class="pre">O[batch,</span> <span class="pre">seq,</span> <span class="pre">qo_head,</span> <span class="pre">dim]</span></code>.</p>
+<p>So GQA mainly changes the interpretation at the Q load and O store
+boundaries. Inside the compute path, the score MMA still sees a regular
+<code class="docutils literal notranslate"><span class="pre">128</span> <span class="pre">x</span> <span class="pre">HEAD_DIM</span></code> Q tile, and the rest of the tile-primitive graph
+stays the same.</p>
 </section>
 <section id="tile-scheduling">
-<h2><span class="section-number">6.9. </span>Tile Scheduling<a class="headerlink" href="#tile-scheduling" title="Permalink to this heading">¶</a></h2>
-<p>The kernel supports two scheduling modes with different CTA launch
-strategies:</p>
+<h2><span class="section-number">6.11. </span>Tile Scheduling<a class="headerlink" href="#tile-scheduling" title="Permalink to this heading">¶</a></h2>
+<p>The scheduler maps each CTA to a <code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">kv_head,</span> <span class="pre">m_block)</span></code> attention
+task. The kernel has two scheduling modes:</p>
 <ul class="simple">
-<li><p><strong>Non-causal (persistent)</strong>: Launches <code class="docutils literal notranslate"><span class="pre">min(148,</span> <span class="pre">num_tasks)</span></code> CTAs
-that cycle through <code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">kv_head,</span> <span class="pre">m_block)</span></code> tasks round-robin
-using a <code class="docutils literal notranslate"><span class="pre">LinearScheduler</span></code>. Each CTA picks up the next available
-task.</p></li>
-<li><p><strong>Causal (non-persistent)</strong>: Launches one CTA per task
-(<code class="docutils literal notranslate"><span class="pre">cta_count</span> <span class="pre">=</span> <span class="pre">num_tasks</span></code>). Because causal attention gives early Q
-blocks fewer KV blocks and later Q blocks more work, the workload is
-naturally unbalanced. An <code class="docutils literal notranslate"><span class="pre">LPTScheduler</span></code> (Longest Processing Time
-first) assigns heavier tasks first to balance load. An L2 swizzle
-factor optimizes cache reuse.</p></li>
+<li><p>Non-causal mode uses <code class="docutils literal notranslate"><span class="pre">FlashAttentionLinearScheduler</span></code>. The launch
+uses a fixed pool of CTAs, and each CTA advances by <code class="docutils literal notranslate"><span class="pre">num_ctas</span></code> to
+process multiple tasks.</p></li>
+<li><p>Causal mode uses <code class="docutils literal notranslate"><span class="pre">FlashAttentionLPTScheduler</span></code>. The launch uses one
+CTA per task, but the task order is rearranged so heavier Q blocks
+appear earlier and nearby batch/head tasks keep better L2 locality.</p></li>
 </ul>
-<p>The distinction matters: this implementation uses a non-persistent
-schedule for causal mode because the work per tile varies strongly, and
-the LPT ordering handles that imbalance directly.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">scheduler</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">FlashAttentionLPTScheduler</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_causal</span>
-    <span class="k">else</span> <span class="n">FlashAttentionLinearScheduler</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="p">)</span>
-<span class="k">while</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
+<p>The code interface has the same shape in both modes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">while</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
     <span class="n">m_block_idx</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">m_block_idx</span>
     <span class="n">batch_idx</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">batch_idx</span>
     <span class="n">kv_head_idx</span> <span class="o">=</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">head_idx</span>
-    <span class="c1"># ... process tile ...</span>
+    <span class="c1"># process one Q block against its K/V block range</span>
     <span class="n">scheduler</span><span class="o">.</span><span class="n">next_tile</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>In non-causal mode, <code class="docutils literal notranslate"><span class="pre">scheduler.next_tile()</span></code> advances to another task
+for the same CTA. In causal mode, it ends the loop after the current
+task. Either way, scheduling only decides which attention tile the CTA
+owns. The tile primitives inside the loop remain the same local
+operations: TMA load, score MMA, softmax, value MMA, correction, and TMA
+store.</p>
 </section>
 <section id="differences-from-gemm">
-<h2><span class="section-number">6.10. </span>Differences from GEMM<a class="headerlink" href="#differences-from-gemm" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.12. </span>Differences from GEMM<a class="headerlink" href="#differences-from-gemm" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Aspect</p></th>
@@ -820,160 +938,69 @@ the LPT ordering handles that imbalance directly.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>MMA operations</p></td>
-<td><p>1 type (A&#64;B)</p></td>
-<td><p>2 types (<a class="reference external" href="mailto:Q&#37;&#52;&#48;K^T">Q<span>&#64;</span>K^T</a>, P&#64;V)</p></td>
+<tr class="row-even"><td><p>MMA phases</p></td>
+<td><p>one repeated MMA</p></td>
+<td><p>score MMA and value MMA</p></td>
 </tr>
-<tr class="row-odd"><td><p>Between-MMA work</p></td>
-<td><p>None</p></td>
-<td><p>Softmax (exp, max, sum, rescale)</p></td>
+<tr class="row-odd"><td><p>Work between
+MMAs</p></td>
+<td><p>none beyond pipeline
+handoffs</p></td>
+<td><p>online softmax, masking, and O
+rescaling</p></td>
 </tr>
-<tr class="row-even"><td><p>State across
-tiles</p></td>
-<td><p>Sum accumulation</p></td>
-<td><p>(max, sum, O) triple</p></td>
+<tr class="row-even"><td><p>Running state</p></td>
+<td><p>accumulator only</p></td>
+<td><p>row max, row sum, O accumulator</p></td>
 </tr>
-<tr class="row-odd"><td><p>Masking</p></td>
-<td><p>None</p></td>
-<td><p>Causal block skipping + R2P masking</p></td>
-</tr>
-<tr class="row-even"><td><p>Thread count</p></td>
-<td><p>128-256</p></td>
-<td><p>512 (4 warpgroups)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Pipeline
-structure</p></td>
-<td><p>Uniform depth</p></td>
-<td><p>Heterogeneous (Q depth 2, KV depth
-3, TMEM depth 2)</p></td>
-</tr>
-<tr class="row-even"><td><p>Barrier count</p></td>
-<td><p>4 named mbarriers
-(producer-consumer
-chain)</p></td>
-<td><p>12+ barriers with mixed types</p></td>
-</tr>
-<tr class="row-odd"><td><p>Epilogue
-complexity</p></td>
-<td><p>O = TMEM -&gt; SMEM
--&gt; TMA</p></td>
-<td><p>Rescale O, normalize by sum, then
-TMEM -&gt; SMEM -&gt; TMA</p></td>
+<tr class="row-odd"><td><p>Main
+intermediate</p></td>
+<td><p>accumulator TMEM tile</p></td>
+<td><p>S, P, and O TMEM tile regions</p></td>
 </tr>
 <tr class="row-even"><td><p>Warp roles</p></td>
 <td><p>TMA producer, MMA
-consumer</p></td>
-<td><p>TMA, Score MMA, Softmax, Value MMA,
-Correction, Writeback</p></td>
+consumer, writeback</p></td>
+<td><p>TMA load, MMA, softmax, correction,
+TMA store</p></td>
+</tr>
+<tr class="row-odd"><td><p>Barriers</p></td>
+<td><p>mostly
+load/compute/writeback
+handoffs</p></td>
+<td><p>additional
+score/softmax/value/correction
+handoffs</p></td>
+</tr>
+<tr class="row-even"><td><p>Scheduling
+unit</p></td>
+<td><p>output matrix tile</p></td>
+<td><p>attention task:
+<code class="docutils literal notranslate"><span class="pre">(batch,</span> <span class="pre">kv_head,</span> <span class="pre">m_block)</span></code></p></td>
 </tr>
 </tbody>
 </table>
+<p>FA4 still uses the same local TIRX contracts:</p>
+<ul class="simple">
+<li><p>the tile primitive says what tile moves or computes,</p></li>
+<li><p>the surrounding scope says which threads cooperate,</p></li>
+<li><p>the layout says where the tile lives,</p></li>
+<li><p>the barrier says when the next role may consume it.</p></li>
+</ul>
+<p>FA4 is harder than GEMM because there are more tile values and more
+producer-consumer handoffs between them.</p>
 </section>
 <section id="exercises">
-<h2><span class="section-number">6.11. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.13. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
-<li><p>Why does the KV pipeline use depth 3 while the Q pipeline uses depth
-2? What determines the optimal depth for each?</p></li>
-<li><p>In online softmax, the rescaling
-<span class="math notranslate nohighlight">\(O = O \cdot e^{m_{\text{old}} - m_{\text{new}}}\)</span> applies to
-the entire accumulated output. Why doesn’t this cause precision loss?
-(Hint: what is the sign of the exponent?)</p></li>
-<li><p>For causal attention with <code class="docutils literal notranslate"><span class="pre">seq_len=4096</span></code> and <code class="docutils literal notranslate"><span class="pre">BLK_N=128</span></code>, how
-many KV blocks does the first Q block process vs the last Q block?
-What is the average workload?</p></li>
-<li><p>How does GQA_RATIO affect the effective tile size and MMA
-utilization? What happens when <code class="docutils literal notranslate"><span class="pre">GQA_RATIO</span> <span class="pre">&gt;</span> <span class="pre">BLK_M</span></code>?</p></li>
-<li><p>The Value MMA splits P into two parts (96 + 32 columns). Why? What
-would happen if it waited for all of P before starting?</p></li>
-<li><p>Why is O rescaling done by a separate warpgroup (WG2) rather than by
-the softmax warpgroups (WG0/WG1) that computed the rescaling factor?</p></li>
+<li><p>Compared with GEMM, what new tile handoff appears between the two MMA
+phases in FA4? Name the producer, the TMEM tile, and the consumer.</p></li>
+<li><p>Why does softmax write the numerator tile <code class="docutils literal notranslate"><span class="pre">P</span></code> back to TMEM instead
+of keeping it only in registers for the value MMA?</p></li>
+<li><p>Pick <code class="docutils literal notranslate"><span class="pre">p_o_rescale.full</span></code> or <code class="docutils literal notranslate"><span class="pre">p_ready_2.full</span></code>. What exactly does
+the barrier prove, and what could go wrong if the value MMA skipped
+that wait?</p></li>
 </ol>
-<blockquote>
-<div><p><strong>Try with your agent</strong>: Describe your Flash Attention 4 kernel’s
-pipeline structure (barrier types, warp roles, pipeline depths) and
-ask: <em>“Is there a deadlock scenario in this pipeline topology? Check
-that every wait has a matching arrive, and that no circular
-dependency exists between barrier groups.”</em></p>
-</div></blockquote>
-</section>
-<section id="running-the-kernel">
-<h2><span class="section-number">6.12. </span>Running the Kernel<a class="headerlink" href="#running-the-kernel" title="Permalink to this heading">¶</a></h2>
-<p>The Flash Attention 4 kernel (~1000 lines) lives in
-<code class="docutils literal notranslate"><span class="pre">tirx_tutorial/flash_attention4.py</span></code>. The run cell compiles it,
-verifies correctness against PyTorch’s scaled dot-product attention, and
-benchmarks it.</p>
-<p>Note: The kernel signature has 5 arguments
-<code class="docutils literal notranslate"><span class="pre">(Q,</span> <span class="pre">K,</span> <span class="pre">V,</span> <span class="pre">O,</span> <span class="pre">profiler_buffer)</span></code> — the run helper passes
-<code class="docutils literal notranslate"><span class="pre">profiler_buffer</span></code> even when profiling data is not the main output.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">tvm</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tirx_tutorial.flash_attention4</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">PROFILER_BUFFER_SIZE</span><span class="p">,</span>
-                                            <span class="n">get_flash_attention4_kernel</span><span class="p">,</span>
-                                            <span class="n">prepare_data</span><span class="p">)</span>
-
-<span class="c1"># Configuration</span>
-<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">4</span>
-<span class="n">seq_len</span> <span class="o">=</span> <span class="mi">2048</span>
-<span class="n">num_qo_heads</span> <span class="o">=</span> <span class="mi">32</span>
-<span class="n">num_kv_heads</span> <span class="o">=</span> <span class="mi">8</span>
-<span class="n">head_dim</span> <span class="o">=</span> <span class="mi">128</span>
-<span class="n">is_causal</span> <span class="o">=</span> <span class="kc">False</span>
-
-<span class="c1"># Compile</span>
-<span class="n">kernel</span> <span class="o">=</span> <span class="n">get_flash_attention4_kernel</span><span class="p">(</span>
-    <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">num_qo_heads</span><span class="p">,</span> <span class="n">num_kv_heads</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">,</span> <span class="n">is_causal</span>
-<span class="p">)</span>
-<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
-    <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">}),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
-
-<span class="c1"># Prepare data (Q, K, V, O are CPU tensors)</span>
-<span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">O</span> <span class="o">=</span> <span class="n">prepare_data</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">num_qo_heads</span><span class="p">,</span> <span class="n">num_kv_heads</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
-<span class="n">Q</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">O</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">K</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">V</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">O</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-<span class="n">profiler_buf</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
-    <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">PROFILER_BUFFER_SIZE</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">cuda</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="p">)</span>
-
-<span class="c1"># Run — note the 5th argument (profiler_buffer)</span>
-<span class="n">f</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span>
-<span class="n">f</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">Q</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">K</span><span class="p">),</span>
-  <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">V</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">O</span><span class="p">),</span> <span class="n">profiler_buf</span><span class="p">)</span>
-
-<span class="c1"># Verify against PyTorch SDPA</span>
-<span class="n">Q_ref</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>  <span class="c1"># [batch, heads, seq, dim]</span>
-<span class="n">K_ref</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
-<span class="n">K_ref</span> <span class="o">=</span> <span class="n">K_ref</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">num_qo_heads</span> <span class="o">//</span> <span class="n">num_kv_heads</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">V_ref</span> <span class="o">=</span> <span class="n">V</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
-<span class="n">V_ref</span> <span class="o">=</span> <span class="n">V_ref</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">num_qo_heads</span> <span class="o">//</span> <span class="n">num_kv_heads</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">O_ref</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">scaled_dot_product_attention</span><span class="p">(</span><span class="n">Q_ref</span><span class="p">,</span> <span class="n">K_ref</span><span class="p">,</span> <span class="n">V_ref</span><span class="p">,</span> <span class="n">is_causal</span><span class="o">=</span><span class="n">is_causal</span><span class="p">)</span>
-<span class="n">O_ref</span> <span class="o">=</span> <span class="n">O_ref</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>
-
-<span class="n">max_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">O</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span> <span class="o">-</span> <span class="n">O_ref</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Flash Attention 4: batch=</span><span class="si">{</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">, seq=</span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">, heads=</span><span class="si">{</span><span class="n">num_qo_heads</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_kv_heads</span><span class="si">}</span><span class="s2">, dim=</span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max error vs PyTorch SDPA: </span><span class="si">{</span><span class="n">max_err</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">max_err</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;FAIL: max_err=</span><span class="si">{</span><span class="n">max_err</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
-
-<span class="c1"># Benchmark</span>
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">Q</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">K</span><span class="p">),</span>
-        <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">V</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">O</span><span class="p">),</span> <span class="n">profiler_buf</span><span class="p">]</span>
-<span class="n">ITERS</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">end</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">start</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ITERS</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">end</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">ms</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="o">/</span> <span class="n">ITERS</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Performance: </span><span class="si">{</span><span class="n">ms</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
 </section>
 </section>
 
@@ -986,47 +1013,25 @@ benchmarks it.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">6. Flash Attention on Blackwell</a><ul>
-<li><a class="reference internal" href="#online-softmax">6.1. Online Softmax</a><ul>
-<li><a class="reference internal" href="#online-recurrence">6.1.1. Online Recurrence</a></li>
-<li><a class="reference internal" href="#numeric-example">6.1.2. Numeric example</a></li>
-<li><a class="reference internal" href="#extending-to-flash-attention-4">6.1.3. Extending to Flash Attention 4</a></li>
+<li><a class="reference internal" href="#">6. Flash Attention 4</a><ul>
+<li><a class="reference internal" href="#algorithm-shape">6.1. Algorithm Shape</a></li>
+<li><a class="reference internal" href="#tile-primitive-graph">6.2. Tile-Primitive Graph</a></li>
+<li><a class="reference internal" href="#warp-roles-and-scopes">6.3. Warp Roles and Scopes</a></li>
+<li><a class="reference internal" href="#the-two-mma-phases">6.4. The Two MMA Phases</a><ul>
+<li><a class="reference internal" href="#score-mma">6.4.1. Score MMA</a></li>
+<li><a class="reference internal" href="#softmax-between-mmas">6.4.2. Softmax Between MMAs</a></li>
+<li><a class="reference internal" href="#value-mma">6.4.3. Value MMA</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#kernel-architecture">6.2. Kernel Architecture</a></li>
-<li><a class="reference internal" href="#the-two-mma-phases">6.3. The Two MMA Phases</a><ul>
-<li><a class="reference internal" href="#score-mma">6.3.1. Score MMA</a></li>
-<li><a class="reference internal" href="#softmax-in-registers">6.3.2. Softmax in Registers</a></li>
-<li><a class="reference internal" href="#value-mma">6.3.3. Value MMA</a></li>
-<li><a class="reference internal" href="#tmem-layout">6.3.4. TMEM Layout</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#barrier-topology">6.4. Barrier Topology</a><ul>
-<li><a class="reference internal" href="#barrier-table">6.4.1. Barrier Table</a></li>
-<li><a class="reference internal" href="#barrier-flow-diagram">6.4.2. Barrier Flow Diagram</a></li>
-<li><a class="reference internal" href="#comparison-with-gemm-barriers">6.4.3. Comparison with GEMM barriers</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#writeback-and-rescaling">6.5. Writeback and Rescaling</a><ul>
-<li><a class="reference internal" href="#final-normalization">6.5.1. Final Normalization</a></li>
-<li><a class="reference internal" href="#tmem-to-smem-transfer">6.5.2. TMEM to SMEM Transfer</a></li>
-<li><a class="reference internal" href="#tma-store">6.5.3. TMA Store</a></li>
-<li><a class="reference internal" href="#o-rescaling-during-iteration">6.5.4. O rescaling during iteration</a></li>
-<li><a class="reference internal" href="#lse-for-backward-pass">6.5.5. LSE for backward pass</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#pipelining-structure">6.6. Pipelining Structure</a></li>
-<li><a class="reference internal" href="#causal-masking">6.7. Causal Masking</a><ul>
-<li><a class="reference internal" href="#block-level-skipping">6.7.1. Block-level skipping</a></li>
-<li><a class="reference internal" href="#three-phase-iteration">6.7.2. Three-phase iteration</a></li>
-<li><a class="reference internal" href="#r2p-masking">6.7.3. R2P masking</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#gqa-support">6.8. GQA Support</a></li>
-<li><a class="reference internal" href="#tile-scheduling">6.9. Tile Scheduling</a></li>
-<li><a class="reference internal" href="#differences-from-gemm">6.10. Differences from GEMM</a></li>
-<li><a class="reference internal" href="#exercises">6.11. Exercises</a></li>
-<li><a class="reference internal" href="#running-the-kernel">6.12. Running the Kernel</a></li>
+<li><a class="reference internal" href="#tmem-layout-and-reuse">6.5. TMEM Layout and Reuse</a></li>
+<li><a class="reference internal" href="#how-barriers-connect-the-roles">6.6. How Barriers Connect the Roles</a></li>
+<li><a class="reference internal" href="#pipelining-structure">6.7. Pipelining Structure</a></li>
+<li><a class="reference internal" href="#rescaling-and-writeback">6.8. Rescaling and Writeback</a></li>
+<li><a class="reference internal" href="#causal-masking">6.9. Causal Masking</a></li>
+<li><a class="reference internal" href="#gqa-support">6.10. GQA Support</a></li>
+<li><a class="reference internal" href="#tile-scheduling">6.11. Tile Scheduling</a></li>
+<li><a class="reference internal" href="#differences-from-gemm">6.12. Differences from GEMM</a></li>
+<li><a class="reference internal" href="#exercises">6.13. Exercises</a></li>
 </ul>
 </li>
 </ul>
@@ -1041,14 +1046,14 @@ benchmarks it.</p>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>5. Warp-Specialized and Clustered GEMM</div>
+            <div>5. Scaling GEMM with Warp Specialization and Clusters</div>
          </div>
      </a>
-     <a id="button-next" href="../appendix/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+     <a id="button-next" href="../chapter_ai_assisted/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>7. Appendix</div>
+            <div>7. Writing TIRX Kernels with Agents</div>
         </div>
      </a>
   </div>

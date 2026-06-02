@@ -1,72 +1,72 @@
 
 .. _chap_api_reference:
 
-TIRX API Quick Reference
-========================
+TIRX API Lookup
+===============
 
 
-Reference for the TIRX APIs used across the examples.
+Lookup table for the TIRX APIs used across the examples.
 
 Thread Hierarchy
 ----------------
 
-+------------------------------------+----------------------------------------------------+
-| API                                | Description                                        |
-+====================================+====================================================+
-| ``@Tx.prim_func``                  | Declare a TIRX primitive function                  |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.kernel()``                    | Kernel execution scope                             |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.cluster()``                   | Cluster execution scope (clustered launches only)  |
-+------------------------------------+----------------------------------------------------+
-| ``with Tx.cta():``                 | Scope: all threads in the CTA execute this block   |
-+------------------------------------+----------------------------------------------------+
-| ``with Tx.warpgroup():``           | Scope: all 128 threads in the warpgroup execute    |
-|                                    | this block                                         |
-+------------------------------------+----------------------------------------------------+
-| ``with Tx.warp():``                | Scope: all 32 threads in the warp execute this     |
-|                                    | block                                              |
-+------------------------------------+----------------------------------------------------+
-| ``with Tx.thread():``              | Scope: each thread executes independently          |
-+------------------------------------+----------------------------------------------------+
-| ``with Tx.thread(cond):``          | Scope: only threads where ``cond`` is true execute |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.filter(var, lo, hi)`` /       | Active-thread filter — narrow the current scope to |
-| ``Tx.filter(var, cond)``           | ``var ∈ [lo, hi)`` or ``cond`` true. Use as the    |
-|                                    | scope argument:                                    |
-|                                    | ``with Tx.warp(Tx.filter(warp_id, 0, 1)):``        |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.cta_id([Gx, Gy, ...])``       | CTA index in the grid (kernel → cta)               |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.cta_id_in_cluster([Cx, Cy])`` | CTA index within the cluster (cluster → cta)       |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.warpgroup_id([Nw])``          | Warpgroup index within the CTA (cta → warpgroup)   |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.warp_id([Nw])``               | Warp index within the CTA (cta → warp)             |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.warp_id_in_wg([4])``          | Warp index within the warpgroup (warpgroup → warp; |
-|                                    | always 4)                                          |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.thread_id([Nt])``             | Thread index within the CTA (cta → thread)         |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.thread_id_in_wg([128])``      | Thread index within the warpgroup (warpgroup →     |
-|                                    | thread; always 128)                                |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.lane_id([32])``               | Thread index within a warp (warp → thread; always  |
-|                                    | 32)                                                |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.cuda.thread_rank()``          | Linear thread index within the CTA (i.e.,          |
-|                                    | ``threadIdx.x + threadIdx.y * blockDim.x + ...``). |
-|                                    | Used as the default ``leader`` predicate for       |
-|                                    | one-thread-per-CTA work such as ``MBarrier.init``. |
-+------------------------------------+----------------------------------------------------+
-| ``Tx.ptx.elect_sync()``            | Elect one thread *per warp* (so 4 threads in a     |
-|                                    | 4-warp warpgroup). Use it only at sites that       |
-|                                    | intentionally want per-warp elected issue. For one |
-|                                    | whole-tile TMA copy, use a single issuer such as   |
-|                                    | ``tid == 0`` so the copy and byte-count update     |
-|                                    | happen once.                                       |
-+------------------------------------+----------------------------------------------------+
++-----------------------------------------------+----------------------------------------------------+
+| API                                           | Description                                        |
++===============================================+====================================================+
+| ``@Tx.prim_func(tirx=True)``                  | Declare a TIRX primitive function                  |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.kernel()``                               | Kernel execution scope                             |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.cluster()``                              | Cluster execution scope (clustered launches only)  |
++-----------------------------------------------+----------------------------------------------------+
+| ``with Tx.cta():``                            | Scope: all threads in the CTA execute this block   |
++-----------------------------------------------+----------------------------------------------------+
+| ``with Tx.warpgroup():``                      | Scope: all 128 threads in the warpgroup execute    |
+|                                               | this block                                         |
++-----------------------------------------------+----------------------------------------------------+
+| ``with Tx.warp():``                           | Scope: all 32 threads in the warp execute this     |
+|                                               | block                                              |
++-----------------------------------------------+----------------------------------------------------+
+| ``with Tx.thread():``                         | Scope: each thread executes independently          |
++-----------------------------------------------+----------------------------------------------------+
+| ``with Tx.thread(cond):``                     | Scope: only threads where ``cond`` is true execute |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.filter(var, lo, hi)`` /                  | Active-thread filter — narrow the current scope to |
+| ``Tx.filter(var, cond)``                      | ``var ∈ [lo, hi)`` or ``cond`` true. Use as the    |
+|                                               | scope argument:                                    |
+|                                               | ``with Tx.warp(parent="cta")[warp_id == 0]:``      |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.cta_id([Gx, Gy, ...], parent="kernel")`` | CTA index in the grid (kernel → cta)               |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.cta_id([Cx, Cy], parent="cluster")``     | CTA index within the cluster (cluster → cta)       |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.warpgroup_id([Nw], parent="cta")``       | Warpgroup index within the CTA (cta → warpgroup)   |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.warp_id([Nw], parent="cta")``            | Warp index within the CTA (cta → warp)             |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.warp_id([4], parent="warpgroup")``       | Warp index within the warpgroup; these examples    |
+|                                               | use 4 warps per warpgroup                          |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.thread_id([Nt], parent="cta")``          | Thread index within the CTA (cta → thread)         |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.thread_id([128], parent="warpgroup")``   | Thread index within the warpgroup; 128 for a       |
+|                                               | 4-warp warpgroup                                   |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.thread_id([32], parent="warp")``         | Thread index within a warp; warp lanes have extent |
+|                                               | 32                                                 |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.cuda.thread_rank()``                     | Linear thread index within the CTA (i.e.,          |
+|                                               | ``threadIdx.x + threadIdx.y * blockDim.x + ...``). |
+|                                               | Used as the default ``leader`` predicate for       |
+|                                               | one-thread-per-CTA work such as ``MBarrier.init``. |
++-----------------------------------------------+----------------------------------------------------+
+| ``Tx.ptx.elect_sync()``                       | Elect one thread *per warp* (so 4 threads in a     |
+|                                               | 4-warp warpgroup). Use it only at sites that       |
+|                                               | intentionally want per-warp elected issue. For one |
+|                                               | whole-tile TMA copy, use a single issuer such as   |
+|                                               | ``tid == 0`` so the copy and byte-count update     |
+|                                               | happen once.                                       |
++-----------------------------------------------+----------------------------------------------------+
 
 Function Parameters
 -------------------
@@ -169,8 +169,8 @@ Math
 | ``Tx.rsqrt(x)``   | Element-wise reciprocal square root,              |
 |                   | ``1 / sqrt(x)``; preserves dtype of ``x``         |
 +-------------------+---------------------------------------------------+
-| ``Tx.exp(x)`` /   | Standard transcendentals lowered to their fast    |
-| ``Tx.log(x)`` /   | CUDA intrinsics                                   |
+| ``Tx.exp(x)`` /   | Standard transcendentals lowered to CUDA math     |
+| ``Tx.log(x)`` /   | intrinsics or equivalent device code              |
 | ``Tx.sqrt(x)``    |                                                   |
 +-------------------+---------------------------------------------------+
 
@@ -317,16 +317,16 @@ for the common helpers used here).
 +---------------------------------------------------+----------------------------------------------------+
 | API                                               | Description                                        |
 +===================================================+====================================================+
-| ``TileLayout(spec)``                              | Build a layout from ``S[...]`` / ``R[...]`` /      |
-|                                                   | ``O[...]`` segments                                |
+| ``TileLayout(spec)``                              | Build a layout from ``S[...]``, optional           |
+|                                                   | ``R[...]``, and optional axis-offset terms         |
 +---------------------------------------------------+----------------------------------------------------+
 | ``S[(extents...) : (strides...)]``                | Sharded segment — distribute extents across the    |
 |                                                   | axes given by the stride list                      |
 +---------------------------------------------------+----------------------------------------------------+
 | ``R[N : axis]``                                   | Replica — broadcast across ``N`` lanes of ``axis`` |
 +---------------------------------------------------+----------------------------------------------------+
-| ``O[offset]``                                     | Offset segment (rare; used inside ``TileLayout``   |
-|                                                   | to skip leading bytes)                             |
+| ``+ offset`` / ``+ n@axis``                       | Offset term — shift the layout along the ordinary  |
+|                                                   | memory axis or a named axis                        |
 +---------------------------------------------------+----------------------------------------------------+
 | ``TLane``, ``TCol``                               | Named TMEM hardware axes (rows × columns of tensor |
 |                                                   | memory)                                            |
@@ -389,8 +389,9 @@ Common Pitfalls
   mbarrier and ``cta_sync()`` after a synchronous SMEM copy already
   cover those paths.
 
-- **Constants must be defined outside ``@Tx.prim_func``**: Variables
-  like ``EPI_N``, ``TMEM_LD_N``, ``MMA_N`` must be Python constants.
+- **Constants must be defined outside ``@Tx.prim_func(tirx=True)``**:
+  Variables like ``EPI_N``, ``TMEM_LD_N``, ``MMA_N`` must be Python
+  constants.
 
 - **``pool.move_base_to(1024)``**: Reserves the first 1024 bytes for
   metadata (TMEM address, barriers). All data buffers (Asmem, Bsmem,
@@ -402,11 +403,10 @@ Common Pitfalls
 Syntactic Sugar
 ---------------
 
-*These constructs are* **not** *part of the TIRX tile primitive layer*
-(see :numref:`chap_layouts` for execution scope, tensor layout, and
-tile primitive dispatch). They are parser-time convenience — removing
-them changes how the code looks, not what it means. They show up in Part
-III because real kernels use them to stay readable.
+*These constructs are* **not** *part of the TIRX tile primitive layer*.
+They are parser-time convenience — removing them changes how the code
+looks, not what it means. They show up in Part III because real kernels
+use them to stay readable.
 
 ``Tx.meta_var``: parser-time alias
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -425,9 +425,9 @@ The expression may contain runtime symbolic coordinates such as CTA ids:
    n_st = Tx.meta_var(by * BLK_N)
    Tx.copy(Asmem[:, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K])
 
-Any variable *assigned* inside ``@Tx.prim_func`` that is not wrapped
-with ``meta_var`` becomes a TIR dynamic variable. Constants such as
-``BLK_M``, ``PIPE_DEPTH``, and ``EPI_N`` must still stay Python
+Any variable *assigned* inside ``@Tx.prim_func(tirx=True)`` that is not
+wrapped with ``meta_var`` becomes a TIR dynamic variable. Constants such
+as ``BLK_M``, ``PIPE_DEPTH``, and ``EPI_N`` must still stay Python
 constants defined outside the function.
 
 ``@Tx.inline``: compile-time helper
@@ -449,7 +449,7 @@ target count:
    @Tx.inline
    def tma_load(stage, k):
        tid = Tx.meta_var(warp_id * 32 + lane_id)
-       with Tx.thread(tid == 0):
+       with Tx.thread(parent="warpgroup")[tid == 0]:
            Tx.copy_async(Asmem[stage], A[m_st : m_st + BLK_M, k : k + BLK_K],
                          dispatch="tma", mbar=tma_bar.ptr_to([stage]))
            Tx.copy_async(Bsmem[stage], B[n_st : n_st + BLK_N, k : k + BLK_K],

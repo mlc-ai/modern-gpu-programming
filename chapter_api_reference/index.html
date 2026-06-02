@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>7.5. TIRX API Quick Reference &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>8.1.5. TIRX API Lookup &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,16 +28,16 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="7.6. TIRX Language Reference" href="../chapter_tirx_primer/index.html" />
-    <link rel="prev" title="7.4. LLM-Assisted Kernel Debugging" href="../chapter_ai_assisted/index.html" /> 
+    <link rel="next" title="8.1.6. TIRX Language and Compile Pipeline" href="../chapter_tirx_primer/index.html" />
+    <link rel="prev" title="8.1.4. Appendix: Flash Attention 4 TIRX Source" href="../chapter_fa4_source/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">7. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">7.5. </span>TIRX API Quick Reference</a>
+            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">8. </span>Appendix</a><i class="material-icons">navigate_next</i>
+            <a class="mdl-navigation__link is-active"><span class="section-number">8.1.5. </span>TIRX API Lookup</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -97,17 +97,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -139,17 +140,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -163,11 +165,11 @@ Show Source
     <div class="document">
         <div class="page-content" role="main">
         
-  <section id="tirx-api-quick-reference">
-<span id="chap-api-reference"></span><h1><span class="section-number">7.5. </span>TIRX API Quick Reference<a class="headerlink" href="#tirx-api-quick-reference" title="Permalink to this heading">¶</a></h1>
-<p>Reference for the TIRX APIs used across the examples.</p>
+  <section id="tirx-api-lookup">
+<span id="chap-api-reference"></span><h1><span class="section-number">8.1.5. </span>TIRX API Lookup<a class="headerlink" href="#tirx-api-lookup" title="Permalink to this heading">¶</a></h1>
+<p>Lookup table for the TIRX APIs used across the examples.</p>
 <section id="thread-hierarchy">
-<h2><span class="section-number">7.5.1. </span>Thread Hierarchy<a class="headerlink" href="#thread-hierarchy" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.1. </span>Thread Hierarchy<a class="headerlink" href="#thread-hierarchy" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -175,7 +177,7 @@ Show Source
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code></p></td>
 <td><p>Declare a TIRX primitive function</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.kernel()</span></code></p></td>
@@ -206,34 +208,34 @@ block</p></td>
 <td><p>Active-thread filter — narrow the current scope to
 <code class="docutils literal notranslate"><span class="pre">var</span> <span class="pre">∈</span> <span class="pre">[lo,</span> <span class="pre">hi)</span></code> or <code class="docutils literal notranslate"><span class="pre">cond</span></code> true. Use as the
 scope argument:
-<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warp(Tx.filter(warp_id,</span> <span class="pre">0,</span> <span class="pre">1)):</span></code></p></td>
+<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warp(parent=&quot;cta&quot;)[warp_id</span> <span class="pre">==</span> <span class="pre">0]:</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([Gx,</span> <span class="pre">Gy,</span> <span class="pre">...])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([Gx,</span> <span class="pre">Gy,</span> <span class="pre">...],</span> <span class="pre">parent=&quot;kernel&quot;)</span></code></p></td>
 <td><p>CTA index in the grid (kernel → cta)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id_in_cluster([Cx,</span> <span class="pre">Cy])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([Cx,</span> <span class="pre">Cy],</span> <span class="pre">parent=&quot;cluster&quot;)</span></code></p></td>
 <td><p>CTA index within the cluster (cluster → cta)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([Nw])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([Nw],</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>Warpgroup index within the CTA (cta → warpgroup)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([Nw])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([Nw],</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>Warp index within the CTA (cta → warp)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code></p></td>
-<td><p>Warp index within the warpgroup (warpgroup → warp;
-always 4)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([4],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code></p></td>
+<td><p>Warp index within the warpgroup; these examples
+use 4 warps per warpgroup</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt],</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>Thread index within the CTA (cta → thread)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id_in_wg([128])</span></code></p></td>
-<td><p>Thread index within the warpgroup (warpgroup →
-thread; always 128)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([128],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code></p></td>
+<td><p>Thread index within the warpgroup; 128 for a
+4-warp warpgroup</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.lane_id([32])</span></code></p></td>
-<td><p>Thread index within a warp (warp → thread; always
-32)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([32],</span> <span class="pre">parent=&quot;warp&quot;)</span></code></p></td>
+<td><p>Thread index within a warp; warp lanes have extent
+32</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cuda.thread_rank()</span></code></p></td>
 <td><p>Linear thread index within the CTA (i.e.,
@@ -253,7 +255,7 @@ happen once.</p></td>
 </table>
 </section>
 <section id="function-parameters">
-<h2><span class="section-number">7.5.2. </span>Function Parameters<a class="headerlink" href="#function-parameters" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.2. </span>Function Parameters<a class="headerlink" href="#function-parameters" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -286,7 +288,7 @@ shape.</p></td>
 </table>
 </section>
 <section id="memory">
-<h2><span class="section-number">7.5.3. </span>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.3. </span>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -349,7 +351,7 @@ access)</p></td>
 </table>
 </section>
 <section id="data-movement">
-<h2><span class="section-number">7.5.4. </span>Data Movement<a class="headerlink" href="#data-movement" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.4. </span>Data Movement<a class="headerlink" href="#data-movement" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -381,7 +383,7 @@ op config.</p></td>
 </table>
 </section>
 <section id="math">
-<h2><span class="section-number">7.5.5. </span>Math<a class="headerlink" href="#math" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.5. </span>Math<a class="headerlink" href="#math" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -399,14 +401,14 @@ op config.</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.exp(x)</span></code> /
 <code class="docutils literal notranslate"><span class="pre">Tx.log(x)</span></code> /
 <code class="docutils literal notranslate"><span class="pre">Tx.sqrt(x)</span></code></p></td>
-<td><p>Standard transcendentals lowered to their fast
-CUDA intrinsics</p></td>
+<td><p>Standard transcendentals lowered to CUDA math
+intrinsics or equivalent device code</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="control-flow">
-<h2><span class="section-number">7.5.6. </span>Control Flow<a class="headerlink" href="#control-flow" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.6. </span>Control Flow<a class="headerlink" href="#control-flow" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -428,7 +430,7 @@ variable</p></td>
 they are parser-time conveniences, not tile-primitive semantics.</p>
 </section>
 <section id="synchronization">
-<h2><span class="section-number">7.5.7. </span>Synchronization<a class="headerlink" href="#synchronization" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.7. </span>Synchronization<a class="headerlink" href="#synchronization" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -486,7 +488,7 @@ plain <code class="docutils literal notranslate"><span class="pre">cta_sync()</s
 </table>
 </section>
 <section id="high-level-abstractions">
-<h2><span class="section-number">7.5.8. </span>High-Level Abstractions<a class="headerlink" href="#high-level-abstractions" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.8. </span>High-Level Abstractions<a class="headerlink" href="#high-level-abstractions" title="Permalink to this heading">¶</a></h2>
 <p>These abstractions are introduced in Step 7 (Warp Specialization) and
 used through Step 9.</p>
 <table class="docutils align-default">
@@ -562,7 +564,7 @@ consumer)</p></td>
 </table>
 </section>
 <section id="tile-scheduling">
-<h2><span class="section-number">7.5.9. </span>Tile Scheduling<a class="headerlink" href="#tile-scheduling" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.9. </span>Tile Scheduling<a class="headerlink" href="#tile-scheduling" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
@@ -597,7 +599,7 @@ consumer)</p></td>
 </table>
 </section>
 <section id="layout">
-<h2><span class="section-number">7.5.10. </span>Layout<a class="headerlink" href="#layout" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.10. </span>Layout<a class="headerlink" href="#layout" title="Permalink to this heading">¶</a></h2>
 <p>The layout namespace is <code class="docutils literal notranslate"><span class="pre">tvm.tirx.layout</span></code> (also re-exported on <code class="docutils literal notranslate"><span class="pre">Tx</span></code>
 for the common helpers used here).</p>
 <table class="docutils align-default">
@@ -608,8 +610,8 @@ for the common helpers used here).</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(spec)</span></code></p></td>
-<td><p>Build a layout from <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> / <code class="docutils literal notranslate"><span class="pre">R[...]</span></code> /
-<code class="docutils literal notranslate"><span class="pre">O[...]</span></code> segments</p></td>
+<td><p>Build a layout from <code class="docutils literal notranslate"><span class="pre">S[...]</span></code>, optional
+<code class="docutils literal notranslate"><span class="pre">R[...]</span></code>, and optional axis-offset terms</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">S[(extents...)</span> <span class="pre">:</span> <span class="pre">(strides...)]</span></code></p></td>
 <td><p>Sharded segment — distribute extents across the
@@ -618,9 +620,9 @@ axes given by the stride list</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">R[N</span> <span class="pre">:</span> <span class="pre">axis]</span></code></p></td>
 <td><p>Replica — broadcast across <code class="docutils literal notranslate"><span class="pre">N</span></code> lanes of <code class="docutils literal notranslate"><span class="pre">axis</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">O[offset]</span></code></p></td>
-<td><p>Offset segment (rare; used inside <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code>
-to skip leading bytes)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">offset</span></code> / <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">n&#64;axis</span></code></p></td>
+<td><p>Offset term — shift the layout along the ordinary
+memory axis or a named axis</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">TCol</span></code></p></td>
 <td><p>Named TMEM hardware axes (rows × columns of tensor
@@ -651,7 +653,7 @@ Wrapper around <code class="docutils literal notranslate"><span class="pre">tma_
 </table>
 </section>
 <section id="common-pitfalls">
-<h2><span class="section-number">7.5.11. </span>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.5.11. </span>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>``accum`` must be boolean-compatible</strong>: Use <code class="docutils literal notranslate"><span class="pre">False</span></code> (not <code class="docutils literal notranslate"><span class="pre">0</span></code>)
 for the first MMA iteration.</p></li>
@@ -684,8 +686,9 @@ to TMEM and the upcoming thread-proxy reads explicit. Do not add it
 routinely on the TMA→MMA edge in this tutorial; the TMA-completion
 mbarrier and <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> after a synchronous SMEM copy already
 cover those paths.</p></li>
-<li><p><strong>Constants must be defined outside ``&#64;Tx.prim_func``</strong>: Variables
-like <code class="docutils literal notranslate"><span class="pre">EPI_N</span></code>, <code class="docutils literal notranslate"><span class="pre">TMEM_LD_N</span></code>, <code class="docutils literal notranslate"><span class="pre">MMA_N</span></code> must be Python constants.</p></li>
+<li><p><strong>Constants must be defined outside ``&#64;Tx.prim_func(tirx=True)``</strong>:
+Variables like <code class="docutils literal notranslate"><span class="pre">EPI_N</span></code>, <code class="docutils literal notranslate"><span class="pre">TMEM_LD_N</span></code>, <code class="docutils literal notranslate"><span class="pre">MMA_N</span></code> must be Python
+constants.</p></li>
 <li><p><strong>``pool.move_base_to(1024)``</strong>: Reserves the first 1024 bytes for
 metadata (TMEM address, barriers). All data buffers (Asmem, Bsmem,
 Dsmem) are allocated sequentially after this offset.</p></li>
@@ -694,14 +697,13 @@ and switch to an idle GPU.</p></li>
 </ul>
 </section>
 <section id="syntactic-sugar">
-<h2><span class="section-number">7.5.12. </span>Syntactic Sugar<a class="headerlink" href="#syntactic-sugar" title="Permalink to this heading">¶</a></h2>
-<p><em>These constructs are</em> <strong>not</strong> <em>part of the TIRX tile primitive layer</em>
-(see <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> for execution scope, tensor layout, and
-tile primitive dispatch). They are parser-time convenience — removing
-them changes how the code looks, not what it means. They show up in Part
-III because real kernels use them to stay readable.</p>
+<h2><span class="section-number">8.1.5.12. </span>Syntactic Sugar<a class="headerlink" href="#syntactic-sugar" title="Permalink to this heading">¶</a></h2>
+<p><em>These constructs are</em> <strong>not</strong> <em>part of the TIRX tile primitive layer</em>.
+They are parser-time convenience — removing them changes how the code
+looks, not what it means. They show up in Part III because real kernels
+use them to stay readable.</p>
 <section id="tx-meta-var-parser-time-alias">
-<h3><span class="section-number">7.5.12.1. </span><code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code>: parser-time alias<a class="headerlink" href="#tx-meta-var-parser-time-alias" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.5.12.1. </span><code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code>: parser-time alias<a class="headerlink" href="#tx-meta-var-parser-time-alias" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">Tx.meta_var(expr)</span></code> tells the parser to reuse <code class="docutils literal notranslate"><span class="pre">expr</span></code> as an inline
 symbolic expression instead of materializing a separate TIR variable.
 The expression may contain runtime symbolic coordinates such as CTA ids:</p>
@@ -710,13 +712,13 @@ The expression may contain runtime symbolic coordinates such as CTA ids:</p>
 <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k_st</span> <span class="p">:</span> <span class="n">k_st</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Any variable <em>assigned</em> inside <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> that is not wrapped
-with <code class="docutils literal notranslate"><span class="pre">meta_var</span></code> becomes a TIR dynamic variable. Constants such as
-<code class="docutils literal notranslate"><span class="pre">BLK_M</span></code>, <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code>, and <code class="docutils literal notranslate"><span class="pre">EPI_N</span></code> must still stay Python
+<p>Any variable <em>assigned</em> inside <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code> that is not
+wrapped with <code class="docutils literal notranslate"><span class="pre">meta_var</span></code> becomes a TIR dynamic variable. Constants such
+as <code class="docutils literal notranslate"><span class="pre">BLK_M</span></code>, <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code>, and <code class="docutils literal notranslate"><span class="pre">EPI_N</span></code> must still stay Python
 constants defined outside the function.</p>
 </section>
 <section id="tx-inline-compile-time-helper">
-<h3><span class="section-number">7.5.12.2. </span><code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code>: compile-time helper<a class="headerlink" href="#tx-inline-compile-time-helper" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.5.12.2. </span><code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code>: compile-time helper<a class="headerlink" href="#tx-inline-compile-time-helper" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> marks a helper as inlined at compile time. It can close
 over outer kernel variables, which is useful for packaging repeated load
 / MMA / writeback boilerplate. The conventional order in a TMA load is
@@ -726,7 +728,7 @@ target count:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">tma_load</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
     <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
         <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[</span><span class="n">stage</span><span class="p">],</span> <span class="n">A</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k</span> <span class="p">:</span> <span class="n">k</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span>
                       <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="n">mbar</span><span class="o">=</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="n">stage</span><span class="p">]))</span>
         <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Bsmem</span><span class="p">[</span><span class="n">stage</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">,</span> <span class="n">k</span> <span class="p">:</span> <span class="n">k</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span>
@@ -749,21 +751,21 @@ reusable code region.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">7.5. TIRX API Quick Reference</a><ul>
-<li><a class="reference internal" href="#thread-hierarchy">7.5.1. Thread Hierarchy</a></li>
-<li><a class="reference internal" href="#function-parameters">7.5.2. Function Parameters</a></li>
-<li><a class="reference internal" href="#memory">7.5.3. Memory</a></li>
-<li><a class="reference internal" href="#data-movement">7.5.4. Data Movement</a></li>
-<li><a class="reference internal" href="#math">7.5.5. Math</a></li>
-<li><a class="reference internal" href="#control-flow">7.5.6. Control Flow</a></li>
-<li><a class="reference internal" href="#synchronization">7.5.7. Synchronization</a></li>
-<li><a class="reference internal" href="#high-level-abstractions">7.5.8. High-Level Abstractions</a></li>
-<li><a class="reference internal" href="#tile-scheduling">7.5.9. Tile Scheduling</a></li>
-<li><a class="reference internal" href="#layout">7.5.10. Layout</a></li>
-<li><a class="reference internal" href="#common-pitfalls">7.5.11. Common Pitfalls</a></li>
-<li><a class="reference internal" href="#syntactic-sugar">7.5.12. Syntactic Sugar</a><ul>
-<li><a class="reference internal" href="#tx-meta-var-parser-time-alias">7.5.12.1. <code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code>: parser-time alias</a></li>
-<li><a class="reference internal" href="#tx-inline-compile-time-helper">7.5.12.2. <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code>: compile-time helper</a></li>
+<li><a class="reference internal" href="#">8.1.5. TIRX API Lookup</a><ul>
+<li><a class="reference internal" href="#thread-hierarchy">8.1.5.1. Thread Hierarchy</a></li>
+<li><a class="reference internal" href="#function-parameters">8.1.5.2. Function Parameters</a></li>
+<li><a class="reference internal" href="#memory">8.1.5.3. Memory</a></li>
+<li><a class="reference internal" href="#data-movement">8.1.5.4. Data Movement</a></li>
+<li><a class="reference internal" href="#math">8.1.5.5. Math</a></li>
+<li><a class="reference internal" href="#control-flow">8.1.5.6. Control Flow</a></li>
+<li><a class="reference internal" href="#synchronization">8.1.5.7. Synchronization</a></li>
+<li><a class="reference internal" href="#high-level-abstractions">8.1.5.8. High-Level Abstractions</a></li>
+<li><a class="reference internal" href="#tile-scheduling">8.1.5.9. Tile Scheduling</a></li>
+<li><a class="reference internal" href="#layout">8.1.5.10. Layout</a></li>
+<li><a class="reference internal" href="#common-pitfalls">8.1.5.11. Common Pitfalls</a></li>
+<li><a class="reference internal" href="#syntactic-sugar">8.1.5.12. Syntactic Sugar</a><ul>
+<li><a class="reference internal" href="#tx-meta-var-parser-time-alias">8.1.5.12.1. <code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code>: parser-time alias</a></li>
+<li><a class="reference internal" href="#tx-inline-compile-time-helper">8.1.5.12.2. <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code>: compile-time helper</a></li>
 </ul>
 </li>
 </ul>
@@ -776,18 +778,18 @@ reusable code region.</p>
 
       <div class="clearer"></div>
     </div><div class="pagenation">
-     <a id="button-prev" href="../chapter_ai_assisted/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+     <a id="button-prev" href="../chapter_fa4_source/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>7.4. LLM-Assisted Kernel Debugging</div>
+            <div>8.1.4. Appendix: Flash Attention 4 TIRX Source</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_tirx_primer/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>7.6. TIRX Language Reference</div>
+            <div>8.1.6. TIRX Language and Compile Pipeline</div>
         </div>
      </a>
   </div>

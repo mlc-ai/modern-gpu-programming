@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>4. Asynchronous GEMM Pipeline &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>4. Pipelining GEMM with TMA &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,15 +28,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="5. Warp-Specialized and Clustered GEMM" href="../chapter_gemm_advanced/index.html" />
-    <link rel="prev" title="3. GEMM with Tile Primitives" href="../chapter_gemm_basics/index.html" /> 
+    <link rel="next" title="5. Scaling GEMM with Warp Specialization and Clusters" href="../chapter_gemm_advanced/index.html" />
+    <link rel="prev" title="3. Building a Tiled GEMM" href="../chapter_gemm_basics/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active"><span class="section-number">4. </span>Asynchronous GEMM Pipeline</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">4. </span>Pipelining GEMM with TMA</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -96,17 +96,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -138,17 +139,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -162,137 +164,106 @@ Show Source
     <div class="document">
         <div class="page-content" role="main">
         
-  <section id="asynchronous-gemm-pipeline">
-<span id="chap-gemm-async"></span><h1><span class="section-number">4. </span>Asynchronous GEMM Pipeline<a class="headerlink" href="#asynchronous-gemm-pipeline" title="Permalink to this heading">¶</a></h1>
-<p>The synchronous tiled GEMM becomes an asynchronous pipeline through TMA
-async loads, software pipelining, and persistent tile scheduling.</p>
-<p>The SMEM/TMEM/register layouts follow the same patterns as Step 1 in
-<a class="reference internal" href="../chapter_gemm_basics/index.html#chap-gemm-basics"><span class="std std-numref">Section 3</span></a>. <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> defines
-<code class="docutils literal notranslate"><span class="pre">tma_shared_layout</span></code>, the TMEM <code class="docutils literal notranslate"><span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)</span></code> axes, and the
-warpgroup view <code class="docutils literal notranslate"><span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)</span></code>.</p>
+  <section id="pipelining-gemm-with-tma">
+<span id="chap-gemm-async"></span><h1><span class="section-number">4. </span>Pipelining GEMM with TMA<a class="headerlink" href="#pipelining-gemm-with-tma" title="Permalink to this heading">¶</a></h1>
+<p>The previous chapter built a correct tiled GEMM. This chapter keeps the
+same tile data path, but changes how data movement and compute are
+scheduled.</p>
+<p>The following steps are incremental. Step 4 moves the large GMEM &lt;-&gt;
+SMEM transfers onto TMA. Step 5 adds a two-stage software pipeline so
+TMA for the next K tile can overlap MMA on the current tile. Step 6
+turns the launch into a persistent kernel with a tile scheduler. The
+SMEM, TMEM, and register layouts still follow the contracts introduced
+earlier; the new focus is asynchronous handoff between hardware units.</p>
 <section id="step-4-tma-async-load">
 <span id="chap-tma-async"></span><h2><span class="section-number">4.1. </span>Step 4: TMA Async Load<a class="headerlink" href="#step-4-tma-async-load" title="Permalink to this heading">¶</a></h2>
-<p>The first asynchronous step replaces synchronous <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> with TMA
-hardware. One thread issues the command, and the hardware performs the
-tile movement. Benchmarks use M=N=K=4096.</p>
-<p><strong>Topics.</strong></p>
-<ul class="simple">
-<li><p>Replacing synchronous <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> with asynchronous TMA:
-<code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code></p></li>
-<li><p>Single-thread TMA load dispatch via a <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code> predicate (and why
-<code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> alone is subtly wrong here)</p></li>
-<li><p>mbarrier-based byte-counting synchronization: <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx</span></code> /
-<code class="docutils literal notranslate"><span class="pre">try_wait</span></code></p></li>
-<li><p>TMA store writeback: TMEM -&gt; register file -&gt; cast -&gt; Dsmem -&gt; TMA
-store -&gt; GMEM, with proper sync at each stage</p></li>
-</ul>
+<p>Step 4 replaces synchronous <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> with TMA hardware. One thread
+issues the command, and the hardware performs the tile movement.
+Benchmarks use M=N=K=4096.</p>
 <section id="tma-issue-pattern">
 <h3><span class="section-number">4.1.1. </span>TMA Issue Pattern<a class="headerlink" href="#tma-issue-pattern" title="Permalink to this heading">¶</a></h3>
-<p>The code change from Step 3 is small, but it changes who moves the data:</p>
-<p><strong>Before (Step 3)</strong> — all 128 threads copy, then <code class="docutils literal notranslate"><span class="pre">cta_sync</span></code>:</p>
+<p>The code change from Step 3 is small, but the execution model changes. A
+synchronous <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> is work done by CTA threads. A TMA copy is
+issued by one thread and then carried out by the TMA hardware.</p>
+<p><strong>Before (Step 3)</strong> — all 128 threads participate in the copy, then
+<code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> makes the shared-memory writes visible:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta</span><span class="p">():</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m_st</span><span class="p">:</span><span class="n">m_st</span><span class="o">+</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">i</span><span class="o">*</span><span class="n">BLK_K</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">BLK_K</span><span class="p">])</span>   <span class="c1"># all 128 threads</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Bsmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">B</span><span class="p">[</span><span class="n">n_st</span><span class="p">:</span><span class="n">n_st</span><span class="o">+</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">i</span><span class="o">*</span><span class="n">BLK_K</span><span class="p">:(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">BLK_K</span><span class="p">])</span>
 <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
 </pre></div>
 </div>
-<p><strong>After (Step 4)</strong> — a single thread issues TMA, mbarrier synchronizes:</p>
+<p><strong>After (Step 4)</strong> — one thread issues the TMA load, and the mbarrier
+tracks when the hardware transfer is complete:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span>                 <span class="c1"># 0..127 within the warpgroup</span>
-<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>   <span class="c1"># exactly 1 thread</span>
+<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>                    <span class="c1"># exactly one thread starts TMA</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">,</span> <span class="n">A</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Bsmem</span><span class="p">,</span> <span class="n">B</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
-    <span class="n">mbarrier</span><span class="o">.</span><span class="n">arrive</span><span class="o">.</span><span class="n">expect_tx</span><span class="p">(</span><span class="n">byte_count</span><span class="p">)</span>       <span class="c1"># tell barrier how many bytes</span>
-<span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>                         <span class="c1"># all threads wait until TMA completes</span>
+    <span class="n">mbarrier</span><span class="o">.</span><span class="n">arrive</span><span class="o">.</span><span class="n">expect_tx</span><span class="p">(</span><span class="n">byte_count</span><span class="p">)</span>     <span class="c1"># bytes expected from TMA</span>
+<span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>                      <span class="c1"># wait before MMA reads SMEM</span>
 </pre></div>
 </div>
-<p>A common pitfall is to reach for <code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> here. <code class="docutils literal notranslate"><span class="pre">elect.sync</span></code>
-is a <em>per-warp</em> PTX instruction, so
-<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread(Tx.filter(lane_id,</span> <span class="pre">Tx.ptx.elect_sync()))</span></code> gives you
-<strong>one elected thread per warp = 4 threads in a 4-warp warpgroup</strong>, not
-1. On the TMA load side, that would increment the expected byte count
-multiple times, so these kernels pick a single issuer with <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code>.
-(Note: <code class="docutils literal notranslate"><span class="pre">Tx.filter</span></code> takes a <em>variable</em> — <code class="docutils literal notranslate"><span class="pre">lane_id</span></code>, <code class="docutils literal notranslate"><span class="pre">warp_id</span></code>, etc.
-— not an axis token. The axis-name imports like
-<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">tvm.tirx.layout</span> <span class="pre">import</span> <span class="pre">tid_in_wg</span></code> are for <code class="docutils literal notranslate"><span class="pre">1&#64;tid_in_wg</span></code>-style
-layout expressions only.)</p>
-<p><strong>Why faster</strong>: Step 4 still waits after each TMA load, so the speedup
-is not from load/compute overlap yet. It comes from <em>how</em> data is moved:</p>
+<p>Here only <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code> starts the TMA load. The code does not use
+<code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> because <code class="docutils literal notranslate"><span class="pre">elect.sync</span></code> elects one active lane per warp.
+In this 4-warp warpgroup, that would make four threads start the load
+protocol. The TMA load protocol should update the expected byte count
+once, so the kernel uses a single warpgroup-wide thread id.</p>
+<p>Step 4 still waits after each TMA load, so this is not yet load/compute
+overlap. The speedup comes from using a different data-movement path:</p>
 <ul class="simple">
-<li><p><strong>``Tx.copy`` occupies SM instruction pipelines</strong> — 128 threads each
-compute addresses and issue global load / shared store instructions,
-consuming warp scheduler bandwidth on memory operations.</p></li>
-<li><p><strong>TMA is a dedicated DMA engine</strong> — one <code class="docutils literal notranslate"><span class="pre">cp.async.bulk</span></code> instruction
-triggers the hardware to transfer the entire tile. Address generation,
-coalescing, and swizzle are handled in hardware via the TMA
-descriptor, not by thread ALU.</p></li>
-<li><p>The net effect: the SM spends fewer thread instructions on tile
-movement, and the hardware copy path handles the bulk transfer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> uses CTA threads to compute addresses and issue load/store
+instructions.</p></li>
+<li><p>TMA uses one issued command to start a hardware tile transfer. Address
+generation, coalescing, and swizzling are described by the TMA
+descriptor and handled by the copy path.</p></li>
 </ul>
+<p>So Step 4 can be faster even though it still waits for each load to
+finish: the CTA threads spend less instruction bandwidth on moving
+tiles, because TMA handles the bulk transfer.</p>
 </section>
-<section id="what-changes">
-<h3><span class="section-number">4.1.2. </span>What Changes<a class="headerlink" href="#what-changes" title="Permalink to this heading">¶</a></h3>
-<p>Three things change when the load moves from synchronous thread copies
-to TMA:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> (Steps
-1–3)</p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> (Step 4+)</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><strong>Who executes</strong></p></td>
-<td><p>All threads in the
-scope</p></td>
-<td><p>TMA hardware engine — one
-thread issues, hardware does
-the rest</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>Dispatch</strong></p></td>
-<td><p>software (default)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tma&quot;</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><strong>Sync</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> (all
-threads arrived)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mbarrier.try_wait(phase)</span></code>
-(TMA engine completion)</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>Scope</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread(tid</span> <span class="pre">==</span> <span class="pre">0):</span></code></p></td>
-</tr>
-</tbody>
-</table>
-<p>The two sync primitives are not interchangeable. <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> is
-<code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> — it says “all CTA threads have arrived here”,
-carries an implicit release/acquire fence for SMEM, but says <strong>nothing</strong>
-about async hardware. <code class="docutils literal notranslate"><span class="pre">mbarrier.try_wait(phase)</span></code> is <em>event</em> sync — it
-waits for the async engine to signal completion via byte counting, and
-the engine’s arrival carries the release→acquire edge to downstream
-consumers (e.g., the MMA that reads the just-loaded SMEM). Step 4 uses
-both: <code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> between warpgroup TMEM reads, and <code class="docutils literal notranslate"><span class="pre">try_wait</span></code> for
-“TMA done”.</p>
-<figure class="align-default" id="id1">
+<section id="tma-load-and-store-synchronization">
+<h3><span class="section-number">4.1.2. </span>TMA Load and Store Synchronization<a class="headerlink" href="#tma-load-and-store-synchronization" title="Permalink to this heading">¶</a></h3>
+<p>Moving the load to TMA changes both who starts the copy and how the code
+waits for it. <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> under <code class="docutils literal notranslate"><span class="pre">Tx.cta()</span></code> is executed cooperatively
+by CTA threads and is followed by <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code>. A TMA load is started
+by one selected thread with <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code>; the
+TMA engine performs the transfer and reports completion through an
+mbarrier.</p>
+<p>The wait also changes. <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code> only waits for CTA threads and
+orders shared-memory writes made by those threads. It does not wait for
+an asynchronous TMA transfer. For a TMA load, the selected thread first
+tells the mbarrier how many bytes should arrive, and the CTA waits on
+that mbarrier before MMA reads the SMEM tile.</p>
+<figure class="align-default" id="id3">
 <img alt="../_images/tma_sync_flow.png" src="../_images/tma_sync_flow.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 4.1.1 </span><span class="caption-text">TMA Async Load: Synchronization Flow</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 4.1.1 </span><span class="caption-text">TMA Async Load: Synchronization Flow</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<p><strong>TMA load</strong> (top of the kernel): one selected thread issues both
-<code class="docutils literal notranslate"><span class="pre">copy_async</span></code> calls, then calls <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx(total_bytes)</span></code> to
-tell the mbarrier how many bytes to expect. The TMA hardware arrives on
-the mbarrier as bytes land. All threads then <code class="docutils literal notranslate"><span class="pre">try_wait(phase)</span></code> until
-ready.</p>
-<p><strong>TMA store</strong> (writeback): the protocol is intentionally different. TMA
-loads use mbarriers (byte counting); TMA stores use <strong>commit-group /
-wait-group</strong>. After casting registers to fp16, writing them into
-<code class="docutils literal notranslate"><span class="pre">Dsmem</span></code>, fencing, and <code class="docutils literal notranslate"><span class="pre">warpgroup_sync(10)</span></code>, one selected thread
-issues <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(D[...],</span> <span class="pre">Dsmem,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code>, then
-<code class="docutils literal notranslate"><span class="pre">cp_async.bulk.commit_group()</span></code> + <code class="docutils literal notranslate"><span class="pre">cp_async.bulk.wait_group(0)</span></code>
-ensure the store has drained before SMEM is reused.</p>
-<p><strong>Implementation.</strong></p>
+<p>The figure shows the load side only. The “Elected Thread” lane in the
+figure means the selected thread that starts TMA; in the code above,
+that is <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code>, not <code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code>.</p>
+<p>On the load path, the selected thread issues both <code class="docutils literal notranslate"><span class="pre">copy_async</span></code> calls,
+then calls <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx(total_bytes)</span></code>. That byte count is the
+amount of data the mbarrier should wait for. After the TMA engine
+finishes the transfer, <code class="docutils literal notranslate"><span class="pre">mbarrier.try_wait(phase)</span></code> returns and the SMEM
+tile is safe for MMA.</p>
+<p>The writeback path also uses TMA, moving <code class="docutils literal notranslate"><span class="pre">Dsmem</span></code> back to GMEM, but it
+uses a different completion protocol: TMA loads use mbarriers and byte
+counts, while TMA stores use commit groups and wait groups. After the
+threads write fp16 results into <code class="docutils literal notranslate"><span class="pre">Dsmem</span></code> and synchronize, one selected
+thread starts <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(D[...],</span> <span class="pre">Dsmem,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">cp_async.bulk.commit_group()</span></code> and <code class="docutils literal notranslate"><span class="pre">cp_async.bulk.wait_group(0)</span></code>
+wait for the store to finish before <code class="docutils literal notranslate"><span class="pre">Dsmem</span></code> is reused.</p>
+<p><strong>Try with your agent</strong>: Trace the Step 4 load and store synchronization
+for one K tile. Identify which thread starts each TMA command, which
+mbarrier or commit group tracks completion, which wait protects MMA
+reads of <code class="docutils literal notranslate"><span class="pre">Asmem</span></code> and <code class="docutils literal notranslate"><span class="pre">Bsmem</span></code>, and which wait protects reuse of
+<code class="docutils literal notranslate"><span class="pre">Dsmem</span></code>. Why would <code class="docutils literal notranslate"><span class="pre">elect_sync()</span></code> be the wrong thread selection for
+the TMA load protocol here?</p>
+</section>
+<section id="complete-kernel">
+<h3><span class="section-number">4.1.3. </span>Complete Kernel<a class="headerlink" href="#complete-kernel" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tvm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.layout</span><span class="w"> </span><span class="kn">import</span> <span class="n">S</span><span class="p">,</span> <span class="n">TCol</span><span class="p">,</span> <span class="n">TileLayout</span><span class="p">,</span> <span class="n">TLane</span><span class="p">,</span> <span class="n">tid_in_wg</span>
@@ -300,291 +271,250 @@ ensure the store has drained before SMEM is reused.</p>
                                                              <span class="n">tma_shared_layout</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Constants and swizzled SMEM layouts for A, B, and D tiles (see
-<a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> for the helper and swizzle modes):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">a_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
-<span class="n">b_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
-<span class="n">d_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
-<span class="n">acc_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
-<span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span>
+<p>The kernel is wrapped in a function <code class="docutils literal notranslate"><span class="pre">hgemm_v4(M,</span> <span class="pre">N,</span> <span class="pre">K)</span></code> so the
+shape-dependent constants and layouts stay next to the kernel that uses
+them:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">hgemm_v4</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+    <span class="n">a_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
+    <span class="n">b_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
+    <span class="n">d_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float16&quot;</span><span class="p">)</span>
+    <span class="n">acc_type</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">DataType</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
 
-<span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">64</span>
-<span class="n">MMA_M</span><span class="p">,</span> <span class="n">MMA_N</span><span class="p">,</span> <span class="n">MMA_K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">16</span>
-<span class="n">F16_SIZE</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">64</span>
+    <span class="n">MMA_M</span><span class="p">,</span> <span class="n">MMA_N</span><span class="p">,</span> <span class="n">MMA_K</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">16</span>
+    <span class="n">K_TILES</span> <span class="o">=</span> <span class="n">K</span> <span class="o">//</span> <span class="n">BLK_K</span>
+    <span class="n">F16_SIZE</span> <span class="o">=</span> <span class="mi">2</span>
 
-<span class="n">A_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">a_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
-<span class="n">B_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">b_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
-<span class="n">D_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">d_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>The kernel — TMA async load replaces synchronous copy, TMA store
-replaces direct GMEM writes:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">hgemm_v4</span><span class="p">(</span>
-    <span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">),</span>
-    <span class="n">B</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">),</span>
-    <span class="n">D</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">d_type</span><span class="p">),</span>
-<span class="p">):</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
-        <span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">])</span>
-        <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id_in_wg</span><span class="p">([</span><span class="mi">4</span><span class="p">])</span>
-        <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">lane_id</span><span class="p">([</span><span class="mi">32</span><span class="p">])</span>
+    <span class="n">A_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">a_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
+    <span class="n">B_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">b_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
+    <span class="n">D_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">d_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">))</span>
 
-        <span class="c1"># --- SMEM allocation (now includes Dsmem for TMA store) ---</span>
-        <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
-        <span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>
-        <span class="n">tma_bar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint64&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-        <span class="n">mma_bar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint64&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-        <span class="n">pool</span><span class="o">.</span><span class="n">move_base_to</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
-        <span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">A_layout</span><span class="p">)</span>
-        <span class="n">Bsmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">B_layout</span><span class="p">)</span>
-        <span class="n">Dsmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">),</span> <span class="n">d_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">D_layout</span><span class="p">)</span>
-        <span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span>
+        <span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">),</span>
+        <span class="n">B</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">),</span>
+        <span class="n">D</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">d_type</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
+            <span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+            <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+            <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
+            <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
 
-        <span class="c1"># --- Barrier + TMEM init ---</span>
-        <span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">lane_id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">address_of</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">),</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># --- SMEM allocation (now includes Dsmem for TMA store) ---</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
+            <span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>
+            <span class="n">tma_bar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint64&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+            <span class="n">mma_bar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint64&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">move_base_to</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+            <span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">A_layout</span><span class="p">)</span>
+            <span class="n">Bsmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">B_layout</span><span class="p">)</span>
+            <span class="n">Dsmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">),</span> <span class="n">d_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">D_layout</span><span class="p">)</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
-        <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">proxy_async</span><span class="p">(</span><span class="s2">&quot;shared::cta&quot;</span><span class="p">)</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">mbarrier_init</span><span class="p">()</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
+            <span class="c1"># --- Barrier + TMEM init ---</span>
+            <span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">lane_id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">address_of</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">),</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
-            <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span> <span class="n">allocated_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
-        <span class="p">)</span>
-
-        <span class="n">m_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">bx</span> <span class="o">*</span> <span class="n">BLK_M</span><span class="p">)</span>
-        <span class="n">n_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">by</span> <span class="o">*</span> <span class="n">BLK_N</span><span class="p">)</span>
-        <span class="n">phase_tma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">phase_mma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="c1"># --- Inline helpers ---</span>
-        <span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">tma_load</span><span class="p">(</span><span class="n">k_st</span><span class="p">):</span>
-            <span class="n">tma_config</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">({</span>
-                <span class="s2">&quot;dispatch&quot;</span><span class="p">:</span> <span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="s2">&quot;cta_group&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="s2">&quot;mbar&quot;</span><span class="p">:</span> <span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
-            <span class="p">})</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span>
-                          <span class="n">A</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k_st</span> <span class="p">:</span> <span class="n">k_st</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span>
-                          <span class="o">**</span><span class="n">tma_config</span><span class="p">)</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Bsmem</span><span class="p">[:,</span> <span class="p">:],</span>
-                          <span class="n">B</span><span class="p">[</span><span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">,</span> <span class="n">k_st</span> <span class="p">:</span> <span class="n">k_st</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span>
-                          <span class="o">**</span><span class="n">tma_config</span><span class="p">)</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">arrive</span><span class="o">.</span><span class="n">expect_tx</span><span class="p">(</span>
-                <span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span>
-                <span class="p">(</span><span class="n">BLK_M</span> <span class="o">*</span> <span class="n">BLK_K</span> <span class="o">+</span> <span class="n">BLK_N</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span> <span class="o">*</span> <span class="n">F16_SIZE</span>
-            <span class="p">)</span>
-
-        <span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">mma</span><span class="p">(</span><span class="n">accum</span><span class="p">):</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
-                <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span> <span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">Bsmem</span><span class="p">[:,</span> <span class="p">:],</span>
-                <span class="n">accum</span><span class="o">=</span><span class="n">accum</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span>
-            <span class="p">)</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">commit</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># --- K-loop with TMA async ---</span>
-        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span> <span class="o">//</span> <span class="n">BLK_K</span><span class="p">):</span>
-            <span class="n">k_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
-
-            <span class="c1"># Single thread issues TMA load</span>
-            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-                <span class="n">tma_load</span><span class="p">(</span><span class="n">k_st</span><span class="p">)</span>
-
-            <span class="c1"># Wait for TMA to finish; the mbarrier release carries SMEM</span>
-            <span class="c1"># visibility to the subsequent MMA, so no extra fence is needed.</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">phase_tma</span><span class="p">)</span>
-
-            <span class="c1"># Single thread issues MMA</span>
-            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-                <span class="n">mma</span><span class="p">(</span><span class="n">accum</span><span class="o">=</span><span class="n">k</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
-
-            <span class="c1"># Wait for MMA to finish</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">phase_mma</span><span class="p">)</span>
-            <span class="n">phase_tma</span> <span class="o">^=</span> <span class="mi">1</span>
-            <span class="n">phase_mma</span> <span class="o">^=</span> <span class="mi">1</span>
-
-        <span class="c1"># --- TMA Store Writeback ---</span>
-        <span class="n">Dreg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,),</span> <span class="n">acc_type</span><span class="p">)</span>
-        <span class="n">Dreg_f16</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,),</span> <span class="n">d_type</span><span class="p">)</span>
-        <span class="n">Dreg_wg</span> <span class="o">=</span> <span class="n">Dreg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">,</span>
-                            <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]))</span>
-
-        <span class="c1"># Read TMEM -&gt; registers (async; wait.ld then cta_sync to ensure read completes)</span>
-        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Dreg_wg</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">])</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">wait</span><span class="o">.</span><span class="n">ld</span><span class="p">()</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
-        <span class="c1"># Cast fp32 -&gt; fp16</span>
-        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">Dreg_f16</span><span class="p">[:],</span> <span class="n">Dreg</span><span class="p">[:])</span>
-        <span class="c1"># Write registers -&gt; Dsmem, flush, then sync</span>
-        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dsmem</span><span class="p">[</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span> <span class="n">Dreg_f16</span><span class="p">[:])</span>
             <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">proxy_async</span><span class="p">(</span><span class="s2">&quot;shared::cta&quot;</span><span class="p">)</span>
+            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">mbarrier_init</span><span class="p">()</span>
+            <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
+
+            <span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
+                <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span> <span class="n">allocated_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+            <span class="p">)</span>
+
+            <span class="n">m_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">bx</span> <span class="o">*</span> <span class="n">BLK_M</span><span class="p">)</span>
+            <span class="n">n_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">by</span> <span class="o">*</span> <span class="n">BLK_N</span><span class="p">)</span>
+            <span class="n">phase_tma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">phase_mma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="c1"># --- Inline helpers ---</span>
+            <span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">tma_load</span><span class="p">(</span><span class="n">k_st</span><span class="p">):</span>
+                <span class="n">tma_config</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">({</span>
+                    <span class="s2">&quot;dispatch&quot;</span><span class="p">:</span> <span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="s2">&quot;cta_group&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="s2">&quot;mbar&quot;</span><span class="p">:</span> <span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">})</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span>
+                              <span class="n">A</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k_st</span> <span class="p">:</span> <span class="n">k_st</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span>
+                              <span class="o">**</span><span class="n">tma_config</span><span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Bsmem</span><span class="p">[:,</span> <span class="p">:],</span>
+                              <span class="n">B</span><span class="p">[</span><span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">,</span> <span class="n">k_st</span> <span class="p">:</span> <span class="n">k_st</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span>
+                              <span class="o">**</span><span class="n">tma_config</span><span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">arrive</span><span class="o">.</span><span class="n">expect_tx</span><span class="p">(</span>
+                    <span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span>
+                    <span class="p">(</span><span class="n">BLK_M</span> <span class="o">*</span> <span class="n">BLK_K</span> <span class="o">+</span> <span class="n">BLK_N</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span> <span class="o">*</span> <span class="n">F16_SIZE</span>
+                <span class="p">)</span>
+
+            <span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">mma</span><span class="p">(</span><span class="n">accum</span><span class="p">):</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
+                    <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span> <span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">Bsmem</span><span class="p">[:,</span> <span class="p">:],</span>
+                    <span class="n">accum</span><span class="o">=</span><span class="n">accum</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span>
+                <span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">commit</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># --- K-loop with TMA async ---</span>
+            <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
+                <span class="n">k_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
+
+                <span class="c1"># Single thread issues TMA load</span>
+                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">tma_load</span><span class="p">(</span><span class="n">k_st</span><span class="p">)</span>
+
+                <span class="c1"># Wait for TMA to finish; the mbarrier release carries SMEM</span>
+                <span class="c1"># visibility to the subsequent MMA, so no extra fence is needed.</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">phase_tma</span><span class="p">)</span>
+
+                <span class="c1"># Single thread issues MMA</span>
+                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">mma</span><span class="p">(</span><span class="n">accum</span><span class="o">=</span><span class="n">k</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+
+                <span class="c1"># Wait for MMA to finish</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">phase_mma</span><span class="p">)</span>
+                <span class="n">phase_tma</span> <span class="o">^=</span> <span class="mi">1</span>
+                <span class="n">phase_mma</span> <span class="o">^=</span> <span class="mi">1</span>
+
+            <span class="c1"># --- TMA Store Writeback ---</span>
+            <span class="n">Dreg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,),</span> <span class="n">acc_type</span><span class="p">)</span>
+            <span class="n">Dreg_f16</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,),</span> <span class="n">d_type</span><span class="p">)</span>
+            <span class="n">Dreg_wg</span> <span class="o">=</span> <span class="n">Dreg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">,</span>
+                                <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]))</span>
+
+            <span class="c1"># Read TMEM -&gt; registers (async; wait.ld then cta_sync to ensure read completes)</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Dreg_wg</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">])</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">wait</span><span class="o">.</span><span class="n">ld</span><span class="p">()</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
+            <span class="c1"># Cast fp32 -&gt; fp16</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">Dreg_f16</span><span class="p">[:],</span> <span class="n">Dreg</span><span class="p">[:])</span>
+            <span class="c1"># Write registers -&gt; Dsmem, flush, then sync</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dsmem</span><span class="p">[</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span> <span class="n">Dreg_f16</span><span class="p">[:])</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">proxy_async</span><span class="p">(</span><span class="s2">&quot;shared::cta&quot;</span><span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">warpgroup_sync</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+            <span class="c1"># TMA store: Dsmem -&gt; GMEM. One selected thread starts the store and drains the</span>
+            <span class="c1"># store group before Dsmem is reused.</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">D</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">],</span>
+                              <span class="n">Dsmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">cp_async</span><span class="o">.</span><span class="n">bulk</span><span class="o">.</span><span class="n">commit_group</span><span class="p">()</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">cp_async</span><span class="o">.</span><span class="n">bulk</span><span class="o">.</span><span class="n">wait_group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">warpgroup_sync</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-        <span class="c1"># TMA store: Dsmem -&gt; GMEM. This path uses one selected issuer and drains the</span>
-        <span class="c1"># store group before Dsmem is reused.</span>
-        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">D</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">],</span>
-                          <span class="n">Dsmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">cp_async</span><span class="o">.</span><span class="n">bulk</span><span class="o">.</span><span class="n">commit_group</span><span class="p">()</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">cp_async</span><span class="o">.</span><span class="n">bulk</span><span class="o">.</span><span class="n">wait_group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">warpgroup_sync</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 
-        <span class="c1"># --- Deallocate TMEM ---</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">relinquish_alloc_permit</span><span class="p">(</span><span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">dealloc</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># --- Deallocate TMEM ---</span>
+            <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">relinquish_alloc_permit</span><span class="p">(</span><span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">dealloc</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">kernel</span>
 </pre></div>
 </div>
-<p>Compile and run:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-
-<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
-    <span class="n">mod</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">hgemm_v4</span><span class="p">})</span>
-    <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">A_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">B_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">D_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-
-<span class="n">f</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span>
-<span class="n">f</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">A_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">B_tensor</span><span class="p">),</span>
-  <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">D_tensor</span><span class="p">))</span>
-
-<span class="n">D_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A_tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">@</span> <span class="n">B_tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>
-<span class="n">max_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">D_tensor</span> <span class="o">-</span> <span class="n">D_ref</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step 4 TMA Async GEMM: M=</span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2">, N=</span><span class="si">{</span><span class="n">N</span><span class="si">}</span><span class="s2">, K=</span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max error vs torch reference: </span><span class="si">{</span><span class="n">max_err</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">max_err</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;FAIL: max_err=</span><span class="si">{</span><span class="n">max_err</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># smoke test; fp16 4096x4096 typically gives ~0.25</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
-
-<span class="c1"># Benchmark</span>
-<span class="n">ITERS</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">A_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">B_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">D_tensor</span><span class="p">)]</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">end</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">start</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ITERS</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">end</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">ms</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="o">/</span> <span class="n">ITERS</span>
-<span class="n">tflops</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">M</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span> <span class="n">K</span> <span class="o">/</span> <span class="n">ms</span> <span class="o">/</span> <span class="mf">1e9</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Performance: </span><span class="si">{</span><span class="n">ms</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms, </span><span class="si">{</span><span class="n">tflops</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> TFLOPS&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Note: The <code class="docutils literal notranslate"><span class="pre">max_err</span> <span class="pre">&lt;</span> <span class="pre">0.5</span></code> check is a <strong>smoke test</strong>, not a strict
-numerical verification. fp16 GEMM at 4096x4096 accumulates rounding
-error across 64 K-tiles, so the max absolute error can be much larger
-than in the 128x128 examples. For stricter validation, compare against
-the reference elementwise with both relative and absolute tolerances.</p>
-<p><strong>Checks.</strong></p>
+</section>
+<section id="tma-configuration-in-the-kernel">
+<h3><span class="section-number">4.1.4. </span>TMA Configuration in the Kernel<a class="headerlink" href="#tma-configuration-in-the-kernel" title="Permalink to this heading">¶</a></h3>
+<p>The TMA version replaces thread-issued GMEM/SMEM movement with explicit
+TMA load and store paths. Check these configuration points in the
+complete kernel:</p>
 <ul class="simple">
 <li><p><strong>TMA config</strong>:
-<code class="docutils literal notranslate"><span class="pre">{&quot;dispatch&quot;:</span> <span class="pre">&quot;tma&quot;,</span> <span class="pre">&quot;cta_group&quot;:</span> <span class="pre">1,</span> <span class="pre">&quot;mbar&quot;:</span> <span class="pre">tma_bar.ptr_to([0])}</span></code></p></li>
-<li><p><strong>Byte count</strong>: <code class="docutils literal notranslate"><span class="pre">(BLK_M</span> <span class="pre">*</span> <span class="pre">BLK_K</span> <span class="pre">+</span> <span class="pre">BLK_N</span> <span class="pre">*</span> <span class="pre">BLK_K)</span> <span class="pre">*</span> <span class="pre">2</span></code> bytes (fp16 =
-2 bytes per element)</p></li>
-<li><p><strong>mbarrier init</strong>: <code class="docutils literal notranslate"><span class="pre">init(tma_bar.ptr_to([0]),</span> <span class="pre">1)</span></code> — 1 expected
-arrival from <code class="docutils literal notranslate"><span class="pre">expect_tx</span></code>.</p></li>
-<li><p><strong>``&#64;Tx.inline``</strong>: Helper functions are inlined at compile time and
-can capture outer variables.</p></li>
-<li><p><strong>TMA store writeback sync</strong>: After TMEM readback, the kernel uses
-synchronization to keep all threads aligned before staging results
-through Dsmem. After Dsmem writes, <code class="docutils literal notranslate"><span class="pre">fence.proxy_async</span></code> +
-<code class="docutils literal notranslate"><span class="pre">warpgroup_sync</span></code> hand the thread-written SMEM data to the TMA store
-path. The TMA store is then followed by <code class="docutils literal notranslate"><span class="pre">commit_group()</span></code> +
-<code class="docutils literal notranslate"><span class="pre">wait_group(0)</span></code> before Dsmem is reused.</p></li>
+<code class="docutils literal notranslate"><span class="pre">{&quot;dispatch&quot;:</span> <span class="pre">&quot;tma&quot;,</span> <span class="pre">&quot;cta_group&quot;:</span> <span class="pre">1,</span> <span class="pre">&quot;mbar&quot;:</span> <span class="pre">tma_bar.ptr_to([0])}</span></code>
+tells <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> to use TMA and to report load completion
+through <code class="docutils literal notranslate"><span class="pre">tma_bar</span></code>.</p></li>
+<li><p><strong>Byte count</strong>: <code class="docutils literal notranslate"><span class="pre">(BLK_M</span> <span class="pre">*</span> <span class="pre">BLK_K</span> <span class="pre">+</span> <span class="pre">BLK_N</span> <span class="pre">*</span> <span class="pre">BLK_K)</span> <span class="pre">*</span> <span class="pre">2</span></code> is the number
+of bytes loaded by the two fp16 operand tiles.
+<code class="docutils literal notranslate"><span class="pre">arrive.expect_tx(...)</span></code> gives this count to the mbarrier.</p></li>
+<li><p><strong>mbarrier initialization</strong>: <code class="docutils literal notranslate"><span class="pre">init(tma_bar.ptr_to([0]),</span> <span class="pre">1)</span></code> creates
+the completion barrier used by the TMA load.</p></li>
+<li><p><strong>``&#64;Tx.inline``</strong>: <code class="docutils literal notranslate"><span class="pre">tma_load(...)</span></code> and <code class="docutils literal notranslate"><span class="pre">mma(...)</span></code> are helper
+functions. They are expanded into the kernel body at compile time and
+can use variables from the surrounding kernel.</p></li>
+<li><p><strong>TMA store synchronization</strong>: The epilogue first writes fp16 rows
+into <code class="docutils literal notranslate"><span class="pre">Dsmem</span></code>. <code class="docutils literal notranslate"><span class="pre">fence.proxy_async</span></code> and <code class="docutils literal notranslate"><span class="pre">warpgroup_sync</span></code> make
+those thread-written SMEM values ready for the TMA store path. The
+store then uses <code class="docutils literal notranslate"><span class="pre">commit_group()</span></code> and <code class="docutils literal notranslate"><span class="pre">wait_group(0)</span></code> to wait for
+the SMEM-to-GMEM transfer to finish.</p></li>
 </ul>
-</section>
-<section id="understanding-tmem">
-<h3><span class="section-number">4.1.3. </span>Understanding TMEM<a class="headerlink" href="#understanding-tmem" title="Permalink to this heading">¶</a></h3>
-<p>TMEM (Tensor Memory) is a <strong>per-SM</strong> scratchpad used by the <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>
-MMA path (not per-warpgroup). The TMEM address space used in these
-kernels is 128 rows by 512 columns, shared by whichever warpgroups of
-the resident CTA(s) need it. The 128-row extent is tied to the <code class="docutils literal notranslate"><span class="pre">TLane</span></code>
-axis and matches one warpgroup’s 128 threads, which is what makes the
-<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> TMEM→RF read a warpgroup-cooperative operation. Two
-further properties of the allocation call itself:</p>
-<ul class="simple">
-<li><p><strong>``.shape``</strong> determines how many bits per element. For fp32
-accumulators, each cell is 32 bits.</p></li>
-<li><p><strong>``.num``</strong> determines how many <code class="docutils literal notranslate"><span class="pre">.shape</span></code>-sized entries fit. The
-TIRX compiler maps these to TMEM columns.</p></li>
-</ul>
-<p>When you declare
-<code class="docutils literal notranslate"><span class="pre">tmem</span> <span class="pre">=</span> <span class="pre">Tx.decl_buffer((128,</span> <span class="pre">512),</span> <span class="pre">&quot;float32&quot;,</span> <span class="pre">scope=&quot;tmem&quot;,</span> <span class="pre">allocated_addr=...)</span></code>,
-this creates a buffer view over a TMEM allocation whose base address
-came from <code class="docutils literal notranslate"><span class="pre">tcgen05.alloc</span></code>. To read TMEM into registers:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dreg_wg</span> <span class="o">=</span> <span class="n">Dreg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">,</span>
-    <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]))</span>
-<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>
-    <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Dreg_wg</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">])</span>
-    <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">wait</span><span class="o">.</span><span class="n">ld</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>The layout <code class="docutils literal notranslate"><span class="pre">1&#64;tid_in_wg</span></code> maps the 128 warpgroup threads to the 128-row
-TMEM view; axis matching with the TMEM <code class="docutils literal notranslate"><span class="pre">(1&#64;TLane,</span> <span class="pre">1&#64;TCol)</span></code> layout is
-what lets <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> lower to a <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> readback. TMEM
-reads use warpgroup scope because this dispatcher is written for
-warpgroup-cooperative TMEM-to-local movement — not because TMEM itself
-is “owned” by a warpgroup (it is not; TMEM is SM-level). <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>
-is <strong>asynchronous</strong> (the load is launched but the destination registers
-fill later), so the caller must follow <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> with
-<code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.wait.ld()</span></code> before reading the destination.</p>
-<p>Note: If the K-loop runs inside an <code class="docutils literal notranslate"><span class="pre">elect_sync</span></code> or <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code> scope,
-other threads skip ahead to the writeback. Always ensure <code class="docutils literal notranslate"><span class="pre">cta_sync()</span></code>
-is called <strong>outside</strong> any thread-guarded scope before reading TMEM, so
-the whole warpgroup is aligned on the same MMA epoch.</p>
-<hr class="docutils" />
-<p>TMA async loads move data through the hardware copy engine, but the MMA
-unit still sits idle while waiting for each TMA transfer to complete.
-Software pipelining overlaps loading and computing.</p>
+<p>Step 4 uses TMA, but it still waits for each load before issuing the
+matching MMA. The next step keeps the same TMA load/store path and
+changes the schedule so loading one K tile can overlap compute on
+another.</p>
 </section>
 </section>
 <section id="step-5-software-pipeline-pipe-depth-2">
 <span id="chap-software-pipeline"></span><h2><span class="section-number">4.2. </span>Step 5: Software Pipeline (PIPE_DEPTH=2)<a class="headerlink" href="#step-5-software-pipeline-pipe-depth-2" title="Permalink to this heading">¶</a></h2>
-<p>Without pipelining, the kernel alternates between loading and computing:
-MMA sits idle while TMA loads data, and vice versa. Software pipelining
-overlaps these operations using double-buffered shared memory.
-Benchmarks use M=N=K=4096.</p>
-<p><strong>Topics.</strong></p>
-<ul class="simple">
-<li><p>Overlapping TMA loads with MMA computation using double buffering</p></li>
-<li><p>Multi-buffered shared memory: <code class="docutils literal notranslate"><span class="pre">Asmem[stage,</span> <span class="pre">:,</span> <span class="pre">:]</span></code></p></li>
-<li><p>Pipeline stage and phase tracking</p></li>
-<li><p>Prefetch pattern: load first stages before entering main loop</p></li>
-</ul>
+<p>Step 5 adds double-buffered shared memory so the kernel can load one K
+tile while computing another. Benchmarks use M=N=K=4096.</p>
 <section id="pipeline-walkthrough">
 <h3><span class="section-number">4.2.1. </span>Pipeline Walkthrough<a class="headerlink" href="#pipeline-walkthrough" title="Permalink to this heading">¶</a></h3>
-<p>Without pipelining (Step 4), TMA and MMA execute serially — the MMA sits
-idle during every load, and TMA sits idle during every compute. With
-double buffering (<code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=2</span></code>), we allocate two SMEM stages so TMA
-can load the next tile into one stage while MMA computes from the other:</p>
-<figure class="align-default" id="id2">
+<p>With <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=2</span></code>, the kernel allocates two SMEM stages. The figure
+shows the intended schedule over K tiles:</p>
+<figure class="align-default" id="id4">
 <img alt="../_images/pipe_depth2.png" src="../_images/pipe_depth2.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 4.2.1 </span><span class="caption-text"><em>Pipeline PIPE_DEPTH=2</em></span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 4.2.1 </span><span class="caption-text"><em>Pipeline PIPE_DEPTH=2</em></span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<p><strong>Implementation.</strong></p>
-<p>Structural changes from Step 4:</p>
+<p>The first two TMA loads fill the two stages. After that, the stages
+alternate. While MMA computes on <code class="docutils literal notranslate"><span class="pre">k0</span></code>, TMA can load <code class="docutils literal notranslate"><span class="pre">k2</span></code> into the
+stage that will be reused next. While MMA computes on <code class="docutils literal notranslate"><span class="pre">k1</span></code>, TMA can
+load <code class="docutils literal notranslate"><span class="pre">k3</span></code>, and so on. The two hardware paths are different: TMA moves
+GMEM -&gt; SMEM tiles, while <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> consumes an already-loaded
+SMEM stage and writes the accumulator to TMEM.</p>
+<p>When reading the Step 5 code, look for four changes from Step 4:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Asmem</span></code> and <code class="docutils literal notranslate"><span class="pre">Bsmem</span></code> gain a leading <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code> dimension, so
+each stage has its own SMEM storage.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tma_bar</span></code> becomes an array with one mbarrier per stage.</p></li>
+<li><p>Before the main K loop, the kernel prefetches the first two stages.</p></li>
+<li><p>The K loop uses <code class="docutils literal notranslate"><span class="pre">stage</span> <span class="pre">=</span> <span class="pre">k</span> <span class="pre">%</span> <span class="pre">PIPE_DEPTH</span></code>: wait for the current
+stage, run MMA on it, then reuse that stage for <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">+</span> <span class="pre">PIPE_DEPTH</span></code>.</p></li>
+</ol>
+</section>
+<section id="pipeline-mechanics">
+<h3><span class="section-number">4.2.2. </span>Pipeline Mechanics<a class="headerlink" href="#pipeline-mechanics" title="Permalink to this heading">¶</a></h3>
+<p>The pipeline has three parts:</p>
+<p><strong>1. Prefetch</strong>: before the main loop, load the first <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code>
+stages:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">K_TILES</span><span class="p">)):</span>
+    <span class="n">tma_load</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>2. Main loop</strong>: for each K tile, wait for its stage, run MMA, then
+start the next TMA load into the stage that just became reusable:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">stage</span> <span class="o">=</span> <span class="n">k</span> <span class="o">%</span> <span class="n">PIPE_DEPTH</span>
+<span class="n">wait</span><span class="p">(</span><span class="n">tma_bar</span><span class="p">[</span><span class="n">stage</span><span class="p">],</span> <span class="n">phase_tma</span><span class="p">)</span>
+<span class="n">mma</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">accum</span><span class="p">)</span>
+<span class="n">wait</span><span class="p">(</span><span class="n">mma_bar</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">phase_mma</span><span class="p">)</span>
+<span class="n">phase_mma</span> <span class="o">^=</span> <span class="mi">1</span>
+<span class="n">tma_load</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">next_k</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>3. Phase management</strong>: the MMA barrier is single-buffered, so
+<code class="docutils literal notranslate"><span class="pre">phase_mma</span></code> flips every iteration. The TMA barriers are
+double-buffered, so <code class="docutils literal notranslate"><span class="pre">phase_tma</span></code> flips when the stage wraps:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">PIPE_DEPTH</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="n">phase_tma</span> <span class="o">^=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p><strong>Try with your agent</strong>: With <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH=2</span></code> and <code class="docutils literal notranslate"><span class="pre">K_TILES=5</span></code>, ask it
+to trace the main loop. For each <code class="docutils literal notranslate"><span class="pre">k</span></code>, list <code class="docutils literal notranslate"><span class="pre">stage</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">phase_tma</span></code> and <code class="docutils literal notranslate"><span class="pre">phase_mma</span></code> values passed to the waits, and whether
+a new prefetch is issued. Where exactly does <code class="docutils literal notranslate"><span class="pre">phase_tma</span></code> flip, and why
+is there no prefetch for the last two iterations?</p>
+</section>
+<section id="id1">
+<h3><span class="section-number">4.2.3. </span>Complete Kernel<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>The complete kernel below keeps the Step 4 TMA load/store path and adds
+staged SMEM buffers:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tvm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.layout</span><span class="w"> </span><span class="kn">import</span> <span class="n">S</span><span class="p">,</span> <span class="n">TCol</span><span class="p">,</span> <span class="n">TileLayout</span><span class="p">,</span> <span class="n">TLane</span><span class="p">,</span> <span class="n">tid_in_wg</span>
@@ -614,17 +544,17 @@ the number of pipeline stages (double buffering):</p>
     <span class="n">D_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">d_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span>
                                   <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">))</span>
 
-    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span>
         <span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">),</span>
         <span class="n">B</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">),</span>
         <span class="n">D</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">d_type</span><span class="p">),</span>
     <span class="p">):</span>
         <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
-            <span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">])</span>
-            <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id_in_wg</span><span class="p">([</span><span class="mi">4</span><span class="p">])</span>
-            <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">lane_id</span><span class="p">([</span><span class="mi">32</span><span class="p">])</span>
+            <span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+            <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+            <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
+            <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
 
             <span class="c1"># --- SMEM allocation ---</span>
             <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
@@ -686,7 +616,7 @@ the number of pipeline stages (double buffering):</p>
             <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">)</span>
 
             <span class="c1"># === Prefetch: load first PIPE_DEPTH stages ===</span>
-            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">K_TILES</span><span class="p">)):</span>
                     <span class="n">tma_load</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
 
@@ -698,7 +628,7 @@ the number of pipeline stages (double buffering):</p>
                 <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="n">stage</span><span class="p">]),</span> <span class="n">phase_tma</span><span class="p">)</span>
 
                 <span class="c1"># MMA on this stage&#39;s data</span>
-                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                     <span class="n">mma</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="p">(</span><span class="n">k</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span>
 
                 <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">phase_mma</span><span class="p">)</span>
@@ -707,7 +637,7 @@ the number of pipeline stages (double buffering):</p>
                 <span class="c1"># Issue next prefetch load (k + PIPE_DEPTH)</span>
                 <span class="n">next_k</span> <span class="o">=</span> <span class="n">k</span> <span class="o">+</span> <span class="n">PIPE_DEPTH</span>
                 <span class="k">if</span> <span class="n">next_k</span> <span class="o">&lt;</span> <span class="n">K_TILES</span><span class="p">:</span>
-                    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                         <span class="n">tma_load</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">next_k</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
 
                 <span class="c1"># TMA phase flips when stage wraps around</span>
@@ -729,7 +659,7 @@ the number of pipeline stages (double buffering):</p>
                 <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dsmem</span><span class="p">[</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span> <span class="n">Dreg_f16</span><span class="p">[:])</span>
                 <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">proxy_async</span><span class="p">(</span><span class="s2">&quot;shared::cta&quot;</span><span class="p">)</span>
                 <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">warpgroup_sync</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                 <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">D</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">],</span>
                               <span class="n">Dsmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
                 <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">cp_async</span><span class="o">.</span><span class="n">bulk</span><span class="o">.</span><span class="n">commit_group</span><span class="p">()</span>
@@ -745,109 +675,24 @@ the number of pipeline stages (double buffering):</p>
     <span class="k">return</span> <span class="n">kernel</span>
 </pre></div>
 </div>
-<p>Compile and run:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-
-<span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span>
-<span class="n">kernel</span> <span class="o">=</span> <span class="n">hgemm_v5</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
-
-<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
-    <span class="n">mod</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">})</span>
-    <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">A_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">B_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">D_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-
-<span class="n">f</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span>
-<span class="n">f</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">A_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">B_tensor</span><span class="p">),</span>
-  <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">D_tensor</span><span class="p">))</span>
-
-<span class="n">D_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A_tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">@</span> <span class="n">B_tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>
-<span class="n">max_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">D_tensor</span> <span class="o">-</span> <span class="n">D_ref</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step 5 Software Pipeline: M=</span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2">, N=</span><span class="si">{</span><span class="n">N</span><span class="si">}</span><span class="s2">, K=</span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max error vs torch reference: </span><span class="si">{</span><span class="n">max_err</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">max_err</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;FAIL: max_err=</span><span class="si">{</span><span class="n">max_err</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># smoke test; fp16 4096x4096 typically gives ~0.25</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
-
-<span class="c1"># Benchmark</span>
-<span class="n">ITERS</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">A_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">B_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">D_tensor</span><span class="p">)]</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">end</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">start</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ITERS</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">end</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">ms</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="o">/</span> <span class="n">ITERS</span>
-<span class="n">tflops</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">M</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span> <span class="n">K</span> <span class="o">/</span> <span class="n">ms</span> <span class="o">/</span> <span class="mf">1e9</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Performance: </span><span class="si">{</span><span class="n">ms</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms, </span><span class="si">{</span><span class="n">tflops</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> TFLOPS&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="pipeline-mechanics">
-<h3><span class="section-number">4.2.2. </span>Pipeline Mechanics<a class="headerlink" href="#pipeline-mechanics" title="Permalink to this heading">¶</a></h3>
-<p>The pipeline works in three phases:</p>
-<p><strong>1. Prefetch</strong>: Before the main loop, load the first <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code>
-stages:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">K_TILES</span><span class="p">)):</span>
-    <span class="n">tma_load</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><strong>2. Main loop</strong>: For each K tile, wait for its data, compute, and issue
-the next load:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">stage</span> <span class="o">=</span> <span class="n">k</span> <span class="o">%</span> <span class="n">PIPE_DEPTH</span>
-<span class="n">wait</span><span class="p">(</span><span class="n">tma_bar</span><span class="p">[</span><span class="n">stage</span><span class="p">],</span> <span class="n">phase_tma</span><span class="p">)</span>  <span class="c1"># Data ready</span>
-<span class="n">mma</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">accum</span><span class="p">)</span>                <span class="c1"># Compute</span>
-<span class="n">wait</span><span class="p">(</span><span class="n">mma_bar</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">phase_mma</span><span class="p">)</span>      <span class="c1"># MMA done (single barrier)</span>
-<span class="n">phase_mma</span> <span class="o">^=</span> <span class="mi">1</span>                   <span class="c1"># Flip every iteration</span>
-<span class="n">tma_load</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">next_k</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">)</span>  <span class="c1"># Start next load (reuses this stage&#39;s buffer)</span>
-</pre></div>
-</div>
-<p><strong>3. Phase management</strong>: The MMA barrier is single-buffered, so
-<code class="docutils literal notranslate"><span class="pre">phase_mma</span></code> flips every iteration. The TMA barriers are
-double-buffered, so <code class="docutils literal notranslate"><span class="pre">phase_tma</span></code> flips when the stage wraps:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">PIPE_DEPTH</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
-    <span class="n">phase_tma</span> <span class="o">^=</span> <span class="mi">1</span>
-</pre></div>
-</div>
-<hr class="docutils" />
-<p>With pipelining, TMA and MMA now overlap within a single tile. But for
-large matrices, one CTA per output tile still creates many short-lived
-CTAs and gives the program little control over tile order. Persistent
-kernels address this by launching a fixed pool of long-running CTAs that
-each process multiple tiles in a cache-friendly order.</p>
 </section>
 </section>
 <section id="step-6-persistent-kernel-tile-scheduler">
 <span id="chap-persistent-kernel"></span><h2><span class="section-number">4.3. </span>Step 6: Persistent Kernel + Tile Scheduler<a class="headerlink" href="#step-6-persistent-kernel-tile-scheduler" title="Permalink to this heading">¶</a></h2>
-<p>With one CTA per output tile, large matrices (M=N=4096 -&gt; 1024 CTAs)
-force the GPU to schedule many short-lived CTAs, and the kernel has
-little control over which nearby tiles run together. Persistent kernels
-address both issues. Benchmarks use M=N=K=4096.</p>
-<p><strong>Topics.</strong></p>
-<ul class="simple">
-<li><p>Persistent kernel pattern: <code class="docutils literal notranslate"><span class="pre">SM_COUNT</span></code> CTAs that each loop over
-multiple tiles</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ClusterPersistentScheduler2D</span></code> for L2-cache-friendly tile ordering</p></li>
-<li><p>Why persistent kernels improve performance for large matrices</p></li>
-</ul>
+<p>Step 5 launches one CTA for every 128 x 128 output tile. For a 4096 x
+4096 output, that is 1024 CTAs. Step 6 instead launches a fixed pool of
+CTAs and lets each CTA process multiple output tiles. This makes tile
+assignment explicit in the kernel and gives the scheduler control over
+tile order. Benchmarks use M=N=K=4096.</p>
 <section id="persistent-scheduling">
 <h3><span class="section-number">4.3.1. </span>Persistent Scheduling<a class="headerlink" href="#persistent-scheduling" title="Permalink to this heading">¶</a></h3>
-<p>A persistent kernel launches a fixed pool of CTAs. In the B200
-configuration used here that pool is <code class="docutils literal notranslate"><span class="pre">SM_COUNT=148</span></code>, one CTA per SM.
-Each CTA loops over multiple tiles using a tile scheduler that orders
-them for L2 cache locality — processing nearby tiles together so they
-can reuse cached data.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">])</span>  <span class="c1"># 1D grid, one CTA per SM</span>
+<p>A persistent kernel launches <code class="docutils literal notranslate"><span class="pre">SM_COUNT</span></code> CTAs instead of one CTA per
+output tile. In the B200 configuration used here, <code class="docutils literal notranslate"><span class="pre">SM_COUNT=148</span></code>, so
+the kernel launches one CTA per SM. Each CTA loops over output tiles
+assigned by <code class="docutils literal notranslate"><span class="pre">ClusterPersistentScheduler2D</span></code>. The scheduler groups
+nearby tiles with <code class="docutils literal notranslate"><span class="pre">l2_group_size=8</span></code>, improving the chance that
+recently used A or B tiles are still in L2.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>  <span class="c1"># 1D grid, one CTA per SM</span>
 
 <span class="n">tile_scheduler</span> <span class="o">=</span> <span class="n">ClusterPersistentScheduler2D</span><span class="p">(</span>
     <span class="s2">&quot;ts&quot;</span><span class="p">,</span>
@@ -859,7 +704,21 @@ can reuse cached data.</p>
 <span class="n">tile_scheduler</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">bx</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>Implementation.</strong></p>
+<p>Because each persistent CTA processes multiple output tiles, the barrier
+phases must be reset for each tile. In Step 5, a CTA computes one output
+tile, so <code class="docutils literal notranslate"><span class="pre">phase_tma</span></code> and <code class="docutils literal notranslate"><span class="pre">phase_mma</span></code> are initialized once. In Step
+6, those initializers move inside the <code class="docutils literal notranslate"><span class="pre">while</span> <span class="pre">tile_scheduler.valid()</span></code>
+loop so every tile starts with phase state that matches its own TMA and
+MMA work:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">while</span> <span class="n">tile_scheduler</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
+    <span class="n">phase_tma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">phase_mma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3><span class="section-number">4.3.2. </span>Complete Kernel<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
 <p>The structure combines Step 5’s pipeline with a tile-level outer loop:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tvm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
@@ -891,7 +750,7 @@ to assign tiles to CTAs:</p>
     <span class="n">D_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">d_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span>
                                   <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_N</span><span class="p">))</span>
 
-    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span>
         <span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">),</span>
         <span class="n">B</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">),</span>
@@ -899,10 +758,10 @@ to assign tiles to CTAs:</p>
     <span class="p">):</span>
         <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
             <span class="c1"># 1D grid: one CTA per SM (not a 2D grid anymore!)</span>
-            <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">])</span>
-            <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id_in_wg</span><span class="p">([</span><span class="mi">4</span><span class="p">])</span>
-            <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">lane_id</span><span class="p">([</span><span class="mi">32</span><span class="p">])</span>
+            <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+            <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+            <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
+            <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
 
             <span class="c1"># --- SMEM allocation (same as Step 5) ---</span>
             <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
@@ -976,7 +835,7 @@ to assign tiles to CTAs:</p>
                 <span class="n">phase_mma</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>
 
                 <span class="c1"># Prefetch first PIPE_DEPTH stages</span>
-                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">K_TILES</span><span class="p">)):</span>
                         <span class="n">tma_load</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">,</span> <span class="n">m_st</span><span class="p">,</span> <span class="n">n_st</span><span class="p">)</span>
 
@@ -984,13 +843,13 @@ to assign tiles to CTAs:</p>
                 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
                     <span class="n">stage</span> <span class="o">=</span> <span class="n">k</span> <span class="o">%</span> <span class="n">PIPE_DEPTH</span>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">tma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="n">stage</span><span class="p">]),</span> <span class="n">phase_tma</span><span class="p">)</span>
-                    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                         <span class="n">mma</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="p">(</span><span class="n">k</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">mbarrier</span><span class="o">.</span><span class="n">try_wait</span><span class="p">(</span><span class="n">mma_bar</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">phase_mma</span><span class="p">)</span>
                     <span class="n">phase_mma</span> <span class="o">^=</span> <span class="mi">1</span>
                     <span class="n">next_k</span> <span class="o">=</span> <span class="n">k</span> <span class="o">+</span> <span class="n">PIPE_DEPTH</span>
                     <span class="k">if</span> <span class="n">next_k</span> <span class="o">&lt;</span> <span class="n">K_TILES</span><span class="p">:</span>
-                        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                             <span class="n">tma_load</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">next_k</span> <span class="o">*</span> <span class="n">BLK_K</span><span class="p">,</span> <span class="n">m_st</span><span class="p">,</span> <span class="n">n_st</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">PIPE_DEPTH</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="n">phase_tma</span> <span class="o">^=</span> <span class="mi">1</span>
@@ -1010,7 +869,7 @@ to assign tiles to CTAs:</p>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dsmem</span><span class="p">[</span><span class="n">warp_id</span> <span class="o">*</span> <span class="mi">32</span> <span class="o">+</span> <span class="n">lane_id</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span> <span class="n">Dreg_f16</span><span class="p">[:])</span>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">proxy_async</span><span class="p">(</span><span class="s2">&quot;shared::cta&quot;</span><span class="p">)</span>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">warpgroup_sync</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">D</span><span class="p">[</span><span class="n">m_st</span> <span class="p">:</span> <span class="n">m_st</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">n_st</span> <span class="p">:</span> <span class="n">n_st</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">],</span>
                                   <span class="n">Dsmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
                     <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">cp_async</span><span class="o">.</span><span class="n">bulk</span><span class="o">.</span><span class="n">commit_group</span><span class="p">()</span>
@@ -1029,124 +888,19 @@ to assign tiles to CTAs:</p>
     <span class="k">return</span> <span class="n">kernel</span>
 </pre></div>
 </div>
-<p>Compile and run:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-
-<span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span>
-<span class="n">kernel</span> <span class="o">=</span> <span class="n">hgemm_v6</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
-
-<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
-    <span class="n">mod</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">})</span>
-    <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
-
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">A_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">B_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">D_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-
-<span class="n">f</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span>
-<span class="n">f</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">A_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">B_tensor</span><span class="p">),</span>
-  <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">D_tensor</span><span class="p">))</span>
-
-<span class="n">D_ref</span> <span class="o">=</span> <span class="p">(</span><span class="n">A_tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">@</span> <span class="n">B_tensor</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">half</span><span class="p">()</span>
-<span class="n">max_err</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">D_tensor</span> <span class="o">-</span> <span class="n">D_ref</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step 6 Persistent Kernel: M=</span><span class="si">{</span><span class="n">M</span><span class="si">}</span><span class="s2">, N=</span><span class="si">{</span><span class="n">N</span><span class="si">}</span><span class="s2">, K=</span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Max error vs torch reference: </span><span class="si">{</span><span class="n">max_err</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">max_err</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;FAIL: max_err=</span><span class="si">{</span><span class="n">max_err</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># smoke test; fp16 4096x4096 typically gives ~0.25</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
-
-<span class="c1"># Benchmark</span>
-<span class="n">ITERS</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">A_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">B_tensor</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">D_tensor</span><span class="p">)]</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">end</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Event</span><span class="p">(</span><span class="n">enable_timing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">start</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ITERS</span><span class="p">):</span>
-    <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<span class="n">end</span><span class="o">.</span><span class="n">record</span><span class="p">()</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="n">ms</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="o">/</span> <span class="n">ITERS</span>
-<span class="n">tflops</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">M</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span> <span class="n">K</span> <span class="o">/</span> <span class="n">ms</span> <span class="o">/</span> <span class="mf">1e9</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Performance: </span><span class="si">{</span><span class="n">ms</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms, </span><span class="si">{</span><span class="n">tflops</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> TFLOPS&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="why-persistent-kernels-help">
-<h3><span class="section-number">4.3.2. </span>Why Persistent Kernels Help<a class="headerlink" href="#why-persistent-kernels-help" title="Permalink to this heading">¶</a></h3>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Aspect</p></th>
-<th class="head"><p>Grid-based (Step 5)</p></th>
-<th class="head"><p>Persistent (Step 6)</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>CTAs
-launched</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(M/128)</span> <span class="pre">x</span> <span class="pre">(N/128)</span></code>
-(e.g., 1024)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">SM_COUNT</span></code> (148)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Kernel
-launches</p></td>
-<td><p>One launch total</p></td>
-<td><p>One launch total</p></td>
-</tr>
-<tr class="row-even"><td><p>CTA
-scheduling</p></td>
-<td><p>One CTA per output tile</p></td>
-<td><p>Fixed CTA pool; each CTA
-processes multiple tiles</p></td>
-</tr>
-<tr class="row-odd"><td><p>L2 cache</p></td>
-<td><p>Tile order mostly follows
-CTA scheduling</p></td>
-<td><p>Scheduler groups nearby
-tiles</p></td>
-</tr>
-<tr class="row-even"><td><p>SM
-residency</p></td>
-<td><p>Many short-lived CTAs</p></td>
-<td><p>One long-running CTA per SM
-in this B200 setup</p></td>
-</tr>
-</tbody>
-</table>
-<p>The <code class="docutils literal notranslate"><span class="pre">l2_group_size=8</span></code> parameter means the scheduler processes 8
-adjacent tiles together before moving on, which improves the chance of
-reusing A and B tiles from L2.</p>
-</section>
-<section id="phase-reset-between-tiles">
-<h3><span class="section-number">4.3.3. </span>Phase Reset Between Tiles<a class="headerlink" href="#phase-reset-between-tiles" title="Permalink to this heading">¶</a></h3>
-<p>Phase handling changes from Step 5: in a persistent kernel, each CTA
-processes <strong>multiple tiles</strong> in the <code class="docutils literal notranslate"><span class="pre">while</span> <span class="pre">tile_scheduler.valid()</span></code>
-loop. Reset the barrier phases (<code class="docutils literal notranslate"><span class="pre">phase_tma</span></code>, <code class="docutils literal notranslate"><span class="pre">phase_mma</span></code>) to 0 at
-the start of each tile. In Step 5, phases are initialized once because
-each CTA only processes one tile. In Step 6, if the phases are not reset
-inside the tile loop, the second tile’s waits can use the wrong phase
-and either deadlock or read stale data from the previous tile.</p>
-<p>For that reason, the <code class="docutils literal notranslate"><span class="pre">phase_tma:</span> <span class="pre">Tx.int32</span> <span class="pre">=</span> <span class="pre">0</span></code> and
-<code class="docutils literal notranslate"><span class="pre">phase_mma:</span> <span class="pre">Tx.int32</span> <span class="pre">=</span> <span class="pre">0</span></code> initialisers appear <strong>inside</strong> the <code class="docutils literal notranslate"><span class="pre">while</span></code>
-loop, not before it.</p>
 </section>
 </section>
 <section id="exercises">
 <h2><span class="section-number">4.4. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
-<li><p>The byte count for <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx</span></code> is
-<code class="docutils literal notranslate"><span class="pre">(BLK_M</span> <span class="pre">*</span> <span class="pre">BLK_K</span> <span class="pre">+</span> <span class="pre">BLK_N</span> <span class="pre">*</span> <span class="pre">BLK_K)</span> <span class="pre">*</span> <span class="pre">2</span></code>. What happens if you compute
-this wrong (e.g., forget the <code class="docutils literal notranslate"><span class="pre">*</span> <span class="pre">2</span></code> for fp16)?</p></li>
-<li><p>Why do we need per-stage barriers (<code class="docutils literal notranslate"><span class="pre">tma_bar[0]</span></code> and <code class="docutils literal notranslate"><span class="pre">tma_bar[1]</span></code>)
-in Step 5 instead of a single shared barrier?</p></li>
-<li><p>For a 4096x4096 matrix with BLK_M=BLK_N=128, how many tiles exist in
-Step 6? How many iterations does each persistent CTA perform on
-average?</p></li>
+<li><p>In Step 4, <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx</span></code> uses
+<code class="docutils literal notranslate"><span class="pre">(BLK_M</span> <span class="pre">*</span> <span class="pre">BLK_K</span> <span class="pre">+</span> <span class="pre">BLK_N</span> <span class="pre">*</span> <span class="pre">BLK_K)</span> <span class="pre">*</span> <span class="pre">2</span></code> bytes. What does the mbarrier
+wait for if this byte count is too small or too large?</p></li>
+<li><p>In Step 5, why does each SMEM stage need its own TMA barrier instead
+of sharing one <code class="docutils literal notranslate"><span class="pre">tma_bar</span></code> for both stages?</p></li>
+<li><p>In Step 6, a 4096 x 4096 output with <code class="docutils literal notranslate"><span class="pre">BLK_M=BLK_N=128</span></code> has how many
+output tiles? With <code class="docutils literal notranslate"><span class="pre">SM_COUNT=148</span></code>, how many tiles does each
+persistent CTA process on average?</p></li>
 </ol>
 </section>
 </section>
@@ -1160,22 +914,23 @@ average?</p></li>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">4. Asynchronous GEMM Pipeline</a><ul>
+<li><a class="reference internal" href="#">4. Pipelining GEMM with TMA</a><ul>
 <li><a class="reference internal" href="#step-4-tma-async-load">4.1. Step 4: TMA Async Load</a><ul>
 <li><a class="reference internal" href="#tma-issue-pattern">4.1.1. TMA Issue Pattern</a></li>
-<li><a class="reference internal" href="#what-changes">4.1.2. What Changes</a></li>
-<li><a class="reference internal" href="#understanding-tmem">4.1.3. Understanding TMEM</a></li>
+<li><a class="reference internal" href="#tma-load-and-store-synchronization">4.1.2. TMA Load and Store Synchronization</a></li>
+<li><a class="reference internal" href="#complete-kernel">4.1.3. Complete Kernel</a></li>
+<li><a class="reference internal" href="#tma-configuration-in-the-kernel">4.1.4. TMA Configuration in the Kernel</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#step-5-software-pipeline-pipe-depth-2">4.2. Step 5: Software Pipeline (PIPE_DEPTH=2)</a><ul>
 <li><a class="reference internal" href="#pipeline-walkthrough">4.2.1. Pipeline Walkthrough</a></li>
 <li><a class="reference internal" href="#pipeline-mechanics">4.2.2. Pipeline Mechanics</a></li>
+<li><a class="reference internal" href="#id1">4.2.3. Complete Kernel</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#step-6-persistent-kernel-tile-scheduler">4.3. Step 6: Persistent Kernel + Tile Scheduler</a><ul>
 <li><a class="reference internal" href="#persistent-scheduling">4.3.1. Persistent Scheduling</a></li>
-<li><a class="reference internal" href="#why-persistent-kernels-help">4.3.2. Why Persistent Kernels Help</a></li>
-<li><a class="reference internal" href="#phase-reset-between-tiles">4.3.3. Phase Reset Between Tiles</a></li>
+<li><a class="reference internal" href="#id2">4.3.2. Complete Kernel</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#exercises">4.4. Exercises</a></li>
@@ -1193,14 +948,14 @@ average?</p></li>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>3. GEMM with Tile Primitives</div>
+            <div>3. Building a Tiled GEMM</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_gemm_advanced/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>5. Warp-Specialized and Clustered GEMM</div>
+            <div>5. Scaling GEMM with Warp Specialization and Clusters</div>
         </div>
      </a>
   </div>

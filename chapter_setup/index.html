@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>7.1. Environment Setup &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>8.1.1. Environment Setup &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,16 +28,16 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="7.2. Practice Kernel: Fused GELU Gate" href="../chapter_fused_gelu/index.html" />
-    <link rel="prev" title="7. Appendix" href="../appendix/index.html" /> 
+    <link rel="next" title="8.1.2. Practice Kernel: Fused GELU Gate" href="../chapter_fused_gelu/index.html" />
+    <link rel="prev" title="8. Appendix" href="../appendix/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">7. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">7.1. </span>Environment Setup</a>
+            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">8. </span>Appendix</a><i class="material-icons">navigate_next</i>
+            <a class="mdl-navigation__link is-active"><span class="section-number">8.1.1. </span>Environment Setup</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -97,17 +97,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -139,17 +140,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -164,13 +166,11 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="environment-setup">
-<span id="chap-setup"></span><h1><span class="section-number">7.1. </span>Environment Setup<a class="headerlink" href="#environment-setup" title="Permalink to this heading">¶</a></h1>
+<span id="chap-setup"></span><h1><span class="section-number">8.1.1. </span>Environment Setup<a class="headerlink" href="#environment-setup" title="Permalink to this heading">¶</a></h1>
 <p>Set up the environment first, then verify it by running a real GPU
 kernel.</p>
-<section id="install">
-<h2><span class="section-number">7.1.1. </span>Install<a class="headerlink" href="#install" title="Permalink to this heading">¶</a></h2>
-<section id="expected-background">
-<h3><span class="section-number">7.1.1.1. </span>Expected Background<a class="headerlink" href="#expected-background" title="Permalink to this heading">¶</a></h3>
+<section id="requirements">
+<h2><span class="section-number">8.1.1.1. </span>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>OS</strong>: Linux (Ubuntu 20.04+ recommended)</p></li>
 <li><p><strong>GPU</strong>: NVIDIA Blackwell (B200 / B100) with driver &gt;= 570</p></li>
@@ -178,7 +178,7 @@ kernel.</p>
 </ul>
 </section>
 <section id="install-packages">
-<h3><span class="section-number">7.1.1.2. </span>Install Packages<a class="headerlink" href="#install-packages" title="Permalink to this heading">¶</a></h3>
+<h2><span class="section-number">8.1.1.2. </span>Install Packages<a class="headerlink" href="#install-packages" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>-U<span class="w"> </span><span class="s2">&quot;https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.24.dev0-py3-none-manylinux_2_28_x86_64.whl&quot;</span>
 pip<span class="w"> </span>install<span class="w"> </span>apache-tvm-ffi<span class="o">==</span><span class="m">0</span>.1.9rc2
 pip<span class="w"> </span>install<span class="w"> </span><span class="nv">torch</span><span class="o">==</span><span class="m">2</span>.9.1+cu130<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu130
@@ -186,9 +186,8 @@ pip<span class="w"> </span>install<span class="w"> </span>numpy
 </pre></div>
 </div>
 </section>
-</section>
-<section id="minimal-kernel">
-<h2><span class="section-number">7.1.2. </span>Minimal Kernel<a class="headerlink" href="#minimal-kernel" title="Permalink to this heading">¶</a></h2>
+<section id="verify-with-a-tiny-kernel">
+<h2><span class="section-number">8.1.1.3. </span>Verify with a Tiny Kernel<a class="headerlink" href="#verify-with-a-tiny-kernel" title="Permalink to this heading">¶</a></h2>
 <p>Verify the setup by compiling and running a real TIRX kernel. The
 minimal kernel doubles every element of an array on the GPU.</p>
 <p>Three TIRX primitives appear in every kernel:</p>
@@ -196,16 +195,17 @@ minimal kernel doubles every element of an array on the GPU.</p>
 <li><p><strong>``with Tx.kernel():``</strong> opens the kernel-launch scope. Everything
 inside it runs on the GPU. Outside this block you are still on the
 host.</p></li>
-<li><p><strong>``Tx.cta_id([num_blocks])``</strong> declares the CTA (CUDA block) grid
-extent and returns a symbolic block index, exactly like <code class="docutils literal notranslate"><span class="pre">blockIdx.x</span></code>
-in raw CUDA. <code class="docutils literal notranslate"><span class="pre">[num_blocks]</span></code> becomes the grid size.</p></li>
-<li><p><strong>``Tx.thread_id([num_threads_per_cta])``</strong> declares the per-CTA
-thread extent and returns the symbolic thread index (like
+<li><p><strong>``Tx.cta_id([num_blocks], parent=”kernel”)``</strong> declares the CTA
+(CUDA block) grid extent and returns a symbolic block index, exactly
+like <code class="docutils literal notranslate"><span class="pre">blockIdx.x</span></code> in raw CUDA. <code class="docutils literal notranslate"><span class="pre">[num_blocks]</span></code> becomes the grid
+size.</p></li>
+<li><p><strong>``Tx.thread_id([num_threads_per_cta], parent=”cta”)``</strong> declares the
+per-CTA thread extent and returns the symbolic thread index (like
 <code class="docutils literal notranslate"><span class="pre">threadIdx.x</span></code>). The CTA size is <code class="docutils literal notranslate"><span class="pre">num_threads_per_cta</span></code>.</p></li>
 <li><p><strong>``with Tx.thread():``</strong> opens a thread-level execution scope — every
 thread runs the body independently. Other scopes (<code class="docutils literal notranslate"><span class="pre">Tx.warp()</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.cta()</span></code>) exist for cooperative tile
-primitives and are introduced in <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a>.</p></li>
+primitives and are introduced later in the tutorial.</p></li>
 </ul>
 <p>With those in hand, the kernel maps a length-<code class="docutils literal notranslate"><span class="pre">n</span></code> array to a 1-D grid
 of CTAs, each with 256 threads, and has every thread double one element:</p>
@@ -215,22 +215,22 @@ of CTAs, each with 256 threads, and has every thread double one element:</p>
 
 <span class="n">BLOCK</span> <span class="o">=</span> <span class="mi">256</span>
 
-<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">double_it</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>
     <span class="n">A</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
     <span class="n">B</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
         <span class="c1"># Launch ceildiv(n, BLOCK) CTAs of BLOCK threads each.</span>
-        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLOCK</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">])</span>
-        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">BLOCK</span><span class="p">])</span>
+        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLOCK</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">BLOCK</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
             <span class="n">i</span> <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="n">BLOCK</span> <span class="o">+</span> <span class="n">tid</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>                       <span class="c1"># tail-guard for non-multiples of BLOCK</span>
                 <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span>
 
 <span class="c1"># Compile</span>
-<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>  <span class="c1"># defaults to sm_100a on Blackwell</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>  <span class="c1"># selects the CUDA target used by this Blackwell setup</span>
 <span class="k">with</span> <span class="n">target</span><span class="p">:</span>
     <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">double_it</span><span class="p">}),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
 
@@ -269,17 +269,9 @@ and driver &gt;= 570</p></li>
 <li><p><strong>Compilation error</strong>: Make sure you installed the <code class="docutils literal notranslate"><span class="pre">cu130</span></code> version
 of both TVM and PyTorch</p></li>
 </ul>
-</section>
-<section id="inspecting-generated-code">
-<h2><span class="section-number">7.1.3. </span>Inspecting Generated Code<a class="headerlink" href="#inspecting-generated-code" title="Permalink to this heading">¶</a></h2>
-<p>Generated CUDA source is available after compiling any TIRX kernel:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cuda_source</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">imports</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inspect_source</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">cuda_source</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Generated CUDA is the debugging target: search for PTX instructions like
-<code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>, <code class="docutils literal notranslate"><span class="pre">mbarrier.init</span></code>, or <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> to verify the
-kernel structure. The GEMM chapters use this technique repeatedly.</p>
+<p>For generated CUDA inspection, use the debugging appendix for
+warp-specialized kernels or the language reference for the lower-level
+<code class="docutils literal notranslate"><span class="pre">inspect_source()</span></code> workflow.</p>
 </section>
 </section>
 
@@ -292,14 +284,10 @@ kernel structure. The GEMM chapters use this technique repeatedly.</p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">7.1. Environment Setup</a><ul>
-<li><a class="reference internal" href="#install">7.1.1. Install</a><ul>
-<li><a class="reference internal" href="#expected-background">7.1.1.1. Expected Background</a></li>
-<li><a class="reference internal" href="#install-packages">7.1.1.2. Install Packages</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#minimal-kernel">7.1.2. Minimal Kernel</a></li>
-<li><a class="reference internal" href="#inspecting-generated-code">7.1.3. Inspecting Generated Code</a></li>
+<li><a class="reference internal" href="#">8.1.1. Environment Setup</a><ul>
+<li><a class="reference internal" href="#requirements">8.1.1.1. Requirements</a></li>
+<li><a class="reference internal" href="#install-packages">8.1.1.2. Install Packages</a></li>
+<li><a class="reference internal" href="#verify-with-a-tiny-kernel">8.1.1.3. Verify with a Tiny Kernel</a></li>
 </ul>
 </li>
 </ul>
@@ -314,14 +302,14 @@ kernel structure. The GEMM chapters use this technique repeatedly.</p>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>7. Appendix</div>
+            <div>8. Appendix</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_fused_gelu/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>7.2. Practice Kernel: Fused GELU Gate</div>
+            <div>8.1.2. Practice Kernel: Fused GELU Gate</div>
         </div>
      </a>
   </div>

@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>7.6. TIRX Language Reference &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>8.1.6. TIRX Language and Compile Pipeline &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,15 +28,15 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="7.5. TIRX API Quick Reference" href="../chapter_api_reference/index.html" /> 
+    <link rel="prev" title="8.1.5. TIRX API Lookup" href="../chapter_api_reference/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
     <div class="mdl-layout__header-row">
         
         <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">7. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">7.6. </span>TIRX Language Reference</a>
+            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">8. </span>Appendix</a><i class="material-icons">navigate_next</i>
+            <a class="mdl-navigation__link is-active"><span class="section-number">8.1.6. </span>TIRX Language and Compile Pipeline</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -96,17 +96,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -138,17 +139,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -162,21 +164,22 @@ Show Source
     <div class="document">
         <div class="page-content" role="main">
         
-  <section id="tirx-language-reference">
-<span id="chap-tirx-primer"></span><h1><span class="section-number">7.6. </span>TIRX Language Reference<a class="headerlink" href="#tirx-language-reference" title="Permalink to this heading">¶</a></h1>
-<p>This is a reference, not required reading before the GEMM chapters. The
-main path introduces the small amount of TIRX syntax needed to read each
-kernel; come back here when you want the full language details.</p>
+  <section id="tirx-language-and-compile-pipeline">
+<span id="chap-tirx-primer"></span><h1><span class="section-number">8.1.6. </span>TIRX Language and Compile Pipeline<a class="headerlink" href="#tirx-language-and-compile-pipeline" title="Permalink to this heading">¶</a></h1>
+<p>This is the deeper language appendix, not required reading before the
+GEMM chapters. The main path introduces the small amount of TIRX syntax
+needed to read each kernel; come back here when you want to understand
+the parser, buffer model, scopes, metaprogramming, and compile pipeline.</p>
 <p>TIRX programs are GPU kernel IR written through a Python DSL. A
-<code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> describes one kernel-level function: its buffers,
-symbolic launch coordinates, execution scopes, memory allocations,
-control flow, and calls to hardware operations.
+<code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code> describes one kernel-level function: its
+buffers, symbolic launch coordinates, execution scopes, memory
+allocations, control flow, and calls to hardware operations.
 <code class="docutils literal notranslate"><span class="pre">tvm.compile(...,</span> <span class="pre">tir_pipeline=&quot;tirx&quot;)</span></code> lowers that function to
 ordinary TIR, then to CUDA host/device code.</p>
 <p>The <strong>language layer</strong> is the part every TIRX kernel uses before tile
-primitives enter the picture. <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> adds the
-tile-primitive layer: scope-aware, layout-aware operations such as
-<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code>, and <code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code>.</p>
+primitives enter the picture. The tile-primitive model adds scope-aware,
+layout-aware operations such as <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code>.</p>
 <p>Read a TIRX kernel by asking four questions:</p>
 <ol class="arabic simple">
 <li><p>What are the input and output buffers?</p></li>
@@ -187,9 +190,9 @@ hardware calls?</p></li>
 pipeline?</p></li>
 </ol>
 <section id="tirx-in-one-picture">
-<h2><span class="section-number">7.6.1. </span>TIRX in One Picture<a class="headerlink" href="#tirx-in-one-picture" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.1. </span>TIRX in One Picture<a class="headerlink" href="#tirx-in-one-picture" title="Permalink to this heading">¶</a></h2>
 <p>The basic flow is:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Python function with @Tx.prim_func
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Python function with @Tx.prim_func(tirx=True)
   -&gt; TIRX parser builds a PrimFunc
   -&gt; IRModule({&quot;main&quot;: prim_func})
   -&gt; tvm.compile(..., tir_pipeline=&quot;tirx&quot;)
@@ -203,7 +206,7 @@ kernel structure is explicit, and the TIRX pipeline lowers the language
 constructs and tile primitives into concrete CUDA/PTX mechanisms.</p>
 </section>
 <section id="import-convention">
-<h2><span class="section-number">7.6.2. </span>Import Convention<a class="headerlink" href="#import-convention" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.2. </span>Import Convention<a class="headerlink" href="#import-convention" title="Permalink to this heading">¶</a></h2>
 <p>TIRX code usually starts with one import:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
 </pre></div>
@@ -216,24 +219,24 @@ constructs (<code class="docutils literal notranslate"><span class="pre">Tx.kern
 under <code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code>, raw CUDA runtime helpers under <code class="docutils literal notranslate"><span class="pre">Tx.cuda.*</span></code>, tile
 primitives such as <code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code> and <code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code>, and
 metaprogramming glue (<code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.inline</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.meta_class</span></code>). The non-tile-primitive subset comes first;
-<a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> covers tile primitives.</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.meta_class</span></code>). The non-tile-primitive subset comes first; tile
+primitives are covered in the Tile Primitive Mental Model.</p>
 </section>
 <section id="minimal-kernel-example">
-<h2><span class="section-number">7.6.3. </span>Minimal Kernel Example<a class="headerlink" href="#minimal-kernel-example" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.3. </span>Minimal Kernel Example<a class="headerlink" href="#minimal-kernel-example" title="Permalink to this heading">¶</a></h2>
 <p>The small <code class="docutils literal notranslate"><span class="pre">double_it</span></code> kernel below is a compact reference for the
 basic language constructs: handles, dynamic shapes, match buffers,
 launch coordinates, thread scope, and ordinary TIR control flow.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">BLOCK</span> <span class="o">=</span> <span class="mi">256</span>
 
-<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">double_it</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>                                       <span class="c1"># dynamic length</span>
     <span class="n">A</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
     <span class="n">B</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>                                    <span class="c1"># grid-level region</span>
-        <span class="n">bx</span>  <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLOCK</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">])</span>      <span class="c1"># kernel→cta : ceildiv(n, BLOCK) blocks</span>
-        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">BLOCK</span><span class="p">])</span>                      <span class="c1"># cta→thread : BLOCK threads per CTA</span>
+        <span class="n">bx</span>  <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLOCK</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>      <span class="c1"># kernel→cta : ceildiv(n, BLOCK) blocks</span>
+        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">BLOCK</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>                      <span class="c1"># cta→thread : BLOCK threads per CTA</span>
         <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>                                <span class="c1"># team kind = thread</span>
             <span class="n">i</span> <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="n">BLOCK</span> <span class="o">+</span> <span class="n">tid</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>                                    <span class="c1"># tail-guard for non-multiples of BLOCK</span>
@@ -250,12 +253,11 @@ tutorial:</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code></p></td>
 <td><p>top-level decorator</p></td>
 <td><p><em>Compile Pipeline</em></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.handle</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.int32()</span></code>,
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.handle</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.int32()</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Tx.match_buffer</span></code></p></td>
 <td><p>argument types and
 dynamic shape</p></td>
@@ -269,22 +271,20 @@ scopes</p></td>
 <td><p><em>Scopes in a
 Nutshell</em></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...)</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id(...)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...,</span> <span class="pre">parent=&quot;kernel&quot;)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id(...,</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>symbolic thread
 coordinates</p></td>
 <td><p><em>Scopes in a
 Nutshell</em></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">i</span> <span class="pre">&lt;</span> <span class="pre">n:</span></code>,
-<code class="docutils literal notranslate"><span class="pre">B[i]</span> <span class="pre">=</span> <span class="pre">A[i]</span> <span class="pre">*</span> <span class="pre">2.0</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">i</span> <span class="pre">&lt;</span> <span class="pre">n:</span></code>, <code class="docutils literal notranslate"><span class="pre">B[i]</span> <span class="pre">=</span> <span class="pre">A[i]</span> <span class="pre">*</span> <span class="pre">2.0</span></code></p></td>
 <td><p>TIR control flow and
 expressions</p></td>
 <td><p><em>Types and
 Expressions</em></p></td>
 </tr>
-<tr class="row-odd"><td><p>compile to CUDA and
-run</p></td>
+<tr class="row-odd"><td><p>compile to CUDA and run</p></td>
 <td><p>compilation pipeline</p></td>
 <td><p><em>Compile Pipeline</em></p></td>
 </tr>
@@ -294,9 +294,9 @@ run</p></td>
 primitives are covered in the main chapters.</p>
 </section>
 <section id="types-and-expressions">
-<h2><span class="section-number">7.6.4. </span>Types and Expressions<a class="headerlink" href="#types-and-expressions" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.4. </span>Types and Expressions<a class="headerlink" href="#types-and-expressions" title="Permalink to this heading">¶</a></h2>
 <section id="scalar-types">
-<h3><span class="section-number">7.6.4.1. </span>Scalar types<a class="headerlink" href="#scalar-types" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.4.1. </span>Scalar types<a class="headerlink" href="#scalar-types" title="Permalink to this heading">¶</a></h3>
 <p>TIRX expressions are built from TIR primitive types. The most common
 ones are:</p>
 <table class="docutils align-default">
@@ -355,7 +355,7 @@ wrong Python type.</p></li>
 the per-stage variants in <code class="docutils literal notranslate"><span class="pre">no_sugar_gemm.py</span></code>.</p>
 </section>
 <section id="ir-vocabulary">
-<h3><span class="section-number">7.6.4.2. </span>IR Vocabulary<a class="headerlink" href="#ir-vocabulary" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.4.2. </span>IR Vocabulary<a class="headerlink" href="#ir-vocabulary" title="Permalink to this heading">¶</a></h3>
 <p>Every line in <code class="docutils literal notranslate"><span class="pre">double_it</span></code> becomes one TIR node. There are two
 families:</p>
 <p><strong>Expression nodes (``PrimExpr``)</strong> — they have a value and a dtype:</p>
@@ -437,11 +437,11 @@ buffer-pointer arithmetic</p></td>
 </tbody>
 </table>
 <p>The vocabulary is intentionally small: no class system, no closures, no
-exceptions. Every Python construct in a <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> either maps
-directly to one of these nodes, or fails to parse.</p>
+exceptions. Every Python construct in a <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code>
+either maps directly to one of these nodes, or fails to parse.</p>
 </section>
 <section id="expressions-and-operators">
-<h3><span class="section-number">7.6.4.3. </span>Expressions and operators<a class="headerlink" href="#expressions-and-operators" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.4.3. </span>Expressions and operators<a class="headerlink" href="#expressions-and-operators" title="Permalink to this heading">¶</a></h3>
 <p>Arithmetic, comparison, and logical expressions use ordinary Python
 operators (<code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">//</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&amp;</span></code>, <code class="docutils literal notranslate"><span class="pre">|</span></code>,
 <code class="docutils literal notranslate"><span class="pre">~</span></code>). The parser records the corresponding TIR node — <code class="docutils literal notranslate"><span class="pre">+</span></code> → <code class="docutils literal notranslate"><span class="pre">Add</span></code>,
@@ -452,14 +452,14 @@ correctly to short-circuiting <code class="docutils literal notranslate"><span c
 works without a cast; mixing <code class="docutils literal notranslate"><span class="pre">int32</span></code> and <code class="docutils literal notranslate"><span class="pre">float32</span></code> requires
 <code class="docutils literal notranslate"><span class="pre">Tx.cast(x,</span> <span class="pre">&quot;float32&quot;)</span></code> (which emits an explicit <code class="docutils literal notranslate"><span class="pre">Cast</span></code> node). Two
 patterns appear repeatedly:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tx</span>   <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>                   <span class="c1"># int32 symbolic IterVar (cta→thread)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tx</span>   <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">128</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>                   <span class="c1"># int32 symbolic IterVar (cta→thread)</span>
 <span class="n">i</span>    <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="mi">128</span> <span class="o">+</span> <span class="n">tx</span>                         <span class="c1"># Add(Mul(bx, 128), tx)</span>
 <span class="n">flag</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">tx</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>                   <span class="c1"># And(LT(i, n), NE(tx, 0))</span>
 </pre></div>
 </div>
 </section>
 <section id="control-flow-for-if-and-call">
-<h3><span class="section-number">7.6.4.4. </span>Control flow: <code class="docutils literal notranslate"><span class="pre">for</span></code>, <code class="docutils literal notranslate"><span class="pre">if</span></code>, and <code class="docutils literal notranslate"><span class="pre">call</span></code><a class="headerlink" href="#control-flow-for-if-and-call" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.4.4. </span>Control flow: <code class="docutils literal notranslate"><span class="pre">for</span></code>, <code class="docutils literal notranslate"><span class="pre">if</span></code>, and <code class="docutils literal notranslate"><span class="pre">call</span></code><a class="headerlink" href="#control-flow-for-if-and-call" title="Permalink to this heading">¶</a></h3>
 <p>TIRX control flow follows Python syntax but produces TIR statement
 nodes.</p>
 <p><code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">cond:</span> <span class="pre">...</span> <span class="pre">else:</span> <span class="pre">...</span></code> produces an <code class="docutils literal notranslate"><span class="pre">IfThenElse</span></code> node. The
@@ -502,14 +502,14 @@ PrimExpr. When such a call appears at statement position (its return
 value is discarded), the parser wraps it in an <code class="docutils literal notranslate"><span class="pre">Evaluate</span></code> statement.</p>
 <p>A <code class="docutils literal notranslate"><span class="pre">with</span></code> block binds a region to a TIRX-specific <code class="docutils literal notranslate"><span class="pre">ExecScopeStmt</span></code>
 (<code class="docutils literal notranslate"><span class="pre">Tx.kernel</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.cta</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup</span></code>, …). <em>Scopes in a Nutshell</em>
-gives the minimum version; <a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> develops the full
-programming model.</p>
+gives the minimum version; the Tile Primitive Mental Model develops the
+full programming model.</p>
 <p><code class="docutils literal notranslate"><span class="pre">return</span></code> is only legal inside <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> functions (see
-<em>Metaprogramming</em>). A top-level <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> always has a <code class="docutils literal notranslate"><span class="pre">void</span></code>
-signature.</p>
+<em>Metaprogramming</em>). A top-level <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code> always has
+a <code class="docutils literal notranslate"><span class="pre">void</span></code> signature.</p>
 </section>
 <section id="reading-double-it-as-tir">
-<h3><span class="section-number">7.6.4.5. </span>Reading <code class="docutils literal notranslate"><span class="pre">double_it</span></code> as TIR<a class="headerlink" href="#reading-double-it-as-tir" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.4.5. </span>Reading <code class="docutils literal notranslate"><span class="pre">double_it</span></code> as TIR<a class="headerlink" href="#reading-double-it-as-tir" title="Permalink to this heading">¶</a></h3>
 <p>The body of <code class="docutils literal notranslate"><span class="pre">double_it</span></code> translates to a <code class="docutils literal notranslate"><span class="pre">SeqStmt</span></code> of two <code class="docutils literal notranslate"><span class="pre">Bind</span></code>
 statements (<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">Tx.int32()</span></code> and the two <code class="docutils literal notranslate"><span class="pre">Tx.match_buffer</span></code> calls),
 an <code class="docutils literal notranslate"><span class="pre">ExecScopeStmt</span></code> for <code class="docutils literal notranslate"><span class="pre">Tx.kernel()</span></code>, and inside that an
@@ -519,13 +519,13 @@ shows this directly in <em>Inspecting the generated IR</em>.</p>
 </section>
 </section>
 <section id="buffers-and-scopes">
-<h2><span class="section-number">7.6.5. </span>Buffers and Scopes<a class="headerlink" href="#buffers-and-scopes" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.5. </span>Buffers and Scopes<a class="headerlink" href="#buffers-and-scopes" title="Permalink to this heading">¶</a></h2>
 <p>A <strong>buffer</strong> is a named tile of memory with a dtype, a shape, and a
 scope. TIRX uses buffers for every data tile the kernel touches: input
 arguments, SMEM tiles, TMEM allocations, per-thread register spills, TMA
 descriptors.</p>
 <section id="declaring-buffers">
-<h3><span class="section-number">7.6.5.1. </span>Declaring buffers<a class="headerlink" href="#declaring-buffers" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.5.1. </span>Declaring buffers<a class="headerlink" href="#declaring-buffers" title="Permalink to this heading">¶</a></h3>
 <p>There are four ways to introduce a buffer, ordered from
 “hardware-agnostic” to “deeply hardware-specific”:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Function argument, shape known at compile time.</span>
@@ -557,13 +557,12 @@ descriptors.</p>
 <code class="docutils literal notranslate"><span class="pre">&quot;local&quot;</span></code> (per-thread registers), <code class="docutils literal notranslate"><span class="pre">&quot;tmem&quot;</span></code> (Blackwell tensor
 memory). Other scopes exist for earlier architectures but are not used
 here.</p></li>
-<li><p><strong>Layout.</strong> Optional <code class="docutils literal notranslate"><span class="pre">layout=</span></code> argument (see
-<a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a>). Required for swizzled SMEM and 2D TMEM;
-defaults to row-major when omitted.</p></li>
+<li><p><strong>Layout.</strong> Optional <code class="docutils literal notranslate"><span class="pre">layout=</span></code> argument. Required for swizzled SMEM
+and 2D TMEM; defaults to row-major when omitted.</p></li>
 </ul>
 </section>
 <section id="small-scalar-helpers">
-<h3><span class="section-number">7.6.5.2. </span>Small scalar helpers<a class="headerlink" href="#small-scalar-helpers" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.5.2. </span>Small scalar helpers<a class="headerlink" href="#small-scalar-helpers" title="Permalink to this heading">¶</a></h3>
 <p>Two helpers come up often enough to deserve a name:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Tx.shared_scalar(dtype)</span></code> — allocate a single SMEM cell, used for
@@ -580,10 +579,10 @@ address of an SMEM tile.</p></li>
 </ul>
 </section>
 <section id="scopes-in-a-nutshell">
-<h3><span class="section-number">7.6.5.3. </span>Scopes in a nutshell<a class="headerlink" href="#scopes-in-a-nutshell" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.5.3. </span>Scopes in a nutshell<a class="headerlink" href="#scopes-in-a-nutshell" title="Permalink to this heading">¶</a></h3>
 <p>A scope statement is what gives TIRX its characteristic <code class="docutils literal notranslate"><span class="pre">with</span></code> blocks.
-<a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a> gives the full programming-model story; the
-minimum language-level form is:</p>
+The Tile Primitive Mental Model gives the full programming-model story;
+the minimum language-level form is:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>              <span class="c1"># grid-level setup (no team kind yet)</span>
     <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta</span><span class="p">():</span>             <span class="c1"># all threads of this CTA cooperate</span>
         <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>   <span class="c1"># 128-thread team (TMEM reads live here)</span>
@@ -593,10 +592,10 @@ minimum language-level form is:</p>
 </pre></div>
 </div>
 <p>The exact number of threads in a CTA is set at launch via
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([N])</span></code>; these kernels use <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">128</span></code> (one warpgroup) or
-<code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">256</span></code> (two warpgroups).</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([N],</span> <span class="pre">parent=&quot;cta&quot;)</span></code>; these kernels use <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">128</span></code> (one
+warpgroup) or <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">256</span></code> (two warpgroups).</p>
 <p>A predicate passed inside <code class="docutils literal notranslate"><span class="pre">()</span></code> narrows the active thread set,
-e.g. <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warp(Tx.filter(warp_id,</span> <span class="pre">0,</span> <span class="pre">1)):</span></code> selects warp 0 of the
+e.g. <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warp(parent=&quot;cta&quot;)[warp_id</span> <span class="pre">==</span> <span class="pre">0]:</span></code> selects warp 0 of the
 enclosing CTA. The full grammar for the symbolic coordinates is:</p>
 <table class="docutils align-default">
 <thead>
@@ -610,47 +609,49 @@ enclosing CTA. The full grammar for the symbolic coordinates is:</p>
 <td><p>kernel → cluster</p></td>
 <td><p>cluster grid dims</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([...])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([...],</span> <span class="pre">parent=&quot;kernel&quot;)</span></code></p></td>
 <td><p>kernel → cta</p></td>
 <td><p>CTA grid dims</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id_in_cluster([...])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([...],</span> <span class="pre">parent=&quot;cluster&quot;)</span></code></p></td>
 <td><p>cluster → cta</p></td>
 <td><p>CTAs per cluster</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([Nw])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([Nw],</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>cta → warpgroup</p></td>
 <td><p>1 or 2</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([Nw])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([Nw],</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>cta → warp</p></td>
 <td><p>total warps in CTA</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([4],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code></p></td>
 <td><p>warpgroup → warp</p></td>
-<td><p>always 4</p></td>
+<td><p>4 in these kernels</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt],</span> <span class="pre">parent=&quot;cta&quot;)</span></code></p></td>
 <td><p>cta → thread</p></td>
 <td><p>CTA size</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id_in_wg([128])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([128],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code></p></td>
 <td><p>warpgroup → thread</p></td>
 <td><p>128</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.lane_id([32])</span></code></p></td>
-<td><p>warp → thread (laneid)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([32],</span> <span class="pre">parent=&quot;warp&quot;)</span></code></p></td>
+<td><p>warp → thread
+(laneid)</p></td>
 <td><p>32</p></td>
 </tr>
 </tbody>
 </table>
 <p>There is no <code class="docutils literal notranslate"><span class="pre">parent=...</span></code> keyword — the parent level is encoded in the
 function name (<code class="docutils literal notranslate"><span class="pre">*_in_cluster</span></code>, <code class="docutils literal notranslate"><span class="pre">*_in_wg</span></code>, <code class="docutils literal notranslate"><span class="pre">lane_id</span></code>). Raw PTX code
-can also use <code class="docutils literal notranslate"><span class="pre">tx</span> <span class="pre">=</span> <span class="pre">Tx.thread_id([128])</span></code> to obtain a single-int
-CTA-wide thread index, then guard per-thread work with <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">tx</span> <span class="pre">==</span> <span class="pre">0:</span></code>.</p>
+can also use <code class="docutils literal notranslate"><span class="pre">tx</span> <span class="pre">=</span> <span class="pre">Tx.thread_id([128],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> to obtain a
+single-int CTA-wide thread index, then guard per-thread work with
+<code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">tx</span> <span class="pre">==</span> <span class="pre">0:</span></code>.</p>
 </section>
 <section id="adding-smempool-and-tmempool-on-top">
-<h3><span class="section-number">7.6.5.4. </span>Adding <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code> and <code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code> on top<a class="headerlink" href="#adding-smempool-and-tmempool-on-top" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.5.4. </span>Adding <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code> and <code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code> on top<a class="headerlink" href="#adding-smempool-and-tmempool-on-top" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">Tx.alloc_buffer(scope=&quot;shared&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.shared_scalar</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">Tx.decl_buffer(scope=&quot;tmem&quot;)</span></code> are part of the language layer. Two
 small Python helpers generate the same statements while laying out
@@ -686,19 +687,18 @@ single <code class="docutils literal notranslate"><span class="pre">tcgen05.allo
 <p>Both are pure syntactic sugar — <em>they expand at parse time to the same
 ``Tx.alloc_buffer`` / ``Tx.decl_buffer`` / ``Tx.shared_scalar`` calls
 you would write by hand</em>. They are not part of the IR; if you print
-<code class="docutils literal notranslate"><span class="pre">kernel.script()</span></code>, you will see the desugared form.
-<a class="reference internal" href="../chapter_api_reference/index.html#chap-api-reference"><span class="std std-numref">Section 7.5</span></a> covers the full API under <em>Syntactic
-Sugar</em>.</p>
+<code class="docutils literal notranslate"><span class="pre">kernel.script()</span></code>, you will see the desugared form. The API Reference
+covers the full API under <em>Syntactic Sugar</em>.</p>
 </section>
 </section>
 <section id="calling-ptx-and-the-cuda-runtime">
-<span id="sec-calling-ptx"></span><h2><span class="section-number">7.6.6. </span>Calling PTX and the CUDA Runtime<a class="headerlink" href="#calling-ptx-and-the-cuda-runtime" title="Permalink to this heading">¶</a></h2>
+<span id="sec-calling-ptx"></span><h2><span class="section-number">8.1.6.6. </span>Calling PTX and the CUDA Runtime<a class="headerlink" href="#calling-ptx-and-the-cuda-runtime" title="Permalink to this heading">¶</a></h2>
 <p>TIRX can call raw PTX and CUDA runtime functions directly. These calls
 are the escape hatch below tile primitives: when a hardware operation
 has no higher-level primitive yet, a kernel can call it explicitly.
 Three namespaces cover the common cases.</p>
 <section id="tx-ptx-ptx-instructions">
-<h3><span class="section-number">7.6.6.1. </span><code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code> — PTX instructions<a class="headerlink" href="#tx-ptx-ptx-instructions" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.6.1. </span><code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code> — PTX instructions<a class="headerlink" href="#tx-ptx-ptx-instructions" title="Permalink to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">Tx.ptx</span></code> tree mirrors the PTX ISA hierarchy. Representative calls
 include:</p>
 <table class="docutils align-default">
@@ -759,7 +759,7 @@ cell, not the cell itself — hence the <code class="docutils literal notranslat
 around mbarrier handles and host-side TMA tensor maps.</p>
 </section>
 <section id="tx-cuda-cuda-runtime-primitives">
-<h3><span class="section-number">7.6.6.2. </span><code class="docutils literal notranslate"><span class="pre">Tx.cuda.*</span></code> — CUDA runtime primitives<a class="headerlink" href="#tx-cuda-cuda-runtime-primitives" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.6.2. </span><code class="docutils literal notranslate"><span class="pre">Tx.cuda.*</span></code> — CUDA runtime primitives<a class="headerlink" href="#tx-cuda-cuda-runtime-primitives" title="Permalink to this heading">¶</a></h3>
 <p>Thread-block-level CUDA operations — synchronisations, warpgroup syncs,
 cluster ops — live under <code class="docutils literal notranslate"><span class="pre">Tx.cuda.*</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>            <span class="c1"># __syncthreads()</span>
@@ -771,7 +771,7 @@ cluster ops — live under <code class="docutils literal notranslate"><span clas
 a warpgroup-sized scope is rejected at compile time.</p>
 </section>
 <section id="tx-call-packed-host-side-function-calls">
-<h3><span class="section-number">7.6.6.3. </span><code class="docutils literal notranslate"><span class="pre">Tx.call_packed</span></code> — host-side function calls<a class="headerlink" href="#tx-call-packed-host-side-function-calls" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.6.3. </span><code class="docutils literal notranslate"><span class="pre">Tx.call_packed</span></code> — host-side function calls<a class="headerlink" href="#tx-call-packed-host-side-function-calls" title="Permalink to this heading">¶</a></h3>
 <p>Some things cannot be done from the device — TMA descriptor construction
 is the canonical example. <code class="docutils literal notranslate"><span class="pre">Tx.call_packed</span></code> lets the generated
 host-side code call a named runtime function before launching the
@@ -796,18 +796,18 @@ to extend the host-side prologue further; none of these kernels do.</p>
 </section>
 </section>
 <section id="the-compile-pipeline">
-<span id="sec-compile-pipeline"></span><h2><span class="section-number">7.6.7. </span>The Compile Pipeline<a class="headerlink" href="#the-compile-pipeline" title="Permalink to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> registers a Python-level IR function. To actually
-produce a runnable GPU binary you pass it to <code class="docutils literal notranslate"><span class="pre">tvm.compile</span></code> with the
-TIRX pipeline selected:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>           <span class="c1"># defaults to sm_100a on Blackwell</span>
+<span id="sec-compile-pipeline"></span><h2><span class="section-number">8.1.6.7. </span>The Compile Pipeline<a class="headerlink" href="#the-compile-pipeline" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code> registers a Python-level IR function. To
+actually produce a runnable GPU binary you pass it to <code class="docutils literal notranslate"><span class="pre">tvm.compile</span></code>
+with the TIRX pipeline selected:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>           <span class="c1"># selects the CUDA target used by this Blackwell setup</span>
 <span class="n">mod</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">double_it</span><span class="p">})</span>
 <span class="k">with</span> <span class="n">target</span><span class="p">:</span>
     <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="passes">
-<h3><span class="section-number">7.6.7.1. </span>Passes<a class="headerlink" href="#passes" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.7.1. </span>Passes<a class="headerlink" href="#passes" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">tir_pipeline=&quot;tirx&quot;</span></code> runs a fixed pass sequence on the IR module
 (full source:
 <code class="docutils literal notranslate"><span class="pre">python/tvm/tirx/compilation_pipeline.py:tirx_pipeline</span></code>). The main
@@ -868,20 +868,20 @@ that contain no TIRX-specific nodes (no <code class="docutils literal notranslat
 primitives, no named axes).</p>
 </section>
 <section id="inspecting-the-generated-ir">
-<h3><span class="section-number">7.6.7.2. </span>Inspecting the generated IR<a class="headerlink" href="#inspecting-the-generated-ir" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.7.2. </span>Inspecting the generated IR<a class="headerlink" href="#inspecting-the-generated-ir" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">prim_func.script()</span></code> and <code class="docutils literal notranslate"><span class="pre">IRModule.script()</span></code> print the TIR back as
 TVMScript. For <code class="docutils literal notranslate"><span class="pre">double_it</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">double_it</span><span class="o">.</span><span class="n">script</span><span class="p">())</span>
 </pre></div>
 </div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">double_it</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>
     <span class="n">A</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
     <span class="n">B</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
     <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
-        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">255</span><span class="p">)</span> <span class="o">//</span> <span class="mi">256</span><span class="p">])</span>
-        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">256</span><span class="p">])</span>
+        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">255</span><span class="p">)</span> <span class="o">//</span> <span class="mi">256</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">256</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
             <span class="n">i</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="mi">256</span> <span class="o">+</span> <span class="n">tid</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
@@ -893,7 +893,7 @@ wrote. Meta-programming surprises (a <code class="docutils literal notranslate">
 <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> that did not inline) are most visible here.</p>
 </section>
 <section id="inspecting-the-generated-cuda">
-<h3><span class="section-number">7.6.7.3. </span>Inspecting the generated CUDA<a class="headerlink" href="#inspecting-the-generated-cuda" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.7.3. </span>Inspecting the generated CUDA<a class="headerlink" href="#inspecting-the-generated-cuda" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">lib.mod.imports[0].inspect_source()</span></code> returns the generated CUDA
 source as a Python string (preceded by a long boilerplate prelude of
 <code class="docutils literal notranslate"><span class="pre">#include</span></code>s, <code class="docutils literal notranslate"><span class="pre">__shfl_sync</span></code> shims, and Windows / NVRTC
@@ -915,12 +915,13 @@ is short enough to quote in full:</p>
 </pre></div>
 </div>
 <p>A clean line-by-line correspondence with the TIR:
-<code class="docutils literal notranslate"><span class="pre">bx</span> <span class="pre">=</span> <span class="pre">Tx.cta_id([(n</span> <span class="pre">+</span> <span class="pre">255)</span> <span class="pre">//</span> <span class="pre">256])</span></code> → <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">bx</span> <span class="pre">=</span> <span class="pre">blockIdx.x</span></code> (the
-<code class="docutils literal notranslate"><span class="pre">ceildiv(n,</span> <span class="pre">256)</span></code> extent is consumed at launch time by the host stub,
-not in the kernel body), <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">=</span> <span class="pre">Tx.thread_id([256])</span></code> →
-<code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">tid</span> <span class="pre">=</span> <span class="pre">threadIdx.x</span></code>, <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">i</span> <span class="pre">&lt;</span> <span class="pre">n:</span></code> → <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">(i_ptr[0]</span> <span class="pre">&lt;</span> <span class="pre">n)</span></code>,
-<code class="docutils literal notranslate"><span class="pre">B[i]</span> <span class="pre">=</span> <span class="pre">A[i]</span> <span class="pre">*</span> <span class="pre">2.0</span></code> → the <code class="docutils literal notranslate"><span class="pre">BufferStore</span></code> at the bottom. Three minor
-codegen artefacts to be aware of:</p>
+<code class="docutils literal notranslate"><span class="pre">bx</span> <span class="pre">=</span> <span class="pre">Tx.cta_id([(n</span> <span class="pre">+</span> <span class="pre">255)</span> <span class="pre">//</span> <span class="pre">256],</span> <span class="pre">parent=&quot;kernel&quot;)</span></code> →
+<code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">bx</span> <span class="pre">=</span> <span class="pre">blockIdx.x</span></code> (the <code class="docutils literal notranslate"><span class="pre">ceildiv(n,</span> <span class="pre">256)</span></code> extent is consumed at
+launch time by the host stub, not in the kernel body),
+<code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">=</span> <span class="pre">Tx.thread_id([256],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> → <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">tid</span> <span class="pre">=</span> <span class="pre">threadIdx.x</span></code>,
+<code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">i</span> <span class="pre">&lt;</span> <span class="pre">n:</span></code> → <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">(i_ptr[0]</span> <span class="pre">&lt;</span> <span class="pre">n)</span></code>, <code class="docutils literal notranslate"><span class="pre">B[i]</span> <span class="pre">=</span> <span class="pre">A[i]</span> <span class="pre">*</span> <span class="pre">2.0</span></code> → the
+<code class="docutils literal notranslate"><span class="pre">BufferStore</span></code> at the bottom. Three minor codegen artefacts to be aware
+of:</p>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">warp_id_in_cta</span></code> warp-broadcast helper is emitted by
 <code class="docutils literal notranslate"><span class="pre">LowerWarpMemory</span></code> even when the kernel never reads it; treat it as
@@ -941,14 +942,14 @@ intrinsic was lowered the way you expected.</p>
 </section>
 </section>
 <section id="metaprogramming">
-<h2><span class="section-number">7.6.8. </span>Metaprogramming<a class="headerlink" href="#metaprogramming" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.8. </span>Metaprogramming<a class="headerlink" href="#metaprogramming" title="Permalink to this heading">¶</a></h2>
 <p>TIR is not a particularly expressive language on its own — no
 first-class functions, no closures, no compile-time values other than
 literals. TIRX adds three small metaprogramming constructs that run <em>in
 the parser</em> rather than at run time. They do not extend what a kernel
 can express; they extend how concisely you can <em>write</em> it.</p>
 <section id="tx-meta-var-parser-time-aliases">
-<h3><span class="section-number">7.6.8.1. </span><code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> — parser-time aliases<a class="headerlink" href="#tx-meta-var-parser-time-aliases" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.8.1. </span><code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> — parser-time aliases<a class="headerlink" href="#tx-meta-var-parser-time-aliases" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">Tx.meta_var(expr)</span></code> tells the parser to reuse <code class="docutils literal notranslate"><span class="pre">expr</span></code> as an inline
 symbolic expression instead of materializing a separate TIR variable.
 The expression can include runtime symbolic coordinates such as CTA ids
@@ -964,19 +965,19 @@ from the IR and the expression is reused directly in the addressing of
 the <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> call.</p>
 </section>
 <section id="tx-inline-parameterised-helpers">
-<h3><span class="section-number">7.6.8.2. </span><code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> — parameterised helpers<a class="headerlink" href="#tx-inline-parameterised-helpers" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.8.2. </span><code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> — parameterised helpers<a class="headerlink" href="#tx-inline-parameterised-helpers" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> marks a Python function that should be inlined at each
-call site inside a <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code>. The difference from writing a
-plain Python helper is that <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> understands TIR variables: it
-can take a <code class="docutils literal notranslate"><span class="pre">Tx.Buffer</span></code> argument, a <code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> argument, or
-another <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> callback, and still produce valid TIR after
-substitution.</p>
+call site inside a <code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code>. The difference from
+writing a plain Python helper is that <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> understands TIR
+variables: it can take a <code class="docutils literal notranslate"><span class="pre">Tx.Buffer</span></code> argument, a <code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code>
+argument, or another <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> callback, and still produce valid
+TIR after substitution.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">add_bias</span><span class="p">(</span><span class="n">out</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">,</span> <span class="n">bias</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">Tx</span><span class="o">.</span><span class="n">unroll</span><span class="p">(</span><span class="mi">128</span><span class="p">):</span>
         <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">+</span> <span class="n">bias</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
 
-<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
     <span class="o">...</span>
     <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>
@@ -989,7 +990,7 @@ epilogues of Part III — many of them are single <code class="docutils literal 
 declarations called from a small scheduler.</p>
 </section>
 <section id="tx-meta-class-scheduler-objects">
-<h3><span class="section-number">7.6.8.3. </span><code class="docutils literal notranslate"><span class="pre">&#64;Tx.meta_class</span></code> — scheduler objects<a class="headerlink" href="#tx-meta-class-scheduler-objects" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.8.3. </span><code class="docutils literal notranslate"><span class="pre">&#64;Tx.meta_class</span></code> — scheduler objects<a class="headerlink" href="#tx-meta-class-scheduler-objects" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.meta_class</span></code> marks a Python class whose <em>instances</em> are parser
 meta values. The common use is a tile scheduler that holds
 persistent-kernel state:</p>
@@ -1010,32 +1011,30 @@ read by <code class="docutils literal notranslate"><span class="pre">Tx.meta_var
 loop — all without emitting extra TIR nodes. See the
 <code class="docutils literal notranslate"><span class="pre">ClusterPersistentScheduler2D</span></code> class in
 <code class="docutils literal notranslate"><span class="pre">tirx-kernels-wt/tirx_kernels/gemm/hgemm_1consumer.py</span></code> for a real
-example that drives the Step 8 and Step 9 kernels of
-<a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-numref">Section 5</span></a>.</p>
+example that drives the Step 8 and Step 9 kernels.</p>
 </section>
 <section id="meta-in-the-pipeline">
-<h3><span class="section-number">7.6.8.4. </span>Meta in the Pipeline<a class="headerlink" href="#meta-in-the-pipeline" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.1.6.8.4. </span>Meta in the Pipeline<a class="headerlink" href="#meta-in-the-pipeline" title="Permalink to this heading">¶</a></h3>
 <p>All three constructs are <em>parser-time</em>: they affect the TIR that enters
-<code class="docutils literal notranslate"><span class="pre">tvm.compile</span></code>, nothing else. The compile pipeline in
-<a class="reference internal" href="#sec-compile-pipeline"><span class="std std-numref">Section 7.6.7</span></a> sees a fully-lowered TIR module with no
-<code class="docutils literal notranslate"><span class="pre">meta_var</span></code> / <code class="docutils literal notranslate"><span class="pre">inline</span></code> / <code class="docutils literal notranslate"><span class="pre">meta_class</span></code> constructs left. If the
-generated IR or CUDA looks wrong, print the expanded TIR before
-compilation with <code class="docutils literal notranslate"><span class="pre">tvm.IRModule({&quot;main&quot;:</span> <span class="pre">kernel}).script()</span></code> — you will
-see exactly what the meta layer produced.</p>
+<code class="docutils literal notranslate"><span class="pre">tvm.compile</span></code>, nothing else. The compile pipeline sees a fully-lowered
+TIR module with no <code class="docutils literal notranslate"><span class="pre">meta_var</span></code> / <code class="docutils literal notranslate"><span class="pre">inline</span></code> / <code class="docutils literal notranslate"><span class="pre">meta_class</span></code> constructs
+left. If the generated IR or CUDA looks wrong, print the expanded TIR
+before compilation with <code class="docutils literal notranslate"><span class="pre">tvm.IRModule({&quot;main&quot;:</span> <span class="pre">kernel}).script()</span></code> —
+you will see exactly what the meta layer produced.</p>
 </section>
 </section>
 <section id="related-references">
-<h2><span class="section-number">7.6.9. </span>Related References<a class="headerlink" href="#related-references" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.6.9. </span>Related References<a class="headerlink" href="#related-references" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Full op catalog, barrier helpers, and PTX intrinsic reference:
-<a class="reference internal" href="../chapter_api_reference/index.html#chap-api-reference"><span class="std std-numref">Section 7.5</span></a>.</p></li>
-<li><p>Tile primitives (<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code>) and layouts:
-<a class="reference internal" href="../chapter_layouts/index.html#chap-layouts"><span class="std std-numref">Section 2</span></a>.</p></li>
+<li><p>Full op catalog, barrier helpers, and PTX intrinsic reference: API
+Reference.</p></li>
+<li><p>Tile primitives (<code class="docutils literal notranslate"><span class="pre">Tx.copy</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code>) and layouts: Tile
+Primitive Mental Model.</p></li>
 <li><p>A fully worked raw-PTX kernel, ready to modify:
-<code class="docutils literal notranslate"><span class="pre">tirx_tutorial/no_sugar_gemm.py</span></code>; motivation for avoiding this
-plumbing: <a class="reference internal" href="../chapter_layouts/index.html#sec-no-sugar-gemm"><span class="std std-numref">Section 2.1</span></a>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">tirx_tutorial/no_sugar_gemm.py</span></code>; the tile-primitive motivation
+explains why the tutorial avoids this plumbing.</p></li>
 <li><p>Memory-hierarchy numbers (SMEM / TMEM / RF capacities, bandwidths):
-<a class="reference internal" href="../chapter_background/index.html#chap-background"><span class="std std-numref">Section 1</span></a>.</p></li>
+Blackwell Background.</p></li>
 </ul>
 </section>
 </section>
@@ -1049,45 +1048,45 @@ plumbing: <a class="reference internal" href="../chapter_layouts/index.html#sec-
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">7.6. TIRX Language Reference</a><ul>
-<li><a class="reference internal" href="#tirx-in-one-picture">7.6.1. TIRX in One Picture</a></li>
-<li><a class="reference internal" href="#import-convention">7.6.2. Import Convention</a></li>
-<li><a class="reference internal" href="#minimal-kernel-example">7.6.3. Minimal Kernel Example</a></li>
-<li><a class="reference internal" href="#types-and-expressions">7.6.4. Types and Expressions</a><ul>
-<li><a class="reference internal" href="#scalar-types">7.6.4.1. Scalar types</a></li>
-<li><a class="reference internal" href="#ir-vocabulary">7.6.4.2. IR Vocabulary</a></li>
-<li><a class="reference internal" href="#expressions-and-operators">7.6.4.3. Expressions and operators</a></li>
-<li><a class="reference internal" href="#control-flow-for-if-and-call">7.6.4.4. Control flow: <code class="docutils literal notranslate"><span class="pre">for</span></code>, <code class="docutils literal notranslate"><span class="pre">if</span></code>, and <code class="docutils literal notranslate"><span class="pre">call</span></code></a></li>
-<li><a class="reference internal" href="#reading-double-it-as-tir">7.6.4.5. Reading <code class="docutils literal notranslate"><span class="pre">double_it</span></code> as TIR</a></li>
+<li><a class="reference internal" href="#">8.1.6. TIRX Language and Compile Pipeline</a><ul>
+<li><a class="reference internal" href="#tirx-in-one-picture">8.1.6.1. TIRX in One Picture</a></li>
+<li><a class="reference internal" href="#import-convention">8.1.6.2. Import Convention</a></li>
+<li><a class="reference internal" href="#minimal-kernel-example">8.1.6.3. Minimal Kernel Example</a></li>
+<li><a class="reference internal" href="#types-and-expressions">8.1.6.4. Types and Expressions</a><ul>
+<li><a class="reference internal" href="#scalar-types">8.1.6.4.1. Scalar types</a></li>
+<li><a class="reference internal" href="#ir-vocabulary">8.1.6.4.2. IR Vocabulary</a></li>
+<li><a class="reference internal" href="#expressions-and-operators">8.1.6.4.3. Expressions and operators</a></li>
+<li><a class="reference internal" href="#control-flow-for-if-and-call">8.1.6.4.4. Control flow: <code class="docutils literal notranslate"><span class="pre">for</span></code>, <code class="docutils literal notranslate"><span class="pre">if</span></code>, and <code class="docutils literal notranslate"><span class="pre">call</span></code></a></li>
+<li><a class="reference internal" href="#reading-double-it-as-tir">8.1.6.4.5. Reading <code class="docutils literal notranslate"><span class="pre">double_it</span></code> as TIR</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#buffers-and-scopes">7.6.5. Buffers and Scopes</a><ul>
-<li><a class="reference internal" href="#declaring-buffers">7.6.5.1. Declaring buffers</a></li>
-<li><a class="reference internal" href="#small-scalar-helpers">7.6.5.2. Small scalar helpers</a></li>
-<li><a class="reference internal" href="#scopes-in-a-nutshell">7.6.5.3. Scopes in a nutshell</a></li>
-<li><a class="reference internal" href="#adding-smempool-and-tmempool-on-top">7.6.5.4. Adding <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code> and <code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code> on top</a></li>
+<li><a class="reference internal" href="#buffers-and-scopes">8.1.6.5. Buffers and Scopes</a><ul>
+<li><a class="reference internal" href="#declaring-buffers">8.1.6.5.1. Declaring buffers</a></li>
+<li><a class="reference internal" href="#small-scalar-helpers">8.1.6.5.2. Small scalar helpers</a></li>
+<li><a class="reference internal" href="#scopes-in-a-nutshell">8.1.6.5.3. Scopes in a nutshell</a></li>
+<li><a class="reference internal" href="#adding-smempool-and-tmempool-on-top">8.1.6.5.4. Adding <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code> and <code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code> on top</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#calling-ptx-and-the-cuda-runtime">7.6.6. Calling PTX and the CUDA Runtime</a><ul>
-<li><a class="reference internal" href="#tx-ptx-ptx-instructions">7.6.6.1. <code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code> — PTX instructions</a></li>
-<li><a class="reference internal" href="#tx-cuda-cuda-runtime-primitives">7.6.6.2. <code class="docutils literal notranslate"><span class="pre">Tx.cuda.*</span></code> — CUDA runtime primitives</a></li>
-<li><a class="reference internal" href="#tx-call-packed-host-side-function-calls">7.6.6.3. <code class="docutils literal notranslate"><span class="pre">Tx.call_packed</span></code> — host-side function calls</a></li>
+<li><a class="reference internal" href="#calling-ptx-and-the-cuda-runtime">8.1.6.6. Calling PTX and the CUDA Runtime</a><ul>
+<li><a class="reference internal" href="#tx-ptx-ptx-instructions">8.1.6.6.1. <code class="docutils literal notranslate"><span class="pre">Tx.ptx.*</span></code> — PTX instructions</a></li>
+<li><a class="reference internal" href="#tx-cuda-cuda-runtime-primitives">8.1.6.6.2. <code class="docutils literal notranslate"><span class="pre">Tx.cuda.*</span></code> — CUDA runtime primitives</a></li>
+<li><a class="reference internal" href="#tx-call-packed-host-side-function-calls">8.1.6.6.3. <code class="docutils literal notranslate"><span class="pre">Tx.call_packed</span></code> — host-side function calls</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-compile-pipeline">7.6.7. The Compile Pipeline</a><ul>
-<li><a class="reference internal" href="#passes">7.6.7.1. Passes</a></li>
-<li><a class="reference internal" href="#inspecting-the-generated-ir">7.6.7.2. Inspecting the generated IR</a></li>
-<li><a class="reference internal" href="#inspecting-the-generated-cuda">7.6.7.3. Inspecting the generated CUDA</a></li>
+<li><a class="reference internal" href="#the-compile-pipeline">8.1.6.7. The Compile Pipeline</a><ul>
+<li><a class="reference internal" href="#passes">8.1.6.7.1. Passes</a></li>
+<li><a class="reference internal" href="#inspecting-the-generated-ir">8.1.6.7.2. Inspecting the generated IR</a></li>
+<li><a class="reference internal" href="#inspecting-the-generated-cuda">8.1.6.7.3. Inspecting the generated CUDA</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#metaprogramming">7.6.8. Metaprogramming</a><ul>
-<li><a class="reference internal" href="#tx-meta-var-parser-time-aliases">7.6.8.1. <code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> — parser-time aliases</a></li>
-<li><a class="reference internal" href="#tx-inline-parameterised-helpers">7.6.8.2. <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> — parameterised helpers</a></li>
-<li><a class="reference internal" href="#tx-meta-class-scheduler-objects">7.6.8.3. <code class="docutils literal notranslate"><span class="pre">&#64;Tx.meta_class</span></code> — scheduler objects</a></li>
-<li><a class="reference internal" href="#meta-in-the-pipeline">7.6.8.4. Meta in the Pipeline</a></li>
+<li><a class="reference internal" href="#metaprogramming">8.1.6.8. Metaprogramming</a><ul>
+<li><a class="reference internal" href="#tx-meta-var-parser-time-aliases">8.1.6.8.1. <code class="docutils literal notranslate"><span class="pre">Tx.meta_var</span></code> — parser-time aliases</a></li>
+<li><a class="reference internal" href="#tx-inline-parameterised-helpers">8.1.6.8.2. <code class="docutils literal notranslate"><span class="pre">&#64;Tx.inline</span></code> — parameterised helpers</a></li>
+<li><a class="reference internal" href="#tx-meta-class-scheduler-objects">8.1.6.8.3. <code class="docutils literal notranslate"><span class="pre">&#64;Tx.meta_class</span></code> — scheduler objects</a></li>
+<li><a class="reference internal" href="#meta-in-the-pipeline">8.1.6.8.4. Meta in the Pipeline</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#related-references">7.6.9. Related References</a></li>
+<li><a class="reference internal" href="#related-references">8.1.6.9. Related References</a></li>
 </ul>
 </li>
 </ul>
@@ -1102,7 +1101,7 @@ plumbing: <a class="reference internal" href="../chapter_layouts/index.html#sec-
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>7.5. TIRX API Quick Reference</div>
+            <div>8.1.5. TIRX API Lookup</div>
          </div>
      </a>
   </div>

@@ -279,14 +279,14 @@ explicitly, and work hard to keep Tensor Cores fed.
 |                       |                       | on SKU, clock, and    |
 |                       |                       | sparsity mode         |
 +-----------------------+-----------------------+-----------------------+
-| HBM3e bandwidth       | ~8 TB/s               | bandwidth roof        |
+| HBM3e bandwidth       | order of 8 TB/s       | bandwidth roof        |
 +-----------------------+-----------------------+-----------------------+
 | L2 cache              | device-specific; 126  | where tile operands   |
-|                       | MB on GB200           | actually live after   |
-|                       |                       | warm-up               |
+|                       | MB-class on GB200     | actually live after   |
+|                       | systems               | warm-up               |
 +-----------------------+-----------------------+-----------------------+
-| One fp16 128×64 tile  | 16 KB                 | TMA transfer          |
-| in SMEM               |                       | granularity           |
+| One fp16 128×64 tile  | 16 KB                 | example staged        |
+| in SMEM               |                       | operand-tile size     |
 +-----------------------+-----------------------+-----------------------+
 
 NVIDIA often reports multiple peak numbers depending on dtype, sparsity

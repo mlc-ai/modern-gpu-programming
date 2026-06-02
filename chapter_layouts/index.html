@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="3. GEMM with Tile Primitives" href="../chapter_gemm_basics/index.html" />
+    <link rel="next" title="3. Building a Tiled GEMM" href="../chapter_gemm_basics/index.html" />
     <link rel="prev" title="1. Blackwell Background" href="../chapter_background/index.html" /> 
   </head>
 <body>
@@ -96,17 +96,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -138,17 +139,18 @@ Show Source
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. GEMM with Tile Primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Asynchronous GEMM Pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Warp-Specialized and Clustered GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention on Blackwell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">7. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">7.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">7.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">7.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_ai_assisted/index.html">7.4. LLM-Assisted Kernel Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">7.5. TIRX API Quick Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">7.6. TIRX Language Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
 </ul>
 </li>
 </ul>
@@ -164,35 +166,31 @@ Show Source
         
   <section id="tile-primitive-mental-model">
 <span id="chap-layouts"></span><h1><span class="section-number">2. </span>Tile Primitive Mental Model<a class="headerlink" href="#tile-primitive-mental-model" title="Permalink to this heading">¶</a></h1>
-<p>The background chapter introduced the Blackwell pieces: thread groups,
-memory spaces, TMA, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA, TMEM, mbarriers, and CTA clusters.
-This chapter shows how those pieces appear in TIRX code.</p>
+<p>TIRX code is built around tile primitives. Before looking at a full GEMM
+kernel, it helps to know what one primitive means.</p>
 <p>A <strong>tile primitive</strong> is one operation on a tile: copy this tile,
 multiply these tiles, read this accumulator tile, or store this output
 tile. It is smaller than a whole operator like GEMM, but larger than a
 scalar instruction.</p>
-<p>The important point is that a tile primitive is read with its local
-context. For example, <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...)</span></code> is not one fixed
-instruction. Depending on the source, destination, scope, and dispatch,
-it can mean a TMA load, a TMA store, or a <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> readback.</p>
-<p>When reading a TIRX tile primitive, check three things around the call:</p>
+<p>The function name is only part of the meaning. For example,
+<code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...)</span></code> is not one fixed instruction. Depending on the
+source, destination, scope, and dispatch, it can mean a TMA load, a TMA
+store, or a <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> readback.</p>
+<p>When reading a TIRX primitive, check the local contract around the call:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>scope    -&gt; which threads cooperate on the tile operation
 layout   -&gt; how the logical tile maps to memory axes or thread axes
 dispatch -&gt; which hardware path implements the operation
 </pre></div>
 </div>
-<p>For asynchronous primitives, synchronization is the handoff around the
-operation: a barrier, commit, wait, or fence tells the next operation
-when it is allowed to consume the result.</p>
-<p>The rest of the chapter walks through these pieces in the order you
-usually read a kernel: scope first, then layout, then dispatch.</p>
+<p>For asynchronous primitives, a barrier, commit, wait, or fence records
+the handoff to the next operation.</p>
 <section id="why-tile-primitives">
 <span id="sec-no-sugar-gemm"></span><h2><span class="section-number">2.1. </span>Why Tile Primitives?<a class="headerlink" href="#why-tile-primitives" title="Permalink to this heading">¶</a></h2>
 <p>Use one GEMM stage as the running example. A stage moves operand tiles
 into shared memory, runs Tensor Core MMA on those tiles, reads
 accumulator tiles back, and stores the result. Attention and convolution
-kernels have different math, but they use the same kind of tile-level
-structure.</p>
+kernels use different math, but they still rely on the same kind of
+tile-level structure.</p>
 <p>The math alone is not enough. For each tile operation, a Blackwell
 kernel also has to answer:</p>
 <ul class="simple">
@@ -204,56 +202,26 @@ kernel also has to answer:</p>
 <li><p>For an asynchronous operation, what tells the next step that the
 result is ready?</p></li>
 </ul>
-<p>Those questions are exactly what scope, layout, dispatch, and
-synchronization record in TIRX.</p>
-<p>If you write directly against raw PTX-level intrinsics, those facts are
-spread across descriptors, elected-thread guards, mbarrier phases, TMEM
-addresses, and wait calls. Everything is explicit, but the tile
-structure is hard to read.</p>
-<p>In a higher-level kernel DSL, the kernel may be shorter, but choices
-such as TMEM readback, TMA multicast, or 2-CTA cooperative MMA are often
+<p>Raw PTX-level code answers those questions with descriptor fields,
+elected-thread guards, mbarrier phases, TMEM addresses, and wait calls.
+Everything is explicit, but the tile operation is hard to see.</p>
+<p>A higher-level DSL may make the kernel shorter, but Blackwell choices
+such as TMEM readback, TMA multicast, or 2-CTA cooperative MMA may be
 hidden behind a scheduler, template, or library call.</p>
-<p>TIRX sits between those two styles. The hardware choices stay visible,
-but they sit next to the tile operation instead of being scattered
-through descriptor plumbing:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Raw concern</p></th>
-<th class="head"><p>Where it appears in TIRX</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>TMA descriptor fields</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...,</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code>
-plus source and destination layouts</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> matrix descriptors</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">Tx.gemm_async(...,</span> <span class="pre">dispatch=&quot;tcgen05&quot;)</span></code>
-plus SMEM and TMEM layouts</p></td>
-</tr>
-<tr class="row-even"><td><p>Elected or cooperative thread
-group</p></td>
-<td><p>enclosing scope such as <code class="docutils literal notranslate"><span class="pre">Tx.cta()</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code>, or <code class="docutils literal notranslate"><span class="pre">Tx.thread(...)</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>TMEM-to-register readback</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(reg,</span> <span class="pre">tmem)</span></code> under
-warpgroup scope</p></td>
-</tr>
-<tr class="row-even"><td><p>Async completion bookkeeping</p></td>
-<td><p>barrier helpers, commits, waits, and
-fences around the primitive</p></td>
-</tr>
-</tbody>
-</table>
-<p>The point is not to hide the hardware. The point is to keep the tile
-structure readable while still exposing the Blackwell choices that
-matter.</p>
+<p>TIRX is meant to keep the tile operation readable without hiding the
+hardware contract. A TMA load is still a tile copy, but the code says
+<code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tma&quot;</span></code> and uses layouts that TMA can lower. A <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>
+MMA is still a tile GEMM, but the code exposes the SMEM operand layouts
+and the TMEM accumulator layout. A TMEM readback is still a tile copy,
+but the source is TMEM, the destination is a warpgroup register view,
+and the surrounding scope is <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code>.</p>
+<p>That is the reason for tile primitives: keep the kernel written in tile
+operations while still giving the compiler the scope, layout, dispatch,
+and synchronization facts it needs.</p>
 </section>
 <section id="execution-scope">
 <span id="sec-exec-scope"></span><h2><span class="section-number">2.2. </span>Execution Scope<a class="headerlink" href="#execution-scope" title="Permalink to this heading">¶</a></h2>
-<p>Start with the first question: who cooperates on the operation? In TIRX,
-the answer comes from the enclosing scope.</p>
+<p>Scope answers the first question: who cooperates on this operation?</p>
 <p>TIRX uses <code class="docutils literal notranslate"><span class="pre">with</span></code> blocks for the execution levels used by Blackwell
 kernels:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta</span><span class="p">():</span>
@@ -279,207 +247,137 @@ A kernel uses the scopes that match the operations it performs.
 only when CTA clusters are used.</p>
 <p>Some operations are issued by only part of a team. A TMA load, for
 example, may be issued by one selected thread:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id_in_wg</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>
-<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">128</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m</span><span class="p">:</span><span class="n">m</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For now, keep the simple rule: every tile primitive has a team, and
-sometimes only a selected member of that team issues the command on
-behalf of the team.</p>
+<p>Keep the simple rule: every tile primitive has a team, and sometimes one
+selected member issues the command on behalf of that team.</p>
 <section id="symbolic-coordinates">
 <h3><span class="section-number">2.2.1. </span>Symbolic Coordinates<a class="headerlink" href="#symbolic-coordinates" title="Permalink to this heading">¶</a></h3>
-<p>Scope tells you the team. Coordinates tell each member of that team
-where it is. A CTA needs to know which output tile it owns. A warpgroup
-needs to know which warpgroup it is. A thread needs its warp and lane id
-to decide which row or vector fragment it writes.</p>
-<p>TIRX exposes those positions with symbolic coordinate calls. The GEMM
-chapters mostly use these:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Coordinate</p></th>
-<th class="head"><p>Meaning</p></th>
-<th class="head"><p>Typical extent</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([Gx,</span> <span class="pre">Gy,</span> <span class="pre">...])</span></code></p></td>
-<td><p>CTA id in the kernel
-launch</p></td>
-<td><p>grid dims</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([Nw])</span></code></p></td>
-<td><p>warpgroup id inside a
-CTA</p></td>
-<td><p>1 or 2 in these GEMM
-kernels</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([Nw])</span></code></p></td>
-<td><p>warp id inside a CTA</p></td>
-<td><p>CTA warp count</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code></p></td>
-<td><p>warp id inside a
-warpgroup</p></td>
-<td><p>4</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt])</span></code></p></td>
-<td><p>thread id inside a
-CTA</p></td>
-<td><p>CTA thread count</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id_in_wg([128])</span></code></p></td>
-<td><p>thread id inside a
-warpgroup</p></td>
-<td><p>128</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.lane_id([32])</span></code></p></td>
-<td><p>lane id inside a warp</p></td>
-<td><p>32</p></td>
-</tr>
-</tbody>
-</table>
-<p>Cluster coordinates appear only in the clustered GEMM chapter:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Coordinate</p></th>
-<th class="head"><p>Meaning</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cluster_id([...])</span></code></p></td>
-<td><p>cluster id in the kernel launch</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id_in_cluster([Cx,</span> <span class="pre">Cy])</span></code></p></td>
-<td><p>CTA id inside a cluster</p></td>
-</tr>
-</tbody>
-</table>
-<p>These calls are more than renamed <code class="docutils literal notranslate"><span class="pre">threadIdx</span></code> reads. The extent
-argument, such as <code class="docutils literal notranslate"><span class="pre">[4]</span></code> in <code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code>, tells TIRX the
-size of that coordinate space. Later, layouts and tile primitives can be
-checked against those extents.</p>
+<p>Scope tells you the team. Coordinates tell the code where that team sits
+in the launch. A CTA needs to know which output tile it owns. A thread
+needs its warp and lane id to decide which row or vector fragment it
+writes.</p>
+<p>Many GEMM kernels start by naming the CTA, warpgroup, warp, and lane:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+<span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
+<span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read it from the outside in. <code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...,</span> <span class="pre">parent=&quot;kernel&quot;)</span></code> gives
+the CTA’s position in the launch grid, so the kernel can choose an
+output tile such as <code class="docutils literal notranslate"><span class="pre">D[bx</span> <span class="pre">*</span> <span class="pre">BLK_M,</span> <span class="pre">by</span> <span class="pre">*</span> <span class="pre">BLK_N]</span></code>.
+<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([1],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> declares the warpgroup coordinate
+for a single-warpgroup kernel; later kernels use more warpgroups when
+producer, consumer, and writeback roles are split.
+<code class="docutils literal notranslate"><span class="pre">Tx.warp_id([4],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([32],</span> <span class="pre">parent=&quot;warp&quot;)</span></code> identify a thread inside one
+warpgroup, which is enough to assign output rows during writeback.</p>
+<p>The number inside brackets is the extent of that coordinate space. For
+example, <code class="docutils literal notranslate"><span class="pre">[4]</span></code> in <code class="docutils literal notranslate"><span class="pre">Tx.warp_id([4],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code> says there
+are four warps in the warpgroup, and <code class="docutils literal notranslate"><span class="pre">[32]</span></code> in
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([32],</span> <span class="pre">parent=&quot;warp&quot;)</span></code> says each warp has 32 lanes. TIRX
+uses these extents when checking layouts and tile primitives. A
+warpgroup register layout that uses <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> has extent 128, so it
+matches a 128-row TMEM readback; a lane-only layout has extent 32, so it
+would describe a different mapping.</p>
+<p>Other coordinates appear when the kernel needs them.
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> names a thread inside a CTA.
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([128],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code> names a thread inside a
+warpgroup. Clustered kernels add <code class="docutils literal notranslate"><span class="pre">Tx.cluster_id(...)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...,</span> <span class="pre">parent=&quot;cluster&quot;)</span></code> to identify the cluster and the
+CTA’s position inside it.</p>
 </section>
 </section>
 <section id="tensor-layout">
 <h2><span class="section-number">2.3. </span>Tensor Layout<a class="headerlink" href="#tensor-layout" title="Permalink to this heading">¶</a></h2>
-<p>After scope, look at layout. Layout answers the next question: <strong>how
-does each element of a logical tile map to memory axes or thread axes?</strong></p>
-<p>On paper, a tile is indexed by logical coordinates such as <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code>.
-On the GPU, the same logical tile may live in different physical spaces:</p>
+<p>Layout answers the next question: when the code says “this tile”, where
+do the elements of that tile physically live?</p>
+<p>At the math level, a tile is indexed by logical coordinates such as
+<code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code> or <code class="docutils literal notranslate"><span class="pre">D[m,</span> <span class="pre">n]</span></code>. Hardware instructions do not operate on that
+notation directly. They need a physical view of the tile: bytes in
+shared memory, coordinates in TMEM, or values owned by particular
+threads.</p>
+<p>A layout is that physical view. It maps logical tile indices to memory
+axes or thread axes. This is why layout is not decoration: it decides
+whether a TMA copy can write the tile, whether <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> can read
+the operands correctly, and whether a TMEM readback gives each thread
+the row it is supposed to store.</p>
+<p>The GEMM kernels use layouts in three recurring places: SMEM operand
+tiles, the TMEM accumulator tile, and the register view used during
+writeback.</p>
+<p>First, the A and B operands live in SMEM before MMA:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">A_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">a_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
+<span class="n">B_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">b_type</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Read this as: store each SMEM operand tile in a swizzled form that the
+TMA path and <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> can both understand. The A tile has logical
+shape <code class="docutils literal notranslate"><span class="pre">(BLK_M,</span> <span class="pre">BLK_K)</span></code>, and the B tile has logical shape
+<code class="docutils literal notranslate"><span class="pre">(BLK_N,</span> <span class="pre">BLK_K)</span></code>. The physical shared-memory placement is chosen for
+hardware access rather than for a simple row-major picture.</p>
+<p>Second, the MMA accumulator lives in TMEM:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>Read the left side, <code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">N)</span></code>, as the logical tile shape. Read the
+right side as the physical mapping: the row index maps to <code class="docutils literal notranslate"><span class="pre">TLane</span></code>, and
+the column index maps to <code class="docutils literal notranslate"><span class="pre">TCol</span></code>. In other words, logical element
+<code class="docutils literal notranslate"><span class="pre">(r,</span> <span class="pre">c)</span></code> lives at TMEM coordinate <code class="docutils literal notranslate"><span class="pre">(TLane=r,</span> <span class="pre">TCol=c)</span></code>.</p>
+<p>Third, the epilogue reads the same logical accumulator tile into
+registers:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>This is not a single shared array. It is a distributed register view.
+Logical row <code class="docutils literal notranslate"><span class="pre">r</span></code> is owned by warpgroup thread <code class="docutils literal notranslate"><span class="pre">r</span></code>, and the columns
+for that row live in that thread’s private registers. For a <code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">N)</span></code>
+readback, the 128 rows match the 128 threads in a warpgroup.</p>
+<section id="named-axes">
+<h3><span class="section-number">2.3.1. </span>Named Axes<a class="headerlink" href="#named-axes" title="Permalink to this heading">¶</a></h3>
+<p>The names after <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> are hardware axes:</p>
 <ul class="simple">
-<li><p>In <strong>GMEM</strong>, it is a flat byte address in global memory.</p></li>
-<li><p>In <strong>SMEM</strong>, it is still a per-CTA byte address, but the address also
-determines shared-memory bank behavior.</p></li>
-<li><p>In <strong>TMEM</strong>, it is a two-dimensional tensor-memory coordinate, usually
-described with <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">TCol</span></code>.</p></li>
-<li><p>In <strong>RF</strong>, there is no single shared address. The tile is distributed
-across the private registers of many cooperating threads.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TLane</span></code> is the TMEM row axis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TCol</span></code> is the TMEM column axis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> is the thread index inside a warpgroup, from 0 to 127.</p></li>
 </ul>
-<p>A layout is the mapping from logical tile indices to memory coordinates
-or thread owners. This is why layout changes behavior. A bad layout can
-create shared-memory bank conflicts, make <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> read the wrong
-bytes, or make a TMEM-to-RF readback produce a transposed tile.</p>
-<p>The easiest example is the accumulator tile. After MMA, the result lives
-in TMEM. During the epilogue, the warpgroup reads that same logical tile
-into registers:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># TMEM accumulator: row r, column c lives at TMEM coordinate (TLane=r, TCol=c).</span>
-<span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
-
-<span class="c1"># RF readback view: logical row r is owned by warpgroup thread r.</span>
+<p>The notation <code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code> means that increasing the corresponding logical
+index by one advances by one step along the <code class="docutils literal notranslate"><span class="pre">TLane</span></code> axis. A bare <code class="docutils literal notranslate"><span class="pre">1</span></code>
+means the ordinary linear memory axis, written explicitly as <code class="docutils literal notranslate"><span class="pre">1&#64;m</span></code>.
+That is used for flat GMEM, flat SMEM, and simple local register
+buffers.</p>
+<p>So these two layouts describe the same logical tile shape but two
+different physical views:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>    <span class="c1"># TMEM view</span>
 <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@tid_in_wg</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
 </pre></div>
 </div>
-<p>Both layouts describe a logical <code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">N)</span></code> tile. The first says how
-the tile lives in TMEM. The second is a register view: it says how the
-same tile is split across the private registers of the 128 warpgroup
-threads.</p>
-<section id="named-axes">
-<h3><span class="section-number">2.3.1. </span>Named Axes<a class="headerlink" href="#named-axes" title="Permalink to this heading">¶</a></h3>
-<p>TIRX layout expressions use named hardware axes. The GEMM chapters
-mostly use:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Axis</p></th>
-<th class="head"><p>Meaning</p></th>
-<th class="head"><p>Used for</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m</span></code></p></td>
-<td><p>ordinary linear
-memory offset</p></td>
-<td><p>GMEM, SMEM, flat RF
-buffers</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TLane</span></code></p></td>
-<td><p>TMEM row coordinate,
-0..127</p></td>
-<td><p>TMEM accumulator rows</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCol</span></code></p></td>
-<td><p>TMEM column
-coordinate, 0..511</p></td>
-<td><p>TMEM accumulator
-columns</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code></p></td>
-<td><p>thread id inside a
-warpgroup, 0..127</p></td>
-<td><p>warpgroup-distributed
-RF tiles</p></td>
-</tr>
-</tbody>
-</table>
-<p>The notation <code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code> means: when the logical index increases by 1,
-advance by 1 along the <code class="docutils literal notranslate"><span class="pre">TLane</span></code> hardware axis. A bare stride such as
-<code class="docutils literal notranslate"><span class="pre">1</span></code> means <code class="docutils literal notranslate"><span class="pre">1&#64;m</span></code>, the ordinary linear memory axis.</p>
-<p>Other axes, such as <code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, and <code class="docutils literal notranslate"><span class="pre">cby</span></code>, appear
-when the code needs warp-level layouts or cluster-aware layouts.</p>
-<p>The other recurring layout is the SMEM operand layout:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Swizzled SMEM layout for TMA and MMA operands.</span>
-<span class="n">A_layout</span> <span class="o">=</span> <span class="n">tma_shared_layout</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">SwizzleMode</span><span class="o">.</span><span class="n">SWIZZLE_128B_ATOM</span><span class="p">,</span> <span class="p">(</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>Read this as: store the SMEM tile in a swizzled form that the TMA
-descriptor path and the <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> matrix-descriptor path can both
-understand.</p>
+<p>The first says where the accumulator lives after MMA. The second says
+which warpgroup thread receives each row during readback. Other axes,
+such as <code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, and <code class="docutils literal notranslate"><span class="pre">cby</span></code>, appear when the
+code needs warp-level layouts or cluster-aware layouts.</p>
+<p>The full <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> model also has optional replica and offset
+pieces. In source terms, a layout contains shard iterators, replica
+iterators, and per-axis offsets. The GEMM path here mostly uses the
+simple shard form shown above; replica and offset are useful for more
+specialized layouts and are left to the reference.</p>
 </section>
-<section id="common-layout-pairings">
-<h3><span class="section-number">2.3.2. </span>Common Layout Pairings<a class="headerlink" href="#common-layout-pairings" title="Permalink to this heading">¶</a></h3>
-<p>The GEMM chapters reuse a small number of layout-to-instruction
-pairings:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Source and destination</p></th>
-<th class="head"><p>Hardware path</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>GMEM tile -&gt; swizzled SMEM tile</p></td>
-<td><p>TMA load when <code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tma&quot;</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>swizzled SMEM tile -&gt; GMEM tile</p></td>
-<td><p>TMA store when
-<code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tma&quot;</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>two SMEM operand tiles -&gt; TMEM
-accumulator tile</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p>TMEM tile <code class="docutils literal notranslate"><span class="pre">(TLane,</span> <span class="pre">TCol)</span></code> -&gt;
-RF tile <code class="docutils literal notranslate"><span class="pre">(tid_in_wg,</span> <span class="pre">m)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>RF tile -&gt; GMEM or SMEM</p></td>
-<td><p>ordinary thread stores</p></td>
-</tr>
-</tbody>
-</table>
-<p>For example, <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> both have extent 128, so a TMEM
-row can map naturally to one warpgroup thread during <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>.
-Mapping the same TMEM rows to a 32-lane warp axis would not describe the
-warpgroup readback that this instruction expects.</p>
+<section id="layouts-enable-hardware-paths">
+<h3><span class="section-number">2.3.2. </span>Layouts Enable Hardware Paths<a class="headerlink" href="#layouts-enable-hardware-paths" title="Permalink to this heading">¶</a></h3>
+<p>Layouts tell TIRX which hardware path is legal for a primitive. A TMA
+load needs a GMEM source and a TMA-compatible SMEM destination.
+<code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> needs SMEM operand layouts that match the matrix
+descriptors it will use, and it writes the accumulator into a TMEM
+layout. <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> reads that TMEM layout into a warpgroup register
+layout.</p>
+<p>The TMEM-to-register readback is the easiest place to see the check.
+<code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> both have extent 128, so a TMEM row can map
+naturally to one warpgroup thread. Mapping those TMEM rows to a 32-lane
+warp axis would describe a different operation, not the warpgroup
+readback expected by <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>.</p>
 </section>
 </section>
 <section id="tile-primitive-dispatch">
@@ -488,155 +386,168 @@ warpgroup readback that this instruction expects.</p>
 the next question: <strong>which hardware path should run the tile
 operation?</strong></p>
 <p>Start with copy. In TIRX, <code class="docutils literal notranslate"><span class="pre">copy</span></code> means “move this tile or fragment.”
-The hardware path depends on the source, destination, scope, and
-sometimes an explicit <code class="docutils literal notranslate"><span class="pre">dispatch</span></code> argument:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Code pattern</p></th>
-<th class="head"><p>How to read it</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(Asmem[:,</span> <span class="pre">:],</span> <span class="pre">A[m:m</span> <span class="pre">+</span> <span class="pre">BLK_M,</span> <span class="pre">k:k</span> <span class="pre">+</span> <span class="pre">BLK_K],</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code></p></td>
-<td><p>issue an async TMA load from GMEM
-into SMEM</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(D[m:m</span> <span class="pre">+</span> <span class="pre">BLK_M,</span> <span class="pre">n:n</span> <span class="pre">+</span> <span class="pre">BLK_N],</span> <span class="pre">Dsmem[:,</span> <span class="pre">:],</span> <span class="pre">dispatch=&quot;tma&quot;)</span></code></p></td>
-<td><p>issue an async TMA store from
-SMEM back to GMEM</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(Dreg_wg,</span> <span class="pre">tmem)</span></code> under <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code></p></td>
-<td><p>read TMEM into warpgroup
-registers with <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy(D[m,</span> <span class="pre">n],</span> <span class="pre">Dreg[i])</span></code> under <code class="docutils literal notranslate"><span class="pre">Tx.thread()</span></code></p></td>
-<td><p>ordinary per-thread store</p></td>
-</tr>
-</tbody>
-</table>
-<p>The <code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tma&quot;</span></code> part is not just a performance hint. It is a
-request to use the TMA hardware path, so the source and destination must
-look like a legal TMA transfer. For example, the SMEM side needs a
-TMA-compatible layout such as <code class="docutils literal notranslate"><span class="pre">tma_shared_layout(...)</span></code>, and the async
-copy needs the matching barrier protocol.</p>
-<p>For TMEM readback, the code usually has no <code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tcgen05.ld&quot;</span></code>
-string. The path is implied by the operands and scope: source in TMEM,
-destination in a warpgroup register view, and enclosing
-<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code>.</p>
-<p>MMA is the same idea, but the operation is compute instead of copy:</p>
+It does not name one fixed instruction. The hardware path comes from the
+local context:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m</span><span class="p">:</span><span class="n">m</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This requests a TMA load from GMEM into SMEM. The <code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tma&quot;</span></code>
+part is not just a performance hint; it asks for the TMA hardware path.
+That means the GMEM slice, the SMEM destination, the SMEM layout, and
+the barrier protocol all have to match what TMA can legally do.</p>
+<p>The same primitive can also describe a TMA store when the direction is
+reversed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">D</span><span class="p">[</span><span class="n">m</span><span class="p">:</span><span class="n">m</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLK_N</span><span class="p">],</span> <span class="n">Dsmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here the source is SMEM and the destination is GMEM, so the requested
+TMA path is SMEM -&gt; GMEM.</p>
+<p>TMEM readback is different. The code usually does not write
+<code class="docutils literal notranslate"><span class="pre">dispatch=&quot;tcgen05.ld&quot;</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Dreg_wg</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The path is implied by the operands and scope: source in TMEM,
+destination in a warpgroup-distributed register view, and enclosing
+<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code>. That combination lowers to the Blackwell TMEM load
+path, <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>.</p>
+<p>MMA follows the same idea, but the operation is compute instead of copy:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span><span class="n">tmem</span><span class="p">,</span> <span class="n">Asmem</span><span class="p">,</span> <span class="n">Bsmem</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Read this as: use Blackwell <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA to multiply the two SMEM
-operand tiles and write the accumulator tile to TMEM. The layouts,
-dtype, tile shape, and CTA-group setting determine which <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>
-form is legal and how the descriptors are built.</p>
+operand tiles and write the accumulator tile to TMEM. The operand
+layouts, accumulator layout, dtype, tile shape, and CTA-group setting
+must describe a legal <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> operation.</p>
 <p>So when you read GEMM code, do not read <code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> or
-<code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code> in isolation. Check the surrounding scope and the
-source/destination layouts. That local context tells you whether the
-primitive is asking for TMA, <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>, <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>, or
-ordinary load/store code.</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.gemm_async</span></code> in isolation. Check the surrounding scope, the source
+and destination layouts, and the dispatch argument if one is present.
+That local context tells you whether the primitive is asking for TMA,
+<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>, <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>, or ordinary load/store code.</p>
+<p><strong>Try with your agent</strong>: For the four primitives shown in this section,
+ask it to classify the hardware path: TMA load, TMA store, TMEM
+readback, or <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA. For each one, name the source tile,
+destination tile, local context that determines the path, and one
+synchronization fact that is not fully shown in the snippet.</p>
 </section>
-<section id="how-to-read-the-code">
-<h2><span class="section-number">2.5. </span>How to Read the Code<a class="headerlink" href="#how-to-read-the-code" title="Permalink to this heading">¶</a></h2>
-<p>The next chapter starts showing real kernels. You do not need the full
-language reference before reading them. The following vocabulary is
-enough to follow the first GEMM:</p>
+<section id="core-apis-for-reading-gemm">
+<h2><span class="section-number">2.5. </span>Core APIs for Reading GEMM<a class="headerlink" href="#core-apis-for-reading-gemm" title="Permalink to this heading">¶</a></h2>
+<p>The next chapter starts showing complete kernels. Scope, coordinates,
+layouts, and dispatch were covered above. This section only introduces
+the remaining names that you need for a first read.</p>
+<p>Read these API names literally:</p>
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>Code</p></th>
+<tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>How to read it</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code></p></td>
-<td><p>defines one TIRX kernel function</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code></p></td>
+<td><p>Define one TIRX kernel function.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.Buffer(shape,</span> <span class="pre">dtype)</span></code></p></td>
-<td><p>typed input or output tensor</p></td>
+<td><p>Declare a typed device buffer argument.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.kernel():</span></code></p></td>
-<td><p>begins the kernel body</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.SMEMPool()</span></code></p></td>
+<td><p>Create a shared-memory allocation pool for this
+kernel.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...)</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id(...)</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg(...)</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.lane_id(...)</span></code></p></td>
-<td><p>symbolic launch and thread
-coordinates</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pool.alloc(shape,</span> <span class="pre">dtype,</span> <span class="pre">...)</span></code></p></td>
+<td><p>Allocate one object from the shared-memory pool.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta()</span></code>, <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warpgroup()</span></code>,
-<code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread()</span></code></p></td>
-<td><p>which team cooperates on the code
-inside</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pool.move_base_to(offset)</span></code></p></td>
+<td><p>Move the next shared-memory allocation to a fixed
+byte offset.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.SMEMPool().alloc(...)</span></code></p></td>
-<td><p>allocate shared-memory storage
-for tiles and barriers</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pool.commit()</span></code></p></td>
+<td><p>Finish the shared-memory allocation plan.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.alloc_local(...)</span></code></p></td>
-<td><p>allocate per-thread register
-storage</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.alloc(...)</span></code></p></td>
+<td><p>Ask Blackwell hardware for a TMEM allocation.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.decl_buffer(...,</span> <span class="pre">scope=&quot;tmem&quot;,</span> <span class="pre">allocated_addr=...)</span></code></p></td>
-<td><p>create a view of a TMEM
-allocation</p></td>
+<td><p>Create an indexable TIRX view of an existing TMEM
+allocation.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy(...)</span></code></p></td>
-<td><p>synchronous copy or store</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.alloc_local(shape,</span> <span class="pre">dtype)</span></code></p></td>
+<td><p>Allocate per-thread register storage.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(...)</span></code></p></td>
-<td><p>asynchronous tile movement; look
-nearby for the matching wait or
-barrier</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cuda.cta_sync()</span></code></p></td>
+<td><p>Synchronize all threads in the CTA and order
+shared-memory writes.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.gemm_async(...,</span> <span class="pre">dispatch=&quot;tcgen05&quot;)</span></code></p></td>
-<td><p>tile-level Tensor Core MMA</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.mbarrier.*</span></code></p></td>
+<td><p>Use raw mbarrier operations for async completion.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.*</span></code></p></td>
+<td><p>Use raw <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> helpers such as TMEM
+allocation, MMA commit, and wait.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.fence.*</span></code></p></td>
+<td><p>Add ordering across async/proxy boundaries.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.meta_var(expr)</span></code></p></td>
-<td><p>keep an address expression inline
-instead of creating a separate
-TIR variable</p></td>
+<td><p>Keep an index expression inline in generated TIR.</p></td>
 </tr>
 </tbody>
 </table>
-<p>Treat the code as a sequence of tile operations first. The parser
-details, dynamic buffers, and metaprogramming rules live in
-<a class="reference internal" href="../chapter_tirx_primer/index.html#chap-tirx-primer"><span class="std std-numref">Section 7.6</span></a> for when you need a reference.</p>
-</section>
-<section id="back-to-gemm">
-<span id="sec-sugared-rewrite"></span><h2><span class="section-number">2.6. </span>Back to GEMM<a class="headerlink" href="#back-to-gemm" title="Permalink to this heading">¶</a></h2>
-<p>Now return to GEMM. The kernels will keep returning to the same data
-path:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>GMEM operand tiles
-  -&gt; SMEM operand tiles        via tile copy
-  -&gt; TMEM accumulator tile     via tcgen05 MMA
-  -&gt; RF tile                   via TMEM readback
-  -&gt; GMEM output tile          via stores or TMA store
+<p>Two patterns are worth spelling out before the GEMM code.</p>
+<p>First, shared memory is packed through <code class="docutils literal notranslate"><span class="pre">Tx.SMEMPool()</span></code>. The first
+allocations are usually small control objects:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
+<span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>
+<span class="n">mma_bar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint64&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Each arrow becomes one or more tile primitives. To understand a GEMM
-kernel, read each arrow as a local contract: what tile moves or
-computes, where it comes from, where it goes, which threads cooperate,
-which hardware path is requested, and, for async paths, what wait makes
-the result safe to use.</p>
-<p>For example, the TMEM -&gt; RF arrow may appear as:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Dreg_wg</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">])</span>
+<p><code class="docutils literal notranslate"><span class="pre">tmem_addr</span></code> is not TMEM itself. It is a shared-memory slot where
+<code class="docutils literal notranslate"><span class="pre">tcgen05.alloc</span></code> will write the TMEM address. <code class="docutils literal notranslate"><span class="pre">mma_bar</span></code> is
+shared-memory storage for an mbarrier.</p>
+<p>Then the kernel allocates the real operand tiles:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="o">.</span><span class="n">move_base_to</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">A_layout</span><span class="p">)</span>
+<span class="n">Bsmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">B_layout</span><span class="p">)</span>
+<span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Do not stop at the function name. Read the surrounding context:</p>
-<ol class="arabic simple">
-<li><p>What operation is this? Here it is a copy.</p></li>
-<li><p>What is the source? Here the source is TMEM.</p></li>
-<li><p>What is the destination? Here the destination is a warpgroup register
-view.</p></li>
-<li><p>Which threads run it? Here the surrounding <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code> means
-128 threads cooperate.</p></li>
-<li><p>Is there an async handoff? Here the code must call
-<code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.wait.ld()</span></code> before reading <code class="docutils literal notranslate"><span class="pre">Dreg_wg</span></code>.</p></li>
-</ol>
-<p>The next chapter starts with a simplified single-tile version of this
-data path, then adds K-loop accumulation and spatial tiling across CTAs.
-Later chapters replace the synchronous copy/writeback pieces with TMA
-pipelining, warp specialization, and CTA clusters.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pool.move_base_to(1024)</span></code> leaves space for metadata at the start of
+shared memory. <code class="docutils literal notranslate"><span class="pre">Asmem</span></code> and <code class="docutils literal notranslate"><span class="pre">Bsmem</span></code> are the SMEM operand tiles.
+<code class="docutils literal notranslate"><span class="pre">pool.commit()</span></code> means no more pool allocations are added after this
+point.</p>
+<p>Second, TMEM allocation and TMEM views are separate. This call allocates
+TMEM:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">address_of</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">),</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This line does not allocate TMEM. It creates a typed view over the
+allocation address stored in <code class="docutils literal notranslate"><span class="pre">tmem_addr</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span> <span class="n">allocated_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>After that declaration, the code can write <code class="docutils literal notranslate"><span class="pre">tmem[:,</span> <span class="pre">:BLK_N]</span></code> instead
+of manually doing TMEM address arithmetic.</p>
+<p>Register storage is local to each thread:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dreg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,),</span> <span class="n">acc_type</span><span class="p">)</span>
+<span class="n">Dreg_f16</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">BLK_N</span><span class="p">,),</span> <span class="n">d_type</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In GEMM writeback, <code class="docutils literal notranslate"><span class="pre">Dreg</span></code> holds fp32 values read from TMEM.
+<code class="docutils literal notranslate"><span class="pre">Dreg_f16</span></code> holds the casted fp16 values that will be stored to output
+memory.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Tx.meta_var(...)</span></code> appears often in address calculations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">m_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">bx</span> <span class="o">*</span> <span class="n">BLK_M</span><span class="p">)</span>
+<span class="n">n_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">by</span> <span class="o">*</span> <span class="n">BLK_N</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read it as an inline alias for an index expression. It is not storage,
+and it does not allocate anything.</p>
+<p>When reading the GEMM code, use the same order each time: storage first,
+then scope, then tile primitive, then the wait or barrier that makes the
+next step safe.</p>
 </section>
 </section>
 
@@ -657,12 +568,11 @@ pipelining, warp specialization, and CTA clusters.</p>
 </li>
 <li><a class="reference internal" href="#tensor-layout">2.3. Tensor Layout</a><ul>
 <li><a class="reference internal" href="#named-axes">2.3.1. Named Axes</a></li>
-<li><a class="reference internal" href="#common-layout-pairings">2.3.2. Common Layout Pairings</a></li>
+<li><a class="reference internal" href="#layouts-enable-hardware-paths">2.3.2. Layouts Enable Hardware Paths</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#tile-primitive-dispatch">2.4. Tile Primitive Dispatch</a></li>
-<li><a class="reference internal" href="#how-to-read-the-code">2.5. How to Read the Code</a></li>
-<li><a class="reference internal" href="#back-to-gemm">2.6. Back to GEMM</a></li>
+<li><a class="reference internal" href="#core-apis-for-reading-gemm">2.5. Core APIs for Reading GEMM</a></li>
 </ul>
 </li>
 </ul>
@@ -684,7 +594,7 @@ pipelining, warp specialization, and CTA clusters.</p>
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>3. GEMM with Tile Primitives</div>
+            <div>3. Building a Tiled GEMM</div>
         </div>
      </a>
   </div>
