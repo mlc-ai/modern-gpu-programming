@@ -19,7 +19,6 @@ single warpgroup. Used by :numref:`chap_layouts` to motivate every TIRX
 abstraction introduced in the rest of the chapter.
 """
 import numpy as np
-import torch
 import tvm
 from tvm.script import tirx as Tx
 
@@ -50,7 +49,7 @@ ldo, sdo = 1, 64  # matrix-descriptor leading / stride dim (in 128B atoms)
 
 
 # fmt: off
-@Tx.prim_func(tirx=True, check_well_formed=False)
+@Tx.prim_func(check_well_formed=False)
 def gemm_nosugar(A: Tx.Buffer((M, K), a_type, layout=Tx.TileLayout(Tx.S[M, K])),
                  B: Tx.Buffer((N, K), b_type, layout=Tx.TileLayout(Tx.S[N, K])),
                  C: Tx.Buffer((M, N), d_type)):
@@ -73,112 +72,110 @@ def gemm_nosugar(A: Tx.Buffer((M, K), a_type, layout=Tx.TileLayout(Tx.S[M, K])),
     )
 
     # -- device side -------------------------------------------------------
-    with Tx.kernel():
-        Tx.cta_id([1], parent="kernel")
-        warp_id = Tx.warp_id([4], parent="cta")
-        Tx.thread_id([32], parent="warp")
-        tx = Tx.thread_id([128], parent="cta")
-        with Tx.cta():
-            # Three independent uint32/uint64 SMEM scalars (NOT sub-offsets
-            # of a shared buffer) so that mbarrier addresses are unique.
-            tmem_addr = Tx.shared_scalar("uint32")
-            bar_tma   = Tx.shared_scalar("uint64")
-            bar_mma   = Tx.shared_scalar("uint64")
-            A_smem = Tx.alloc_buffer((M, K), a_type, scope="shared", layout=A_layout, align=128)
-            B_smem = Tx.alloc_buffer((N, K), b_type, scope="shared", layout=B_layout, align=128)
+    Tx.device_entry()
+    Tx.cta_id([1])
+    Tx.warpgroup_id([1])
+    warp_id = Tx.warp_id_in_wg([4])
+    Tx.lane_id([32])
+    tx = Tx.thread_id([128])
+    with Tx.cta():
+        # Three independent uint32/uint64 SMEM scalars (NOT sub-offsets
+        # of a shared buffer) so that mbarrier addresses are unique.
+        tmem_addr = Tx.shared_scalar("uint32")
+        bar_tma = Tx.shared_scalar("uint64")
+        bar_mma = Tx.shared_scalar("uint64")
+        A_smem = Tx.alloc_buffer((M, K), a_type, scope="shared", layout=A_layout, align=128)
+        B_smem = Tx.alloc_buffer((N, K), b_type, scope="shared", layout=B_layout, align=128)
 
-            reg   = Tx.alloc_buffer((N,), d_type, scope="local")
-            descA = Tx.alloc_buffer((1,), "uint64", scope="local")
-            descB = Tx.alloc_buffer((1,), "uint64", scope="local")
-            descI = Tx.alloc_buffer((1,), "uint32", scope="local")
-            tma_phase = Tx.alloc_buffer((1,), "int32", scope="local")
-            mma_phase = Tx.alloc_buffer((1,), "int32", scope="local")
+        reg = Tx.alloc_buffer((N,), d_type, scope="local")
+        descA = Tx.alloc_buffer((1,), "uint64", scope="local")
+        descB = Tx.alloc_buffer((1,), "uint64", scope="local")
+        descI = Tx.alloc_buffer((1,), "uint32", scope="local")
+        tma_phase = Tx.alloc_buffer((1,), "int32", scope="local")
+        mma_phase = Tx.alloc_buffer((1,), "int32", scope="local")
 
-            # (1) allocate 512 TMEM columns from a single elected warp.
-            with Tx.warp(parent="cta")[warp_id == 0]:
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr),
-                                     n_cols=N_COLS, cta_group=cta_group)
+        # (1) allocate 512 TMEM columns from warp 0.
+        with Tx.warp(warp_id == 0):
+            Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=N_COLS, cta_group=cta_group)
 
-            with Tx.thread():
-                # (2) init two mbarriers with expected-arrival count 1.
-                if tx == 0:
-                    Tx.ptx.mbarrier.init(Tx.address_of(bar_tma), 1)
-                    Tx.ptx.mbarrier.init(Tx.address_of(bar_mma), 1)
-                Tx.ptx.fence.proxy_async("shared::cta")
-                Tx.ptx.fence.mbarrier_init()
-                tma_phase[0] = 0
-                mma_phase[0] = 0
+        with Tx.thread():
+            # (2) init two mbarriers with expected-arrival count 1.
+            if tx == 0:
+                Tx.ptx.mbarrier.init(Tx.address_of(bar_tma), 1)
+                Tx.ptx.mbarrier.init(Tx.address_of(bar_mma), 1)
+            Tx.ptx.fence.proxy_async("shared::cta")
+            Tx.ptx.fence.mbarrier_init()
+            tma_phase[0] = 0
+            mma_phase[0] = 0
 
-                for i in range(N):
-                    reg[i] = 0.0
-                Tx.cuda.cta_sync()
+            for i in range(N):
+                reg[i] = 0.0
+            Tx.cuda.cta_sync()
 
-                # (3) TMA load A and B tiles; one elected thread issues the
-                #     copy and bumps the expected byte counter on bar_tma.
-                if tx == 0:
-                    # g2c(dim, dst, bar, tensormap_ptr, cta_mask, cta_group,
-                    #     cache_hint, *coords). cta_mask=0 and cta_group=1
-                    # mean unicast TMA to this CTA.
-                    Tx.ptx.cp_async.bulk.tensor.g2c(
-                        2, A_smem.data, Tx.address_of(bar_tma), Tx.address_of(A_map),
-                        0, 1, "", 0, 0,
+            # (3) TMA load A and B tiles; one fixed CTA thread issues the
+            #     copy and bumps the expected byte counter on bar_tma.
+            if tx == 0:
+                # g2c(dim, dst, bar, tensormap_ptr, cta_mask, cta_group,
+                #     cache_hint, *coords). cta_mask=0 and cta_group=1
+                # mean unicast TMA to this CTA.
+                Tx.ptx.cp_async.bulk.tensor.g2c(
+                    2, A_smem.data, Tx.address_of(bar_tma), Tx.address_of(A_map),
+                    0, 1, "", 0, 0,
+                )
+                Tx.ptx.cp_async.bulk.tensor.g2c(
+                    2, B_smem.data, Tx.address_of(bar_tma), Tx.address_of(B_map),
+                    0, 1, "", 0, 0,
+                )
+                Tx.ptx.mbarrier.arrive.expect_tx(Tx.address_of(bar_tma), TMA_TOTAL_BYTES)
+            Tx.ptx.mbarrier.try_wait(Tx.address_of(bar_tma), tma_phase[0])
+            tma_phase[0] = tma_phase[0] ^ 1
+
+            # (4) Issue tcgen05.mma from one fixed CTA thread. Build the
+            #     instruction descriptor once, then one matrix descriptor
+            #     per K-inner step (MMA_K = 16 fp16 columns per step).
+            if tx == 0:
+                Tx.ptx.tcgen05.encode_instr_descriptor(
+                    descI.data, d_dtype=d_type, a_dtype=a_type, b_dtype=b_type,
+                    M=M, N=N, K=MMA_K, trans_a=False, trans_b=False,
+                    n_cta_groups=cta_group,
+                )
+                for k in range(K // MMA_K):
+                    Tx.ptx.tcgen05.encode_matrix_descriptor(
+                        descA.data,
+                        A_smem.access_ptr("r", offset=A_smem.elem_offset_of([0, k * MMA_K])),
+                        ldo=ldo, sdo=sdo, swizzle=SWIZZLE,
                     )
-                    Tx.ptx.cp_async.bulk.tensor.g2c(
-                        2, B_smem.data, Tx.address_of(bar_tma), Tx.address_of(B_map),
-                        0, 1, "", 0, 0,
+                    Tx.ptx.tcgen05.encode_matrix_descriptor(
+                        descB.data,
+                        B_smem.access_ptr("r", offset=B_smem.elem_offset_of([0, k * MMA_K])),
+                        ldo=ldo, sdo=sdo, swizzle=SWIZZLE,
                     )
-                    Tx.ptx.mbarrier.arrive.expect_tx(
-                        Tx.address_of(bar_tma), TMA_TOTAL_BYTES,
+                    Tx.ptx.tcgen05.mma(
+                        tmem_addr, descA[0], descB[0], descI[0],
+                        d_dtype=d_type, a_dtype=a_type, b_dtype=b_type,
+                        use_a_tmem=False, cta_group=cta_group,
+                        enable_input_d=(k != 0),
                     )
-                Tx.ptx.mbarrier.try_wait(Tx.address_of(bar_tma), tma_phase[0])
-                tma_phase[0] = tma_phase[0] ^ 1
+                Tx.ptx.tcgen05.commit(Tx.address_of(bar_mma), cta_group)
+            Tx.ptx.mbarrier.try_wait(Tx.address_of(bar_mma), mma_phase[0])
+            mma_phase[0] = mma_phase[0] ^ 1
+            Tx.cuda.cta_sync()
 
-                # (4) Issue tcgen05.mma from one elected thread. Build the
-                #     instruction descriptor once, then one matrix descriptor
-                #     per K-inner step (MMA_K = 16 fp16 columns per step).
-                if tx == 0:
-                    Tx.ptx.tcgen05.encode_instr_descriptor(
-                        descI.data, d_dtype=d_type, a_dtype=a_type, b_dtype=b_type,
-                        M=M, N=N, K=MMA_K, trans_a=False, trans_b=False,
-                        n_cta_groups=cta_group,
-                    )
-                    for k in range(K // MMA_K):
-                        Tx.ptx.tcgen05.encode_matrix_descriptor(
-                            descA.data,
-                            A_smem.access_ptr("r", offset=A_smem.elem_offset_of([0, k * MMA_K])),
-                            ldo=ldo, sdo=sdo, swizzle=SWIZZLE,
-                        )
-                        Tx.ptx.tcgen05.encode_matrix_descriptor(
-                            descB.data,
-                            B_smem.access_ptr("r", offset=B_smem.elem_offset_of([0, k * MMA_K])),
-                            ldo=ldo, sdo=sdo, swizzle=SWIZZLE,
-                        )
-                        Tx.ptx.tcgen05.mma(
-                            tmem_addr, descA[0], descB[0], descI[0],
-                            d_dtype=d_type, a_dtype=a_type, b_dtype=b_type,
-                            use_a_tmem=False, cta_group=cta_group,
-                            enable_input_d=(k != 0),
-                        )
-                    Tx.ptx.tcgen05.commit(Tx.address_of(bar_mma), cta_group)
-                Tx.ptx.mbarrier.try_wait(Tx.address_of(bar_mma), mma_phase[0])
-                mma_phase[0] = mma_phase[0] ^ 1
-                Tx.cuda.cta_sync()
+            # (5) TMEM -> RF, then RF -> GMEM (one column at a time).
+            Tx.ptx.tcgen05.fence.after_thread_sync()
+            for i in range(N):
+                Tx.ptx.tcgen05.ld(
+                    tmem_addr, reg[i],
+                    shape="32x32b", num=1, row=warp_id * 32, col=i,
+                )
+            Tx.ptx.tcgen05.wait.ld()
+            for i in range(N):
+                C[tx, i] = reg[i]
 
-                # (5) TMEM -> RF, then RF -> GMEM (one column at a time).
-                Tx.ptx.tcgen05.fence.after_thread_sync()
-                for i in range(N):
-                    Tx.ptx.tcgen05.ld(
-                        tmem_addr, reg[i],
-                        shape="32x32b", num=1, row=warp_id * 32, col=i,
-                    )
-                Tx.ptx.tcgen05.wait.ld()
-                for i in range(N):
-                    C[tx, i] = reg[i]
-
-            # (6) release TMEM back to the hardware pool.
-            with Tx.warp(parent="cta")[warp_id == 0]:
-                Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=cta_group)
-                Tx.ptx.tcgen05.dealloc(tmem_addr, n_cols=N_COLS, cta_group=cta_group)
+        # (6) release TMEM back to the hardware pool.
+        with Tx.warp(warp_id == 0):
+            Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=cta_group)
+            Tx.ptx.tcgen05.dealloc(tmem_addr, n_cols=N_COLS, cta_group=cta_group)
 # fmt: on
 
 
@@ -188,11 +185,13 @@ def build():
     mod = tvm.IRModule({"main": gemm_nosugar})
     with target:
         mod = tvm.compile(mod, target=target, tir_pipeline="tirx")
-    return mod.mod.imports[0].inspect_source(), mod
+    return mod.mod.imports_[0].inspect_source("cuda"), mod
 
 
 def run_correctness():
     """Build, run, and torch-compare the no-sugar GEMM on the current GPU."""
+    import torch
+
     torch.manual_seed(42)
     dev = tvm.cuda(0)
     _, mod = build()

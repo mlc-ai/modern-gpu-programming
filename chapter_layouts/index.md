@@ -61,13 +61,13 @@ A scope block does not create new physical threads. The CUDA launch already did 
 
 For example, a copy under `Tx.cta()` is a cooperative CTA-level copy. A copy under `Tx.thread()` is a per-thread copy. A TMEM-to-register readback must be under `Tx.warpgroup()` because the corresponding `tcgen05.ld` instruction is warpgroup-cooperative.
 
-The scopes are not a fixed template that every kernel must nest exactly. A kernel uses the scopes that match the operations it performs. `Tx.kernel()` marks the whole kernel body; `Tx.cluster()` appears only when CTA clusters are used.
+The scopes are not a fixed template that every kernel must nest exactly. A kernel uses the scopes that match the operations it performs. `Tx.device_entry()` marks the start of device code; `Tx.cluster()` appears only when CTA clusters are used.
 
 Some operations are issued by only part of a team. A TMA load, for example, may be issued by one selected thread:
 
 ```python
-tid = Tx.thread_id([128], parent="warpgroup")
-with Tx.thread(parent="warpgroup")[tid == 0]:
+tid = Tx.thread_id_in_wg([128])
+with Tx.thread(tid == 0):
     Tx.copy_async(Asmem[:, :], A[m:m + BLK_M, k:k + BLK_K], dispatch="tma")
 ```
 
@@ -80,17 +80,17 @@ Scope tells you the team. Coordinates tell the code where that team sits in the 
 Many GEMM kernels start by naming the CTA, warpgroup, warp, and lane:
 
 ```python
-bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
-_ = Tx.warpgroup_id([1], parent="cta")
-warp_id = Tx.warp_id([4], parent="warpgroup")
-lane_id = Tx.thread_id([32], parent="warp")
+bx, by = Tx.cta_id([M // BLK_M, N // BLK_N])
+_ = Tx.warpgroup_id([1])
+warp_id = Tx.warp_id_in_wg([4])
+lane_id = Tx.lane_id([32])
 ```
 
-Read it from the outside in. `Tx.cta_id(..., parent="kernel")` gives the CTA's position in the launch grid, so the kernel can choose an output tile such as `D[bx * BLK_M, by * BLK_N]`. `Tx.warpgroup_id([1], parent="cta")` declares the warpgroup coordinate for a single-warpgroup kernel; later kernels use more warpgroups when producer, consumer, and writeback roles are split. `Tx.warp_id([4], parent="warpgroup")` and `Tx.thread_id([32], parent="warp")` identify a thread inside one warpgroup, which is enough to assign output rows during writeback.
+Read it from the outside in. `Tx.cta_id(...)` gives the CTA's position in the launch grid, so the kernel can choose an output tile such as `D[bx * BLK_M, by * BLK_N]`. `Tx.warpgroup_id([1])` declares the warpgroup coordinate for a single-warpgroup kernel; later kernels use more warpgroups when producer, consumer, and writeback roles are split. `Tx.warp_id_in_wg([4])` and `Tx.lane_id([32])` identify a thread inside one warpgroup, which is enough to assign output rows during writeback.
 
-The number inside brackets is the extent of that coordinate space. For example, `[4]` in `Tx.warp_id([4], parent="warpgroup")` says there are four warps in the warpgroup, and `[32]` in `Tx.thread_id([32], parent="warp")` says each warp has 32 lanes. TIRX uses these extents when checking layouts and tile primitives. A warpgroup register layout that uses `tid_in_wg` has extent 128, so it matches a 128-row TMEM readback; a lane-only layout has extent 32, so it would describe a different mapping.
+The number inside brackets is the extent of that coordinate space. For example, `[4]` in `Tx.warp_id_in_wg([4])` says there are four warps in the warpgroup, and `[32]` in `Tx.lane_id([32])` says each warp has 32 lanes. TIRX uses these extents when checking layouts and tile primitives. A warpgroup register layout that uses `tid_in_wg` has extent 128, so it matches a 128-row TMEM readback; a lane-only layout has extent 32, so it would describe a different mapping.
 
-Other coordinates appear when the kernel needs them. `Tx.thread_id([Nt], parent="cta")` names a thread inside a CTA. `Tx.thread_id([128], parent="warpgroup")` names a thread inside a warpgroup. Clustered kernels add `Tx.cluster_id(...)` and `Tx.cta_id(..., parent="cluster")` to identify the cluster and the CTA's position inside it.
+Other coordinates appear when the kernel needs them. `Tx.thread_id([Nt])` names a thread inside a CTA. `Tx.thread_id_in_wg([128])` names a thread inside a warpgroup. Clustered kernels add `Tx.cluster_id(...)` and `Tx.cta_id_in_cluster(...)` to identify the cluster and the CTA's position inside it.
 
 
 ## Tensor Layout
@@ -207,7 +207,7 @@ Read these API names literally:
 
 | API | How to read it |
 |-----|----------------|
-| `@Tx.prim_func(tirx=True)` | Define one TIRX kernel function. |
+| `@Tx.prim_func` | Define one TIRX kernel function. |
 | `Tx.Buffer(shape, dtype)` | Declare a typed device buffer argument. |
 | `Tx.SMEMPool()` | Create a shared-memory allocation pool for this kernel. |
 | `pool.alloc(shape, dtype, ...)` | Allocate one object from the shared-memory pool. |

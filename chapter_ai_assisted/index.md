@@ -1,7 +1,7 @@
 # Writing TIRX Kernels with Agents
 :label:`chap_ai_assisted`
 
-Before asking an agent to work on TIRX, give it the source code it must reason from. It should be able to read the `tvm` codebase for the TIRX DSL, layout objects, tile primitives, and lowering rules, and the `tirx-kernels-dev` codebase for real kernels, scheduler helpers, and barrier patterns. Without those references, the agent will fall back to generic CUDA, Triton, or Hopper assumptions, which are often wrong for Blackwell TIRX.
+Before asking an agent to work on TIRX, give it the source code it must reason from. It should be able to read the `tvm` codebase for the TIRX DSL, layout objects, tile primitives, and lowering rules, and the `tirx-kernels` codebase for real kernels, scheduler helpers, and barrier patterns. Without those references, the agent will fall back to generic CUDA, Triton, or Hopper assumptions, which are often wrong for Blackwell TIRX.
 
 There are two ways to use an agent. The first is delegation: give it a broad goal, such as "make the FA4 barrier section easier to understand," and let it choose the method. That is useful for mechanical edits after you already know the direction, but it teaches you less because the important choices stay hidden. The second is learning-oriented: turn the broad goal into a specific instruction, such as "explain `bar_softmax_corr_full` and `bar_softmax_corr_empty` as a mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram, then rebuild the tutorial." This is usually more effective for TIRX because the important work is not just changing text or code; it is learning what choices are possible and which hardware contracts those choices imply.
 
@@ -34,7 +34,7 @@ The agent can help you draft, compare, and execute choices. The programmer still
 
 A practical workflow is:
 
-1. Point the agent at `tvm` and `tirx-kernels-dev`.
+1. Point the agent at `tvm` and `tirx-kernels`.
 2. Start with the goal, but do not stop there.
 3. If the path is unclear, ask for candidate strategies and tradeoffs.
 4. Choose one strategy and rewrite it as a concrete TIRX instruction: tile path, roles, layouts, barriers, expected checks.
@@ -95,7 +95,7 @@ Each field has a job. The tile path gives the data flow. Scopes and roles say wh
 
 ```text
 Target: NVIDIA Blackwell SM100a.
-Kernel: Step 7 warp-specialized GEMM.
+Kernel: warp-specialized GEMM from Chapter 5.
 
 Tile path:
 GMEM -> SMEM by TMA.
@@ -134,7 +134,7 @@ This case shows why the prompt needs a hardware fact, not just code. The broken 
 ```python
 for k in range(K_TILES):
     tma2mma.wait(mma_ps.stage, mma_ps.phase)
-    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+    with Tx.thread(Tx.ptx.elect_sync()):
         Tx.gemm_async(
             tmem[:, :BLK_N],
             Asmem[mma_ps.stage],
@@ -170,7 +170,7 @@ The fix is to keep the arrive in the same elected-thread scope as the MMA issue:
 ```python
 for k in range(K_TILES):
     tma2mma.wait(mma_ps.stage, mma_ps.phase)
-    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+    with Tx.thread(Tx.ptx.elect_sync()):
         Tx.gemm_async(
             tmem[:, :BLK_N],
             Asmem[mma_ps.stage],
@@ -220,7 +220,7 @@ Agent review works best when the change has a small, checkable contract. Example
 Ask for invariant checks, not a broad review:
 
 ```text
-I changed a Step-7-style single-CTA GEMM into the Step 8 clustered form with CTA_GROUP=2.
+I changed a warp-specialized single-CTA GEMM into the clustered Chapter 5 form with CTA_GROUP=2.
 Check only the cluster invariants:
 - tcgen05.alloc / gemm_async / commit / dealloc cta_group values
 - scheduler tile shape
@@ -242,7 +242,7 @@ The agent is not deciding the design. It is checking whether the code still matc
 
 ## Use Case 3: Debug from Symptoms
 
-When a kernel fails, first classify the symptom. Then ask the agent to map the symptom back to the nearest producer-consumer handoff. The detailed GEMM debugging checklist lives in the appendix; the table here is the prompt-level version.
+When a kernel fails, first classify the symptom. Then ask the agent to map the symptom back to the nearest producer-consumer handoff. The table here is the prompt-level version; use the TIRX Language and Compile Pipeline appendix page when you need generated-CUDA inspection.
 
 | Symptom | Likely area | First checks |
 |---------|-------------|--------------|
@@ -322,7 +322,7 @@ Useful patterns to check:
 
 If the agent's explanation disagrees with the generated code, trust the generated code.
 
-The appendix has a fuller generated-CUDA checklist for warp-specialized GEMM debugging.
+For a broader generated-CUDA workflow, use the TIRX Language and Compile Pipeline appendix page.
 
 ## Agent Review Boundaries
 
@@ -366,7 +366,7 @@ Keep entries short: symptom, cause, fix. These notes are more useful to an agent
 
 ## Exercises
 
-1. Take Step 7 and ask an agent to produce a tile-primitive table: primitive, scope, layout, dispatch, wait-before, signal-after. Which entries did it miss?
+1. Take the warp-specialized GEMM from Chapter 5 and ask an agent to produce a tile-primitive table: primitive, scope, layout, dispatch, wait-before, signal-after. Which entries did it miss?
 2. Move `mma2tma.arrive()` outside the elected MMA issue scope in a local experiment. Ask the agent to diagnose the failure using only the symptom, then ask again with the `tcgen05.commit` hardware constraint. Compare the answers.
 3. Ask for a PyTorch reference for the Flash Attention kernel with GQA. Check whether the agent handles `repeat_interleave` for K/V heads correctly.
 4. Give the agent the generated CUDA for a warp-specialized kernel and ask it to identify the TMA, MMA, and writeback branches. Verify against the source.

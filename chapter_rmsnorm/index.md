@@ -1,7 +1,7 @@
 # Practice Kernel: RMSNorm Reduction
 :label:`chap_rmsnorm`
 
-RMSNorm (Root Mean Square Layer Normalization) is used in LLMs such as Llama and Qwen. It introduces two GPU programming patterns: **warp-level reduction** and **shared memory communication**.
+RMSNorm (Root Mean Square Layer Normalization) is used in LLMs such as Llama and Qwen. This optional practice kernel uses a manual reduction so you can see **warp-level reduction** and **shared memory communication** directly. Current production kernels may use higher-level helpers such as `Tx.cuda.cta_sum(...)` for the same reduction.
 
 **Operation**: Given input `x[batch, hidden]` and weight `w[hidden]`, for each row $b$:
 
@@ -50,15 +50,15 @@ Computing RMS requires summing $x^2$ across the entire hidden dimension — a gl
 
 ### Thread Organization
 
-Each CTA has `bdx * bdy` threads, arranged in a 2D layout via `Tx.thread_id([bdx, bdy], parent="cta")`:
+Each CTA has `bdx * bdy` threads, arranged in a 2D layout via `Tx.thread_id([bdx, bdy])`:
 
 ```python
-tx, ty = Tx.thread_id([bdx, bdy], parent="cta")
+tx, ty = Tx.thread_id([bdx, bdy])
 # tx: lane ID within the warp (0-31)
 # ty: warp index (0 to bdy-1)
 ```
 
-Passing a **2D list `[bdx, bdy]`** means the CTA's threads are logically arranged as a 2D grid of size `bdx × bdy`, and the call returns **two indices** `(tx, ty)`. In contrast, `Tx.thread_id([NUM_THREADS], parent="cta")` is 1D and returns a single `tid`.
+Passing a **2D list `[bdx, bdy]`** means the CTA's threads are logically arranged as a 2D grid of size `bdx × bdy`, and the call returns **two indices** `(tx, ty)`. In contrast, `Tx.thread_id([NUM_THREADS])` is 1D and returns a single `tid`.
 
 - `bdx = 32` — one warp (32 threads). `tx` is the lane ID within the warp.
 - `bdy = ceildiv(block_size, 32)` — how many warps per CTA. `ty` is the warp index.
@@ -139,7 +139,7 @@ Both are synchronization barriers, but they differ:
 
 In this kernel, `Tx.ptx.bar.sync(1, bdx * bdy)` is used because the actual thread count (`bdx * bdy`) may be less than the CTA size. The following shared-memory reads rely on this barrier for thread synchronization and shared-memory ordering.
 
-The kernel implementation follows. It uses three loop forms: `Tx.serial(...)` for the row scan, `Tx.unroll(...)` for small fixed reductions and vector fragments, and `Tx.vectorized(...)` for contiguous vector load/store. Use the API lookup if you need the exact syntax later.
+The kernel implementation follows. It uses `Tx.serial(...)` for the row scan and `Tx.unroll(...)` for small fixed reductions and vector fragments. Use the API lookup if you need the exact syntax later.
 
 ```{.python .input}
 def get_rmsnorm_kernel(hidden_size):
@@ -148,25 +148,25 @@ def get_rmsnorm_kernel(hidden_size):
     bdx = 32                          # threads per warp (always 32)
     bdy = ceildiv(block_size, 32)     # number of warps per CTA
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def rmsnorm(input_ptr: Tx.handle, weight_ptr: Tx.handle, out_ptr: Tx.handle):
         batch_size = Tx.int32()       # determined at runtime from buffer shape
         input_global = Tx.match_buffer(input_ptr, [batch_size, hidden_size], "float16")
         weight_global = Tx.match_buffer(weight_ptr, [hidden_size], "float16")
         out_global = Tx.match_buffer(out_ptr, [batch_size, hidden_size], "float16")
 
-        with Tx.kernel():
-            bx = Tx.cta_id([SM_COUNT], parent="kernel")
-            tx, ty = Tx.thread_id([bdx, bdy], parent="cta")  # tx=lane, ty=warp
-            thread_id = Tx.meta_var(ty * bdx + tx)
+        Tx.device_entry()
+        bx = Tx.cta_id([SM_COUNT])
+        tx, ty = Tx.thread_id([bdx, bdy])  # tx=lane, ty=warp
+        thread_id = Tx.meta_var(ty * bdx + tx)
 
-            with Tx.cta():
-                pool = Tx.SMEMPool()
-                x_smem = pool.alloc([hidden_size], "float32")   # cache x for Pass 2
-                sum_sq_smem = pool.alloc([bdy], "float32")      # one partial sum per warp
-                pool.commit()
+        with Tx.cta():
+            pool = Tx.SMEMPool()
+            x_smem = pool.alloc([hidden_size], "float32")   # cache x for Pass 2
+            sum_sq_smem = pool.alloc([bdy], "float32")      # one partial sum per warp
+            pool.commit()
 
-                with Tx.thread():
+            with Tx.thread():
                     # Per-thread registers: fp16 for loads, fp32 for computation
                     input_vec = Tx.alloc_local([vec_size], "float16")
                     input_vec_f32 = Tx.alloc_local([vec_size], "float32")

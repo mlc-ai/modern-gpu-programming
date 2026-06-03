@@ -95,8 +95,8 @@ The two Q stages are the two entries in the Q pipeline. WG0 handles one stage wh
 The code selects these roles with symbolic coordinates:
 
 ```python
-wg_id = Tx.warpgroup_id([4], parent="cta")
-warp_id = Tx.warp_id([4], parent="warpgroup")
+wg_id = Tx.warpgroup_id([4])
+warp_id = Tx.warp_id_in_wg([4])
 ```
 
 When reading the code, first identify the role branch. That branch tells you which execution team owns the tile primitive inside it:
@@ -108,7 +108,7 @@ When reading the code, first identify the role branch. That branch tells you whi
 
 All MMA instructions are issued from WG3 warp 0. WG0 and WG1 do not issue MMA. They consume the score tile, run softmax, and write the `P` tile back to TMEM.
 
-This matters for barriers. `s_ready.full` connects score MMA to softmax. `p_o_rescale.full` connects softmax and correction back to the value MMA.
+This matters for barriers. `s_ready` connects score MMA to softmax. `p_o_rescale` connects softmax and correction back to the value MMA.
 
 ## The Two MMA Phases
 
@@ -140,7 +140,7 @@ with Tx.warp():
         cta_group=CTA_GROUP,
     )
 if Tx.ptx.elect_sync():
-    s_ready.full.arrive(q_stage)
+    s_ready.arrive(q_stage)
 ```
 
 Read this with the same rules as GEMM:
@@ -148,9 +148,9 @@ Read this with the same rules as GEMM:
 - source tiles: Q and K in SMEM,
 - destination tile: `S` in TMEM,
 - dispatch path: `tcgen05`,
-- handoff after compute: `s_ready.full`.
+- handoff after compute: `s_ready`.
 
-The elected thread arrival on `s_ready.full` says this score tile is ready for the softmax warpgroup.
+The elected thread arrival on `s_ready` says this score tile is ready for the softmax warpgroup.
 
 ### Softmax Between MMAs
 
@@ -214,7 +214,7 @@ The value MMA is split into a `96 + 32` schedule:
 
 1. Softmax writes `P` in four 32-column chunks.
 2. After the first three chunks are ready, the value MMA starts on the first 96 columns of `P` and the matching rows of `V`.
-3. The final 32 columns wait for `p_ready_2.full`.
+3. The final 32 columns wait for `p_ready_2`.
 4. A second MMA consumes that final chunk and finishes the tile.
 
 This lets value MMA begin before the last part of the softmax-to-TMEM writeback is done.
@@ -279,7 +279,7 @@ Read each barrier as a tile handoff: which role produced data, which role consum
 
 ![Flash Attention 4 MMA Input Gates](../img/flash_attention_main_handoff.png)
 
-This diagram is about correctness gates, not scheduling. It shows what must be ready before each MMA phase may run. Score MMA waits for Q and K in SMEM, then produces `S`. Value MMA waits for V in SMEM, the `P` tile from softmax, and an `O` slot that WG2 has either released or rescaled. The softmax-to-value gate is split because value MMA can start after the first 96 columns of `P`, while the final 32 columns are released by `p_ready_2.full`.
+This diagram is about correctness gates, not scheduling. It shows what must be ready before each MMA phase may run. Score MMA waits for Q and K in SMEM, then produces `S`. Value MMA waits for V in SMEM, the `P` tile from softmax, and an `O` slot that WG2 has either released or rescaled. The softmax-to-value gate is split because value MMA can start after the first 96 columns of `P`, while the final 32 columns are released by `p_ready_2`.
 
 The softmax/correction handoff needs a different view. It uses a small SMEM slot as a mailbox between the softmax warpgroup and WG2. That mailbox carries either `acc_scale` during the K/V loop or final `row_sum` during the epilogue. The `full` and `empty` barriers protect that mailbox slot:
 
@@ -294,7 +294,7 @@ Read `softmax_corr.full` and `softmax_corr.empty` as a producer-consumer pair:
 5. WG2 arrives on `softmax_corr.empty`.
 6. The softmax warpgroup may reuse the slot in the next phase.
 
-That is all `softmax_corr.empty` means: WG2 has consumed the SMEM scale/sum slot. It does not mean `P` is ready, and it does not mean value MMA may start. The value-MMA gate is `p_o_rescale.full`: the first 96 columns of `P` are ready, and WG2 has made the `O` slot safe to accumulate into.
+That is all `softmax_corr.empty` means: WG2 has consumed the SMEM scale/sum slot. It does not mean `P` is ready, and it does not mean value MMA may start. The value-MMA gate is `p_o_rescale`: the first 96 columns of `P` are ready, and WG2 has made the `O` slot safe to accumulate into.
 
 The full barrier list is still useful as a reference:
 
@@ -304,10 +304,10 @@ The full barrier list is still useful as a reference:
 | `q_load.empty` | all score MMAs for this Q stage -> TMA load | Q SMEM stage can be reused for the next task |
 | `kv_load.full` | TMA load -> score/value MMA | K or V SMEM tile can feed MMA |
 | `kv_load.empty` | score/value MMA -> TMA load | K/V SMEM stage can be reused |
-| `s_ready.full` | score MMA -> softmax | S TMEM tile can be read |
-| `p_o_rescale.full` | softmax + WG2 -> value MMA | first 96 columns of P are in TMEM, and the O slot is safe for value MMA |
-| `p_ready_2.full` | softmax -> value MMA | final quarter of P is in TMEM |
-| `o_ready.full` | value MMA -> epilogue | final O accumulator is ready |
+| `s_ready` | score MMA -> softmax | S TMEM tile can be read |
+| `p_o_rescale` | softmax + WG2 -> value MMA | first 96 columns of P are in TMEM, and the O slot is safe for value MMA |
+| `p_ready_2` | softmax -> value MMA | final quarter of P is in TMEM |
+| `o_ready` | value MMA -> epilogue | final O accumulator is ready |
 | `softmax_corr.full` | softmax -> WG2 | `acc_scale` or final `row_sum` is ready in the SMEM mailbox |
 | `softmax_corr.empty` | WG2 -> softmax | the same SMEM mailbox slot can be reused after WG2 reads it |
 | `corr_epi.full` | epilogue -> TMA store | O_smem is ready to store |
@@ -319,11 +319,11 @@ The barrier type follows the producer:
 - MMA completion uses `TCGen05Bar`, because `tcgen05.commit` signals the completion group.
 - Pure thread-to-thread handoffs use `MBarrier`, where the participating threads arrive explicitly.
 
-Two barriers split the softmax-to-value handoff. `p_o_rescale.full` lets the value MMA start once the first 96 columns of `P` are written and the `O` tile is safe to accumulate into. On the first K/V block, WG2 pre-arrives this barrier because there is no old `O` to rescale. On later K/V blocks, WG2 arrives after it has either skipped an unnecessary rescale or finished rescaling the old `O`. `p_ready_2.full` releases the last 32 columns of `P`. This matches the `96 + 32` value-MMA schedule from the previous section.
+Two barriers split the softmax-to-value handoff. `p_o_rescale` lets the value MMA start once the first 96 columns of `P` are written and the `O` tile is safe to accumulate into. On the first K/V block, WG2 pre-arrives this barrier because there is no old `O` to rescale. On later K/V blocks, WG2 arrives after it has either skipped an unnecessary rescale or finished rescaling the old `O`. `p_ready_2` releases the last 32 columns of `P`. This matches the `96 + 32` value-MMA schedule from the previous section.
 
-Compared with GEMM, the new barriers are the ones around softmax: `s_ready.full`, `p_o_rescale.full`, `p_ready_2.full`, and the softmax/correction pair. They exist because the score MMA and value MMA are separated by register math, TMEM rewrites, and output rescaling.
+Compared with GEMM, the new barriers are the ones around softmax: `s_ready`, `p_o_rescale`, `p_ready_2`, and the softmax/correction pair. They exist because the score MMA and value MMA are separated by register math, TMEM rewrites, and output rescaling.
 
-**Try with your agent**: Ask it to trace one K/V block through `s_ready.full`, `p_o_rescale.full`, `p_ready_2.full`, and `o_ready.full`. For each barrier, ask who waits, who arrives, what tile becomes safe to read, and what storage can be reused afterward.
+**Try with your agent**: Ask it to trace one K/V block through `s_ready`, `p_o_rescale`, `p_ready_2`, and `o_ready`. For each barrier, ask who waits, who arrives, what tile becomes safe to read, and what storage can be reused afterward.
 
 ## Pipelining Structure
 
@@ -366,7 +366,7 @@ That interleaving is why the score, softmax, correction, and value rows overlap 
 
 The WG2 row says `release / rescale` because the first K/V block has no old `O` to rescale, but WG2 still participates in the handoff that lets value MMA proceed. On later K/V blocks, WG2 may actually rescale the old `O` tile before value MMA accumulates into it. Normalization and TMA store happen only after the last K/V block for the current attention task.
 
-This is why a single GEMM-style pipeline is not enough. Q, K/V, and TMEM slots advance on different schedules. TIRX keeps those schedules visible as separate tile buffers, ring states, and barrier phases instead of hiding the whole attention kernel behind one monolithic primitive.
+This is why a single GEMM-style pipeline is not enough. Q, K/V, and TMEM slots advance on different schedules. TIRX keeps those schedules visible as separate tile buffers, `PipelineState` cursors, and barrier phases instead of hiding the whole attention kernel behind one monolithic primitive.
 
 ## Rescaling and Writeback
 
@@ -391,12 +391,12 @@ The synchronization is:
 1. Softmax writes the scale value to SMEM.
 2. WG2 waits on `softmax_corr.full`.
 3. WG2 rescales `O` in TMEM.
-4. WG2 arrives on `p_o_rescale.full`.
+4. WG2 arrives on `p_o_rescale`.
 5. WG3's value MMA can now consume `P` and accumulate into the rescaled `O` tile.
 
 After WG2 reads the scale value, `softmax_corr.empty` releases that SMEM slot so the softmax warpgroup can reuse it.
 
-At the end of the K/V loop, WG2 switches from correction to epilogue. It waits for the final `row_sum` and `o_ready.full`, reads the final `O` accumulator from TMEM, multiplies by `1 / row_sum`, casts to fp16, and writes `O_smem`. WG3's TMA store warp then moves `O_smem` back to GMEM.
+At the end of the K/V loop, WG2 switches from correction to epilogue. It waits for the final `row_sum` and `o_ready`, reads the final `O` accumulator from TMEM, multiplies by `1 / row_sum`, casts to fp16, and writes `O_smem`. WG3's TMA store warp then moves `O_smem` back to GMEM.
 
 The current kernel computes the forward output only. A training forward kernel would normally also store log-sum-exp for backward:
 
@@ -503,4 +503,4 @@ FA4 is harder than GEMM because there are more tile values and more producer-con
 
 1. Compared with GEMM, what new tile handoff appears between the two MMA phases in FA4? Name the producer, the TMEM tile, and the consumer.
 2. Why does softmax write the numerator tile `P` back to TMEM instead of keeping it only in registers for the value MMA?
-3. Pick `p_o_rescale.full` or `p_ready_2.full`. What exactly does the barrier prove, and what could go wrong if the value MMA skipped that wait?
+3. Pick `p_o_rescale` or `p_ready_2`. What exactly does the barrier prove, and what could go wrong if the value MMA skipped that wait?

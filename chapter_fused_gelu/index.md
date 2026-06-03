@@ -1,7 +1,7 @@
 # Practice Kernel: Fused GELU Gate
 :label:`chap_fused_gelu`
 
-Fused GELU-Tanh with multiply is used in MLP gate layers of Transformer models. Elementwise kernels are the smallest TIRX programs that still exercise launch geometry, indexing, and vectorized memory access.
+Fused GELU-Tanh with multiply is used in MLP gate layers of Transformer models. Elementwise kernels are the smallest TIRX programs that still exercise launch geometry, indexing, and coalesced global-memory access.
 
 **Operation**: The input tensor has shape `[batch, 2*d]`, split into two halves along the last dimension. The first half passes through GELU-tanh activation, then multiplies with the second half:
 
@@ -72,35 +72,35 @@ def ceildiv(a, b):
 ```
 
 ```{.python .input}
-def fused_gelu_kernel(input_cat, out_dim, batch_size):
+def fused_gelu_kernel(out_dim, batch_size):
     total = batch_size * out_dim
     NUM_THREADS = 256
     NUM_BLOCKS = ceildiv(total, NUM_THREADS)
 
-    @Tx.prim_func(tirx=True)
+    @Tx.prim_func
     def fused_gelu_tanh_multiply(input_cat_ptr: Tx.handle, output_ptr: Tx.handle):
         input_buf = Tx.match_buffer(input_cat_ptr, [batch_size, out_dim * 2], "float16")
         output_buf = Tx.match_buffer(output_ptr, [batch_size, out_dim], "float16")
 
-        with Tx.kernel():
-            bx = Tx.cta_id([NUM_BLOCKS], parent="kernel")
-            tid = Tx.thread_id([NUM_THREADS], parent="cta")
+        Tx.device_entry()
+        bx = Tx.cta_id([NUM_BLOCKS])
+        tid = Tx.thread_id([NUM_THREADS])
 
-            with Tx.thread():
-                gid = bx * NUM_THREADS + tid
-                row = gid // out_dim
-                col = gid % out_dim
+        with Tx.thread():
+            gid = bx * NUM_THREADS + tid
+            row = gid // out_dim
+            col = gid % out_dim
 
-                if gid < total:
-                    # input_buf is [batch, 2*out_dim]: first half is x, second half is gate
-                    input1 = input_buf[row, col]              # x (first half)
-                    input2 = input_buf[row, col + out_dim]    # gate (second half)
-                    x_cubed = input1 * input1 * input1
-                    inner = Tx.float16(0.7978845608) * (  # sqrt(2/pi) ≈ 0.7979
-                        input1 + Tx.float16(0.044715) * x_cubed)  # GELU-tanh approximation constant
-                    gelu_out = Tx.float16(0.5) * input1 * (
-                        Tx.float16(1.0) + Tx.tanh(inner))
-                    output_buf[row, col] = gelu_out * input2
+            if gid < total:
+                # input_buf is [batch, 2*out_dim]: first half is x, second half is gate
+                input1 = input_buf[row, col]
+                input2 = input_buf[row, col + out_dim]
+                x_cubed = input1 * input1 * input1
+                inner = Tx.float16(0.7978845608) * (
+                    input1 + Tx.float16(0.044715) * x_cubed)
+                gelu_out = Tx.float16(0.5) * input1 * (
+                    Tx.float16(1.0) + Tx.tanh(inner))
+                output_buf[row, col] = gelu_out * input2
 
     return fused_gelu_tanh_multiply
 ```
@@ -114,15 +114,14 @@ device = torch.device('cuda')  # gpu(0)
 target = tvm.target.Target("cuda")
 
 # Compile
-kernel = fused_gelu_kernel(None, out_dim, batch_size)
+kernel = fused_gelu_kernel(out_dim, batch_size)
 with target:
-    lib = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
+    ex = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
 
 # Run
 x_cat = torch.randn(batch_size, out_dim * 2, dtype=torch.float16, device=device)
 out = torch.zeros(batch_size, out_dim, dtype=torch.float16, device=device)
-f = lib["main"]
-f(tvm.runtime.from_dlpack(x_cat), tvm.runtime.from_dlpack(out))
+ex(x_cat, out)
 
 # Verify against numpy reference
 x_np = x_cat.float().cpu().numpy()
@@ -138,8 +137,6 @@ print("PASS")
 ### Expected Output & Troubleshooting
 
 **Expected output**:
-
-- Time: 0.003–0.010 ms (varies by GPU load)
 
 - Max error: < 0.01 (fp16 GELU approximation)
 

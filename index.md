@@ -32,7 +32,7 @@ For asynchronous primitives, barriers and waits describe the handoff between til
   7. **Writing TIRX Kernels with Agents** — Use the tile-primitive contract as prompt structure for explanation, review, debugging, and test generation.
 
 - **Appendix**
-  - Setup, practice kernels, debugging notes, and references.
+  - Setup, API reference, language/compile notes, practice kernels, and source maps.
 
 
 ```toc

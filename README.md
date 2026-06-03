@@ -4,47 +4,24 @@ A hands-on tutorial for writing GPU kernels on NVIDIA Blackwell GPUs using TIRX.
 
 ## Quickstart
 
-**Read online**: Tutorial website coming soon.
+**Preview locally**: build the site, then open the local server URL from the
+preview instructions below.
 
 **Run locally** (requires Blackwell GPU):
 
 ```bash
-pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.24.dev0-py3-none-manylinux_2_28_x86_64.whl"
-pip install apache-tvm-ffi==0.1.9rc2
+pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.25.dev0-py3-none-manylinux_2_28_x86_64.whl"
+pip install -U apache-tvm-ffi
 pip install torch==2.9.1+cu130 --index-url https://download.pytorch.org/whl/cu130
 pip install numpy
 
 # Verify: this should print "TIRX OK"
 python -c "from tvm.script import tirx as Tx; print('TIRX OK')"
-
-# Run your first kernel
-python -c "
-import tvm
-from tvm.script import tirx as Tx
-import torch
-
-@Tx.prim_func
-def hello_gpu(A_ptr: Tx.handle, B_ptr: Tx.handle):
-    n = Tx.int32()
-    A = Tx.match_buffer(A_ptr, [n], 'float32')
-    B = Tx.match_buffer(B_ptr, [n], 'float32')
-    with Tx.kernel():
-        bx = Tx.cta_id([148])
-        tid = Tx.thread_id([256])
-        with Tx.thread():
-            i = bx * 256 + tid
-            if i < n:
-                B[i] = A[i] * 2.0
-
-target = tvm.target.Target('cuda')
-with target:
-    lib = tvm.compile(tvm.IRModule({'main': hello_gpu}), target=target, tir_pipeline='tirx')
-a = torch.randn(1024, device='cuda')
-b = torch.zeros(1024, device='cuda')
-lib['main'](tvm.runtime.from_dlpack(a), tvm.runtime.from_dlpack(b))
-print('Result matches:', torch.allclose(b, a * 2))
-"
 ```
+
+For a runnable minimal kernel, see the **Environment Setup** chapter. TIRX parses
+kernel source with Python's source inspection, so examples should live in a file
+or notebook cell rather than inside `python -c`.
 
 ## Building the Tutorial Site
 

@@ -1,92 +1,91 @@
 # Environment Setup
 :label:`chap_setup`
 
-Set up the environment first, then verify it by running a real GPU kernel.
-
+Set up TVM/TIRX first, then verify the install with a tiny GPU kernel.
 
 ## Requirements
 
-- **OS**: Linux (Ubuntu 20.04+ recommended)
-- **GPU**: NVIDIA Blackwell (B200 / B100) with driver >= 570
-- **Python**: >= 3.10 with `pip`
-
+- **OS**: Linux, Ubuntu 20.04 or newer recommended.
+- **GPU**: NVIDIA Blackwell, such as B200 or B100.
+- **Driver**: CUDA 13.0 requires a Linux driver at least 580.65.06.
+- **Python**: 3.10 or newer.
 
 ## Install Packages
 
 ```bash
-pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.24.dev0-py3-none-manylinux_2_28_x86_64.whl"
-pip install apache-tvm-ffi==0.1.9rc2
+pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.25.dev0-py3-none-manylinux_2_28_x86_64.whl"
+pip install -U apache-tvm-ffi
 pip install torch==2.9.1+cu130 --index-url https://download.pytorch.org/whl/cu130
 pip install numpy
 ```
 
+The wheel above is the CUDA 13 TIRX nightly used by this tutorial. If you are working from source, use the local `tvm` checkout and keep `tirx-kernels` updated to the same development window.
 
-## Verify with a Tiny Kernel
+## Minimal Kernel
 
-Verify the setup by compiling and running a real TIRX kernel. The minimal kernel doubles every element of an array on the GPU.
+The smallest useful verification is a one-dimensional GPU kernel. It checks the current TIRX entry-point style:
 
-Three TIRX primitives appear in every kernel:
-
-- **`with Tx.kernel():`** opens the kernel-launch scope. Everything inside it runs on the GPU. Outside this block you are still on the host.
-- **`Tx.cta_id([num_blocks], parent="kernel")`** declares the CTA (CUDA block) grid extent and returns a symbolic block index, exactly like `blockIdx.x` in raw CUDA. `[num_blocks]` becomes the grid size.
-- **`Tx.thread_id([num_threads_per_cta], parent="cta")`** declares the per-CTA thread extent and returns the symbolic thread index (like `threadIdx.x`). The CTA size is `num_threads_per_cta`.
-- **`with Tx.thread():`** opens a thread-level execution scope — every thread runs the body independently. Other scopes (`Tx.warp()`, `Tx.warpgroup()`, `Tx.cta()`) exist for cooperative tile primitives and are introduced later in the tutorial.
-
-With those in hand, the kernel maps a length-`n` array to a 1-D grid of CTAs, each with 256 threads, and has every thread double one element:
+- `@Tx.prim_func` defines one TIRX primitive function.
+- `Tx.device_entry()` marks the start of device code.
+- `Tx.cta_id([...])` names the CTA index and launch extent.
+- `Tx.thread_id([...])` names the thread index inside a CTA.
+- `with Tx.thread():` marks per-thread work.
 
 ```{.python .input}
+import torch
 import tvm
 from tvm.script import tirx as Tx
-import torch
 
 BLOCK = 256
-
-@Tx.prim_func(tirx=True)
-def double_it(A_ptr: Tx.handle, B_ptr: Tx.handle):
-    n = Tx.int32()
-    A = Tx.match_buffer(A_ptr, [n], "float32")
-    B = Tx.match_buffer(B_ptr, [n], "float32")
-    with Tx.kernel():
-        # Launch ceildiv(n, BLOCK) CTAs of BLOCK threads each.
-        bx = Tx.cta_id([(n + BLOCK - 1) // BLOCK], parent="kernel")
-        tid = Tx.thread_id([BLOCK], parent="cta")
-        with Tx.thread():
-            i = bx * BLOCK + tid
-            if i < n:                       # tail-guard for non-multiples of BLOCK
-                B[i] = A[i] * 2.0
-
-# Compile
-target = tvm.target.Target("cuda")  # selects the CUDA target used by this Blackwell setup
-with target:
-    lib = tvm.compile(tvm.IRModule({"main": double_it}), target=target, tir_pipeline="tirx")
-
-# Run
-device = torch.device('cuda')  # gpu(0)
-a = torch.randn(1024, device=device)
-b = torch.zeros(1024, device=device)
-lib["main"](tvm.runtime.from_dlpack(a), tvm.runtime.from_dlpack(b))
-
-# Verify
-match = torch.allclose(b, a * 2)
-print(f"Input:  {a[:5].tolist()}")
-print(f"Output: {b[:5].tolist()}")
-print(f"Match:  {match}")
-assert match, "FAIL: output does not match a * 2"
-print("\nSetup verified! Your TIRX environment is working correctly.")
 ```
 
-A few observations:
+```{.python .input}
+@Tx.prim_func
+def double_it(a_ptr: Tx.handle, b_ptr: Tx.handle):
+    n = Tx.int32()
+    A = Tx.match_buffer(a_ptr, [n], "float32")
+    B = Tx.match_buffer(b_ptr, [n], "float32")
 
-- The grid extent is a TIR expression — `(n + BLOCK - 1) // BLOCK` is computed at launch time from the runtime value of `n`, not baked into the binary. The same compiled kernel handles any `n`.
-- `Tx.int32()` (no argument) declares a *symbolic* runtime parameter, similar to a `tl::Tensor` shape parameter in TVM TensorIR.
-- `Tx.match_buffer` binds a `Tx.handle` (a raw pointer passed from the host) to a strided tensor view — there is no shape-checking at the C ABI; the host is responsible for passing the right `n`.
+    Tx.device_entry()
+    bx = Tx.cta_id([(n + BLOCK - 1) // BLOCK])
+    tid = Tx.thread_id([BLOCK])
 
-`Setup verified!` confirms that the environment works. Otherwise:
+    with Tx.thread():
+        i = bx * BLOCK + tid
+        if i < n:
+            B[i] = A[i] * 2.0
+```
 
-- **`ModuleNotFoundError: No module named 'tvm'`**: Re-run the pip install command.
+Compile and run:
 
-- **`CUDA error`**: Check that `nvidia-smi` shows a Blackwell GPU and driver >= 570
+```{.python .input}
+target = tvm.target.Target("cuda")
+with target:
+    ex = tvm.compile(tvm.IRModule({"main": double_it}), target=target, tir_pipeline="tirx")
 
-- **Compilation error**: Make sure you installed the `cu130` version of both TVM and PyTorch
+n = 1024
+a = torch.arange(n, dtype=torch.float32, device="cuda")
+b = torch.empty_like(a)
+ex(a, b)
 
-For generated CUDA inspection, use the debugging appendix for warp-specialized kernels or the language reference for the lower-level `inspect_source()` workflow.
+torch.testing.assert_close(b, a * 2)
+print("PASS")
+```
+
+## Inspect Generated CUDA
+
+After compiling, inspect the lowered CUDA source:
+
+```python
+cuda_source = ex.mod.imports_[0].inspect_source("cuda")
+print(cuda_source)
+```
+
+For this kernel, search for `blockIdx.x`, `threadIdx.x`, and the final store. For GEMM and Flash Attention kernels, the same inspection method is useful for checking guards, barriers, `cp.async.bulk`, and `tcgen05` instructions.
+
+## Troubleshooting
+
+- **Package URL returns 404**: check that the wheel version is `0.25.dev0`, not the older `0.24.dev0`.
+- **CUDA error at launch**: check `nvidia-smi`, the driver version, and that the process is running on a Blackwell GPU.
+- **`inspect_source` has no CUDA import**: make sure the target is `cuda` and `tir_pipeline="tirx"` was passed to `tvm.compile`.
+- **Import error for TVM FFI**: update `apache-tvm-ffi` and restart the Python process.

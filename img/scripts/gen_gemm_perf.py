@@ -25,6 +25,6 @@ for x, t in enumerate(times):
     time_label = f'{t:.3f} ms' if t < 0.2 else (f'{t:.2f} ms' if t < 10 else f'{t:.1f} ms')
     ax.text(x, t * 1.20, time_label, ha='center', va='bottom', fontsize=9, clip_on=False)
 
-plt.savefig('../gemm_perf_b200_v2.png', dpi=150, bbox_inches='tight')
-print('Saved gemm_perf_b200_v2.png')
+plt.savefig('../gemm_perf.png', dpi=150, bbox_inches='tight')
+print('Saved gemm_perf.png')
 plt.close()

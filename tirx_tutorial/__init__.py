@@ -1,4 +1,4 @@
-"""Source code for TIRX Tutorial (https://github.com/mlc-ai/tirx-tutorial).
+"""Source code for the TIRX tutorial.
 
 """
 
