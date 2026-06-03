@@ -70,11 +70,6 @@ Show Source
     <div class="mdl-layout__header-row header-links">
       <div class="mdl-layout-spacer"></div>
       <nav class="mdl-navigation">
-          
-              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
-                  <i class="fab fa-github"></i>
-                  GitHub
-              </a>
       </nav>
     </div>
 </header><header class="mdl-layout__drawer">
@@ -102,12 +97,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -145,12 +140,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -169,7 +164,7 @@ Show Source
 <p>Before asking an agent to work on TIRX, give it the source code it must
 reason from. It should be able to read the <code class="docutils literal notranslate"><span class="pre">tvm</span></code> codebase for the TIRX
 DSL, layout objects, tile primitives, and lowering rules, and the
-<code class="docutils literal notranslate"><span class="pre">tirx-kernels-dev</span></code> codebase for real kernels, scheduler helpers, and
+<code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> codebase for real kernels, scheduler helpers, and
 barrier patterns. Without those references, the agent will fall back to
 generic CUDA, Triton, or Hopper assumptions, which are often wrong for
 Blackwell TIRX.</p>
@@ -225,7 +220,7 @@ programmer still owns the final contract.</p>
 </figure>
 <p>A practical workflow is:</p>
 <ol class="arabic simple">
-<li><p>Point the agent at <code class="docutils literal notranslate"><span class="pre">tvm</span></code> and <code class="docutils literal notranslate"><span class="pre">tirx-kernels-dev</span></code>.</p></li>
+<li><p>Point the agent at <code class="docutils literal notranslate"><span class="pre">tvm</span></code> and <code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code>.</p></li>
 <li><p>Start with the goal, but do not stop there.</p></li>
 <li><p>If the path is unclear, ask for candidate strategies and tradeoffs.</p></li>
 <li><p>Choose one strategy and rewrite it as a concrete TIRX instruction:
@@ -291,7 +286,7 @@ which lowering is legal. Barriers say which producer-consumer edges make
 the async work safe to consume. The example below is the kind of prompt
 you can derive from the warp-specialized GEMM chapter.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Target: NVIDIA Blackwell SM100a.
-Kernel: Step 7 warp-specialized GEMM.
+Kernel: warp-specialized GEMM from Chapter 5.
 
 Tile path:
 GMEM -&gt; SMEM by TMA.
@@ -333,7 +328,7 @@ elected thread, but the barrier arrive is outside the elected-thread
 scope:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
     <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)[</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()]:</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()):</span>
         <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
             <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span>
             <span class="n">Asmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
@@ -368,7 +363,7 @@ Can empty commit groups signal the barrier early?
 MMA issue:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
     <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)[</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()]:</span>
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()):</span>
         <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
             <span class="n">tmem</span><span class="p">[:,</span> <span class="p">:</span><span class="n">BLK_N</span><span class="p">],</span>
             <span class="n">Asmem</span><span class="p">[</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">],</span>
@@ -463,7 +458,7 @@ Examples:</p>
 <li><p>move writeback through SMEM and TMA store.</p></li>
 </ul>
 <p>Ask for invariant checks, not a broad review:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I changed a Step-7-style single-CTA GEMM into the Step 8 clustered form with CTA_GROUP=2.
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I changed a warp-specialized single-CTA GEMM into the clustered Chapter 5 form with CTA_GROUP=2.
 Check only the cluster invariants:
 - tcgen05.alloc / gemm_async / commit / dealloc cta_group values
 - scheduler tile shape
@@ -511,9 +506,9 @@ issue, commit, deallocation, remote barriers, and scheduler tile shape.</p>
 <section id="use-case-3-debug-from-symptoms">
 <h2><span class="section-number">7.7. </span>Use Case 3: Debug from Symptoms<a class="headerlink" href="#use-case-3-debug-from-symptoms" title="Permalink to this heading">¶</a></h2>
 <p>When a kernel fails, first classify the symptom. Then ask the agent to
-map the symptom back to the nearest producer-consumer handoff. The
-detailed GEMM debugging checklist lives in the appendix; the table here
-is the prompt-level version.</p>
+map the symptom back to the nearest producer-consumer handoff. The table
+here is the prompt-level version; use the TIRX Language and Compile
+Pipeline appendix page when you need generated-CUDA inspection.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Symptom</p></th>
@@ -648,8 +643,8 @@ Does it require all lanes of one warp, or only lane 0?
 </table>
 <p>If the agent’s explanation disagrees with the generated code, trust the
 generated code.</p>
-<p>The appendix has a fuller generated-CUDA checklist for warp-specialized
-GEMM debugging.</p>
+<p>For a broader generated-CUDA workflow, use the TIRX Language and Compile
+Pipeline appendix page.</p>
 </section>
 <section id="agent-review-boundaries">
 <h2><span class="section-number">7.10. </span>Agent Review Boundaries<a class="headerlink" href="#agent-review-boundaries" title="Permalink to this heading">¶</a></h2>
@@ -705,9 +700,9 @@ an agent than a long chat history.</p>
 <section id="exercises">
 <h2><span class="section-number">7.12. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
-<li><p>Take Step 7 and ask an agent to produce a tile-primitive table:
-primitive, scope, layout, dispatch, wait-before, signal-after. Which
-entries did it miss?</p></li>
+<li><p>Take the warp-specialized GEMM from Chapter 5 and ask an agent to
+produce a tile-primitive table: primitive, scope, layout, dispatch,
+wait-before, signal-after. Which entries did it miss?</p></li>
 <li><p>Move <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> outside the elected MMA issue scope in a
 local experiment. Ask the agent to diagnose the failure using only
 the symptom, then ask again with the <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> hardware

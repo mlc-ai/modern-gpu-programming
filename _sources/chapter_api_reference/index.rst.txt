@@ -1,419 +1,145 @@
 
 .. _chap_api_reference:
 
-TIRX API Lookup
-===============
+TIRX API Reference
+==================
 
 
-Lookup table for the TIRX APIs used across the examples.
+This page is a lookup table for the APIs used in the tutorial. It
+follows the current TVM/TIRX style from the local ``tvm`` and
+``tirx-kernels`` repositories.
 
-Thread Hierarchy
+Kernel Entry and Coordinates
+----------------------------
+
++------------------------------------+---------------------------------------------+
+| API                                | Meaning                                     |
++====================================+=============================================+
+| ``@Tx.prim_func``                  | Define a TIRX primitive function. Use this  |
+|                                    | when the function signature is already      |
+|                                    | concrete.                                   |
++------------------------------------+---------------------------------------------+
+| ``@Tx.jit(...)``                   | Define a constexpr-specialized TIRX         |
+|                                    | function. Current reference kernels use     |
+|                                    | this for shape-specialized kernels such as  |
+|                                    | Flash Attention 4.                          |
++------------------------------------+---------------------------------------------+
+| ``Tx.device_entry()``              | Mark the start of device code. Put thread   |
+|                                    | coordinates and device allocations after    |
+|                                    | this line.                                  |
++------------------------------------+---------------------------------------------+
+| ``Tx.cta_id([Gx, Gy, ...])``       | CTA index in the launch grid. The list      |
+|                                    | gives the grid extent.                      |
++------------------------------------+---------------------------------------------+
+| ``Tx.cluster_id([...])``           | Cluster index in the launch grid, when CTA  |
+|                                    | clusters are used.                          |
++------------------------------------+---------------------------------------------+
+| ``Tx.cta_id_in_cluster([Cx, Cy])`` | CTA coordinate inside a cluster.            |
++------------------------------------+---------------------------------------------+
+| ``Tx.warpgroup_id([Nw])``          | Warpgroup id inside a CTA.                  |
++------------------------------------+---------------------------------------------+
+| ``Tx.warp_id([Nw])``               | Warp id inside a CTA.                       |
++------------------------------------+---------------------------------------------+
+| ``Tx.warp_id_in_wg([4])``          | Warp id inside a warpgroup. A warpgroup has |
+|                                    | 4 warps.                                    |
++------------------------------------+---------------------------------------------+
+| ``Tx.thread_id([Nt])``             | Thread id inside a CTA.                     |
++------------------------------------+---------------------------------------------+
+| ``Tx.thread_id_in_wg([128])``      | Thread id inside a warpgroup.               |
++------------------------------------+---------------------------------------------+
+| ``Tx.lane_id([32])``               | Lane id inside a warp.                      |
++------------------------------------+---------------------------------------------+
+
+Current coordinate APIs do not take ``parent=...``. The parent level is
+encoded in the function name, for example ``cta_id_in_cluster`` and
+``warp_id_in_wg``.
+
+Execution Scopes
 ----------------
 
-+-----------------------------------------------+----------------------------------------------------+
-| API                                           | Description                                        |
-+===============================================+====================================================+
-| ``@Tx.prim_func(tirx=True)``                  | Declare a TIRX primitive function                  |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.kernel()``                               | Kernel execution scope                             |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.cluster()``                              | Cluster execution scope (clustered launches only)  |
-+-----------------------------------------------+----------------------------------------------------+
-| ``with Tx.cta():``                            | Scope: all threads in the CTA execute this block   |
-+-----------------------------------------------+----------------------------------------------------+
-| ``with Tx.warpgroup():``                      | Scope: all 128 threads in the warpgroup execute    |
-|                                               | this block                                         |
-+-----------------------------------------------+----------------------------------------------------+
-| ``with Tx.warp():``                           | Scope: all 32 threads in the warp execute this     |
-|                                               | block                                              |
-+-----------------------------------------------+----------------------------------------------------+
-| ``with Tx.thread():``                         | Scope: each thread executes independently          |
-+-----------------------------------------------+----------------------------------------------------+
-| ``with Tx.thread(cond):``                     | Scope: only threads where ``cond`` is true execute |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.filter(var, lo, hi)`` /                  | Active-thread filter — narrow the current scope to |
-| ``Tx.filter(var, cond)``                      | ``var ∈ [lo, hi)`` or ``cond`` true. Use as the    |
-|                                               | scope argument:                                    |
-|                                               | ``with Tx.warp(parent="cta")[warp_id == 0]:``      |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.cta_id([Gx, Gy, ...], parent="kernel")`` | CTA index in the grid (kernel → cta)               |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.cta_id([Cx, Cy], parent="cluster")``     | CTA index within the cluster (cluster → cta)       |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.warpgroup_id([Nw], parent="cta")``       | Warpgroup index within the CTA (cta → warpgroup)   |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.warp_id([Nw], parent="cta")``            | Warp index within the CTA (cta → warp)             |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.warp_id([4], parent="warpgroup")``       | Warp index within the warpgroup; these examples    |
-|                                               | use 4 warps per warpgroup                          |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.thread_id([Nt], parent="cta")``          | Thread index within the CTA (cta → thread)         |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.thread_id([128], parent="warpgroup")``   | Thread index within the warpgroup; 128 for a       |
-|                                               | 4-warp warpgroup                                   |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.thread_id([32], parent="warp")``         | Thread index within a warp; warp lanes have extent |
-|                                               | 32                                                 |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.cuda.thread_rank()``                     | Linear thread index within the CTA (i.e.,          |
-|                                               | ``threadIdx.x + threadIdx.y * blockDim.x + ...``). |
-|                                               | Used as the default ``leader`` predicate for       |
-|                                               | one-thread-per-CTA work such as ``MBarrier.init``. |
-+-----------------------------------------------+----------------------------------------------------+
-| ``Tx.ptx.elect_sync()``                       | Elect one thread *per warp* (so 4 threads in a     |
-|                                               | 4-warp warpgroup). Use it only at sites that       |
-|                                               | intentionally want per-warp elected issue. For one |
-|                                               | whole-tile TMA copy, use a single issuer such as   |
-|                                               | ``tid == 0`` so the copy and byte-count update     |
-|                                               | happen once.                                       |
-+-----------------------------------------------+----------------------------------------------------+
++---------------------------+---------------------------------------------+
+| API                       | Meaning                                     |
++===========================+=============================================+
+| ``with Tx.cluster():``    | Cluster-cooperative region. Used only by    |
+|                           | clustered kernels.                          |
++---------------------------+---------------------------------------------+
+| ``with Tx.cta():``        | CTA-cooperative region.                     |
++---------------------------+---------------------------------------------+
+| ``with Tx.warpgroup():``  | Warpgroup-cooperative region, 128 threads.  |
++---------------------------+---------------------------------------------+
+| ``with Tx.warp():``       | Warp-cooperative region, 32 threads.        |
++---------------------------+---------------------------------------------+
+| ``with Tx.thread():``     | Per-thread region.                          |
++---------------------------+---------------------------------------------+
+| ``with Tx.thread(cond):`` | Per-thread region narrowed by a predicate.  |
++---------------------------+---------------------------------------------+
+| ``Tx.filter(var, pred)``  | Predicate helper when a scope needs to      |
+|                           | select active lanes from a symbolic         |
+|                           | variable.                                   |
++---------------------------+---------------------------------------------+
 
-Function Parameters
+Example:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   tid = Tx.thread_id_in_wg([128])
+   with Tx.thread(tid == 0):
+       Tx.copy_async(Asmem[:, :], A_tile, dispatch="tma")
+
+``Tx.ptx.elect_sync()`` elects one participating thread per warp. It is
+useful for warp-level issue paths, but it is not the same as
+``tid == 0``.
+
+Buffers and Storage
 -------------------
 
-+-------------------------------------------+---------------------------------------------------+
-| API                                       | Description                                       |
-+===========================================+===================================================+
-| ``Tx.Buffer(shape, dtype)``               | Buffer parameter with shape known at compile      |
-|                                           | time. Use when dimensions are Python constants    |
-|                                           | (e.g., GEMM with fixed M, N, K).                  |
-+-------------------------------------------+---------------------------------------------------+
-| ``Tx.handle``                             | Opaque buffer parameter with shape determined at  |
-|                                           | runtime. Pair with ``Tx.match_buffer`` inside the |
-|                                           | kernel to bind the actual shape.                  |
-+-------------------------------------------+---------------------------------------------------+
-| ``Tx.match_buffer(handle, shape, dtype)`` | Bind a ``Tx.handle`` parameter to a typed buffer  |
-|                                           | with a specific shape. Shape dimensions can       |
-|                                           | include ``Tx.int32()`` symbolic variables for     |
-|                                           | runtime values.                                   |
-+-------------------------------------------+---------------------------------------------------+
-| ``Tx.int32()``                            | Declare a symbolic integer dimension. The actual  |
-|                                           | value is inferred at runtime from the buffer      |
-|                                           | shape.                                            |
-+-------------------------------------------+---------------------------------------------------+
++---------------------------------------------------------------------------+---------------------------------------------+
+| API                                                                       | Meaning                                     |
++===========================================================================+=============================================+
+| ``Tx.Buffer(shape, dtype)``                                               | Typed kernel argument in a concrete         |
+|                                                                           | signature.                                  |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``Tx.match_buffer(ptr, shape, dtype)``                                    | Bind an opaque pointer argument to a typed  |
+|                                                                           | buffer view.                                |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``Tx.alloc_local(shape, dtype)``                                          | Per-thread register/local storage.          |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``Tx.SMEMPool()``                                                         | Shared-memory allocation pool.              |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``pool.alloc(shape, dtype, layout=..., align=...)``                       | Allocate shared-memory storage from the     |
+|                                                                           | pool.                                       |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``pool.alloc_mma(shape, dtype)``                                          | Allocate shared-memory storage using the    |
+|                                                                           | MMA-friendly helper used by current         |
+|                                                                           | kernels.                                    |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``pool.move_base_to(offset)``                                             | Advance the pool base before later          |
+|                                                                           | allocations.                                |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``pool.commit()``                                                         | Close the shared-memory allocation plan.    |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``Tx.decl_buffer(..., scope="tmem", allocated_addr=...)``                 | Create an indexable view over a TMEM        |
+|                                                                           | allocation. It does not allocate TMEM by    |
+|                                                                           | itself.                                     |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``Tx.TMEMPool(pool, total_cols=..., cta_group=..., tmem_addr=...)``       | Manage a TMEM allocation through a pool     |
+|                                                                           | object.                                     |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``tmem_pool.alloc(shape, dtype, layout=..., cols=..., datapath=...)``     | Allocate a TMEM view from the pool.         |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``tmem_pool.commit()``                                                    | Commit the TMEM allocation.                 |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``tmem_pool.dealloc()``                                                   | Release the TMEM allocation.                |
++---------------------------------------------------------------------------+---------------------------------------------+
+| ``Tx.TMEMStages(tmem, col_start=..., width=..., stages=..., stride=...)`` | Describe repeated TMEM stage regions inside |
+|                                                                           | one allocation.                             |
++---------------------------------------------------------------------------+---------------------------------------------+
 
-Memory
-------
-
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| API                                                                            | Description                                          |
-+================================================================================+======================================================+
-| ``Tx.SMEMPool()``                                                              | Shared memory pool allocator                         |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``pool.alloc(shape, dtype, layout=...)``                                       | Allocate buffer from pool                            |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``pool.move_base_to(offset)``                                                  | Set next allocation offset (for overlapping buffers) |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``pool.commit()``                                                              | Finalize all allocations                             |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.TMEMPool(smem_pool, total_cols, cta_group, tmem_addr)``                   | TMEM pool. Wraps one ``tcgen05.alloc`` of            |
-|                                                                                | ``total_cols`` columns whose returned base address   |
-|                                                                                | is written to ``tmem_addr[0]``; subsequent           |
-|                                                                                | ``alloc(shape, dtype, layout=...)`` calls hand out   |
-|                                                                                | ``Tx.decl_buffer(scope="tmem", allocated_addr=...)`` |
-|                                                                                | slices into that region.                             |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.alloc_local(shape, dtype)``                                               | Allocate per-thread register buffer                  |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``buf.view(shape, layout=...)``                                                | Create a view of a register buffer with a different  |
-|                                                                                | layout                                               |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.decl_buffer(shape, dtype, scope=..., data=..., allocated_addr=..., ...)`` | Declare a buffer view or allocation. In these GEMM   |
-|                                                                                | kernels it is used for TMEM views and aliases over   |
-|                                                                                | existing storage.                                    |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.address_of(buf)``                                                         | Get address of a buffer (used for TMEM alloc)        |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``buf.ptr_to([idx])``                                                          | Get pointer to the idx-th element (used for mbarrier |
-|                                                                                | access)                                              |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``tma_shared_layout(dtype, SwizzleMode, shape)``                               | Create TMA-compatible swizzled layout for SMEM       |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.ptx.tcgen05.alloc(addr, n_cols, cta_group)``                              | Allocate TMEM                                        |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group)``                          | Release TMEM allocation permit                       |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-| ``Tx.ptx.tcgen05.dealloc(addr, n_cols, cta_group)``                            | Deallocate TMEM                                      |
-+--------------------------------------------------------------------------------+------------------------------------------------------+
-
-Data Movement
--------------
-
-+------------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| API                                                                                                  | Description                                       |
-+======================================================================================================+===================================================+
-| ``Tx.copy(dst, src)``                                                                                | Synchronous copy (LDG / STG / LDS / STS variants) |
-+------------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``Tx.copy_async(dst, src, dispatch="tma", ...)``                                                     | TMA async copy (load or store)                    |
-+------------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``Tx.copy_async(reg, tmem)`` / ``Tx.copy_async(tmem, reg)``                                          | ``tcgen05.ld`` / ``tcgen05.st`` (warpgroup        |
-|                                                                                                      | scope); follow with ``Tx.ptx.tcgen05.wait.ld()``  |
-|                                                                                                      | / ``wait.st()``                                   |
-+------------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``Tx.cast(dst, src)``                                                                                | Element-wise type cast                            |
-+------------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``Tx.gemm_async(C, A, B, *, transA=False, transB=False, accum=False, dispatch="tcgen05", **kwargs)`` | tcgen05 MMA. ``accum`` is keyword-only (default   |
-|                                                                                                      | ``False``); tcgen05-specific options such as      |
-|                                                                                                      | ``cta_group=`` flow through ``**kwargs`` into the |
-|                                                                                                      | op config.                                        |
-+------------------------------------------------------------------------------------------------------+---------------------------------------------------+
-
-Math
-----
-
-+-------------------+---------------------------------------------------+
-| API               | Description                                       |
-+===================+===================================================+
-| ``Tx.tanh(x)``    | Element-wise tanh; preserves dtype of ``x``       |
-+-------------------+---------------------------------------------------+
-| ``Tx.rsqrt(x)``   | Element-wise reciprocal square root,              |
-|                   | ``1 / sqrt(x)``; preserves dtype of ``x``         |
-+-------------------+---------------------------------------------------+
-| ``Tx.exp(x)`` /   | Standard transcendentals lowered to CUDA math     |
-| ``Tx.log(x)`` /   | intrinsics or equivalent device code              |
-| ``Tx.sqrt(x)``    |                                                   |
-+-------------------+---------------------------------------------------+
-
-Control Flow
-------------
-
-+----------------------------+---------------------------------------------------+
-| API                        | Description                                       |
-+============================+===================================================+
-| ``for i in Tx.unroll(N):`` | Explicit unrolled loop with ``i`` usable for      |
-|                            | buffer slicing                                    |
-+----------------------------+---------------------------------------------------+
-| ``for i in Tx.serial(N):`` | Sequential loop (not unrolled), ``i`` is a TIR    |
-|                            | variable                                          |
-+----------------------------+---------------------------------------------------+
-
-``Tx.meta_var`` and ``@Tx.inline`` are covered under *Syntactic Sugar*;
-they are parser-time conveniences, not tile-primitive semantics.
-
-Synchronization
----------------
-
-+-----------------------------------------------------+---------------------------------------------------+
-| API                                                 | Description                                       |
-+=====================================================+===================================================+
-| ``Tx.ptx.mbarrier.init(ptr, count)``                | Initialize mbarrier with expected arrival count   |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.mbarrier.try_wait(ptr, phase)``            | Wait for mbarrier phase                           |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.mbarrier.arrive.expect_tx(ptr, bytes)``    | Set expected TMA byte count                       |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.tcgen05.commit(ptr, cta_group, cta_mask)`` | tcgen05 commit (auto-arrive on completion)        |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.tcgen05.fence.after_thread_sync()``        | Conservative fence sometimes used before TMEM     |
-|                                                     | readback to order prior ``tcgen05`` writes        |
-|                                                     | against subsequent ``tcgen05.ld`` reads           |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.fence.proxy_async("shared::cta")``         | Shared memory fence                               |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.fence.mbarrier_init()``                    | Fence after mbarrier initialization               |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.cp_async.bulk.commit_group()``             | Commit pending TMA store operations               |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.cp_async.bulk.wait_group(n)``              | Wait until at most ``n`` TMA store groups remain  |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.ptx.bar.sync(barrier_id, thread_count)``       | Named-barrier ``__syncthreads``. Synchronizes     |
-|                                                     | exactly ``thread_count`` threads on barrier       |
-|                                                     | ``barrier_id`` (0–15). Useful when only a subset  |
-|                                                     | of the CTA participates — e.g., a ``bdx * bdy``   |
-|                                                     | grid that does not fill 128/256 threads — where   |
-|                                                     | plain ``cta_sync()`` would hang.                  |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.cuda.cta_sync()``                              | CTA-wide barrier (like ``__syncthreads``)         |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.cuda.warpgroup_sync(barrier_id)``              | Warpgroup-level barrier                           |
-+-----------------------------------------------------+---------------------------------------------------+
-| ``Tx.cuda.cluster_sync()``                          | Cluster-wide barrier                              |
-+-----------------------------------------------------+---------------------------------------------------+
-
-High-Level Abstractions
------------------------
-
-These abstractions are introduced in Step 7 (Warp Specialization) and
-used through Step 9.
-
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| API                                                                           | Description                                       |
-+===============================================================================+===================================================+
-| ``TMABar(pool, depth)``                                                       | Barrier signaled by TMA                           |
-|                                                                               | (``mbarrier.arrive.expect_tx``)                   |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``TCGen05Bar(pool, depth)``                                                   | Barrier signaled by ``tcgen05.commit``            |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``MBarrier(pool, depth, phase_offset=0, leader=None)``                        | Plain mbarrier — threads arrive explicitly        |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``bar.init(count)``                                                           | Initialize barrier with expected arrival count    |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``bar.wait(stage, phase)``                                                    | Wait for barrier at given stage and phase         |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``TMABar.arrive(stage, tx_count=, cta_id=, pred=)``                           | Arrive with expected transaction-byte count.      |
-|                                                                               | ``tx_count`` is the total bytes TMA will deposit  |
-|                                                                               | for this stage.                                   |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``TCGen05Bar.arrive(stage, cta_group=, cta_mask=)``                           | Arrive via ``tcgen05.commit``. Guard it so only   |
-|                                                                               | the intended issuer calls it; the examples use    |
-|                                                                               | ``elect_sync`` because the MMA issue site does.   |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``MBarrier.arrive(stage, cta_id=, pred=)``                                    | Thread-level arrive                               |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``bar.ptr_to([stage])``                                                       | Get pointer to barrier at given stage             |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``MBarrier.remote_view(rank)`` / ``TMABar.remote_view(rank)``                 | View a barrier mapped to another CTA’s SMEM       |
-|                                                                               | (cluster kernels)                                 |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``Pipe(pool, stages, full_type=, empty_type=, init_full=, init_empty=, ...)`` | Full+empty barrier pair for a software-pipelined  |
-|                                                                               | data flow                                         |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``Pipe.tma(pool, stages, ...)`` / ``Pipe.tcgen05(...)`` / ``Pipe.mbar(...)``  | Factory shortcuts for the three common pipe       |
-|                                                                               | topologies                                        |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``pipe.producer()`` / ``pipe.consumer()``                                     | Return a ``_PipeEndpoint`` with ``.wait()`` /     |
-|                                                                               | ``.signal()`` / ``.advance()``                    |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``RingState(depth, phase=)``                                                  | Tracks stage index and phase for a ring buffer    |
-|                                                                               | (no barrier inside)                               |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``RingState.init(phase)``                                                     | Initialize phase tracking (1 for producer, 0 for  |
-|                                                                               | consumer)                                         |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``RingState.stage`` / ``.phase``                                              | Current stage index and phase value               |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-| ``RingState.advance()``                                                       | Advance to next stage; flip phase when wrapping   |
-+-------------------------------------------------------------------------------+---------------------------------------------------+
-
-Tile Scheduling
----------------
-
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| API                                                                                             | Description                                       |
-+=================================================================================================+===================================================+
-| ``ClusterPersistentScheduler2D(name, num_m_tiles, num_n_tiles, l2_group_size=, num_clusters=)`` | L2-friendly persistent scheduler — assigns        |
-|                                                                                                 | ``(m_idx, n_idx)`` blocks round-robin across      |
-|                                                                                                 | ``num_clusters`` CTAs.                            |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``scheduler.init(cta_id)``                                                                      | Bind this CTA’s starting tile                     |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``scheduler.valid()``                                                                           | True while this CTA still has tiles               |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``scheduler.m_idx`` / ``scheduler.n_idx`` / ``scheduler.tile_idx``                              | Current tile coordinates (mutable local scalars)  |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``scheduler.next_tile()``                                                                       | Advance to this CTA’s next tile                   |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``FlashAttentionLinearScheduler(...)``                                                          | Per-task linear schedule for non-causal FA        |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-| ``FlashAttentionLPTScheduler(...)``                                                             | Longest-processing-time-first for causal FA       |
-+-------------------------------------------------------------------------------------------------+---------------------------------------------------+
-
-Layout
-------
-
-The layout namespace is ``tvm.tirx.layout`` (also re-exported on ``Tx``
-for the common helpers used here).
-
-+---------------------------------------------------+----------------------------------------------------+
-| API                                               | Description                                        |
-+===================================================+====================================================+
-| ``TileLayout(spec)``                              | Build a layout from ``S[...]``, optional           |
-|                                                   | ``R[...]``, and optional axis-offset terms         |
-+---------------------------------------------------+----------------------------------------------------+
-| ``S[(extents...) : (strides...)]``                | Sharded segment — distribute extents across the    |
-|                                                   | axes given by the stride list                      |
-+---------------------------------------------------+----------------------------------------------------+
-| ``R[N : axis]``                                   | Replica — broadcast across ``N`` lanes of ``axis`` |
-+---------------------------------------------------+----------------------------------------------------+
-| ``+ offset`` / ``+ n@axis``                       | Offset term — shift the layout along the ordinary  |
-|                                                   | memory axis or a named axis                        |
-+---------------------------------------------------+----------------------------------------------------+
-| ``TLane``, ``TCol``                               | Named TMEM hardware axes (rows × columns of tensor |
-|                                                   | memory)                                            |
-+---------------------------------------------------+----------------------------------------------------+
-| ``tid_in_wg``, ``laneid``, ``warpid``             | Named axes for the warpgroup-level thread          |
-|                                                   | coordinate, the in-warp lane, and the warp-in-CTA  |
-|                                                   | index                                              |
-+---------------------------------------------------+----------------------------------------------------+
-| ``cbx``, ``cby``                                  | Named cluster axes (cluster block x / y)           |
-+---------------------------------------------------+----------------------------------------------------+
-| ``wg_local_layout(cols, rows=128)``               | Shorthand for                                      |
-|                                                   | ``TileLayout(S[(rows, cols) : (1@tid_in_wg, 1)])`` |
-|                                                   | — a warpgroup-wide RF tile                         |
-+---------------------------------------------------+----------------------------------------------------+
-| ``tma_shared_layout(dtype, swizzle_mode, shape)`` | Produce a TMA-compatible swizzled SMEM layout.     |
-|                                                   | Wrapper around ``tma_utils``.                      |
-+---------------------------------------------------+----------------------------------------------------+
-| ``SwizzleMode.SWIZZLE_128B_ATOM`` /               | TMA swizzle modes for SMEM atoms                   |
-| ``SWIZZLE_64B_ATOM`` / etc.                       |                                                    |
-+---------------------------------------------------+----------------------------------------------------+
-
-Common Pitfalls
----------------
-
-- **``accum`` must be boolean-compatible**: Use ``False`` (not ``0``)
-  for the first MMA iteration.
-
-- **Fence API**: Use ``Tx.ptx.fence.proxy_async("shared::cta")`` —
-  positional argument, not keyword ``scope=``.
-
-- **Do not call ``cta_sync()`` inside an elected-thread scope** — only
-  one thread is executing, but ``cta_sync()`` requires all CTA threads.
-
-- **``alloc_local`` vs ``decl_buffer``**: Use ``Tx.alloc_local`` when
-  you need a fresh per-thread register allocation. Use
-  ``Tx.decl_buffer`` when declaring a buffer view/alias over existing
-  storage, or when declaring hardware-managed storage such as TMEM. In
-  the implementation, a ``decl_buffer`` without ``data`` can lower to an
-  allocation, so treat this as a style rule for the tutorial code rather
-  than a hard IR limitation.
-
-- **TMA store must be followed by ``commit_group()`` +
-  ``wait_group(0)``**: Without waiting, the next iteration may overwrite
-  Dsmem.
-
-- **TMA issue count should match the intended copy count**: A plain
-  ``elect_sync()`` under a full warpgroup gives one issuer per warp. Use
-  a single predicate such as ``tid == 0`` for one whole-tile TMA copy
-  unless the code intentionally issues several independent TMA
-  operations.
-
-- **``fence.after_thread_sync()`` is rarely needed in these examples**:
-  The MMA-completion mbarrier already carries release→acquire semantics,
-  so the early GEMM steps omit it. The ``tirx-kernels`` reference
-  kernels take a more conservative stance and insert it in the writeback
-  path, after ``mma2ld.wait(phase)`` and immediately before the first
-  ``tcgen05.ld``, to make the ordering between prior ``tcgen05`` writes
-  to TMEM and the upcoming thread-proxy reads explicit. Do not add it
-  routinely on the TMA→MMA edge in this tutorial; the TMA-completion
-  mbarrier and ``cta_sync()`` after a synchronous SMEM copy already
-  cover those paths.
-
-- **Constants must be defined outside ``@Tx.prim_func(tirx=True)``**:
-  Variables like ``EPI_N``, ``TMEM_LD_N``, ``MMA_N`` must be Python
-  constants.
-
-- **``pool.move_base_to(1024)``**: Reserves the first 1024 bytes for
-  metadata (TMEM address, barriers). All data buffers (Asmem, Bsmem,
-  Dsmem) are allocated sequentially after this offset.
-
-- **GPU flakiness**: If tests fail intermittently, check ``nvidia-smi``
-  and switch to an idle GPU.
-
-Syntactic Sugar
----------------
-
-*These constructs are* **not** *part of the TIRX tile primitive layer*.
-They are parser-time convenience — removing them changes how the code
-looks, not what it means. They show up in Part III because real kernels
-use them to stay readable.
-
-``Tx.meta_var``: parser-time alias
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-``Tx.meta_var(expr)`` tells the parser to reuse ``expr`` as an inline
-symbolic expression instead of materializing a separate TIR variable.
-The expression may contain runtime symbolic coordinates such as CTA ids:
+The common manual pattern is:
 
 .. raw:: latex
 
@@ -421,24 +147,40 @@ The expression may contain runtime symbolic coordinates such as CTA ids:
 
 .. code:: python
 
-   m_st = Tx.meta_var(bx * BLK_M)
-   n_st = Tx.meta_var(by * BLK_N)
-   Tx.copy(Asmem[:, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K])
+   tmem_addr = pool.alloc([1], "uint32")
+   Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+   tmem = Tx.decl_buffer(
+       (128, 512), "float32", scope="tmem", allocated_addr=tmem_addr[0],
+       layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])
+   )
 
-Any variable *assigned* inside ``@Tx.prim_func(tirx=True)`` that is not
-wrapped with ``meta_var`` becomes a TIR dynamic variable. Constants such
-as ``BLK_M``, ``PIPE_DEPTH``, and ``EPI_N`` must still stay Python
-constants defined outside the function.
+Current higher-level kernels usually use ``Tx.TMEMPool(...)``, then call
+``commit()`` and ``dealloc()``.
 
-``@Tx.inline``: compile-time helper
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Layouts
+-------
 
-``@Tx.inline`` marks a helper as inlined at compile time. It can close
-over outer kernel variables, which is useful for packaging repeated load
-/ MMA / writeback boilerplate. The conventional order in a TMA load is
-**issue the copies, then arrive with the byte count** — the TMA engine
-increments the barrier as bytes land, and ``expect_tx`` only sets the
-target count:
++----------------------------------------------+---------------------------------------------+
+| API                                          | Meaning                                     |
++==============================================+=============================================+
+| ``TileLayout(S[(shape) : (mapping)])``       | Map logical tile indices to memory or       |
+|                                              | thread axes.                                |
++----------------------------------------------+---------------------------------------------+
+| ``tma_shared_layout(dtype, swizzle, shape)`` | Shared-memory layout compatible with TMA    |
+|                                              | and ``tcgen05.mma`` descriptors.            |
++----------------------------------------------+---------------------------------------------+
+| ``TLane``, ``TCol``                          | TMEM row and column axes.                   |
++----------------------------------------------+---------------------------------------------+
+| ``tid_in_wg``                                | Warpgroup thread axis, extent 128.          |
++----------------------------------------------+---------------------------------------------+
+| ``laneid``, ``warpid``                       | Warp-level axes used in lower-level         |
+|                                              | layouts.                                    |
++----------------------------------------------+---------------------------------------------+
+| ``cbx``, ``cby``                             | CTA-in-cluster axes used by clustered       |
+|                                              | layouts.                                    |
++----------------------------------------------+---------------------------------------------+
+
+Common GEMM layouts:
 
 .. raw:: latex
 
@@ -446,15 +188,168 @@ target count:
 
 .. code:: python
 
-   @Tx.inline
-   def tma_load(stage, k):
-       tid = Tx.meta_var(warp_id * 32 + lane_id)
-       with Tx.thread(parent="warpgroup")[tid == 0]:
-           Tx.copy_async(Asmem[stage], A[m_st : m_st + BLK_M, k : k + BLK_K],
-                         dispatch="tma", mbar=tma_bar.ptr_to([stage]))
-           Tx.copy_async(Bsmem[stage], B[n_st : n_st + BLK_N, k : k + BLK_K],
-                         dispatch="tma", mbar=tma_bar.ptr_to([stage]))
-           tma_bar.arrive(stage, tx_count=total_bytes)
+   # TMEM accumulator.
+   TileLayout(S[(128, N) : (1@TLane, 1@TCol)])
 
-There is no runtime function-call overhead and no new semantics — just a
-reusable code region.
+   # Warpgroup-distributed register view.
+   TileLayout(S[(128, N) : (1@tid_in_wg, 1)])
+
+Tile Primitives
+---------------
+
++-------------------------------------------------------+---------------------------------------------+
+| API                                                   | Meaning                                     |
++=======================================================+=============================================+
+| ``Tx.copy(dst, src, ...)``                            | Synchronous copy/store. Lowering depends on |
+|                                                       | scope and layouts.                          |
++-------------------------------------------------------+---------------------------------------------+
+| ``Tx.copy_async(dst, src, dispatch="tma", ...)``      | Request a TMA tile load or store. The SMEM  |
+|                                                       | side must use a compatible layout.          |
++-------------------------------------------------------+---------------------------------------------+
+| ``Tx.copy_async(reg_view, tmem_view)``                | TMEM-to-register readback under warpgroup   |
+|                                                       | scope. Follow with                          |
+|                                                       | ``Tx.ptx.tcgen05.wait.ld()``.               |
++-------------------------------------------------------+---------------------------------------------+
+| ``Tx.copy_async(tmem_view, reg_view)``                | Register-to-TMEM writeback used by Flash    |
+|                                                       | Attention softmax/correction paths. Follow  |
+|                                                       | with ``Tx.ptx.tcgen05.wait.st()`` before a  |
+|                                                       | later consumer depends on the store.        |
++-------------------------------------------------------+---------------------------------------------+
+| ``Tx.gemm_async(dst, a, b, dispatch="tcgen05", ...)`` | Blackwell Tensor Core MMA tile operation.   |
++-------------------------------------------------------+---------------------------------------------+
+| ``Tx.cast(dst, src)``                                 | Cast a register/local fragment, commonly    |
+|                                                       | fp32 accumulator values to fp16 output      |
+|                                                       | values.                                     |
++-------------------------------------------------------+---------------------------------------------+
+
+Read a primitive with its local context: source, destination, scope,
+layouts, dispatch, and the wait or barrier that makes the result safe to
+consume.
+
+Synchronization and Hardware Helpers
+------------------------------------
+
++--------------------------------------------------+---------------------------------------------+
+| API                                              | Meaning                                     |
++==================================================+=============================================+
+| ``Tx.cuda.cta_sync()``                           | CTA-wide barrier and shared-memory ordering |
+|                                                  | point.                                      |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.cuda.cluster_sync()``                       | Cluster-wide synchronization.               |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.cuda.warpgroup_sync(id)``                   | Synchronize only the current warpgroup      |
+|                                                  | using a named barrier id.                   |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.mbarrier.init(ptr, count)``             | Initialize an mbarrier.                     |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.mbarrier.arrive.expect_tx(ptr, bytes)`` | Tell a TMA load barrier how many bytes to   |
+|                                                  | expect.                                     |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.mbarrier.try_wait(ptr, phase)``         | Wait until the barrier reaches the expected |
+|                                                  | phase.                                      |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.tcgen05.commit(bar, cta_group=...)``    | Commit issued MMA work to a completion      |
+|                                                  | barrier.                                    |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.tcgen05.wait.ld()``                     | Wait for TMEM-to-register readback.         |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.tcgen05.wait.st()``                     | Wait for register-to-TMEM stores.           |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.cp_async.bulk.commit_group()``          | Commit a TMA store group.                   |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.cp_async.bulk.wait_group(n)``           | Wait until enough TMA store groups have     |
+|                                                  | drained.                                    |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.fence.proxy_async(...)``                | Ordering fence across proxy boundaries,     |
+|                                                  | often before async engines read             |
+|                                                  | thread-written SMEM.                        |
++--------------------------------------------------+---------------------------------------------+
+| ``Tx.ptx.fence.mbarrier_init()``                 | Make initialized mbarriers visible before   |
+|                                                  | later use.                                  |
++--------------------------------------------------+---------------------------------------------+
+
+Pipeline Helpers
+----------------
+
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| API                                                                                                    | Meaning                                     |
++========================================================================================================+=============================================+
+| ``PipelineState(depth, phase=None)``                                                                   | Track the current stage and phase for a     |
+|                                                                                                        | ring buffer.                                |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``state.stage`` / ``state.phase``                                                                      | Current stage index and phase.              |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``state.init(phase)``                                                                                  | Initialize phase tracking.                  |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``state.advance()``                                                                                    | Advance to the next stage and flip phase    |
+|                                                                                                        | when the stage wraps.                       |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``Pipeline(pool, stages, full=..., empty=..., init_full=..., init_empty=..., empty_phase_offset=...)`` | Allocate matching full/empty barrier arrays |
+|                                                                                                        | for a software pipeline.                    |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``pipe.full`` / ``pipe.empty``                                                                         | Barrier endpoints used by producer and      |
+|                                                                                                        | consumer roles.                             |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``MBarrier(pool, depth)``                                                                              | Explicit thread-arrival barrier wrapper.    |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``TMABar(pool, depth)``                                                                                | TMA byte-counting barrier wrapper.          |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+| ``TCGen05Bar(pool, depth)``                                                                            | MMA completion barrier wrapper, signaled by |
+|                                                                                                        | ``tcgen05.commit``.                         |
++--------------------------------------------------------------------------------------------------------+---------------------------------------------+
+
+Example:
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   kv_state = PipelineState(SMEM_PIPE_DEPTH_KV)
+   kv_load = Pipeline(pool, SMEM_PIPE_DEPTH_KV, full="tma", empty="tcgen05", empty_phase_offset=1)
+
+The state tracks which stage is current; the pipeline object owns the
+barriers that protect each stage.
+
+Compile and Inspect
+-------------------
+
+.. raw:: latex
+
+   \diilbookstyleinputcell
+
+.. code:: python
+
+   target = tvm.target.Target("cuda")
+   with target:
+       ex = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
+
+   cuda_source = ex.mod.imports_[0].inspect_source("cuda")
+   print(cuda_source)
+
+Use generated CUDA to verify that scope guards and hardware instructions
+match the intended contract.
+
+Common Footguns
+---------------
+
+- ``@Tx.prim_func(tirx=True)`` is the old spelling. Use
+  ``@Tx.prim_func``; use ``@Tx.jit(...)`` for constexpr-specialized
+  kernels.
+- ``with Tx.kernel():`` is the old entry block. Use
+  ``Tx.device_entry()``.
+- Do not add ``parent=...`` to coordinate calls.
+- ``Tx.filter`` does not have a range form. Pass a variable and a
+  predicate.
+- ``Tx.ptx.elect_sync()`` elects one thread per warp, not one thread per
+  CTA or warpgroup.
+- ``Tx.decl_buffer(..., scope="tmem")`` creates a view. TMEM must
+  already have been allocated by ``tcgen05.alloc`` or ``Tx.TMEMPool``.
+- TMA stores use commit/wait-group completion, not the TMA-load mbarrier
+  byte-counting protocol.
+- An async copy or MMA is not safe to consume until the matching wait or
+  barrier has completed.
+- ``tcgen05.commit`` / ``TCGen05Bar.arrive`` must be guarded so only the
+  intended MMA issuer calls it. Empty commit groups from non-issuer
+  lanes can signal a barrier too early.

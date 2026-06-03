@@ -70,11 +70,6 @@ Show Source
     <div class="mdl-layout__header-row header-links">
       <div class="mdl-layout-spacer"></div>
       <nav class="mdl-navigation">
-          
-              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
-                  <i class="fab fa-github"></i>
-                  GitHub
-              </a>
       </nav>
     </div>
 </header><header class="mdl-layout__drawer">
@@ -102,12 +97,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -145,12 +140,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -168,30 +163,39 @@ Show Source
 <span id="chap-gemm-advanced"></span><h1><span class="section-number">5. </span>Scaling GEMM with Warp Specialization and Clusters<a class="headerlink" href="#scaling-gemm-with-warp-specialization-and-clusters" title="Permalink to this heading">¶</a></h1>
 <p>The previous chapter built the tiled GEMM path and introduced TMA
 pipelining. This chapter switches to the style used by current
-<code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> GEMM implementations: <code class="docutils literal notranslate"><span class="pre">PoolAllocator</span></code>, <code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Pipe</span></code>, <code class="docutils literal notranslate"><span class="pre">PipelineState</span></code>, explicit parent coordinates, CTA clusters,
-and multiple MMA consumers.</p>
+<code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> GEMM implementations: <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code>, <code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">PipelineState</span></code>, CTA clusters, and multiple MMA
+consumers.</p>
 <p>The optimized kernel still follows the same tile path:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>GMEM A/B -&gt; SMEM A/B -&gt; TMEM accumulator -&gt; RF -&gt; SMEM -&gt; GMEM
 </pre></div>
 </div>
 <p>The difference is scheduling. TMA, MMA, and writeback no longer run as
 one sequential block of code. They run as separate roles connected by
-full/empty pipes.</p>
+full/empty pipeline barriers.</p>
 <section id="current-gemm-skeleton">
 <h2><span class="section-number">5.1. </span>Current GEMM Skeleton<a class="headerlink" href="#current-gemm-skeleton" title="Permalink to this heading">¶</a></h2>
+<p>Before reading the skeleton, map the new helpers to the raw pieces from
+earlier chapters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code> replaces manual TMEM allocation and view setup.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Pipeline(...,</span> <span class="pre">full=...,</span> <span class="pre">empty=...)</span></code> replaces arrays of full/empty
+barriers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PipelineState</span></code> carries the stage and phase cursor for a
+software-pipelined ring buffer.</p></li>
+</ul>
 <p>A current optimized GEMM begins by naming the cluster CTA, persistent
-CTA, warpgroup, warp, and lane with explicit parent scopes:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+CTA, warpgroup, warp, and lane:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">jit</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">),</span>
            <span class="n">B</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">b_type</span><span class="p">),</span>
            <span class="n">D</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">d_type</span><span class="p">)):</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
-        <span class="n">cbx</span><span class="p">,</span> <span class="n">cby</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cluster&quot;</span><span class="p">)</span>
-        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
-        <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="n">WG_NUMBER</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
-        <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
-        <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+    <span class="n">cbx</span><span class="p">,</span> <span class="n">cby</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id_in_cluster</span><span class="p">([</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">])</span>
+    <span class="n">wg_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="n">WG_NUMBER</span><span class="p">])</span>
+    <span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id_in_wg</span><span class="p">([</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">lane_id</span><span class="p">([</span><span class="mi">32</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Read those lines as a hierarchy map:</p>
@@ -204,20 +208,14 @@ warpgroup.</p></li>
 </ul>
 <p>The current implementation allocates shared memory and TMEM through pool
 objects:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">PoolAllocator</span><span class="p">()</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
 <span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>
-<span class="n">tmem_pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">TMEMPool</span><span class="p">(</span>
-    <span class="n">pool</span><span class="p">,</span>
-    <span class="n">total_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-    <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
-    <span class="n">warp_id</span><span class="o">=</span><span class="n">warp_id</span><span class="p">,</span>
-    <span class="n">wg_id</span><span class="o">=</span><span class="n">wg_id</span><span class="p">,</span>
-    <span class="n">tmem_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="n">tmem_pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">TMEMPool</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">total_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="n">tmem_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">)</span>
 
-<span class="n">smem_pipe</span> <span class="o">=</span> <span class="n">Pipe</span><span class="o">.</span><span class="n">tma</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">empty_count</span><span class="o">=</span><span class="n">NUM_CONSUMER</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;smem&quot;</span><span class="p">)</span>
-<span class="n">tmem_pipe</span> <span class="o">=</span> <span class="n">Pipe</span><span class="o">.</span><span class="n">tcgen05</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">NUM_CONSUMER</span><span class="p">,</span>
-                         <span class="n">empty_count</span><span class="o">=</span><span class="n">CTA_GROUP</span> <span class="o">*</span> <span class="mi">128</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">)</span>
+<span class="n">smem_pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="n">empty</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
+                     <span class="n">init_empty</span><span class="o">=</span><span class="n">NUM_CONSUMER</span><span class="p">)</span>
+<span class="n">tmem_pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">NUM_CONSUMER</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">empty</span><span class="o">=</span><span class="s2">&quot;mbar&quot;</span><span class="p">,</span>
+                     <span class="n">init_empty</span><span class="o">=</span><span class="n">CTA_GROUP</span> <span class="o">*</span> <span class="mi">128</span><span class="p">)</span>
 
 <span class="n">pool</span><span class="o">.</span><span class="n">move_base_to</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
 <span class="n">Asmem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc_mma</span><span class="p">((</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="n">NUM_CONSUMER</span><span class="p">,</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">BLK_K</span><span class="p">),</span> <span class="n">a_type</span><span class="p">)</span>
@@ -233,13 +231,15 @@ objects:</p>
 Earlier examples used explicit <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code> buffers and raw barriers.
 Current optimized kernels use:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">PoolAllocator</span></code> to pack SMEM control objects and MMA-compatible tile
+<li><p><code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code> to pack SMEM control objects and MMA-compatible tile
 storage,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">alloc_mma(...)</span></code> for SMEM layouts that the TMA and MMA paths
 understand,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">TMEMPool</span></code> to allocate and slice the 128 x 512 TMEM region,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Pipe.tma(...)</span></code> for SMEM stage ownership,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Pipe.tcgen05(...)</span></code> for TMEM accumulator ownership.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Pipeline(...,</span> <span class="pre">full=&quot;tma&quot;,</span> <span class="pre">empty=&quot;tcgen05&quot;)</span></code> for SMEM stage
+ownership,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Pipeline(...,</span> <span class="pre">full=&quot;tcgen05&quot;,</span> <span class="pre">empty=&quot;mbar&quot;)</span></code> for TMEM accumulator
+ownership.</p></li>
 </ul>
 </section>
 <section id="warp-specialization">
@@ -274,12 +274,12 @@ TMA-store to GMEM</p></td>
 </tr>
 </tbody>
 </table>
-<p>The TMA producer uses the SMEM pipe as a producer cursor:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tma_cur</span> <span class="o">=</span> <span class="n">smem_pipe</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="s2">&quot;producer&quot;</span><span class="p">)</span>
+<p>The TMA producer uses <code class="docutils literal notranslate"><span class="pre">PipelineState</span></code> as a producer cursor:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tma_cur</span> <span class="o">=</span> <span class="n">PipelineState</span><span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
 <span class="nd">@Tx</span><span class="o">.</span><span class="n">inline</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">tma_load_stage</span><span class="p">(</span><span class="n">k_tile</span><span class="p">):</span>
-    <span class="n">tma_cur</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+    <span class="n">smem_pipe</span><span class="o">.</span><span class="n">empty</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">tma_cur</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">tma_cur</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
     <span class="n">stage</span> <span class="o">=</span> <span class="n">tma_cur</span><span class="o">.</span><span class="n">stage</span>
     <span class="n">tma_config</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">({</span>
         <span class="s2">&quot;dispatch&quot;</span><span class="p">:</span> <span class="s2">&quot;tma&quot;</span><span class="p">,</span>
@@ -297,7 +297,7 @@ TMA-store to GMEM</p></td>
 into that stage, then mark the stage full once the expected bytes have
 been associated with the TMA completion barrier.</p>
 <p>The producer loop is issued by one elected lane in the load warp:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)[</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()]:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">()):</span>
     <span class="k">while</span> <span class="n">tile_scheduler</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">k_tile</span> <span class="ow">in</span> <span class="n">Tx</span><span class="o">.</span><span class="n">serial</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
             <span class="n">tma_load_stage</span><span class="p">(</span><span class="n">k_tile</span><span class="p">)</span>
@@ -311,18 +311,17 @@ single warp (<code class="docutils literal notranslate"><span class="pre">warp_i
 <section id="mma-consumers">
 <h2><span class="section-number">5.3. </span>MMA Consumers<a class="headerlink" href="#mma-consumers" title="Permalink to this heading">¶</a></h2>
 <p>The MMA side consumes the same SMEM pipe:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mma_smem</span> <span class="o">=</span> <span class="n">smem_pipe</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="s2">&quot;consumer&quot;</span><span class="p">)</span>
-<span class="n">ld_phase</span> <span class="o">=</span> <span class="n">PipelineState</span><span class="p">(</span><span class="s2">&quot;ld&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">ld_phase</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">is_producer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mma_smem</span> <span class="o">=</span> <span class="n">PipelineState</span><span class="p">(</span><span class="n">PIPE_DEPTH</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">ld_phase</span> <span class="o">=</span> <span class="n">PipelineState</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For each scheduled output tile, the MMA consumer first waits until its
 TMEM slot is empty, then streams through K tiles:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem_pipe</span><span class="o">.</span><span class="n">empty</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">warp_id</span><span class="p">,</span> <span class="n">ld_phase</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
-<span class="n">ld_phase</span><span class="o">.</span><span class="n">move_to_next_stage</span><span class="p">()</span>
+<span class="n">ld_phase</span><span class="o">.</span><span class="n">advance</span><span class="p">()</span>
 <span class="n">accum</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">for</span> <span class="n">k_tile</span> <span class="ow">in</span> <span class="n">Tx</span><span class="o">.</span><span class="n">serial</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
-    <span class="n">mma_smem</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+    <span class="n">smem_pipe</span><span class="o">.</span><span class="n">full</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_smem</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_smem</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
     <span class="n">stage</span> <span class="o">=</span> <span class="n">mma_smem</span><span class="o">.</span><span class="n">stage</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">gemm_async</span><span class="p">(</span>
         <span class="n">tmem</span><span class="p">[:,</span> <span class="n">warp_id</span> <span class="o">*</span> <span class="n">MMA_N</span> <span class="p">:</span> <span class="n">warp_id</span> <span class="o">*</span> <span class="n">MMA_N</span> <span class="o">+</span> <span class="n">MMA_N</span><span class="p">],</span>
@@ -333,7 +332,7 @@ TMEM slot is empty, then streams through K tiles:</p>
         <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">accum</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">mma_smem</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="n">cta_mask</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">smem_pipe</span><span class="o">.</span><span class="n">empty</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">mma_smem</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="n">cta_mask</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
     <span class="n">mma_smem</span><span class="o">.</span><span class="n">advance</span><span class="p">()</span>
 <span class="n">tmem_pipe</span><span class="o">.</span><span class="n">full</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">warp_id</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="n">cta_mask</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
@@ -342,9 +341,10 @@ TMEM slot is empty, then streams through K tiles:</p>
 while <code class="docutils literal notranslate"><span class="pre">tmem_pipe</span></code> protects the TMEM accumulator slots. The MMA
 consumer waits on both, but for different reasons.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">mma_smem.wait()</span></code> means the current A/B SMEM stage is loaded.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">mma_smem.signal(...)</span></code> means MMA has consumed that SMEM stage, so
-TMA may reuse it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">smem_pipe.full.wait(mma_smem.stage,</span> <span class="pre">mma_smem.phase)</span></code> means the
+current A/B SMEM stage is loaded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">smem_pipe.empty.arrive(...)</span></code> means MMA has consumed that SMEM
+stage, so TMA may reuse it.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">tmem_pipe.empty.wait(...)</span></code> means the writeback role has finished
 reading the previous accumulator slot.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">tmem_pipe.full.arrive(...)</span></code> means the MMA result is ready for
@@ -356,7 +356,7 @@ writeback.</p></li>
 <p>The current optimized GEMM uses <code class="docutils literal notranslate"><span class="pre">CTA_GROUP</span> <span class="pre">=</span> <span class="pre">2</span></code>. Each cluster has two
 CTAs, and the cooperative MMA is issued with <code class="docutils literal notranslate"><span class="pre">cta_group=CTA_GROUP</span></code>.</p>
 <p>The cluster-local coordinate is:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbx</span><span class="p">,</span> <span class="n">cby</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cluster&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbx</span><span class="p">,</span> <span class="n">cby</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id_in_cluster</span><span class="p">([</span><span class="n">CTA_GROUP</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">cbx</span></code> is 0 or 1. It selects this CTA’s row stripe and stored-B slice.
@@ -422,17 +422,16 @@ elements. The current code uses:</p>
 corresponding TMEM slot, reads TMEM into registers, casts fp32 to fp16,
 stages into <code class="docutils literal notranslate"><span class="pre">Dsmem</span></code>, and issues TMA stores:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem_pipe</span><span class="o">.</span><span class="n">full</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">wg_id</span><span class="p">,</span> <span class="n">wb_phase</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
-<span class="n">wb_phase</span><span class="o">.</span><span class="n">move_to_next_stage</span><span class="p">()</span>
+<span class="n">wb_phase</span><span class="o">.</span><span class="n">advance</span><span class="p">()</span>
 <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">fence</span><span class="o">.</span><span class="n">after_thread_sync</span><span class="p">()</span>
 
-<span class="n">Dreg_16b</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="n">MMA_N</span><span class="p">,),</span> <span class="n">a_type</span><span class="p">)</span>
+<span class="n">Dreg_16b</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">wg_reg_tile</span><span class="p">(</span><span class="n">MMA_N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">a_type</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">no</span> <span class="ow">in</span> <span class="n">Tx</span><span class="o">.</span><span class="n">unroll</span><span class="p">(</span><span class="n">MMA_N</span> <span class="o">//</span> <span class="n">TMEM_LD_N</span><span class="p">):</span>
-    <span class="n">Dreg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_buffer</span><span class="p">((</span><span class="mi">128</span><span class="p">,</span> <span class="n">TMEM_LD_N</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span>
-                           <span class="n">layout</span><span class="o">=</span><span class="n">wg_local_layout</span><span class="p">(</span><span class="n">TMEM_LD_N</span><span class="p">),</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup</span><span class="p">():</span>
-        <span class="n">n_tmem_ld_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">wg_id</span> <span class="o">*</span> <span class="n">MMA_N</span> <span class="o">+</span> <span class="n">no</span> <span class="o">*</span> <span class="n">TMEM_LD_N</span><span class="p">)</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Dreg</span><span class="p">,</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="n">n_tmem_ld_st</span> <span class="p">:</span> <span class="n">n_tmem_ld_st</span> <span class="o">+</span> <span class="n">TMEM_LD_N</span><span class="p">])</span>
-        <span class="n">Tx</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">Dreg_16b</span><span class="p">[</span><span class="n">no</span> <span class="o">*</span> <span class="n">TMEM_LD_N</span> <span class="p">:</span> <span class="n">no</span> <span class="o">*</span> <span class="n">TMEM_LD_N</span> <span class="o">+</span> <span class="n">TMEM_LD_N</span><span class="p">],</span> <span class="n">Dreg</span><span class="p">)</span>
+    <span class="n">Dreg</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">wg_reg_tile</span><span class="p">(</span><span class="n">TMEM_LD_N</span><span class="p">)</span>
+    <span class="n">n_tmem_ld_st</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">wg_id</span> <span class="o">*</span> <span class="n">MMA_N</span> <span class="o">+</span> <span class="n">no</span> <span class="o">*</span> <span class="n">TMEM_LD_N</span><span class="p">)</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Dreg</span><span class="p">,</span> <span class="n">tmem</span><span class="p">[:,</span> <span class="n">n_tmem_ld_st</span> <span class="p">:</span> <span class="n">n_tmem_ld_st</span> <span class="o">+</span> <span class="n">TMEM_LD_N</span><span class="p">])</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">wait</span><span class="o">.</span><span class="n">ld</span><span class="p">()</span>
+    <span class="n">Tx</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">Dreg_16b</span><span class="p">[:,</span> <span class="n">no</span> <span class="o">*</span> <span class="n">TMEM_LD_N</span> <span class="p">:</span> <span class="p">(</span><span class="n">no</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">TMEM_LD_N</span><span class="p">],</span> <span class="n">Dreg</span><span class="p">)</span>
 
 <span class="n">tmem_pipe</span><span class="o">.</span><span class="n">empty</span><span class="o">.</span><span class="n">arrive</span><span class="p">(</span><span class="n">wg_id</span><span class="p">,</span> <span class="n">cta_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pred</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -510,10 +509,10 @@ Treat them as a trend check, not a portable peak-performance claim.</p>
 <section id="exercises">
 <h2><span class="section-number">5.9. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
-<li><p>In the current Pipe-based GEMM, which pipe protects SMEM reuse and
-which pipe protects TMEM reuse?</p></li>
-<li><p>Why does the TMA branch use <code class="docutils literal notranslate"><span class="pre">smem_pipe.cursor(&quot;producer&quot;)</span></code>, while
-the MMA branch uses <code class="docutils literal notranslate"><span class="pre">smem_pipe.cursor(&quot;consumer&quot;)</span></code>?</p></li>
+<li><p>In the current Pipeline-based GEMM, which pipeline protects SMEM
+reuse and which pipeline protects TMEM reuse?</p></li>
+<li><p>Why does the TMA branch use <code class="docutils literal notranslate"><span class="pre">PipelineState(PIPE_DEPTH,</span> <span class="pre">1)</span></code>, while
+the MMA branch uses <code class="docutils literal notranslate"><span class="pre">PipelineState(PIPE_DEPTH,</span> <span class="pre">0)</span></code>?</p></li>
 <li><p>In the multi-consumer kernel, both consumers use the same B tile but
 different A tiles. Why does that increase useful work per staged B
 tile?</p></li>

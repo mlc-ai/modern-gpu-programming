@@ -7,9 +7,9 @@ Scaling GEMM with Warp Specialization and Clusters
 
 The previous chapter built the tiled GEMM path and introduced TMA
 pipelining. This chapter switches to the style used by current
-``tirx-kernels`` GEMM implementations: ``PoolAllocator``, ``TMEMPool``,
-``Pipe``, ``PipelineState``, explicit parent coordinates, CTA clusters,
-and multiple MMA consumers.
+``tirx-kernels`` GEMM implementations: ``SMEMPool``, ``TMEMPool``,
+``Pipeline``, ``PipelineState``, CTA clusters, and multiple MMA
+consumers.
 
 The optimized kernel still follows the same tile path:
 
@@ -23,13 +23,22 @@ The optimized kernel still follows the same tile path:
 
 The difference is scheduling. TMA, MMA, and writeback no longer run as
 one sequential block of code. They run as separate roles connected by
-full/empty pipes.
+full/empty pipeline barriers.
 
 Current GEMM Skeleton
 ---------------------
 
+Before reading the skeleton, map the new helpers to the raw pieces from
+earlier chapters:
+
+- ``TMEMPool`` replaces manual TMEM allocation and view setup.
+- ``Pipeline(..., full=..., empty=...)`` replaces arrays of full/empty
+  barriers.
+- ``PipelineState`` carries the stage and phase cursor for a
+  software-pipelined ring buffer.
+
 A current optimized GEMM begins by naming the cluster CTA, persistent
-CTA, warpgroup, warp, and lane with explicit parent scopes:
+CTA, warpgroup, warp, and lane:
 
 .. raw:: latex
 
@@ -37,16 +46,16 @@ CTA, warpgroup, warp, and lane with explicit parent scopes:
 
 .. code:: python
 
-   @Tx.prim_func(tirx=True)
+   @Tx.jit
    def kernel(A: Tx.Buffer((M, K), a_type),
               B: Tx.Buffer((N, K), b_type),
               D: Tx.Buffer((M, N), d_type)):
-       with Tx.kernel():
-           cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
-           bx = Tx.cta_id([SM_COUNT], parent="kernel")
-           wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
-           warp_id = Tx.warp_id([4], parent="warpgroup")
-           lane_id = Tx.thread_id([32], parent="warp")
+       Tx.device_entry()
+       cbx, cby = Tx.cta_id_in_cluster([CTA_GROUP, 1])
+       bx = Tx.cta_id([SM_COUNT])
+       wg_id = Tx.warpgroup_id([WG_NUMBER])
+       warp_id = Tx.warp_id_in_wg([4])
+       lane_id = Tx.lane_id([32])
 
 Read those lines as a hierarchy map:
 
@@ -65,20 +74,14 @@ objects:
 
 .. code:: python
 
-   pool = Tx.PoolAllocator()
+   pool = Tx.SMEMPool()
    tmem_addr = pool.alloc((1,), "uint32")
-   tmem_pool = Tx.TMEMPool(
-       pool,
-       total_cols=512,
-       cta_group=CTA_GROUP,
-       warp_id=warp_id,
-       wg_id=wg_id,
-       tmem_addr=tmem_addr,
-   )
+   tmem_pool = Tx.TMEMPool(pool, total_cols=512, cta_group=CTA_GROUP, tmem_addr=tmem_addr)
 
-   smem_pipe = Pipe.tma(pool, PIPE_DEPTH, empty_count=NUM_CONSUMER, name="smem")
-   tmem_pipe = Pipe.tcgen05(pool, NUM_CONSUMER,
-                            empty_count=CTA_GROUP * 128, name="tmem")
+   smem_pipe = Pipeline(pool, PIPE_DEPTH, full="tma", empty="tcgen05",
+                        init_empty=NUM_CONSUMER)
+   tmem_pipe = Pipeline(pool, NUM_CONSUMER, full="tcgen05", empty="mbar",
+                        init_empty=CTA_GROUP * 128)
 
    pool.move_base_to(1024)
    Asmem = pool.alloc_mma((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), a_type)
@@ -93,13 +96,15 @@ This is the first important change from the simpler GEMM chapters.
 Earlier examples used explicit ``SMEMPool`` buffers and raw barriers.
 Current optimized kernels use:
 
-- ``PoolAllocator`` to pack SMEM control objects and MMA-compatible tile
+- ``SMEMPool`` to pack SMEM control objects and MMA-compatible tile
   storage,
 - ``alloc_mma(...)`` for SMEM layouts that the TMA and MMA paths
   understand,
 - ``TMEMPool`` to allocate and slice the 128 x 512 TMEM region,
-- ``Pipe.tma(...)`` for SMEM stage ownership,
-- ``Pipe.tcgen05(...)`` for TMEM accumulator ownership.
+- ``Pipeline(..., full="tma", empty="tcgen05")`` for SMEM stage
+  ownership,
+- ``Pipeline(..., full="tcgen05", empty="mbar")`` for TMEM accumulator
+  ownership.
 
 Warp Specialization
 -------------------
@@ -121,7 +126,7 @@ The optimized kernel splits work by role. With ``WG_NUMBER = 3`` and
 |           |                        | TMA-store to GMEM                 |
 +-----------+------------------------+-----------------------------------+
 
-The TMA producer uses the SMEM pipe as a producer cursor:
+The TMA producer uses ``PipelineState`` as a producer cursor:
 
 .. raw:: latex
 
@@ -129,11 +134,11 @@ The TMA producer uses the SMEM pipe as a producer cursor:
 
 .. code:: python
 
-   tma_cur = smem_pipe.cursor("producer")
+   tma_cur = PipelineState(PIPE_DEPTH, 1)
 
    @Tx.inline
    def tma_load_stage(k_tile):
-       tma_cur.wait()
+       smem_pipe.empty.wait(tma_cur.stage, tma_cur.phase)
        stage = tma_cur.stage
        tma_config = Tx.meta_var({
            "dispatch": "tma",
@@ -158,7 +163,7 @@ The producer loop is issued by one elected lane in the load warp:
 
 .. code:: python
 
-   with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+   with Tx.thread(Tx.ptx.elect_sync()):
        while tile_scheduler.valid():
            for k_tile in Tx.serial(K_TILES):
                tma_load_stage(k_tile)
@@ -179,9 +184,8 @@ The MMA side consumes the same SMEM pipe:
 
 .. code:: python
 
-   mma_smem = smem_pipe.cursor("consumer")
-   ld_phase = PipelineState("ld", 1)
-   ld_phase.init(is_producer=True)
+   mma_smem = PipelineState(PIPE_DEPTH, 0)
+   ld_phase = PipelineState(1, 1)
 
 For each scheduled output tile, the MMA consumer first waits until its
 TMEM slot is empty, then streams through K tiles:
@@ -193,10 +197,10 @@ TMEM slot is empty, then streams through K tiles:
 .. code:: python
 
    tmem_pipe.empty.wait(warp_id, ld_phase.phase)
-   ld_phase.move_to_next_stage()
+   ld_phase.advance()
    accum = 0
    for k_tile in Tx.serial(K_TILES):
-       mma_smem.wait()
+       smem_pipe.full.wait(mma_smem.stage, mma_smem.phase)
        stage = mma_smem.stage
        Tx.gemm_async(
            tmem[:, warp_id * MMA_N : warp_id * MMA_N + MMA_N],
@@ -207,7 +211,7 @@ TMEM slot is empty, then streams through K tiles:
            cta_group=CTA_GROUP,
        )
        accum = 1
-       mma_smem.signal(cta_group=CTA_GROUP, cta_mask=3)
+       smem_pipe.empty.arrive(mma_smem.stage, cta_group=CTA_GROUP, cta_mask=3)
        mma_smem.advance()
    tmem_pipe.full.arrive(warp_id, cta_group=CTA_GROUP, cta_mask=3)
 
@@ -215,9 +219,10 @@ The important reading rule is: ``smem_pipe`` protects the SMEM stages,
 while ``tmem_pipe`` protects the TMEM accumulator slots. The MMA
 consumer waits on both, but for different reasons.
 
-- ``mma_smem.wait()`` means the current A/B SMEM stage is loaded.
-- ``mma_smem.signal(...)`` means MMA has consumed that SMEM stage, so
-  TMA may reuse it.
+- ``smem_pipe.full.wait(mma_smem.stage, mma_smem.phase)`` means the
+  current A/B SMEM stage is loaded.
+- ``smem_pipe.empty.arrive(...)`` means MMA has consumed that SMEM
+  stage, so TMA may reuse it.
 - ``tmem_pipe.empty.wait(...)`` means the writeback role has finished
   reading the previous accumulator slot.
 - ``tmem_pipe.full.arrive(...)`` means the MMA result is ready for
@@ -237,7 +242,7 @@ The cluster-local coordinate is:
 
 .. code:: python
 
-   cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
+   cbx, cby = Tx.cta_id_in_cluster([CTA_GROUP, 1])
 
 ``cbx`` is 0 or 1. It selects this CTA’s row stripe and stored-B slice.
 The TMA producer loads data for the cluster tile, and CTA 0 owns the
@@ -341,17 +346,16 @@ stages into ``Dsmem``, and issues TMA stores:
 .. code:: python
 
    tmem_pipe.full.wait(wg_id, wb_phase.phase)
-   wb_phase.move_to_next_stage()
+   wb_phase.advance()
    Tx.ptx.tcgen05.fence.after_thread_sync()
 
-   Dreg_16b = Tx.alloc_local((MMA_N,), a_type)
+   Dreg_16b = Tx.wg_reg_tile(MMA_N, dtype=a_type)
    for no in Tx.unroll(MMA_N // TMEM_LD_N):
-       Dreg = Tx.alloc_buffer((128, TMEM_LD_N), "float32",
-                              layout=wg_local_layout(TMEM_LD_N), scope="local")
-       with Tx.warpgroup():
-           n_tmem_ld_st = Tx.meta_var(wg_id * MMA_N + no * TMEM_LD_N)
-           Tx.copy(Dreg, tmem[:, n_tmem_ld_st : n_tmem_ld_st + TMEM_LD_N])
-           Tx.cast(Dreg_16b[no * TMEM_LD_N : no * TMEM_LD_N + TMEM_LD_N], Dreg)
+       Dreg = Tx.wg_reg_tile(TMEM_LD_N)
+       n_tmem_ld_st = Tx.meta_var(wg_id * MMA_N + no * TMEM_LD_N)
+       Tx.copy_async(Dreg, tmem[:, n_tmem_ld_st : n_tmem_ld_st + TMEM_LD_N])
+       Tx.ptx.tcgen05.wait.ld()
+       Tx.cast(Dreg_16b[:, no * TMEM_LD_N : (no + 1) * TMEM_LD_N], Dreg)
 
    tmem_pipe.empty.arrive(wg_id, cta_id=0, pred=True)
 
@@ -405,10 +409,10 @@ Treat them as a trend check, not a portable peak-performance claim.
 Exercises
 ---------
 
-1. In the current Pipe-based GEMM, which pipe protects SMEM reuse and
-   which pipe protects TMEM reuse?
-2. Why does the TMA branch use ``smem_pipe.cursor("producer")``, while
-   the MMA branch uses ``smem_pipe.cursor("consumer")``?
+1. In the current Pipeline-based GEMM, which pipeline protects SMEM
+   reuse and which pipeline protects TMEM reuse?
+2. Why does the TMA branch use ``PipelineState(PIPE_DEPTH, 1)``, while
+   the MMA branch uses ``PipelineState(PIPE_DEPTH, 0)``?
 3. In the multi-consumer kernel, both consumers use the same B tile but
    different A tiles. Why does that increase useful work per staged B
    tile?

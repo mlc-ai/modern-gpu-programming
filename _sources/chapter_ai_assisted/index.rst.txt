@@ -8,7 +8,7 @@ Writing TIRX Kernels with Agents
 Before asking an agent to work on TIRX, give it the source code it must
 reason from. It should be able to read the ``tvm`` codebase for the TIRX
 DSL, layout objects, tile primitives, and lowering rules, and the
-``tirx-kernels-dev`` codebase for real kernels, scheduler helpers, and
+``tirx-kernels`` codebase for real kernels, scheduler helpers, and
 barrier patterns. Without those references, the agent will fall back to
 generic CUDA, Triton, or Hopper assumptions, which are often wrong for
 Blackwell TIRX.
@@ -74,7 +74,7 @@ Workflow
 
 A practical workflow is:
 
-1. Point the agent at ``tvm`` and ``tirx-kernels-dev``.
+1. Point the agent at ``tvm`` and ``tirx-kernels``.
 2. Start with the goal, but do not stop there.
 3. If the path is unclear, ask for candidate strategies and tradeoffs.
 4. Choose one strategy and rewrite it as a concrete TIRX instruction:
@@ -162,7 +162,7 @@ you can derive from the warp-specialized GEMM chapter.
 .. code:: text
 
    Target: NVIDIA Blackwell SM100a.
-   Kernel: Step 7 warp-specialized GEMM.
+   Kernel: warp-specialized GEMM from Chapter 5.
 
    Tile path:
    GMEM -> SMEM by TMA.
@@ -211,7 +211,7 @@ scope:
 
    for k in range(K_TILES):
        tma2mma.wait(mma_ps.stage, mma_ps.phase)
-       with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+       with Tx.thread(Tx.ptx.elect_sync()):
            Tx.gemm_async(
                tmem[:, :BLK_N],
                Asmem[mma_ps.stage],
@@ -265,7 +265,7 @@ MMA issue:
 
    for k in range(K_TILES):
        tma2mma.wait(mma_ps.stage, mma_ps.phase)
-       with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+       with Tx.thread(Tx.ptx.elect_sync()):
            Tx.gemm_async(
                tmem[:, :BLK_N],
                Asmem[mma_ps.stage],
@@ -347,7 +347,7 @@ Ask for invariant checks, not a broad review:
 
 .. code:: text
 
-   I changed a Step-7-style single-CTA GEMM into the Step 8 clustered form with CTA_GROUP=2.
+   I changed a warp-specialized single-CTA GEMM into the clustered Chapter 5 form with CTA_GROUP=2.
    Check only the cluster invariants:
    - tcgen05.alloc / gemm_async / commit / dealloc cta_group values
    - scheduler tile shape
@@ -383,9 +383,9 @@ Use Case 3: Debug from Symptoms
 -------------------------------
 
 When a kernel fails, first classify the symptom. Then ask the agent to
-map the symptom back to the nearest producer-consumer handoff. The
-detailed GEMM debugging checklist lives in the appendix; the table here
-is the prompt-level version.
+map the symptom back to the nearest producer-consumer handoff. The table
+here is the prompt-level version; use the TIRX Language and Compile
+Pipeline appendix page when you need generated-CUDA inspection.
 
 +-----------------+-------------------------+---------------------------+
 | Symptom         | Likely area             | First checks              |
@@ -517,8 +517,8 @@ elected issue               ``tvm_builtin_elect_one_sync_op()``
 If the agent’s explanation disagrees with the generated code, trust the
 generated code.
 
-The appendix has a fuller generated-CUDA checklist for warp-specialized
-GEMM debugging.
+For a broader generated-CUDA workflow, use the TIRX Language and Compile
+Pipeline appendix page.
 
 Agent Review Boundaries
 -----------------------
@@ -583,9 +583,9 @@ an agent than a long chat history.
 Exercises
 ---------
 
-1. Take Step 7 and ask an agent to produce a tile-primitive table:
-   primitive, scope, layout, dispatch, wait-before, signal-after. Which
-   entries did it miss?
+1. Take the warp-specialized GEMM from Chapter 5 and ask an agent to
+   produce a tile-primitive table: primitive, scope, layout, dispatch,
+   wait-before, signal-after. Which entries did it miss?
 2. Move ``mma2tma.arrive()`` outside the elected MMA issue scope in a
    local experiment. Ask the agent to diagnose the failure using only
    the symptom, then ask again with the ``tcgen05.commit`` hardware

@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="8.1.1. Environment Setup" href="../chapter_setup/index.html" />
+    <link rel="next" title="8.1. Environment Setup" href="../chapter_setup/index.html" />
     <link rel="prev" title="7. Writing TIRX Kernels with Agents" href="../chapter_ai_assisted/index.html" /> 
   </head>
 <body>
@@ -70,11 +70,6 @@ Show Source
     <div class="mdl-layout__header-row header-links">
       <div class="mdl-layout-spacer"></div>
       <nav class="mdl-navigation">
-          
-              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
-                  <i class="fab fa-github"></i>
-                  GitHub
-              </a>
       </nav>
     </div>
 </header><header class="mdl-layout__drawer">
@@ -102,12 +97,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -145,12 +140,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -167,10 +162,9 @@ Show Source
   <section id="appendix">
 <span id="chap-appendix"></span><h1><span class="section-number">8. </span>Appendix<a class="headerlink" href="#appendix" title="Permalink to this heading">¶</a></h1>
 <p>The main tutorial path ends with Writing TIRX Kernels with Agents. The
-appendix is not another reading path; use it when you need setup help,
-extra practice, debugging checklists, or API details.</p>
-<section id="how-to-use-this-appendix">
-<h2><span class="section-number">8.1. </span>How to Use This Appendix<a class="headerlink" href="#how-to-use-this-appendix" title="Permalink to this heading">¶</a></h2>
+appendix is for setup, API lookup, optional practice kernels, and source
+references.</p>
+<p><strong>How to use this appendix.</strong></p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Need</p></th>
@@ -182,66 +176,47 @@ extra practice, debugging checklists, or API details.</p>
 kernel</p></td>
 <td><p><strong>Environment Setup</strong></p></td>
 </tr>
+<tr class="row-odd"><td><p>Look up the spelling of a TIRX API
+used in the tutorial</p></td>
+<td><p><strong>TIRX API Reference</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Understand parsing, buffers, scopes,
+generated CUDA, or the compile
+pipeline</p></td>
+<td><p><strong>TIRX Language and Compile
+Pipeline</strong></p></td>
+</tr>
 <tr class="row-odd"><td><p>Practice basic thread indexing,
 elementwise code, and reductions</p></td>
 <td><p><strong>Practice Kernel: Fused GELU
 Gate</strong> and <strong>Practice Kernel:
 RMSNorm Reduction</strong></p></td>
 </tr>
-<tr class="row-even"><td><p>Inspect generated CUDA for scope
-guards, barriers, and lowered
-instructions</p></td>
-<td><p><strong>TIRX Language and Compile
-Pipeline</strong></p></td>
-</tr>
-<tr class="row-odd"><td><p>Read the complete Flash Attention 4
-TIRX source</p></td>
-<td><p><strong>Flash Attention 4 TIRX
-Source</strong></p></td>
-</tr>
-<tr class="row-even"><td><p>Look up the exact spelling of a TIRX
-API used in the tutorial</p></td>
-<td><p><strong>TIRX API Lookup</strong></p></td>
-</tr>
-<tr class="row-odd"><td><p>Understand the parser, buffer model,
-scopes, metaprogramming, or compile
-pipeline</p></td>
-<td><p><strong>TIRX Language and Compile
-Pipeline</strong></p></td>
+<tr class="row-even"><td><p>Locate the current Flash Attention 4
+implementation</p></td>
+<td><p><strong>Flash Attention 4 Source
+Map</strong></p></td>
 </tr>
 </tbody>
 </table>
-<p>Most readers only need <strong>Environment Setup</strong> and <strong>TIRX API Lookup</strong> at
-first. The practice kernels are optional.</p>
+<p>Most readers only need <strong>Environment Setup</strong> and <strong>TIRX API Reference</strong>
+at first. The practice kernels are optional.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </div>
-</section>
 </section>
 
 
         </div>
         <div class="side-doc-outline">
             <div class="side-doc-outline--content"> 
-<div class="localtoc">
-    <p class="caption">
-      <span class="caption-text">Table Of Contents</span>
-    </p>
-    <ul>
-<li><a class="reference internal" href="#">8. Appendix</a><ul>
-<li><a class="reference internal" href="#how-to-use-this-appendix">8.1. How to Use This Appendix</a></li>
-</ul>
-</li>
-</ul>
-
-</div>
             </div>
         </div>
 
@@ -258,7 +233,7 @@ first. The practice kernels are optional.</p>
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>8.1.1. Environment Setup</div>
+            <div>8.1. Environment Setup</div>
         </div>
      </a>
   </div>

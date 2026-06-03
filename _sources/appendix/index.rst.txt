@@ -6,11 +6,10 @@ Appendix
 
 
 The main tutorial path ends with Writing TIRX Kernels with Agents. The
-appendix is not another reading path; use it when you need setup help,
-extra practice, debugging checklists, or API details.
+appendix is for setup, API lookup, optional practice kernels, and source
+references.
 
-How to Use This Appendix
-------------------------
+**How to use this appendix.**
 
 +--------------------------------------+-------------------------------+
 | Need                                 | Use                           |
@@ -18,34 +17,30 @@ How to Use This Appendix
 | Install TVM/TIRX or run a tiny       | **Environment Setup**         |
 | kernel                               |                               |
 +--------------------------------------+-------------------------------+
+| Look up the spelling of a TIRX API   | **TIRX API Reference**        |
+| used in the tutorial                 |                               |
++--------------------------------------+-------------------------------+
+| Understand parsing, buffers, scopes, | **TIRX Language and Compile   |
+| generated CUDA, or the compile       | Pipeline**                    |
+| pipeline                             |                               |
++--------------------------------------+-------------------------------+
 | Practice basic thread indexing,      | **Practice Kernel: Fused GELU |
 | elementwise code, and reductions     | Gate** and **Practice Kernel: |
 |                                      | RMSNorm Reduction**           |
 +--------------------------------------+-------------------------------+
-| Inspect generated CUDA for scope     | **TIRX Language and Compile   |
-| guards, barriers, and lowered        | Pipeline**                    |
-| instructions                         |                               |
-+--------------------------------------+-------------------------------+
-| Read the complete Flash Attention 4  | **Flash Attention 4 TIRX      |
-| TIRX source                          | Source**                      |
-+--------------------------------------+-------------------------------+
-| Look up the exact spelling of a TIRX | **TIRX API Lookup**           |
-| API used in the tutorial             |                               |
-+--------------------------------------+-------------------------------+
-| Understand the parser, buffer model, | **TIRX Language and Compile   |
-| scopes, metaprogramming, or compile  | Pipeline**                    |
-| pipeline                             |                               |
+| Locate the current Flash Attention 4 | **Flash Attention 4 Source    |
+| implementation                       | Map**                         |
 +--------------------------------------+-------------------------------+
 
-Most readers only need **Environment Setup** and **TIRX API Lookup** at
-first. The practice kernels are optional.
+Most readers only need **Environment Setup** and **TIRX API Reference**
+at first. The practice kernels are optional.
 
 .. toctree::
    :maxdepth: 1
 
    ../chapter_setup/index
+   ../chapter_api_reference/index
+   ../chapter_tirx_primer/index
    ../chapter_fused_gelu/index
    ../chapter_rmsnorm/index
    ../chapter_fa4_source/index
-   ../chapter_api_reference/index
-   ../chapter_tirx_primer/index

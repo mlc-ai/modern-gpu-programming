@@ -70,11 +70,6 @@ Show Source
     <div class="mdl-layout__header-row header-links">
       <div class="mdl-layout-spacer"></div>
       <nav class="mdl-navigation">
-          
-              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
-                  <i class="fab fa-github"></i>
-                  GitHub
-              </a>
       </nav>
     </div>
 </header><header class="mdl-layout__drawer">
@@ -102,12 +97,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -145,12 +140,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -243,12 +238,12 @@ readback must be under <code class="docutils literal notranslate"><span class="p
 <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> instruction is warpgroup-cooperative.</p>
 <p>The scopes are not a fixed template that every kernel must nest exactly.
 A kernel uses the scopes that match the operations it performs.
-<code class="docutils literal notranslate"><span class="pre">Tx.kernel()</span></code> marks the whole kernel body; <code class="docutils literal notranslate"><span class="pre">Tx.cluster()</span></code> appears
-only when CTA clusters are used.</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.device_entry()</span></code> marks the start of device code; <code class="docutils literal notranslate"><span class="pre">Tx.cluster()</span></code>
+appears only when CTA clusters are used.</p>
 <p>Some operations are issued by only part of a team. A TMA load, for
 example, may be issued by one selected thread:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">128</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)[</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id_in_wg</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>
+<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">A</span><span class="p">[</span><span class="n">m</span><span class="p">:</span><span class="n">m</span> <span class="o">+</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span><span class="n">k</span> <span class="o">+</span> <span class="n">BLK_K</span><span class="p">],</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -261,35 +256,33 @@ in the launch. A CTA needs to know which output tile it owns. A thread
 needs its warp and lane id to decide which row or vector fragment it
 writes.</p>
 <p>Many GEMM kernels start by naming the CTA, warpgroup, warp, and lane:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
-<span class="n">_</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
-<span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warpgroup&quot;</span><span class="p">)</span>
-<span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">32</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;warp&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">M</span> <span class="o">//</span> <span class="n">BLK_M</span><span class="p">,</span> <span class="n">N</span> <span class="o">//</span> <span class="n">BLK_N</span><span class="p">])</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warpgroup_id</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">warp_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">warp_id_in_wg</span><span class="p">([</span><span class="mi">4</span><span class="p">])</span>
+<span class="n">lane_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">lane_id</span><span class="p">([</span><span class="mi">32</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Read it from the outside in. <code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...,</span> <span class="pre">parent=&quot;kernel&quot;)</span></code> gives
-the CTA’s position in the launch grid, so the kernel can choose an
-output tile such as <code class="docutils literal notranslate"><span class="pre">D[bx</span> <span class="pre">*</span> <span class="pre">BLK_M,</span> <span class="pre">by</span> <span class="pre">*</span> <span class="pre">BLK_N]</span></code>.
-<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([1],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> declares the warpgroup coordinate
-for a single-warpgroup kernel; later kernels use more warpgroups when
-producer, consumer, and writeback roles are split.
-<code class="docutils literal notranslate"><span class="pre">Tx.warp_id([4],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code> and
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([32],</span> <span class="pre">parent=&quot;warp&quot;)</span></code> identify a thread inside one
-warpgroup, which is enough to assign output rows during writeback.</p>
+<p>Read it from the outside in. <code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...)</span></code> gives the CTA’s position
+in the launch grid, so the kernel can choose an output tile such as
+<code class="docutils literal notranslate"><span class="pre">D[bx</span> <span class="pre">*</span> <span class="pre">BLK_M,</span> <span class="pre">by</span> <span class="pre">*</span> <span class="pre">BLK_N]</span></code>. <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([1])</span></code> declares the
+warpgroup coordinate for a single-warpgroup kernel; later kernels use
+more warpgroups when producer, consumer, and writeback roles are split.
+<code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code> and <code class="docutils literal notranslate"><span class="pre">Tx.lane_id([32])</span></code> identify a thread
+inside one warpgroup, which is enough to assign output rows during
+writeback.</p>
 <p>The number inside brackets is the extent of that coordinate space. For
-example, <code class="docutils literal notranslate"><span class="pre">[4]</span></code> in <code class="docutils literal notranslate"><span class="pre">Tx.warp_id([4],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code> says there
-are four warps in the warpgroup, and <code class="docutils literal notranslate"><span class="pre">[32]</span></code> in
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([32],</span> <span class="pre">parent=&quot;warp&quot;)</span></code> says each warp has 32 lanes. TIRX
-uses these extents when checking layouts and tile primitives. A
-warpgroup register layout that uses <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> has extent 128, so it
-matches a 128-row TMEM readback; a lane-only layout has extent 32, so it
-would describe a different mapping.</p>
+example, <code class="docutils literal notranslate"><span class="pre">[4]</span></code> in <code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code> says there are four warps
+in the warpgroup, and <code class="docutils literal notranslate"><span class="pre">[32]</span></code> in <code class="docutils literal notranslate"><span class="pre">Tx.lane_id([32])</span></code> says each warp
+has 32 lanes. TIRX uses these extents when checking layouts and tile
+primitives. A warpgroup register layout that uses <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code> has
+extent 128, so it matches a 128-row TMEM readback; a lane-only layout
+has extent 32, so it would describe a different mapping.</p>
 <p>Other coordinates appear when the kernel needs them.
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> names a thread inside a CTA.
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([128],</span> <span class="pre">parent=&quot;warpgroup&quot;)</span></code> names a thread inside a
-warpgroup. Clustered kernels add <code class="docutils literal notranslate"><span class="pre">Tx.cluster_id(...)</span></code> and
-<code class="docutils literal notranslate"><span class="pre">Tx.cta_id(...,</span> <span class="pre">parent=&quot;cluster&quot;)</span></code> to identify the cluster and the
-CTA’s position inside it.</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt])</span></code> names a thread inside a CTA.
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id_in_wg([128])</span></code> names a thread inside a warpgroup.
+Clustered kernels add <code class="docutils literal notranslate"><span class="pre">Tx.cluster_id(...)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Tx.cta_id_in_cluster(...)</span></code> to identify the cluster and the CTA’s
+position inside it.</p>
 </section>
 </section>
 <section id="tensor-layout">
@@ -444,7 +437,7 @@ the remaining names that you need for a first read.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func(tirx=True)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code></p></td>
 <td><p>Define one TIRX kernel function.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.Buffer(shape,</span> <span class="pre">dtype)</span></code></p></td>

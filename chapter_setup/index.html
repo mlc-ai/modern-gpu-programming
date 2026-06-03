@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>8.1.1. Environment Setup &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>8.1. Environment Setup &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -28,7 +28,7 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="8.1.2. Practice Kernel: Fused GELU Gate" href="../chapter_fused_gelu/index.html" />
+    <link rel="next" title="8.2. TIRX API Reference" href="../chapter_api_reference/index.html" />
     <link rel="prev" title="8. Appendix" href="../appendix/index.html" /> 
   </head>
 <body>
@@ -37,7 +37,7 @@
         
         <nav class="mdl-navigation breadcrumb">
             <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">8. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">8.1.1. </span>Environment Setup</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">8.1. </span>Environment Setup</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -71,11 +71,6 @@ Show Source
     <div class="mdl-layout__header-row header-links">
       <div class="mdl-layout-spacer"></div>
       <nav class="mdl-navigation">
-          
-              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
-                  <i class="fab fa-github"></i>
-                  GitHub
-              </a>
       </nav>
     </div>
 </header><header class="mdl-layout__drawer">
@@ -103,12 +98,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -146,12 +141,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -166,112 +161,102 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="environment-setup">
-<span id="chap-setup"></span><h1><span class="section-number">8.1.1. </span>Environment Setup<a class="headerlink" href="#environment-setup" title="Permalink to this heading">¶</a></h1>
-<p>Set up the environment first, then verify it by running a real GPU
-kernel.</p>
+<span id="chap-setup"></span><h1><span class="section-number">8.1. </span>Environment Setup<a class="headerlink" href="#environment-setup" title="Permalink to this heading">¶</a></h1>
+<p>Set up TVM/TIRX first, then verify the install with a tiny GPU kernel.</p>
 <section id="requirements">
-<h2><span class="section-number">8.1.1.1. </span>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1.1. </span>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><strong>OS</strong>: Linux (Ubuntu 20.04+ recommended)</p></li>
-<li><p><strong>GPU</strong>: NVIDIA Blackwell (B200 / B100) with driver &gt;= 570</p></li>
-<li><p><strong>Python</strong>: &gt;= 3.10 with <code class="docutils literal notranslate"><span class="pre">pip</span></code></p></li>
+<li><p><strong>OS</strong>: Linux, Ubuntu 20.04 or newer recommended.</p></li>
+<li><p><strong>GPU</strong>: NVIDIA Blackwell, such as B200 or B100.</p></li>
+<li><p><strong>Driver</strong>: CUDA 13.0 requires a Linux driver at least 580.65.06.</p></li>
+<li><p><strong>Python</strong>: 3.10 or newer.</p></li>
 </ul>
 </section>
 <section id="install-packages">
-<h2><span class="section-number">8.1.1.2. </span>Install Packages<a class="headerlink" href="#install-packages" title="Permalink to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>-U<span class="w"> </span><span class="s2">&quot;https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.24.dev0-py3-none-manylinux_2_28_x86_64.whl&quot;</span>
-pip<span class="w"> </span>install<span class="w"> </span>apache-tvm-ffi<span class="o">==</span><span class="m">0</span>.1.9rc2
+<h2><span class="section-number">8.1.2. </span>Install Packages<a class="headerlink" href="#install-packages" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>-U<span class="w"> </span><span class="s2">&quot;https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.25.dev0-py3-none-manylinux_2_28_x86_64.whl&quot;</span>
+pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>apache-tvm-ffi
 pip<span class="w"> </span>install<span class="w"> </span><span class="nv">torch</span><span class="o">==</span><span class="m">2</span>.9.1+cu130<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu130
 pip<span class="w"> </span>install<span class="w"> </span>numpy
 </pre></div>
 </div>
+<p>The wheel above is the CUDA 13 TIRX nightly used by this tutorial. If
+you are working from source, use the local <code class="docutils literal notranslate"><span class="pre">tvm</span></code> checkout and keep
+<code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> updated to the same development window.</p>
 </section>
-<section id="verify-with-a-tiny-kernel">
-<h2><span class="section-number">8.1.1.3. </span>Verify with a Tiny Kernel<a class="headerlink" href="#verify-with-a-tiny-kernel" title="Permalink to this heading">¶</a></h2>
-<p>Verify the setup by compiling and running a real TIRX kernel. The
-minimal kernel doubles every element of an array on the GPU.</p>
-<p>Three TIRX primitives appear in every kernel:</p>
+<section id="minimal-kernel">
+<h2><span class="section-number">8.1.3. </span>Minimal Kernel<a class="headerlink" href="#minimal-kernel" title="Permalink to this heading">¶</a></h2>
+<p>The smallest useful verification is a one-dimensional GPU kernel. It
+checks the current TIRX entry-point style:</p>
 <ul class="simple">
-<li><p><strong>``with Tx.kernel():``</strong> opens the kernel-launch scope. Everything
-inside it runs on the GPU. Outside this block you are still on the
-host.</p></li>
-<li><p><strong>``Tx.cta_id([num_blocks], parent=”kernel”)``</strong> declares the CTA
-(CUDA block) grid extent and returns a symbolic block index, exactly
-like <code class="docutils literal notranslate"><span class="pre">blockIdx.x</span></code> in raw CUDA. <code class="docutils literal notranslate"><span class="pre">[num_blocks]</span></code> becomes the grid
-size.</p></li>
-<li><p><strong>``Tx.thread_id([num_threads_per_cta], parent=”cta”)``</strong> declares the
-per-CTA thread extent and returns the symbolic thread index (like
-<code class="docutils literal notranslate"><span class="pre">threadIdx.x</span></code>). The CTA size is <code class="docutils literal notranslate"><span class="pre">num_threads_per_cta</span></code>.</p></li>
-<li><p><strong>``with Tx.thread():``</strong> opens a thread-level execution scope — every
-thread runs the body independently. Other scopes (<code class="docutils literal notranslate"><span class="pre">Tx.warp()</span></code>,
-<code class="docutils literal notranslate"><span class="pre">Tx.warpgroup()</span></code>, <code class="docutils literal notranslate"><span class="pre">Tx.cta()</span></code>) exist for cooperative tile
-primitives and are introduced later in the tutorial.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> defines one TIRX primitive function.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.device_entry()</span></code> marks the start of device code.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([...])</span></code> names the CTA index and launch extent.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([...])</span></code> names the thread index inside a CTA.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread():</span></code> marks per-thread work.</p></li>
 </ul>
-<p>With those in hand, the kernel maps a length-<code class="docutils literal notranslate"><span class="pre">n</span></code> array to a 1-D grid
-of CTAs, each with 256 threads, and has every thread double one element:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tvm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tvm.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">tirx</span> <span class="k">as</span> <span class="n">Tx</span>
 
 <span class="n">BLOCK</span> <span class="o">=</span> <span class="mi">256</span>
-
-<span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">double_it</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>
-    <span class="n">A</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
-    <span class="n">B</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
-        <span class="c1"># Launch ceildiv(n, BLOCK) CTAs of BLOCK threads each.</span>
-        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLOCK</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
-        <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">BLOCK</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
-            <span class="n">i</span> <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="n">BLOCK</span> <span class="o">+</span> <span class="n">tid</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>                       <span class="c1"># tail-guard for non-multiples of BLOCK</span>
-                <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span>
-
-<span class="c1"># Compile</span>
-<span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>  <span class="c1"># selects the CUDA target used by this Blackwell setup</span>
-<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
-    <span class="n">lib</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">double_it</span><span class="p">}),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
-
-<span class="c1"># Run</span>
-<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>  <span class="c1"># gpu(0)</span>
-<span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="n">lib</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">](</span><span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">tvm</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">from_dlpack</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
-
-<span class="c1"># Verify</span>
-<span class="n">match</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input:  </span><span class="si">{</span><span class="n">a</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output: </span><span class="si">{</span><span class="n">b</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Match:  </span><span class="si">{</span><span class="n">match</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">match</span><span class="p">,</span> <span class="s2">&quot;FAIL: output does not match a * 2&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Setup verified! Your TIRX environment is working correctly.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>A few observations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">double_it</span><span class="p">(</span><span class="n">a_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">b_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">a_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">b_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+
+    <span class="n">Tx</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+    <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([(</span><span class="n">n</span> <span class="o">+</span> <span class="n">BLOCK</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">])</span>
+    <span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">BLOCK</span><span class="p">])</span>
+
+    <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">bx</span> <span class="o">*</span> <span class="n">BLOCK</span> <span class="o">+</span> <span class="n">tid</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+            <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span>
+</pre></div>
+</div>
+<p>Compile and run:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">target</span><span class="p">:</span>
+    <span class="n">ex</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">double_it</span><span class="p">}),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
+
+<span class="n">n</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="n">ex</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_close</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PASS&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="inspect-generated-cuda">
+<h2><span class="section-number">8.1.4. </span>Inspect Generated CUDA<a class="headerlink" href="#inspect-generated-cuda" title="Permalink to this heading">¶</a></h2>
+<p>After compiling, inspect the lowered CUDA source:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cuda_source</span> <span class="o">=</span> <span class="n">ex</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">imports_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inspect_source</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cuda_source</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For this kernel, search for <code class="docutils literal notranslate"><span class="pre">blockIdx.x</span></code>, <code class="docutils literal notranslate"><span class="pre">threadIdx.x</span></code>, and the
+final store. For GEMM and Flash Attention kernels, the same inspection
+method is useful for checking guards, barriers, <code class="docutils literal notranslate"><span class="pre">cp.async.bulk</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> instructions.</p>
+</section>
+<section id="troubleshooting">
+<h2><span class="section-number">8.1.5. </span>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>The grid extent is a TIR expression — <code class="docutils literal notranslate"><span class="pre">(n</span> <span class="pre">+</span> <span class="pre">BLOCK</span> <span class="pre">-</span> <span class="pre">1)</span> <span class="pre">//</span> <span class="pre">BLOCK</span></code> is
-computed at launch time from the runtime value of <code class="docutils literal notranslate"><span class="pre">n</span></code>, not baked
-into the binary. The same compiled kernel handles any <code class="docutils literal notranslate"><span class="pre">n</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Tx.int32()</span></code> (no argument) declares a <em>symbolic</em> runtime parameter,
-similar to a <code class="docutils literal notranslate"><span class="pre">tl::Tensor</span></code> shape parameter in TVM TensorIR.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Tx.match_buffer</span></code> binds a <code class="docutils literal notranslate"><span class="pre">Tx.handle</span></code> (a raw pointer passed from
-the host) to a strided tensor view — there is no shape-checking at the
-C ABI; the host is responsible for passing the right <code class="docutils literal notranslate"><span class="pre">n</span></code>.</p></li>
+<li><p><strong>Package URL returns 404</strong>: check that the wheel version is
+<code class="docutils literal notranslate"><span class="pre">0.25.dev0</span></code>, not the older <code class="docutils literal notranslate"><span class="pre">0.24.dev0</span></code>.</p></li>
+<li><p><strong>CUDA error at launch</strong>: check <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code>, the driver version,
+and that the process is running on a Blackwell GPU.</p></li>
+<li><p><strong>``inspect_source`` has no CUDA import</strong>: make sure the target is
+<code class="docutils literal notranslate"><span class="pre">cuda</span></code> and <code class="docutils literal notranslate"><span class="pre">tir_pipeline=&quot;tirx&quot;</span></code> was passed to <code class="docutils literal notranslate"><span class="pre">tvm.compile</span></code>.</p></li>
+<li><p><strong>Import error for TVM FFI</strong>: update <code class="docutils literal notranslate"><span class="pre">apache-tvm-ffi</span></code> and restart
+the Python process.</p></li>
 </ul>
-<p><code class="docutils literal notranslate"><span class="pre">Setup</span> <span class="pre">verified!</span></code> confirms that the environment works. Otherwise:</p>
-<ul class="simple">
-<li><p><strong>``ModuleNotFoundError: No module named ‘tvm’``</strong>: Re-run the pip
-install command.</p></li>
-<li><p><strong>``CUDA error``</strong>: Check that <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code> shows a Blackwell GPU
-and driver &gt;= 570</p></li>
-<li><p><strong>Compilation error</strong>: Make sure you installed the <code class="docutils literal notranslate"><span class="pre">cu130</span></code> version
-of both TVM and PyTorch</p></li>
-</ul>
-<p>For generated CUDA inspection, use the debugging appendix for
-warp-specialized kernels or the language reference for the lower-level
-<code class="docutils literal notranslate"><span class="pre">inspect_source()</span></code> workflow.</p>
 </section>
 </section>
 
@@ -284,10 +269,12 @@ warp-specialized kernels or the language reference for the lower-level
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">8.1.1. Environment Setup</a><ul>
-<li><a class="reference internal" href="#requirements">8.1.1.1. Requirements</a></li>
-<li><a class="reference internal" href="#install-packages">8.1.1.2. Install Packages</a></li>
-<li><a class="reference internal" href="#verify-with-a-tiny-kernel">8.1.1.3. Verify with a Tiny Kernel</a></li>
+<li><a class="reference internal" href="#">8.1. Environment Setup</a><ul>
+<li><a class="reference internal" href="#requirements">8.1.1. Requirements</a></li>
+<li><a class="reference internal" href="#install-packages">8.1.2. Install Packages</a></li>
+<li><a class="reference internal" href="#minimal-kernel">8.1.3. Minimal Kernel</a></li>
+<li><a class="reference internal" href="#inspect-generated-cuda">8.1.4. Inspect Generated CUDA</a></li>
+<li><a class="reference internal" href="#troubleshooting">8.1.5. Troubleshooting</a></li>
 </ul>
 </li>
 </ul>
@@ -305,11 +292,11 @@ warp-specialized kernels or the language reference for the lower-level
             <div>8. Appendix</div>
          </div>
      </a>
-     <a id="button-next" href="../chapter_fused_gelu/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+     <a id="button-next" href="../chapter_api_reference/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>8.1.2. Practice Kernel: Fused GELU Gate</div>
+            <div>8.2. TIRX API Reference</div>
         </div>
      </a>
   </div>

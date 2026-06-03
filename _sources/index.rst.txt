@@ -64,7 +64,8 @@ Reading Path
 
 - **Appendix**
 
-  - Setup, practice kernels, debugging notes, and references.
+  - Setup, API reference, language/compile notes, practice kernels, and
+    source maps.
 
 .. toctree::
    :maxdepth: 2

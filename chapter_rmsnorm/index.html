@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>8.1.3. Practice Kernel: RMSNorm Reduction &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>8.5. Practice Kernel: RMSNorm Reduction &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
 
     <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
     <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
@@ -29,8 +29,8 @@
     <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="8.1.4. Appendix: Flash Attention 4 TIRX Source" href="../chapter_fa4_source/index.html" />
-    <link rel="prev" title="8.1.2. Practice Kernel: Fused GELU Gate" href="../chapter_fused_gelu/index.html" /> 
+    <link rel="next" title="8.6. Flash Attention 4 Source Map" href="../chapter_fa4_source/index.html" />
+    <link rel="prev" title="8.4. Practice Kernel: Fused GELU Gate" href="../chapter_fused_gelu/index.html" /> 
   </head>
 <body>
     <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
@@ -38,7 +38,7 @@
         
         <nav class="mdl-navigation breadcrumb">
             <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">8. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">8.1.3. </span>Practice Kernel: RMSNorm Reduction</a>
+            <a class="mdl-navigation__link is-active"><span class="section-number">8.5. </span>Practice Kernel: RMSNorm Reduction</a>
         </nav>
         <div class="mdl-layout-spacer"></div>
         <nav class="mdl-navigation">
@@ -72,11 +72,6 @@ Show Source
     <div class="mdl-layout__header-row header-links">
       <div class="mdl-layout-spacer"></div>
       <nav class="mdl-navigation">
-          
-              <a  class="mdl-navigation__link" href="https://github.com/mlc-ai/tirx-tutorial">
-                  <i class="fab fa-github"></i>
-                  GitHub
-              </a>
       </nav>
     </div>
 </header><header class="mdl-layout__drawer">
@@ -104,12 +99,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -147,12 +142,12 @@ Show Source
 <li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.1.2. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">8.1.3. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.1.4. Appendix: Flash Attention 4 TIRX Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.1.5. TIRX API Lookup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.1.6. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.5. Practice Kernel: RMSNorm Reduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source Map</a></li>
 </ul>
 </li>
 </ul>
@@ -167,14 +162,16 @@ Show Source
         <div class="page-content" role="main">
         
   <section id="practice-kernel-rmsnorm-reduction">
-<span id="chap-rmsnorm"></span><h1><span class="section-number">8.1.3. </span>Practice Kernel: RMSNorm Reduction<a class="headerlink" href="#practice-kernel-rmsnorm-reduction" title="Permalink to this heading">¶</a></h1>
+<span id="chap-rmsnorm"></span><h1><span class="section-number">8.5. </span>Practice Kernel: RMSNorm Reduction<a class="headerlink" href="#practice-kernel-rmsnorm-reduction" title="Permalink to this heading">¶</a></h1>
 <p>RMSNorm (Root Mean Square Layer Normalization) is used in LLMs such as
-Llama and Qwen. It introduces two GPU programming patterns: <strong>warp-level
-reduction</strong> and <strong>shared memory communication</strong>.</p>
+Llama and Qwen. This optional practice kernel uses a manual reduction so
+you can see <strong>warp-level reduction</strong> and <strong>shared memory communication</strong>
+directly. Current production kernels may use higher-level helpers such
+as <code class="docutils literal notranslate"><span class="pre">Tx.cuda.cta_sum(...)</span></code> for the same reduction.</p>
 <p><strong>Operation</strong>: Given input <code class="docutils literal notranslate"><span class="pre">x[batch,</span> <span class="pre">hidden]</span></code> and weight
 <code class="docutils literal notranslate"><span class="pre">w[hidden]</span></code>, for each row <span class="math notranslate nohighlight">\(b\)</span>:</p>
 <div class="math notranslate nohighlight" id="equation-chapter-rmsnorm-index-0">
-<span class="eqno">(8.1.3)<a class="headerlink" href="#equation-chapter-rmsnorm-index-0" title="Permalink to this equation">¶</a></span>\[\text{out}[b, h] = \frac{x[b, h]}{\text{RMS}(x[b,:])} \cdot w[h], \quad \text{where } \text{RMS}(x[b,:]) = \sqrt{\frac{1}{d}\sum_{h} x[b,h]^2 + \epsilon}\]</div>
+<span class="eqno">(8.5.1)<a class="headerlink" href="#equation-chapter-rmsnorm-index-0" title="Permalink to this equation">¶</a></span>\[\text{out}[b, h] = \frac{x[b, h]}{\text{RMS}(x[b,:])} \cdot w[h], \quad \text{where } \text{RMS}(x[b,:]) = \sqrt{\frac{1}{d}\sum_{h} x[b,h]^2 + \epsilon}\]</div>
 <p>Each row is normalized independently by its own RMS value. Here
 <span class="math notranslate nohighlight">\(b\)</span> indexes the batch dimension and <span class="math notranslate nohighlight">\(h\)</span> indexes the hidden
 dimension.</p>
@@ -187,7 +184,7 @@ dimension.</p>
 normalization</p></li>
 </ul>
 <section id="implementation">
-<h2><span class="section-number">8.1.3.1. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.5.1. </span>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
 <p>First, the helper functions and constants:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -215,10 +212,10 @@ warps, cache x in shared memory.</p>
 <p><strong>Pass 2</strong>: Read cached x from shared memory, multiply by
 <span class="math notranslate nohighlight">\(1/\text{RMS} \cdot \text{weight}\)</span>, write output.</p>
 <section id="thread-organization">
-<h3><span class="section-number">8.1.3.1.1. </span>Thread Organization<a class="headerlink" href="#thread-organization" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.5.1.1. </span>Thread Organization<a class="headerlink" href="#thread-organization" title="Permalink to this heading">¶</a></h3>
 <p>Each CTA has <code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">*</span> <span class="pre">bdy</span></code> threads, arranged in a 2D layout via
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([bdx,</span> <span class="pre">bdy],</span> <span class="pre">parent=&quot;cta&quot;)</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">bdx</span><span class="p">,</span> <span class="n">bdy</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([bdx,</span> <span class="pre">bdy])</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">bdx</span><span class="p">,</span> <span class="n">bdy</span><span class="p">])</span>
 <span class="c1"># tx: lane ID within the warp (0-31)</span>
 <span class="c1"># ty: warp index (0 to bdy-1)</span>
 </pre></div>
@@ -226,8 +223,7 @@ warps, cache x in shared memory.</p>
 <p>Passing a <strong>2D list ``[bdx, bdy]``</strong> means the CTA’s threads are
 logically arranged as a 2D grid of size <code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">×</span> <span class="pre">bdy</span></code>, and the call
 returns <strong>two indices</strong> <code class="docutils literal notranslate"><span class="pre">(tx,</span> <span class="pre">ty)</span></code>. In contrast,
-<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([NUM_THREADS],</span> <span class="pre">parent=&quot;cta&quot;)</span></code> is 1D and returns a single
-<code class="docutils literal notranslate"><span class="pre">tid</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">Tx.thread_id([NUM_THREADS])</span></code> is 1D and returns a single <code class="docutils literal notranslate"><span class="pre">tid</span></code>.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">=</span> <span class="pre">32</span></code> — one warp (32 threads). <code class="docutils literal notranslate"><span class="pre">tx</span></code> is the lane ID within the
 warp.</p></li>
@@ -245,7 +241,7 @@ per CTA = 256 threads total.</p>
 <figure class="align-default" id="id1">
 <img alt="../_images/cta_warp_layout.png" src="../_images/cta_warp_layout.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8.1.2 </span><span class="caption-text">CTA Layout and Warp Organization</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 8.5.1 </span><span class="caption-text">CTA Layout and Warp Organization</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Each horizontal band in the diagram is one warp. All warps in the CTA
@@ -269,7 +265,7 @@ takes 2 iterations — more parallelism, less looping.</p>
 with <code class="docutils literal notranslate"><span class="pre">idx</span> <span class="pre">+=</span> <span class="pre">SM_COUNT</span></code> (persistent kernel pattern).</p>
 </section>
 <section id="warp-shuffle-reduction">
-<h3><span class="section-number">8.1.3.1.2. </span>Warp Shuffle Reduction<a class="headerlink" href="#warp-shuffle-reduction" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.5.1.2. </span>Warp Shuffle Reduction<a class="headerlink" href="#warp-shuffle-reduction" title="Permalink to this heading">¶</a></h3>
 <p>Within a warp (32 threads), shuffle operations let threads exchange
 values directly through registers – no shared memory needed. The XOR
 shuffle pattern pairs threads at decreasing distances to combine partial
@@ -278,7 +274,7 @@ has 32 threads and 5 steps, same pattern):</p>
 <figure class="align-default" id="id2">
 <img alt="../_images/shuffle_reduce.png" src="../_images/shuffle_reduce.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8.1.3 </span><span class="caption-text">XOR Shuffle Reduction</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 8.5.2 </span><span class="caption-text">XOR Shuffle Reduction</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>A real warp has 32 threads and 5 steps (offsets 16, 8, 4, 2, 1), but the
@@ -297,7 +293,7 @@ heavy lifting is done by hardware units (tcgen05 MMA, TMA), and you will
 not need to write shuffle reductions by hand.</p>
 </section>
 <section id="cross-warp-reduction">
-<h3><span class="section-number">8.1.3.1.3. </span>Cross-Warp Reduction<a class="headerlink" href="#cross-warp-reduction" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.5.1.3. </span>Cross-Warp Reduction<a class="headerlink" href="#cross-warp-reduction" title="Permalink to this heading">¶</a></h3>
 <p>Shuffle only works within a single warp (32 threads). If the CTA has 8
 warps, each warp has its own partial sum, but they can’t shuffle with
 each other. The solution is to use shared memory (SMEM) as a bridge —
@@ -306,7 +302,7 @@ shuffle reduction.</p>
 <figure class="align-default" id="id3">
 <img alt="../_images/cross_warp_reduce.png" src="../_images/cross_warp_reduce.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8.1.4 </span><span class="caption-text">Cross-Warp Reduction</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 8.5.3 </span><span class="caption-text">Cross-Warp Reduction</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>The cross-warp reduction has three phases: Steps 1-2 <strong>gather</strong> all warp
@@ -333,7 +329,7 @@ SMEM is only needed for the cross-warp step because shuffle cannot reach
 across warps.</p>
 </section>
 <section id="two-pass-structure">
-<h3><span class="section-number">8.1.3.1.4. </span>Two-Pass Structure<a class="headerlink" href="#two-pass-structure" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.5.1.4. </span>Two-Pass Structure<a class="headerlink" href="#two-pass-structure" title="Permalink to this heading">¶</a></h3>
 <ol class="arabic simple">
 <li><p><strong>Pass 1</strong>: Load <span class="math notranslate nohighlight">\(x\)</span>, compute <span class="math notranslate nohighlight">\(x^2\)</span>, reduce to get
 sum-of-squares, store <span class="math notranslate nohighlight">\(x\)</span> to SMEM</p></li>
@@ -343,7 +339,7 @@ sum-of-squares, store <span class="math notranslate nohighlight">\(x\)</span> to
 <p>Caching avoids reading global memory twice.</p>
 </section>
 <section id="bar-sync-vs-cta-sync">
-<h3><span class="section-number">8.1.3.1.5. </span>bar.sync vs cta_sync<a class="headerlink" href="#bar-sync-vs-cta-sync" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.5.1.5. </span>bar.sync vs cta_sync<a class="headerlink" href="#bar-sync-vs-cta-sync" title="Permalink to this heading">¶</a></h3>
 <p>Both are synchronization barriers, but they differ: -
 <code class="docutils literal notranslate"><span class="pre">Tx.cuda.cta_sync()</span></code> = <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> — synchronizes <strong>all</strong>
 threads in the CTA.</p>
@@ -357,36 +353,34 @@ threads participate, not the full 128/256-thread CTA).</p></li>
 actual thread count (<code class="docutils literal notranslate"><span class="pre">bdx</span> <span class="pre">*</span> <span class="pre">bdy</span></code>) may be less than the CTA size. The
 following shared-memory reads rely on this barrier for thread
 synchronization and shared-memory ordering.</p>
-<p>The kernel implementation follows. It uses three loop forms:
-<code class="docutils literal notranslate"><span class="pre">Tx.serial(...)</span></code> for the row scan, <code class="docutils literal notranslate"><span class="pre">Tx.unroll(...)</span></code> for small fixed
-reductions and vector fragments, and <code class="docutils literal notranslate"><span class="pre">Tx.vectorized(...)</span></code> for
-contiguous vector load/store. Use the API lookup if you need the exact
-syntax later.</p>
+<p>The kernel implementation follows. It uses <code class="docutils literal notranslate"><span class="pre">Tx.serial(...)</span></code> for the
+row scan and <code class="docutils literal notranslate"><span class="pre">Tx.unroll(...)</span></code> for small fixed reductions and vector
+fragments. Use the API lookup if you need the exact syntax later.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_rmsnorm_kernel</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">):</span>
     <span class="n">vec_size</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">gcd</span><span class="p">(</span><span class="mi">16</span> <span class="o">//</span> <span class="n">F16_BYTES</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">)</span>  <span class="c1"># elements per vector load (128-bit)</span>
     <span class="n">block_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="n">hidden_size</span> <span class="o">//</span> <span class="n">vec_size</span><span class="p">)</span>
     <span class="n">bdx</span> <span class="o">=</span> <span class="mi">32</span>                          <span class="c1"># threads per warp (always 32)</span>
     <span class="n">bdy</span> <span class="o">=</span> <span class="n">ceildiv</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>     <span class="c1"># number of warps per CTA</span>
 
-    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span><span class="p">(</span><span class="n">tirx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@Tx</span><span class="o">.</span><span class="n">prim_func</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">rmsnorm</span><span class="p">(</span><span class="n">input_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">weight_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">out_ptr</span><span class="p">:</span> <span class="n">Tx</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>       <span class="c1"># determined at runtime from buffer shape</span>
         <span class="n">input_global</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">input_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>
         <span class="n">weight_global</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">weight_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">hidden_size</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>
         <span class="n">out_global</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">out_ptr</span><span class="p">,</span> <span class="p">[</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>
 
-        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">kernel</span><span class="p">():</span>
-            <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;kernel&quot;</span><span class="p">)</span>
-            <span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">bdx</span><span class="p">,</span> <span class="n">bdy</span><span class="p">],</span> <span class="n">parent</span><span class="o">=</span><span class="s2">&quot;cta&quot;</span><span class="p">)</span>  <span class="c1"># tx=lane, ty=warp</span>
-            <span class="n">thread_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">ty</span> <span class="o">*</span> <span class="n">bdx</span> <span class="o">+</span> <span class="n">tx</span><span class="p">)</span>
+        <span class="n">Tx</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+        <span class="n">bx</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">SM_COUNT</span><span class="p">])</span>
+        <span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">bdx</span><span class="p">,</span> <span class="n">bdy</span><span class="p">])</span>  <span class="c1"># tx=lane, ty=warp</span>
+        <span class="n">thread_id</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">meta_var</span><span class="p">(</span><span class="n">ty</span> <span class="o">*</span> <span class="n">bdx</span> <span class="o">+</span> <span class="n">tx</span><span class="p">)</span>
 
-            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta</span><span class="p">():</span>
-                <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
-                <span class="n">x_smem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">([</span><span class="n">hidden_size</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>   <span class="c1"># cache x for Pass 2</span>
-                <span class="n">sum_sq_smem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">([</span><span class="n">bdy</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>      <span class="c1"># one partial sum per warp</span>
-                <span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">cta</span><span class="p">():</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>
+            <span class="n">x_smem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">([</span><span class="n">hidden_size</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>   <span class="c1"># cache x for Pass 2</span>
+            <span class="n">sum_sq_smem</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">([</span><span class="n">bdy</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>      <span class="c1"># one partial sum per warp</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
-                <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
+            <span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">():</span>
                     <span class="c1"># Per-thread registers: fp16 for loads, fp32 for computation</span>
                     <span class="n">input_vec</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">([</span><span class="n">vec_size</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>
                     <span class="n">input_vec_f32</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">([</span><span class="n">vec_size</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
@@ -519,7 +513,7 @@ Check <code class="docutils literal notranslate"><span class="pre">idx[0]</span>
 </section>
 </section>
 <section id="extension-operator-fusion">
-<h2><span class="section-number">8.1.3.2. </span>Extension: Operator Fusion<a class="headerlink" href="#extension-operator-fusion" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.5.2. </span>Extension: Operator Fusion<a class="headerlink" href="#extension-operator-fusion" title="Permalink to this heading">¶</a></h2>
 <p>In Transformer models, RMSNorm is almost always preceded by a residual
 addition:
 <code class="docutils literal notranslate"><span class="pre">residual</span> <span class="pre">=</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">residual;</span> <span class="pre">output</span> <span class="pre">=</span> <span class="pre">RMSNorm(residual)</span> <span class="pre">*</span> <span class="pre">weight</span></code>.
@@ -532,7 +526,7 @@ inner loop. This is the standard GPU pattern of fusing adjacent ops to
 save memory bandwidth.</p>
 </section>
 <section id="exercises">
-<h2><span class="section-number">8.1.3.3. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.5.3. </span>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Why does the kernel store <code class="docutils literal notranslate"><span class="pre">x</span></code> to shared memory (<code class="docutils literal notranslate"><span class="pre">x_smem</span></code>) during
 Pass 1, rather than re-reading from global memory in Pass 2?</p></li>
@@ -560,17 +554,17 @@ why does every lane end with the same total?”</em></p>
       <span class="caption-text">Table Of Contents</span>
     </p>
     <ul>
-<li><a class="reference internal" href="#">8.1.3. Practice Kernel: RMSNorm Reduction</a><ul>
-<li><a class="reference internal" href="#implementation">8.1.3.1. Implementation</a><ul>
-<li><a class="reference internal" href="#thread-organization">8.1.3.1.1. Thread Organization</a></li>
-<li><a class="reference internal" href="#warp-shuffle-reduction">8.1.3.1.2. Warp Shuffle Reduction</a></li>
-<li><a class="reference internal" href="#cross-warp-reduction">8.1.3.1.3. Cross-Warp Reduction</a></li>
-<li><a class="reference internal" href="#two-pass-structure">8.1.3.1.4. Two-Pass Structure</a></li>
-<li><a class="reference internal" href="#bar-sync-vs-cta-sync">8.1.3.1.5. bar.sync vs cta_sync</a></li>
+<li><a class="reference internal" href="#">8.5. Practice Kernel: RMSNorm Reduction</a><ul>
+<li><a class="reference internal" href="#implementation">8.5.1. Implementation</a><ul>
+<li><a class="reference internal" href="#thread-organization">8.5.1.1. Thread Organization</a></li>
+<li><a class="reference internal" href="#warp-shuffle-reduction">8.5.1.2. Warp Shuffle Reduction</a></li>
+<li><a class="reference internal" href="#cross-warp-reduction">8.5.1.3. Cross-Warp Reduction</a></li>
+<li><a class="reference internal" href="#two-pass-structure">8.5.1.4. Two-Pass Structure</a></li>
+<li><a class="reference internal" href="#bar-sync-vs-cta-sync">8.5.1.5. bar.sync vs cta_sync</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#extension-operator-fusion">8.1.3.2. Extension: Operator Fusion</a></li>
-<li><a class="reference internal" href="#exercises">8.1.3.3. Exercises</a></li>
+<li><a class="reference internal" href="#extension-operator-fusion">8.5.2. Extension: Operator Fusion</a></li>
+<li><a class="reference internal" href="#exercises">8.5.3. Exercises</a></li>
 </ul>
 </li>
 </ul>
@@ -585,14 +579,14 @@ why does every lane end with the same total?”</em></p>
          <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
          <div class="pagenation-text">
             <span class="pagenation-direction">Previous</span>
-            <div>8.1.2. Practice Kernel: Fused GELU Gate</div>
+            <div>8.4. Practice Kernel: Fused GELU Gate</div>
          </div>
      </a>
      <a id="button-next" href="../chapter_fa4_source/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
          <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
         <div class="pagenation-text">
             <span class="pagenation-direction">Next</span>
-            <div>8.1.4. Appendix: Flash Attention 4 TIRX Source</div>
+            <div>8.6. Flash Attention 4 Source Map</div>
         </div>
      </a>
   </div>
