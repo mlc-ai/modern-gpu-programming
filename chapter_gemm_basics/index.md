@@ -104,7 +104,7 @@ if warp_id == 0:
 
 Read the issuer selection in two steps. First, `if warp_id == 0` restricts the code to warp 0 inside the warpgroup. Then `with Tx.thread(Tx.ptx.elect_sync())` uses the elected-lane predicate as the guard, so only one active lane in warp 0 enters the block.
 
-The result is that one thread issues `Tx.gemm_async` and `tcgen05.commit`. The computation is still a tile-level MMA: the instruction is issued by one elected thread, but the hardware performs the cooperative MMA for the tile described by the SMEM operand layouts and the TMEM accumulator layout. `accum=False` means this MMA overwrites the TMEM destination instead of adding into an existing accumulator.
+The result is that one thread issues `Tx.gemm_async` and `tcgen05.commit`. The computation is still a tile-level MMA: the instruction is issued by one elected thread, but the hardware performs the cooperative MMA for the tile described by the SMEM operand layouts and the TMEM accumulator layout. Only one thread issues it because `tcgen05.mma` is a *single-instruction* cooperative op — the hardware runs the whole tile MMA from one launch, so if all 128 threads issued it you would launch the same tile's MMA 128 times. `accum=False` means this MMA overwrites the TMEM destination instead of adding into an existing accumulator.
 
 **Writeback.**
 
@@ -314,7 +314,7 @@ The first kernel computes the right result, but it still has four deliberate lim
 ## Step 2: K-Loop Accumulation
 :label:`chap_k_loop`
 
-Step 1 computes one K tile. Step 2 keeps one output tile but lets K contain multiple 64-wide chunks. The kernel repeats the same load -> MMA -> wait sequence for each K chunk and accumulates the result in TMEM.
+Step 1 computes one K tile. Step 2 keeps one output tile but lets K contain multiple 64-wide chunks. The kernel repeats the same load -> MMA -> wait sequence for each K chunk and accumulates the result in TMEM. Reusing one mbarrier across iterations brings the chapter's first real correctness hazard: track the wrong phase and the wait returns *before* the MMA finishes, silently corrupting the result. The mechanics below show why.
 
 > **What this step changes — Layout**
 > - Scope: unchanged — one warpgroup.
@@ -473,6 +473,8 @@ B[by * BLK_N : (by + 1) * BLK_N, k : k + BLK_K]
 ```
 
 This matches the tutorial's `D = A @ B.T` convention: `bx` selects rows of A and D, while `by` selects rows of B and columns of D.
+
+One tile per CTA is simple but leaves reuse on the table: CTAs in the same row reload the same A tiles, and same-column CTAs reload the same B tiles, from GMEM. Persistent scheduling (next chapter) revisits this to keep those operands hot in L2.
 
 **Try with your agent**: With `M=N=K=256`, `BLK_M=BLK_N=128`, and `BLK_K=64`, ask it to trace CTA `(1, 0)` and CTA `(0, 1)`. For each CTA, list `m_st`, `n_st`, the A and B slices loaded for each K iteration, and the D region written. Which B rows become D columns because the kernel computes `D = A @ B.T`?
 

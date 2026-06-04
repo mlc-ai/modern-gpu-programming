@@ -78,7 +78,7 @@ thread_id = ty * 32 + tx     (unique within CTA, 0 to 255)
 st = (ki * 256 + thread_id) * vec_size   (starting position in the row)
 ```
 
-So thread 0 processes elements 0-7, thread 1 processes 8-15, ..., and they collectively cover the entire `hidden_size=4096` row.
+So thread 0 processes elements 0-7, thread 1 processes 8-15, ..., and they collectively cover the entire `hidden_size=4096` row. Each thread reads its 8 elements as one 128-bit vector load rather than eight scalar loads — fewer instructions issued and each thread moves a full cache-line-friendly chunk, which is what `vec_size` buys.
 
 **Why multiple warps?** A single warp (32 threads × 8 elements = 256 elements per iteration) would need 16 loop iterations to cover 4096 elements. With 8 warps (256 threads × 8 = 2048 per iteration), it only takes 2 iterations — more parallelism, less looping.
 

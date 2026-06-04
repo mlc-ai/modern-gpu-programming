@@ -8,7 +8,7 @@ The following steps are incremental. Step 4 moves the large GMEM <-> SMEM transf
 ## Step 4: TMA Async Load
 :label:`chap_tma_async`
 
-Step 4 replaces synchronous `Tx.copy` with TMA hardware. One thread issues the command, and the hardware performs the tile movement. Benchmarks use M=N=K=4096.
+Step 4 replaces synchronous `Tx.copy` with TMA hardware. One thread issues the command, and the hardware performs the tile movement. These steps work at the full M=N=K=4096 size — not the single 128×128 tile of Chapters 1–3 — and their end-to-end timings appear in Chapter 5's *End-to-End Result* table.
 
 > **What this step changes — Dispatch**
 > - Scope: unchanged — one warpgroup.
@@ -237,7 +237,7 @@ Step 4 uses TMA, but it still waits for each load before issuing the matching MM
 ## Step 5: Software Pipeline (PIPE_DEPTH=2)
 :label:`chap_software_pipeline`
 
-Step 5 adds double-buffered shared memory so the kernel can load one K tile while computing another. Benchmarks use M=N=K=4096.
+Step 5 adds double-buffered shared memory so the kernel can load one K tile while computing another. Same full M=N=K=4096 size.
 
 > **What this step changes — Layout**
 > - Scope: unchanged — one warpgroup.
@@ -252,7 +252,7 @@ With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages. The figure shows the 
 
 The first two TMA loads fill the two stages. After that, the stages alternate. While MMA computes on `k0`, TMA can load `k2` into the stage that will be reused next. While MMA computes on `k1`, TMA can load `k3`, and so on. The two hardware paths are different: TMA moves GMEM -> SMEM tiles, while `tcgen05.mma` consumes an already-loaded SMEM stage and writes the accumulator to TMEM.
 
-This simplified single-warpgroup pipeline only overlaps the *prefetched* stages: the main loop still waits for the current MMA to complete (`try_wait(mma_bar, phase_mma)`) before issuing the next TMA load, so it does not yet realize the fully concurrent schedule the figure suggests. True producer/consumer overlap — where a dedicated load warp keeps issuing TMA while a separate MMA warp computes — requires warp specialization, which Chapter 5 introduces as Step 7.
+This simplified single-warpgroup pipeline only overlaps the *prefetched* stages: the main loop still waits for the current MMA to complete (`try_wait(mma_bar, phase_mma)`) before issuing the next TMA load, so it does not yet realize the fully concurrent schedule the figure suggests. True producer/consumer overlap — where a dedicated load warp keeps issuing TMA while a separate MMA warp computes — requires warp specialization, which Chapter 5 introduces as Step 7. So read Step 5 as building the multi-stage SMEM ring buffer and per-stage barriers that Step 7 turns into real overlap — plus prefetch that takes the first loads off the critical path.
 
 When reading the Step 5 code, look for four changes from Step 4:
 
@@ -457,7 +457,7 @@ def hgemm_v5(M, N, K):
 ## Step 6: Persistent Kernel + Tile Scheduler
 :label:`chap_persistent_kernel`
 
-Step 5 launches one CTA for every 128 x 128 output tile. For a 4096 x 4096 output, that is 1024 CTAs. Step 6 instead launches a fixed pool of CTAs and lets each CTA process multiple output tiles. This makes tile assignment explicit in the kernel and gives the scheduler control over tile order. Benchmarks use M=N=K=4096.
+Step 5 launches one CTA for every 128 x 128 output tile. For a 4096 x 4096 output, that is 1024 CTAs. Step 6 instead launches a fixed pool of CTAs and lets each CTA process multiple output tiles. This makes tile assignment explicit in the kernel and gives the scheduler control over tile order. Same full M=N=K=4096 size.
 
 > **What this step changes — Scope**
 > - Scope: a fixed pool of persistent CTAs, each looping over many output tiles via the scheduler.
@@ -466,7 +466,7 @@ Step 5 launches one CTA for every 128 x 128 output tile. For a 4096 x 4096 outpu
 
 ### Persistent Scheduling
 
-A persistent kernel launches `SM_COUNT` CTAs instead of one CTA per output tile. In the B200 configuration used here, `SM_COUNT=148`, so the kernel launches one CTA per SM. Each CTA loops over output tiles assigned by `ClusterPersistentScheduler2D`. The scheduler groups nearby tiles with `l2_group_size=8`, improving the chance that recently used A or B tiles are still in L2.
+A persistent kernel launches `SM_COUNT` CTAs instead of one CTA per output tile. In the B200 configuration used here, `SM_COUNT=148`, so the kernel launches one CTA per SM. Each CTA loops over output tiles assigned by `ClusterPersistentScheduler2D`. Launching 148 persistent CTAs instead of 1024 one-shot CTAs amortizes per-tile setup — TMEM allocation, barrier init, and scheduling are paid once per CTA and reused across the ~7 tiles it handles. The scheduler also groups nearby tiles with `l2_group_size=8`: output tiles in the same row band reuse the same A row-tiles (and same column band, the same B tiles), so processing them back-to-back keeps those operands hot in L2 instead of re-fetching from HBM.
 
 ```python
 bx = Tx.cta_id([SM_COUNT])  # 1D grid, one CTA per SM

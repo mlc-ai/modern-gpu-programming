@@ -79,7 +79,7 @@ lane_id = Tx.lane_id([32])
 tid_in_wg = Tx.thread_id_in_wg([128])
 ```
 
-Current coordinate calls do not use `parent=...`. The relationship is in the name: `warp_id_in_wg` means warp inside a warpgroup, and `cta_id_in_cluster` means CTA inside a cluster.
+The relationship is in the name: `warp_id_in_wg` means warp inside a warpgroup, and `cta_id_in_cluster` means CTA inside a cluster.
 
 Scope examples:
 

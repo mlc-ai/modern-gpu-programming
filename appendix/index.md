@@ -11,7 +11,7 @@ The main tutorial path ends with Writing TIRX Kernels with Agents. The appendix 
 | Look up the spelling of a TIRX API used in the tutorial | **TIRX API Reference** |
 | Understand parsing, buffers, scopes, generated CUDA, or the compile pipeline | **TIRX Language and Compile Pipeline** |
 | Practice basic thread indexing, elementwise code, and reductions | **Practice Kernel: Fused GELU Gate** and **Practice Kernel: RMSNorm Reduction** |
-| Locate the current Flash Attention 4 implementation | **Flash Attention 4 Source Map** |
+| Read the full Flash Attention 4 kernel source | **Flash Attention 4 Source** |
 
 Most readers only need **Environment Setup** and **TIRX API Reference** at first. The practice kernels are optional.
 

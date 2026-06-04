@@ -36,7 +36,7 @@ GPU threads are launched as a flat 1D grid, but the output data is a 2D matrix `
 
 ![1D Thread Grid to 2D Matrix Mapping](../img/thread_grid_to_matrix.png)
 
-Each thread handles exactly one output element. The flat `gid` fills the matrix row by row: the first `out_dim` threads cover row 0, the next `out_dim` threads cover row 1, and so on.
+Each thread handles exactly one output element. The flat `gid` fills the matrix row by row: the first `out_dim` threads cover row 0, the next `out_dim` threads cover row 1, and so on. Because consecutive `gid` values map to consecutive `col` values in the same row, neighboring threads read neighboring addresses — the access is coalesced, which is what lets a warp's 32 loads collapse into a few memory transactions.
 
 ```python
 gid = bx * NUM_THREADS + tid

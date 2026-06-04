@@ -13,7 +13,7 @@ For one query block, Flash Attention computes:
 
 $$O = \text{softmax}(QK^{\top} / \sqrt{d})V$$
 
-without materializing the full attention matrix. The kernel streams K/V blocks and keeps three per-row running states:
+without materializing the full attention matrix — at seq=4096 the full `S = QKᵀ` would be ~16M elements per head (~64 MB in fp32), far past SMEM or the single 128×512 TMEM region. So the kernel streams K/V blocks and keeps three per-row running states:
 
 - `row_max`: the maximum score seen so far.
 - `row_sum`: the running denominator of softmax.
@@ -250,7 +250,7 @@ The value MMA is split into a `96 + 32` schedule:
 3. The final 32 columns wait for `p_ready_2`.
 4. A second MMA consumes that final chunk and finishes the tile.
 
-This lets value MMA begin before the last part of the softmax-to-TMEM writeback is done.
+Without the split, the value MMA would idle until all four 32-column `P` chunks are computed and stored. Starting on the first three (96 columns) lets the last chunk's `exp` and TMEM write overlap a 96-wide MMA instead of leaving the Tensor Core idle.
 
 ## TMEM Layout and Reuse
 
@@ -264,7 +264,7 @@ The figure is easiest to read as a set of tile slots:
 - Numerator slots hold the `P` tile after the softmax exponentiation step.
 - Output slots hold the fp32 `O` accumulator.
 
-These are not independent buffers in global memory. They are regions of the same TMEM allocation. The schedule is valid because each region is reused only after the previous consumer has finished. That is why barriers are part of the layout story: TMEM reuse is safe only when the producer-consumer handoff is complete.
+These are not independent buffers in global memory. They are regions of the same TMEM allocation. Sharing is forced, not chosen: with Q-pipeline depth 2 the two `S` slots (2 × MMA_N = 128) and two `O` slots (2 × 128) already fill all 512 fp32 columns of the region, so `P` has no columns of its own — it must alias the same bytes through the fp16 view. The schedule is valid because each region is reused only after the previous consumer has finished. That is why barriers are part of the layout story: TMEM reuse is safe only when the producer-consumer handoff is complete.
 
 The kernel allocates TMEM through a `Tx.TMEMPool`. It takes one fp32 view (`tmem`) for the score and output accumulators, then moves the pool base back to 0 and takes a second, fp16 view (`tmem_as_f16`) that aliases the *same* physical TMEM:
 
@@ -346,7 +346,7 @@ The barrier type follows the producer:
 - MMA completion uses `TCGen05Bar`, because `tcgen05.commit` signals the completion group.
 - Pure thread-to-thread handoffs use `MBarrier`, where the participating threads arrive explicitly.
 
-Two barriers split the softmax-to-value handoff. `p_o_rescale` lets the value MMA start once the first 96 columns of `P` are written and the `O` tile is safe to accumulate into. On the first K/V block, WG2 pre-arrives this barrier because there is no old `O` to rescale. On later K/V blocks, WG2 arrives after it has either skipped an unnecessary rescale or finished rescaling the old `O`. The rescale is skipped when the per-row scale is effectively 1.0 — softmax clamps `acc_scale` to exactly 1.0 when the row max barely moves, specifically when the log2-scaled max delta `(m_old - m_new) * scale_log2` stays within `rescale_threshold` so the `exp2` rescale factor rounds to 1.0, and WG2 reduces `should_rescale` across the warpgroup with `any_sync`, so it only touches `O` in TMEM when at least one row actually needs it. `p_ready_2` releases the last 32 columns of `P`. This matches the `96 + 32` value-MMA schedule from the previous section.
+Two barriers split the softmax-to-value handoff. `p_o_rescale` lets the value MMA start once the first 96 columns of `P` are written and the `O` tile is safe to accumulate into. On the first K/V block, WG2 pre-arrives this barrier because there is no old `O` to rescale. On later K/V blocks, WG2 arrives after it has either skipped an unnecessary rescale or finished rescaling the old `O`. The rescale is skipped when the per-row scale is effectively 1.0 — softmax clamps `acc_scale` to exactly 1.0 when the row max barely moves, specifically when the log2-scaled max delta `(m_old - m_new) * scale_log2` stays within `rescale_threshold` so the `exp2` rescale factor rounds to 1.0, and WG2 reduces `should_rescale` across the warpgroup with `any_sync`, so it only touches `O` when at least one row needs it — the rescale it skips is a full TMEM → RF → TMEM read-modify-write over the whole `O` accumulator, wasted work once the max has stabilized and the scale rounds to 1.0. `p_ready_2` releases the last 32 columns of `P`. This matches the `96 + 32` value-MMA schedule from the previous section.
 
 Compared with GEMM, the new barriers are the ones around softmax: `s_ready`, `p_o_rescale`, `p_ready_2`, and the softmax/correction pair. They exist because the score MMA and value MMA are separated by register math, TMEM rewrites, and output rescaling.
 
@@ -397,7 +397,7 @@ This is why a single GEMM-style pipeline is not enough. Q, K/V, and TMEM slots a
 
 ## Rescaling and Writeback
 
-Online softmax can change the per-row maximum after each new score tile. When that happens, the output accumulated from earlier K/V blocks is in the old scale and must be rescaled before the next value MMA adds into it:
+Online softmax can change the per-row maximum after each new score tile. When that happens, the output accumulated from earlier K/V blocks is in the old scale and must be rescaled before the next value MMA adds into it — each earlier term is too large by `exp(m_new - m_old)`, so skipping the rescale over-weights the earlier blocks and gives the wrong output. The correction is itself a tile operation (TMEM → registers → TMEM):
 
 $$O_{\text{old}} \leftarrow O_{\text{old}} \cdot e^{(m_{\text{old}} - m_{\text{new}}) / \sqrt{d}}$$
 
@@ -497,7 +497,7 @@ So GQA mainly changes the interpretation at the Q load and O store boundaries. I
 The scheduler maps each CTA to a `(batch, kv_head, m_block)` attention task. The kernel has two scheduling modes:
 
 - Non-causal mode uses `FlashAttentionLinearScheduler`. The launch uses a fixed pool of CTAs, and each CTA advances by `num_ctas` to process multiple tasks.
-- Causal mode uses `FlashAttentionLPTScheduler`. The launch uses one CTA per task, but the task order is rearranged so heavier Q blocks appear earlier and nearby batch/head tasks keep better L2 locality.
+- Causal mode uses `FlashAttentionLPTScheduler`. Causal masking makes work per task uneven — a Q block near the start attends to ~1 K/V block, one near the end to all of them — so the longest-processing-time scheduler front-loads the heavy blocks to balance CTA finish times (and keeps nearby batch/head tasks together for L2 locality).
 
 The code interface has the same shape in both modes:
 

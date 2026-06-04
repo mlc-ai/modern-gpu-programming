@@ -1,9 +1,11 @@
 # Scaling GEMM with Warp Specialization and Clusters
 :label:`chap_gemm_advanced`
 
-The final GEMM kernels combine warp specialization, software pipelining, 2-CTA clusters for cooperative MMA, and multi-consumer warp-specialized execution.
+Chapter 4 ended with a persistent, software-pipelined GEMM in which a single warpgroup still did load, MMA, and writeback in sequence. This chapter scales that kernel in three steps, each lifting one limit.
 
-The SMEM / TMEM / register layouts repeat the pattern established in Chapters 3 and 4. Step 8 additionally uses cluster-scope buffers; Chapter 2 explains the `cbx` / `cby` axes and how one layout can span two CTAs.
+Step 7 splits the single warpgroup into specialized roles — a TMA producer, an MMA consumer, and a writeback warpgroup — so loading and computing run at the same time instead of taking turns. Step 8 makes two CTAs cooperate as a cluster, so one `tcgen05` MMA produces a 256×256 tile across both CTAs and a single B load feeds twice the MMA work. Step 9 adds a second MMA consumer, growing the cluster output to 512×256 so each staged B tile is reused by both consumers — the densest variant in the tutorial.
+
+The SMEM, TMEM, and register layouts still follow the contracts from Chapters 3 and 4; the new focus is *who cooperates*. Step 8 is the first time that scope widens past a single CTA: its operand tiles are split across the two CTAs' shared memory, and one layout spans both CTAs along the `cbx` / `cby` cluster axes named in Chapter 2.
 
 
 ## Step 7: Warp Specialization + Pipeline
@@ -32,7 +34,7 @@ Step 7 is the biggest architectural change: instead of all threads doing load-th
 
 ![Warp Specialization Timeline](../img/warp_specialization_timeline.png)
 
-The TMA producer prefetches data while the MMA consumer computes, and writeback runs independently. Two barriers synchronize the handoff:
+Read the figure as a contrast. In single-warpgroup Step 6, the one warp must finish the MMA before it can issue the next TMA load, so the TMA engine sits idle through the whole MMA and the Tensor Cores sit idle through the whole load. Specialization removes that turn-taking: the TMA producer prefetches data while the MMA consumer computes, and writeback runs independently — producer warp 3 issues the next load while consumer warp 0 is still running the current MMA, so neither engine waits on the other. Two barriers synchronize the handoff:
 
 - **`tma2mma`** (TMA → MMA): signals that the loaded SMEM data is ready for MMA to consume.
 - **`mma2tma`** (MMA → TMA): signals that MMA has finished reading a buffer, so TMA can reuse it for the next load.
@@ -287,7 +289,7 @@ Step 7 keeps the epilogue simple: the writeback warpgroup reads the full `BLK_N=
 
 Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) revisit this epilogue and split the writeback into `EPI_N`-column chunks (`EPI_N=64`). The reason is register pressure: reading 256 fp32 per thread (256 * 4 = 1024 bytes, distributed across 128 threads and their registers) risks spills to local memory, and it also forces a larger Dsmem buffer. By chunking into 64-column groups, each iteration keeps only `EPI_N` fp32 registers live and issues a smaller TMA store.
 
-**Checks.**
+**Implementation notes.**
 
 - **Persistent kernel**: `bx = Tx.cta_id([SM_COUNT])` --- one CTA per SM, loops over tiles
 
@@ -340,7 +342,7 @@ With `cta_group=2`, the MMA hardware can use operand tiles staged by both CTAs. 
 - With `cta_group=2`, the MMA hardware reads B from **both** CTAs' SMEM via cross-CTA shared memory access, so it sees the full logical output-column span.
 - Result: the two CTAs cooperate on one 256x256 output tile. Each CTA writes a 128x256 row stripe of that tile.
 
-Each CTA still loads 128×K of A and 128×K of B. The difference is that each CTA's B slice is reused by the other CTA's A slice through the cooperative MMA, increasing the arithmetic work done per staged operand tile.
+Each CTA still loads 128×K of A and 128×K of B, so the cluster stages only ~2× a single CTA's operands — but it produces a 256×256 tile, ~4× the output FLOPs of a 128×128 tile. The MMA therefore does roughly twice the work per staged-operand byte: arithmetic intensity roughly doubles, because each CTA's B slice is reused by the other CTA's A slice through the cooperative MMA. That is why a still memory-leaning kernel speeds up (~1.8× in the End-to-End table).
 
 ### Tile Address Calculation
 
@@ -568,7 +570,7 @@ def hgemm_v8(M, N, K):
     return kernel
 ```
 
-**Checks.**
+**What changes for 2 CTAs.**
 
 - `CTA_GROUP = 2`, `MMA_N = BLK_N * CTA_GROUP = 256`
 
@@ -622,6 +624,7 @@ With `NUM_CONSUMER=2` and `WG_NUMBER=3`, there are three warpgroups (abbreviated
 | **WG 0** | all | Writeback for consumer 0: reads TMEM `[0:256]` |
 | **WG 1** | all | Writeback for consumer 1: reads TMEM `[256:512]` |
 
+Each consumer multiplies its own A block against the *same* staged B tile, so one B load now feeds 2× the MMA work — B's load cost per useful FLOP is halved. A cannot be shared because the two consumers cover different M-row stripes; that is why sharing B, not A, is the right choice (Exercise 3).
 
 ### Changes from Step 8
 
@@ -833,7 +836,7 @@ def hgemm_v9(M, N, K):
     return kernel
 ```
 
-**Checks.**
+**Implementation notes.**
 
 - In this Step 9 design, `mma2ld` and `ld2mma` are one shared object each with `depth=NUM_CONSUMER`, not separate per-consumer objects. Slot 0 connects MMA warp 0 to Warpgroup 0; Slot 1 connects MMA warp 1 to Warpgroup 1. MMA side uses `warp_id` as index, writeback side uses `wg_id`.
 
@@ -982,6 +985,8 @@ The 4 optimization techniques that deliver the biggest gains:
 ![GEMM Optimization Journey](../img/gemm_perf.png)
 
 In this benchmark, the path moves from 70 ms to 0.12 ms, close to the cuBLAS reference time shown above.
+
+The gains shrink down the list for a reason: the early steps remove *memory* bottlenecks — TMA replaces software copies, clusters raise arithmetic intensity — which is where most of the 70 ms lived. By Step 8 the kernel is already within ~18% of cuBLAS (0.13 vs 0.11 ms), close to *compute-bound*, so little memory stall is left to hide; Step 9's multi-consumer overlap recovers most of that remaining slack. The single-digit final gain is the expected shape near the compute ceiling, not a weak optimization.
 
 The same machinery — TMA loads, `tcgen05` MMA, TMEM readback, and warp-specialized barriers — carries into a harder kernel next: Flash Attention adds online softmax between two MMA phases.
 

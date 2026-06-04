@@ -20,7 +20,7 @@ This page is a lookup table for the APIs used in the tutorial. It follows the cu
 | `Tx.thread_id_in_wg([128])` | Thread id inside a warpgroup. |
 | `Tx.lane_id([32])` | Lane id inside a warp. |
 
-Current coordinate APIs do not take `parent=...`. The parent level is encoded in the function name, for example `cta_id_in_cluster` and `warp_id_in_wg`.
+Coordinate APIs encode the parent level in the name, for example `cta_id_in_cluster` and `warp_id_in_wg`.
 
 ## Execution Scopes
 
@@ -169,9 +169,7 @@ Use generated CUDA to verify that scope guards and hardware instructions match t
 
 ## Common Footguns
 
-- `@Tx.prim_func(tirx=True)` is the old spelling. Use `@Tx.prim_func`; use `@Tx.jit(...)` for constexpr-specialized kernels.
-- `with Tx.kernel():` is the old entry block. Use `Tx.device_entry()`.
-- Do not add `parent=...` to coordinate calls.
+- Use `@Tx.jit(...)` for constexpr-specialized kernels; plain `@Tx.prim_func` otherwise.
 - `Tx.filter` does not have a range form. Pass a variable and a predicate.
 - `Tx.ptx.elect_sync()` elects one thread per warp, not one thread per CTA or warpgroup.
 - `Tx.decl_buffer(..., scope="tmem")` creates a view. TMEM must already have been allocated by `tcgen05.alloc` or `Tx.TMEMPool`.

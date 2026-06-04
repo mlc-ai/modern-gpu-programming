@@ -21,23 +21,35 @@ For asynchronous primitives, a barrier, commit, wait, or fence records the hando
 ## Why Tile Primitives?
 :label:`sec_why_tile_primitives`
 
-Use one GEMM stage as the running example. A stage moves operand tiles into shared memory, runs Tensor Core MMA on those tiles, reads accumulator tiles back, and stores the result. Attention and convolution kernels use different math, but they still rely on the same kind of tile-level structure.
+Use one GEMM stage as the running example. A stage moves operand tiles into shared memory, runs Tensor Core MMA on those tiles, reads accumulator tiles back, and stores the result. Attention and convolution kernels use different math, but they rely on the same tile-level structure — and that is no accident: the **tile is the unit Blackwell hardware actually operates on**. TMA moves tiles, `tcgen05` multiplies tiles, TMEM holds tiles. Writing at tile granularity matches the hardware while staying above scalar address-and-loop plumbing.
 
-The math alone is not enough. For each tile operation, a Blackwell kernel also has to answer:
+What we want is a kernel that runs near peak **and** stays readable — one you can follow, debug, and modify. On Blackwell those two goals pull against each other, because the math alone is not enough. For each tile operation the kernel must also answer:
 
 - Who cooperates on the operation?
-- Where does the tile live?
-- How is the tile laid out in that memory space?
-- Which hardware path should run it: TMA, `tcgen05.mma`, `tcgen05.ld`, or ordinary loads and stores?
+- Where does the tile live, and how is it laid out there?
+- Which hardware path runs it: TMA, `tcgen05.mma`, `tcgen05.ld`, or ordinary loads and stores?
 - For an asynchronous operation, what tells the next step that the result is ready?
 
-Raw PTX-level code answers those questions with descriptor fields, elected-thread guards, mbarrier phases, TMEM addresses, and wait calls. Everything is explicit, but the tile operation is hard to see.
+The two existing styles each give up one side of that goal. **Raw PTX-level code** answers every question explicitly — and a single tile load drowns in the plumbing:
 
-A higher-level DSL may make the kernel shorter, but Blackwell choices such as TMEM readback, TMA multicast, or 2-CTA cooperative MMA may be hidden behind a scheduler, template, or library call.
+```text
+# (schematic) one A-tile load, raw:
+elect one lane  →  cp.async.bulk.tensor [Asmem], [A descriptor]
+                →  mbarrier.arrive.expect_tx  (bytes)
+                →  mbarrier.try_wait  (phase)
+```
 
-TIRX is meant to keep the tile operation readable without hiding the hardware contract. A TMA load is still a tile copy, but the code says `dispatch="tma"` and uses layouts that TMA can lower. A `tcgen05` MMA is still a tile GEMM, but the code exposes the SMEM operand layouts and the TMEM accumulator layout. A TMEM readback is still a tile copy, but the source is TMEM, the destination is a warpgroup register view, and the surrounding scope is `Tx.warpgroup()`.
+Everything is controllable, but the *operation* — "copy this A tile into SMEM" — is buried. A **higher-level DSL** goes the other way: the kernel gets short, but Blackwell-specific choices such as TMEM readback, TMA multicast, or 2-CTA cooperative MMA disappear behind a scheduler, template, or library call — so when the kernel is slow, you cannot see, let alone change, the decision that made it slow.
 
-That is the reason for tile primitives: keep the kernel written in tile operations while still giving the compiler the scope, layout, dispatch, and synchronization facts it needs.
+TIRX keeps the tile operation in view *and* the hardware contract explicit. The same load is one line:
+
+```python
+Tx.copy_async(Asmem[:, :], A[m:m+BLK_M, k:k+BLK_K], dispatch="tma")
+```
+
+It still reads as "copy this A tile into SMEM," yet `dispatch="tma"` names the hardware path and the SMEM layout names how the tile must sit for TMA to lower it. A `tcgen05` MMA stays a tile GEMM but exposes the SMEM operand and TMEM accumulator layouts; a TMEM readback stays a tile copy but its source is TMEM, its destination a warpgroup register view, and its scope `Tx.warpgroup()`.
+
+That is the reason for tile primitives: the kernel stays written in tile operations — the granularity the hardware works at — while every operation still carries the **scope, layout, dispatch**, and synchronization facts the compiler needs. The payoff runs through the rest of this tutorial: you will read a real production GEMM and a Flash Attention kernel, and understand each optimization as a change to one of those facts.
 
 ## Execution Scope
 :label:`sec_exec_scope`
@@ -99,7 +111,7 @@ Layout answers the next question: when the code says "this tile", where do the e
 
 At the math level, a tile is indexed by logical coordinates such as `A[m, k]` or `D[m, n]`. Hardware instructions do not operate on that notation directly. They need a physical view of the tile: bytes in shared memory, coordinates in TMEM, or values owned by particular threads.
 
-A layout is that physical view. It maps logical tile indices to memory axes or thread axes. This is why layout is not decoration: it decides whether a TMA copy can write the tile, whether `tcgen05.mma` can read the operands correctly, and whether a TMEM readback gives each thread the row it is supposed to store.
+A layout is that physical view. It maps logical tile indices to memory axes or thread axes. This is why layout is not decoration: get it wrong and the kernel either won't compile — a layout the TMA or `tcgen05.mma` path cannot lower is rejected — or, worse, it compiles and silently produces wrong output, the way a readback layout with the wrong extent hands each thread the wrong row. The right layout is what lets a TMA copy write the tile, lets `tcgen05.mma` read the operands correctly, and gives each thread the row it is meant to store.
 
 The GEMM kernels use layouts in three recurring places: SMEM operand tiles, the TMEM accumulator tile, and the register view used during writeback.
 
@@ -118,7 +130,7 @@ Second, the MMA accumulator lives in TMEM:
 TileLayout(S[(128, N) : (1@TLane, 1@TCol)])
 ```
 
-`S[shape : mapping]` is the layout's *shard spec* (`S` comes from `from tvm.tirx.layout import S`). Read it as "a tile of this `shape`, with each logical index mapped the way the right side says." Here the left side `(128, N)` is the logical tile shape — `N` is the tile's column count, for example `BLK_N`. The right side is the physical mapping: the row index maps to `TLane`, and the column index maps to `TCol`. In other words, logical element `(r, c)` lives at TMEM coordinate `(TLane=r, TCol=c)`.
+Unlike the swizzled SMEM layout above, which comes from the `tma_shared_layout` helper, TMEM and register layouts are written directly with the `S[...]` shard spec — but both produce the same kind of layout object. `S[shape : mapping]` is that *shard spec* (`S` comes from `from tvm.tirx.layout import S`). Despite the slice-like syntax, the colon is not slicing here: `S` reads the part before the colon as the tile `shape` and the part after it as the per-axis `mapping`. Read it as "a tile of this `shape`, with each logical index mapped the way the right side says." Here the left side `(128, N)` is the logical tile shape — `N` is the tile's column count, for example `BLK_N`. The mapping tuple lines up position by position with the shape tuple: `128` ↔ `1@TLane` and `N` ↔ `1@TCol`. So the row index maps to `TLane`, the column index maps to `TCol`, and logical element `(r, c)` lives at TMEM coordinate `(TLane=r, TCol=c)`.
 
 Third, the epilogue reads the same logical accumulator tile into registers:
 
@@ -132,11 +144,11 @@ This is not a single shared array. It is a distributed register view. Logical ro
 
 The names after `@` are hardware axes:
 
-- `TLane` is the TMEM row axis.
+- `TLane` is the TMEM row axis (extent 128).
 - `TCol` is the TMEM column axis.
 - `tid_in_wg` is the thread index inside a warpgroup, from 0 to 127.
 
-The notation `1@TLane` means that increasing the corresponding logical index by one advances by one step along the `TLane` axis. A bare `1`, as in the second slot of `(1@tid_in_wg, 1)`, means an ordinary linear step through that thread's own storage — no special hardware axis. That bare form is used for flat GMEM, flat SMEM, and simple local register buffers.
+The number before `@` is a **stride**, and the axis after `@` is where that stride applies. `1@TLane` means each increment of the logical row index advances one position along the `TLane` axis; in general `s@axis` advances `s` positions. A physical coordinate is then the per-axis sum of logical-index × stride — the same shape-stride model used for ordinary memory, where a row-major `(R, C)` tile is `S[(R, C) : (C, 1)]` with `addr(r, c) = r·C + c·1`. A bare number with no `@`, as in the second slot of `(1@tid_in_wg, 1)`, targets the default memory axis (`m`): an ordinary linear step through contiguous storage, which is why the bare form is used for flat GMEM, flat SMEM, and simple local register buffers. (This shape-stride notation is a simplified, row-major take on CuTe layouts.)
 
 So these two layouts describe the same logical tile shape but two different physical views:
 
