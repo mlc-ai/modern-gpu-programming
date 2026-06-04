@@ -167,7 +167,7 @@ print(cuda_source)
 
 Use generated CUDA to verify that scope guards and hardware instructions match the intended contract.
 
-## Common Footguns
+## Common Pitfalls
 
 - Use `@Tx.jit(...)` for constexpr-specialized kernels; plain `@Tx.prim_func` otherwise.
 - `Tx.filter` does not have a range form. Pass a variable and a predicate.
