@@ -9,13 +9,14 @@ preview instructions below.
 
 **Run locally** (requires Blackwell GPU):
 
-```bash
-pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.25.dev0-py3-none-manylinux_2_28_x86_64.whl"
-pip install -U apache-tvm-ffi
-pip install torch==2.9.1+cu130 --index-url https://download.pytorch.org/whl/cu130
-pip install numpy
+> **Installation instructions are being updated.** The TIRX nightly wheel URL and
+> pinned package versions move quickly, so the exact `pip install` commands are
+> pending a refresh. See the **Environment Setup** chapter for the current status.
 
-# Verify: this should print "TIRX OK"
+Once TIRX is installed, verify the import:
+
+```bash
+# Should print "TIRX OK"
 python -c "from tvm.script import tirx as Tx; print('TIRX OK')"
 ```
 
