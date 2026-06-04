@@ -12,14 +12,9 @@ Set up TVM/TIRX first, then verify the install with a tiny GPU kernel.
 
 ## Install Packages
 
-```bash
-pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.25.dev0-py3-none-manylinux_2_28_x86_64.whl"
-pip install -U apache-tvm-ffi
-pip install torch==2.9.1+cu130 --index-url https://download.pytorch.org/whl/cu130
-pip install numpy
-```
+> **Installation instructions are being updated.** The TIRX nightly wheel URL and pinned package versions move quickly, so the exact `pip install` commands are pending a refresh and will be added here.
 
-The wheel above is the CUDA 13 TIRX nightly used by this tutorial. If you are working from source, use the local `tvm` checkout and keep `tirx-kernels` updated to the same development window.
+If you are working from source, use the local `tvm` checkout and keep `tirx-kernels` updated to the same development window.
 
 ## Minimal Kernel
 
