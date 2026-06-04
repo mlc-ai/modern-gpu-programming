@@ -110,9 +110,9 @@ All MMA instructions are issued from WG3 warp 0. WG0 and WG1 do not issue MMA. T
 
 This matters for barriers. `s_ready` connects score MMA to softmax. `p_o_rescale` connects softmax and correction back to the value MMA.
 
-## Names Used in This Chapter
+## Reading the Fragments
 
-The snippets below are excerpts from `flash_attention4.py`, so a few names come from the surrounding kernel. The standard or self-describing ones — `wg_id`, `warp_id`, `BLK_M`/`BLK_N`, `HEAD_DIM`, `kv_stage`, the `SMEM_PIPE_DEPTH_*` / `TMEM_PIPE_DEPTH` depths, `should_accumulate`, and `CTA_GROUP` (1 here) — are spelled out where they first matter in the sections below. The rest are worth a one-line gloss; you do not need to memorize them, just look one up when a fragment uses it:
+The code fragments shown in this chapter are pulled from `flash_attention4.py`, so a few names come from the surrounding kernel that isn't shown here. The standard or self-describing ones — `wg_id`, `warp_id`, `BLK_M`/`BLK_N`, `HEAD_DIM`, `kv_stage`, the `SMEM_PIPE_DEPTH_*` / `TMEM_PIPE_DEPTH` depths, `should_accumulate`, and `CTA_GROUP` (1 here) — are spelled out where they first matter in the sections below. The rest are worth a one-line gloss; you do not need to memorize them, just look one up when a fragment uses it:
 
 | Name | Meaning |
 |------|---------|
@@ -572,3 +572,5 @@ FA4 is harder than GEMM because there are more tile values and more producer-con
 1. Compared with GEMM, what new tile handoff appears between the two MMA phases in FA4? Name the producer, the TMEM tile, and the consumer.
 2. Why does softmax write the numerator tile `P` back to TMEM instead of keeping it only in registers for the value MMA?
 3. Pick `p_o_rescale` or `p_ready_2`. What exactly does the barrier prove, and what could go wrong if the value MMA skipped that wait?
+
+**Try with your agent**: Pick one tile primitive this chapter did *not* walk through — for example a `Tx.copy_async` in the epilogue, the fp32→fp16 `Tx.cast`, or the second `gemm_pv` sub-MMA — and ask it to write that primitive's full scope / layout / dispatch / handoff card from the source alone: which threads issue or cooperate on it, where each operand tile lives (SMEM / TMEM / registers), which hardware path it lowers to, and which barrier makes its result safe to consume. Then audit the card against the kernel yourself — does the scope match the `wg_id` / `warp_id` guard the call sits under, and the layout match where that tile was allocated? Leaving this chapter able to read a primitive nobody annotated for you is the whole point of the scope/layout/dispatch lens.
