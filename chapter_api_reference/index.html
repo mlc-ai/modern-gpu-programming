@@ -1,307 +1,494 @@
+
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    
-    <title>8.2. TIRX API Reference &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>TIRx API Reference &#8212; Modern GPU Programming</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/fontawesome/all.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/basic.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/d2l.css" />
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/d2l.js"></script>
-    <link rel="shortcut icon" href="../_static/mlc-favicon.ico"/>
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=994f5abe" />
+    <link rel="stylesheet" type="text/css" href="../_static/demo-embed.css?v=98f4fe8c" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=e645c8fa"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'chapter_api_reference/index';</script>
+    <script src="../_static/demo-embed.js?v=2e476647"></script>
+    <link rel="icon" href="../_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="8.3. TIRX Language and Compile Pipeline" href="../chapter_tirx_primer/index.html" />
-    <link rel="prev" title="8.1. Environment Setup" href="../chapter_setup/index.html" /> 
+    <link rel="next" title="Flash Attention 4 Source" href="../chapter_fa4_source/index.html" />
+    <link rel="prev" title="tvm.backend.cuda" href="../tirx_guide/api/backend.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
   </head>
-<body>
-    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
-    <div class="mdl-layout__header-row">
-        
-        <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link" href="../appendix/index.html"><span class="section-number">8. </span>Appendix</a><i class="material-icons">navigate_next</i>
-            <a class="mdl-navigation__link is-active"><span class="section-number">8.2. </span>TIRX API Reference</a>
-        </nav>
-        <div class="mdl-layout-spacer"></div>
-        <nav class="mdl-navigation">
-        
-<form class="form-inline pull-sm-right" action="../search.html" method="get">
-      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
-        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
-          <i class="material-icons">search</i>
-        </label>
-        <div class="mdl-textfield__expandable-holder">
-          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
-          <input type="hidden" name="check_keywords" value="yes" />
-          <input type="hidden" name="area" value="default" />
-        </div>
-      </div>
-      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
-      Quick search
-      </div>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form>
-        
-<a id="button-show-source"
-    class="mdl-button mdl-js-button mdl-button--icon"
-    href="../_sources/chapter_api_reference/index.rst.txt" rel="nofollow">
-  <i class="material-icons">code</i>
-</a>
-<div class="mdl-tooltip" data-mdl-for="button-show-source">
-Show Source
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-        </nav>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-light" alt="Modern GPU Programming - Home"/>
+    <img src="../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-dark pst-js-only" alt="Modern GPU Programming - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../index.html">
+                    Modern GPU Programming
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I — Understanding the GPU</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">The GPU Execution and Memory Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_data_layout/index.html">Deep Dive into Data Layout</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_data_layout/index.html">What Is Data Layout?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_memory/index.html">Memory</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tmem/index.html">Tensor Memory (TMEM)</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_compute/index.html">Compute</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_async_barriers/index.html">Async Coordination: mbarriers and Phases</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_advanced/index.html">Advanced Topics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_clc/index.html">Cluster Launch Control (CLC)</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/install.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/native_basics/cuda.html">CUDA C++/PTX</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/first_kernel.html">Your first kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/functions.html">Defining a function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/parser_utils.html">Parser utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/data_types.html">Data types and expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/buffers.html">Buffers and memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/control_flow.html">Control flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/threads_sync.html">CUDA C++/PTX intrinsics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/compiling.html">Compiling and inspecting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/layout.html">Tensor Layout</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/reg.html">copy → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/fallback.html">copy → fallback</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/gemm.html">gemm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/gemm_async.html">gemm_async</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/local.html">reduction → local</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/shared.html">reduction → shared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/permute_layout.html">permute_layout</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">Flash Attention 4</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part V — Workflow &amp; Practice</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_profiling/index.html">Profiling and Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">Writing TIRx Kernels with Agents</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">Appendix</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/arch/index.html">Compiler Internals</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/arch/lowering_pipeline.html">TIRx lowering pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/api/index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/api/tirx.html">tvm.tirx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/api/analysis.html">tvm.tirx.analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/api/stmt_functor.html">tvm.tirx.stmt_functor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/api/transform.html">tvm.tirx.transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/api/backend.html">tvm.backend.cuda</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">TIRx API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fa4_source/index.html">Flash Attention 4 Source</a></li>
+</ul>
+
     </div>
-    <div class="mdl-layout__header-row header-links">
-      <div class="mdl-layout-spacer"></div>
-      <nav class="mdl-navigation">
-      </nav>
+</nav></div>
     </div>
-</header><header class="mdl-layout__drawer">
-    
-          <!-- Title -->
-      <span class="mdl-layout-title">
-          <a class="title" href="../index.html">
-              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
-          </a>
-      </span>
-    
-    
-      <div class="globaltoc">
-        <span class="mdl-layout-title toc">Table Of Contents</span>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
         
         
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>TIRx API Reference</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
             
-            <nav class="mdl-navigation">
-                <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">8.2. TIRX API Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source</a></li>
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kernel-entry-and-coordinates">Kernel Entry and Coordinates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#execution-scopes">Execution Scopes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#buffers-and-storage">Buffers and Storage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layouts">Layouts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tile-primitives">Tile Primitives</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#synchronization-and-hardware-helpers">Synchronization and Hardware Helpers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline-helpers">Pipeline Helpers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compile-and-inspect">Compile and Inspect</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-pitfalls">Common Pitfalls</a></li>
 </ul>
-</li>
-</ul>
-
             </nav>
-        
         </div>
-    
-</header>
-        <main class="mdl-layout__content" tabIndex="0">
+    </div>
+</div>
 
-	<script type="text/javascript" src="../_static/sphinx_materialdesign_theme.js "></script>
-    <header class="mdl-layout__drawer">
-    
-          <!-- Title -->
-      <span class="mdl-layout-title">
-          <a class="title" href="../index.html">
-              <img class="logo" src="../_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
-          </a>
-      </span>
-    
-    
-      <div class="globaltoc">
-        <span class="mdl-layout-title toc">Table Of Contents</span>
-        
-        
-            
-            <nav class="mdl-navigation">
-                <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">1. Blackwell Background</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../appendix/index.html">8. Appendix</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../chapter_setup/index.html">8.1. Environment Setup</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">8.2. TIRX API Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../chapter_fa4_source/index.html">8.6. Flash Attention 4 Source</a></li>
-</ul>
-</li>
-</ul>
-
-            </nav>
-        
-        </div>
-    
-</header>
-
-    <div class="document">
-        <div class="page-content" role="main">
-        
-  <section id="tirx-api-reference">
-<span id="chap-api-reference"></span><h1><span class="section-number">8.2. </span>TIRX API Reference<a class="headerlink" href="#tirx-api-reference" title="Permalink to this heading">¶</a></h1>
-<p>This page is a lookup table for the APIs used in the tutorial. It
-follows the current TVM/TIRX style from the local <code class="docutils literal notranslate"><span class="pre">tvm</span></code> and
-<code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> repositories.</p>
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="tirx-api-reference">
+<span id="chap-api-reference"></span><h1>TIRx API Reference<a class="headerlink" href="#tirx-api-reference" title="Link to this heading">#</a></h1>
+<p>This page is a lookup table for the APIs used in the tutorial. It follows the current TVM/TIRx style from the local <code class="docutils literal notranslate"><span class="pre">tvm</span></code> and <code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> repositories.</p>
 <section id="kernel-entry-and-coordinates">
-<h2><span class="section-number">8.2.1. </span>Kernel Entry and Coordinates<a class="headerlink" href="#kernel-entry-and-coordinates" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Kernel Entry and Coordinates<a class="headerlink" href="#kernel-entry-and-coordinates" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code></p></td>
-<td><p>Define a TIRX primitive function. Use this
-when the function signature is already
-concrete.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;T.prim_func</span></code></p></td>
+<td><p>Define a TIRx primitive function. Use this when the function signature is already concrete.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;Tx.jit(...)</span></code></p></td>
-<td><p>Define a constexpr-specialized TIRX
-function. Current reference kernels use
-this for shape-specialized kernels such as
-Flash Attention 4.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&#64;T.jit(...)</span></code></p></td>
+<td><p>Define a constexpr-specialized TIRx function. Current reference kernels use this for shape-specialized kernels such as Flash Attention 4.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.device_entry()</span></code></p></td>
-<td><p>Mark the start of device code. Put thread
-coordinates and device allocations after
-this line.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.device_entry()</span></code></p></td>
+<td><p>Mark the start of device code. Put thread coordinates and device allocations after this line.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id([Gx,</span> <span class="pre">Gy,</span> <span class="pre">...])</span></code></p></td>
-<td><p>CTA index in the launch grid. The list
-gives the grid extent.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.cta_id([Gx,</span> <span class="pre">Gy,</span> <span class="pre">...])</span></code></p></td>
+<td><p>CTA index in the launch grid. The list gives the grid extent.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cluster_id([...])</span></code></p></td>
-<td><p>Cluster index in the launch grid, when CTA
-clusters are used.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.cluster_id([...])</span></code></p></td>
+<td><p>Cluster index in the launch grid, when CTA clusters are used.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta_id_in_cluster([Cx,</span> <span class="pre">Cy])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.cta_id_in_cluster([Cx,</span> <span class="pre">Cy])</span></code></p></td>
 <td><p>CTA coordinate inside a cluster.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warpgroup_id([Nw])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.warpgroup_id([Nw])</span></code></p></td>
 <td><p>Warpgroup id inside a CTA.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id([Nw])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.warp_id([Nw])</span></code></p></td>
 <td><p>Warp id inside a CTA.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp_id_in_wg([4])</span></code></p></td>
-<td><p>Warp id inside a warpgroup. A warpgroup has
-4 warps.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.warp_id_in_wg([4])</span></code></p></td>
+<td><p>Warp id inside a warpgroup. A warpgroup has 4 warps.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id([Nt])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.thread_id([Nt])</span></code></p></td>
 <td><p>Thread id inside a CTA.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.thread_id_in_wg([128])</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.thread_id_in_wg([128])</span></code></p></td>
 <td><p>Thread id inside a warpgroup.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.lane_id([32])</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.lane_id([32])</span></code></p></td>
 <td><p>Lane id inside a warp.</p></td>
 </tr>
 </tbody>
 </table>
-<p>Coordinate APIs encode the parent level in the name, for example
-<code class="docutils literal notranslate"><span class="pre">cta_id_in_cluster</span></code> and <code class="docutils literal notranslate"><span class="pre">warp_id_in_wg</span></code>.</p>
+</div>
+<p>Coordinate APIs encode the parent level in the name, for example <code class="docutils literal notranslate"><span class="pre">cta_id_in_cluster</span></code> and <code class="docutils literal notranslate"><span class="pre">warp_id_in_wg</span></code>.</p>
 </section>
 <section id="execution-scopes">
-<h2><span class="section-number">8.2.2. </span>Execution Scopes<a class="headerlink" href="#execution-scopes" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Execution Scopes<a class="headerlink" href="#execution-scopes" title="Link to this heading">#</a></h2>
+<p>A tile op’s execution scope is selected by prefixing it with the scope namespace; a
+bare op runs per-thread. Predication uses a plain <code class="docutils literal notranslate"><span class="pre">if</span></code>.</p>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cluster():</span></code></p></td>
-<td><p>Cluster-cooperative region. Used only by
-clustered kernels.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cluster.&lt;op&gt;(...)</span></code></p></td>
+<td><p>Cluster-cooperative tile op. Used only by clustered kernels.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.cta():</span></code></p></td>
-<td><p>CTA-cooperative region.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cta.&lt;op&gt;(...)</span></code></p></td>
+<td><p>CTA-cooperative tile op.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warpgroup():</span></code></p></td>
-<td><p>Warpgroup-cooperative region, 128 threads.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.wg.&lt;op&gt;(...)</span></code></p></td>
+<td><p>Warpgroup-cooperative tile op, 128 threads.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.warp():</span></code></p></td>
-<td><p>Warp-cooperative region, 32 threads.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.warp.&lt;op&gt;(...)</span></code></p></td>
+<td><p>Warp-cooperative tile op, 32 threads.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread():</span></code></p></td>
-<td><p>Per-thread region.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.&lt;op&gt;(...)</span></code></p></td>
+<td><p>Per-thread tile op (no scope prefix).</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">Tx.thread(cond):</span></code></p></td>
-<td><p>Per-thread region narrowed by a predicate.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">cond:</span></code></p></td>
+<td><p>Narrow execution to specific threads, e.g. <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0:</span></code> or <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">T.ptx.elect_sync():</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.filter(var,</span> <span class="pre">pred)</span></code></p></td>
-<td><p>Predicate helper when a scope needs to
-select active lanes from a symbolic
-variable.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.filter(var,</span> <span class="pre">pred)</span></code></p></td>
+<td><p>Predicate helper to select active lanes from a symbolic variable.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread_id_in_wg</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>
-<span class="k">with</span> <span class="n">Tx</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tid</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id_in_wg</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>
+<span class="k">if</span> <span class="n">tid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
     <span class="n">Tx</span><span class="o">.</span><span class="n">copy_async</span><span class="p">(</span><span class="n">Asmem</span><span class="p">[:,</span> <span class="p">:],</span> <span class="n">A_tile</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.elect_sync()</span></code> elects one participating thread per warp. It is
-useful for warp-level issue paths, but it is not the same as
-<code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">T.ptx.elect_sync()</span></code> elects one participating thread per warp. It is useful for warp-level issue paths, but it is not the same as <code class="docutils literal notranslate"><span class="pre">tid</span> <span class="pre">==</span> <span class="pre">0</span></code>.</p>
 </section>
 <section id="buffers-and-storage">
-<h2><span class="section-number">8.2.3. </span>Buffers and Storage<a class="headerlink" href="#buffers-and-storage" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Buffers and Storage<a class="headerlink" href="#buffers-and-storage" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.Buffer(shape,</span> <span class="pre">dtype)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.Buffer(shape,</span> <span class="pre">dtype)</span></code></p></td>
 <td><p>Typed kernel argument in a concrete signature.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.match_buffer(ptr,</span> <span class="pre">shape,</span> <span class="pre">dtype)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.match_buffer(ptr,</span> <span class="pre">shape,</span> <span class="pre">dtype)</span></code></p></td>
 <td><p>Bind an opaque pointer argument to a typed buffer view.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.alloc_local(shape,</span> <span class="pre">dtype)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.alloc_local(shape,</span> <span class="pre">dtype)</span></code></p></td>
 <td><p>Per-thread register/local storage.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.wg_reg_tile(elem_per_thread,</span> <span class="pre">dtype=...)</span></code></p></td>
-<td><p>Warpgroup-distributed <code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">elem_per_thread)</span></code> register tile for
-TMEM readback; equivalent to
-<code class="docutils literal notranslate"><span class="pre">Tx.alloc_local(...).view(...,</span> <span class="pre">S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)])</span></code>.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.wg_reg_tile(elem_per_thread,</span> <span class="pre">dtype=...)</span></code></p></td>
+<td><p>Warpgroup-distributed <code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">elem_per_thread)</span></code> register tile for TMEM readback; equivalent to <code class="docutils literal notranslate"><span class="pre">T.alloc_local(...).view(...,</span> <span class="pre">S[(128,</span> <span class="pre">N)</span> <span class="pre">:</span> <span class="pre">(1&#64;tid_in_wg,</span> <span class="pre">1)])</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.SMEMPool()</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.SMEMPool()</span></code></p></td>
 <td><p>Shared-memory allocation pool.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pool.alloc(shape,</span> <span class="pre">dtype,</span> <span class="pre">layout=...,</span> <span class="pre">align=...)</span></code></p></td>
 <td><p>Allocate shared-memory storage from the pool.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pool.alloc_mma(shape,</span> <span class="pre">dtype)</span></code></p></td>
-<td><p>Allocate shared-memory storage using the MMA-friendly helper used
-by current kernels.</p></td>
+<td><p>Allocate shared-memory storage using the MMA-friendly helper used by current kernels.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pool.move_base_to(offset)</span></code></p></td>
 <td><p>Advance the pool base before later allocations.</p></td>
@@ -309,11 +496,10 @@ by current kernels.</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pool.commit()</span></code></p></td>
 <td><p>Close the shared-memory allocation plan.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.decl_buffer(...,</span> <span class="pre">scope=&quot;tmem&quot;,</span> <span class="pre">allocated_addr=...)</span></code></p></td>
-<td><p>Create an indexable view over a TMEM allocation. It does not
-allocate TMEM by itself.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.decl_buffer(...,</span> <span class="pre">scope=&quot;tmem&quot;,</span> <span class="pre">allocated_addr=...)</span></code></p></td>
+<td><p>Create an indexable view over a TMEM allocation. It does not allocate TMEM by itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.TMEMPool(pool,</span> <span class="pre">total_cols=...,</span> <span class="pre">cta_group=...,</span> <span class="pre">tmem_addr=...)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.TMEMPool(pool,</span> <span class="pre">total_cols=...,</span> <span class="pre">cta_group=...,</span> <span class="pre">tmem_addr=...)</span></code></p></td>
 <td><p>Manage a TMEM allocation through a pool object.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tmem_pool.alloc(shape,</span> <span class="pre">dtype,</span> <span class="pre">layout=...,</span> <span class="pre">cols=...,</span> <span class="pre">datapath=...)</span></code></p></td>
@@ -325,26 +511,26 @@ allocate TMEM by itself.</p></td>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tmem_pool.dealloc()</span></code></p></td>
 <td><p>Release the TMEM allocation.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.TMEMStages(tmem,</span> <span class="pre">col_start=...,</span> <span class="pre">width=...,</span> <span class="pre">stages=...,</span> <span class="pre">stride=...)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.TMEMStages(tmem,</span> <span class="pre">col_start=...,</span> <span class="pre">width=...,</span> <span class="pre">stages=...,</span> <span class="pre">stride=...)</span></code></p></td>
 <td><p>Describe repeated TMEM stage regions inside one allocation.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>The common manual pattern is:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>
-<span class="n">Tx</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">Tx</span><span class="o">.</span><span class="n">address_of</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">),</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">tmem</span> <span class="o">=</span> <span class="n">Tx</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
+<span class="n">T</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">address_of</span><span class="p">(</span><span class="n">tmem_addr</span><span class="p">),</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">tmem</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span>
     <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span> <span class="n">allocated_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
     <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Current higher-level kernels usually use <code class="docutils literal notranslate"><span class="pre">Tx.TMEMPool(...)</span></code>, then call
-<code class="docutils literal notranslate"><span class="pre">commit()</span></code> and <code class="docutils literal notranslate"><span class="pre">dealloc()</span></code>.</p>
+<p>Current higher-level kernels usually use <code class="docutils literal notranslate"><span class="pre">T.TMEMPool(...)</span></code>, then call <code class="docutils literal notranslate"><span class="pre">commit()</span></code> and <code class="docutils literal notranslate"><span class="pre">dealloc()</span></code>.</p>
 </section>
 <section id="layouts">
-<h2><span class="section-number">8.2.4. </span>Layouts<a class="headerlink" href="#layouts" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Layouts<a class="headerlink" href="#layouts" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
@@ -352,12 +538,10 @@ allocate TMEM by itself.</p></td>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TileLayout(S[(shape)</span> <span class="pre">:</span> <span class="pre">(mapping)])</span></code></p></td>
-<td><p>Map logical tile indices to memory or
-thread axes.</p></td>
+<td><p>Map logical tile indices to memory or thread axes.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tma_shared_layout(dtype,</span> <span class="pre">swizzle,</span> <span class="pre">shape)</span></code></p></td>
-<td><p>Shared-memory layout compatible with TMA
-and <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> descriptors.</p></td>
+<td><p>Shared-memory layout compatible with TMA and <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> descriptors.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">TCol</span></code></p></td>
 <td><p>TMEM row and column axes.</p></td>
@@ -366,15 +550,14 @@ and <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</sp
 <td><p>Warpgroup thread axis, extent 128.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">warpid</span></code></p></td>
-<td><p>Warp-level axes used in lower-level
-layouts.</p></td>
+<td><p>Warp-level axes used in lower-level layouts.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cbx</span></code>, <code class="docutils literal notranslate"><span class="pre">cby</span></code></p></td>
-<td><p>CTA-in-cluster axes used by clustered
-layouts.</p></td>
+<td><p>CTA-in-cluster axes used by clustered layouts.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p>Common GEMM layouts:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># TMEM accumulator.</span>
 <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
@@ -385,8 +568,8 @@ layouts.</p></td>
 </div>
 </section>
 <section id="tile-primitives">
-<h2><span class="section-number">8.2.5. </span>Tile Primitives<a class="headerlink" href="#tile-primitives" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Tile Primitives<a class="headerlink" href="#tile-primitives" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
@@ -394,101 +577,83 @@ layouts.</p></td>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy(dst,</span> <span class="pre">src,</span> <span class="pre">...)</span></code></p></td>
-<td><p>Synchronous copy/store. Lowering depends on
-scope and layouts.</p></td>
+<td><p>Synchronous copy/store. Lowering depends on scope and layouts.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(dst,</span> <span class="pre">src,</span> <span class="pre">dispatch=&quot;tma&quot;,</span> <span class="pre">...)</span></code></p></td>
-<td><p>Request a TMA tile load or store. The SMEM
-side must use a compatible layout.</p></td>
+<td><p>Request a TMA tile load or store. The SMEM side must use a compatible layout.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(reg_view,</span> <span class="pre">tmem_view)</span></code></p></td>
-<td><p>TMEM-to-register readback under warpgroup
-scope. Follow with
-<code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.wait.ld()</span></code>.</p></td>
+<td><p>TMEM-to-register readback under warpgroup scope. Follow with <code class="docutils literal notranslate"><span class="pre">T.ptx.tcgen05.wait.ld()</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.copy_async(tmem_view,</span> <span class="pre">reg_view)</span></code></p></td>
-<td><p>Register-to-TMEM writeback used by Flash
-Attention softmax/correction paths. Follow
-with <code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.wait.st()</span></code> before a
-later consumer depends on the store.</p></td>
+<td><p>Register-to-TMEM writeback used by Flash Attention softmax/correction paths. Follow with <code class="docutils literal notranslate"><span class="pre">T.ptx.tcgen05.wait.st()</span></code> before a later consumer depends on the store.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.gemm_async(dst,</span> <span class="pre">a,</span> <span class="pre">b,</span> <span class="pre">dispatch=&quot;tcgen05&quot;,</span> <span class="pre">...)</span></code></p></td>
 <td><p>Blackwell Tensor Core MMA tile operation.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cast(dst,</span> <span class="pre">src)</span></code></p></td>
-<td><p>Cast a register/local fragment, commonly
-fp32 accumulator values to fp16 output
-values.</p></td>
+<td><p>Cast a register/local fragment, commonly fp32 accumulator values to fp16 output values.</p></td>
 </tr>
 </tbody>
 </table>
-<p>Read a primitive with its local context: source, destination, scope,
-layouts, dispatch, and the wait or barrier that makes the result safe to
-consume.</p>
+</div>
+<p>Read a primitive with its local context: source, destination, scope, layouts, dispatch, and the wait or barrier that makes the result safe to consume.</p>
 </section>
 <section id="synchronization-and-hardware-helpers">
-<h2><span class="section-number">8.2.6. </span>Synchronization and Hardware Helpers<a class="headerlink" href="#synchronization-and-hardware-helpers" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Synchronization and Hardware Helpers<a class="headerlink" href="#synchronization-and-hardware-helpers" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cuda.cta_sync()</span></code></p></td>
-<td><p>CTA-wide barrier and shared-memory ordering
-point.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.cuda.cta_sync()</span></code></p></td>
+<td><p>CTA-wide barrier and shared-memory ordering point.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cuda.cluster_sync()</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.cuda.cluster_sync()</span></code></p></td>
 <td><p>Cluster-wide synchronization.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.cuda.warpgroup_sync(id)</span></code></p></td>
-<td><p>Synchronize only the current warpgroup
-using a named barrier id.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.cuda.warpgroup_sync(id)</span></code></p></td>
+<td><p>Synchronize only the current warpgroup using a named barrier id.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.mbarrier.init(ptr,</span> <span class="pre">count)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.mbarrier.init(ptr,</span> <span class="pre">count)</span></code></p></td>
 <td><p>Initialize an mbarrier.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.mbarrier.arrive.expect_tx(ptr,</span> <span class="pre">bytes)</span></code></p></td>
-<td><p>Tell a TMA load barrier how many bytes to
-expect.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.mbarrier.arrive.expect_tx(ptr,</span> <span class="pre">bytes)</span></code></p></td>
+<td><p>Tell a TMA load barrier how many bytes to expect.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.mbarrier.try_wait(ptr,</span> <span class="pre">phase)</span></code></p></td>
-<td><p>Wait until the barrier reaches the expected
-phase.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.mbarrier.try_wait(ptr,</span> <span class="pre">phase)</span></code></p></td>
+<td><p>Wait until the barrier reaches the expected phase.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.commit(bar,</span> <span class="pre">cta_group=...)</span></code></p></td>
-<td><p>Commit issued MMA work to a completion
-barrier.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.tcgen05.commit(bar,</span> <span class="pre">cta_group=...)</span></code></p></td>
+<td><p>Commit issued MMA work to a completion barrier.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.wait.ld()</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.tcgen05.wait.ld()</span></code></p></td>
 <td><p>Wait for TMEM-to-register readback.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.tcgen05.wait.st()</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.tcgen05.wait.st()</span></code></p></td>
 <td><p>Wait for register-to-TMEM stores.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.cp_async.bulk.commit_group()</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.cp_async.bulk.commit_group()</span></code></p></td>
 <td><p>Commit a TMA store group.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.cp_async.bulk.wait_group(n)</span></code></p></td>
-<td><p>Wait until enough TMA store groups have
-drained.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.cp_async.bulk.wait_group(n)</span></code></p></td>
+<td><p>Wait until enough TMA store groups have drained.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.fence.proxy_async(...)</span></code></p></td>
-<td><p>Ordering fence across proxy boundaries,
-often before async engines read
-thread-written SMEM.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.fence.proxy_async(...)</span></code></p></td>
+<td><p>Ordering fence across proxy boundaries, often before async engines read thread-written SMEM.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.fence.mbarrier_init()</span></code></p></td>
-<td><p>Make initialized mbarriers visible before
-later use.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.ptx.fence.mbarrier_init()</span></code></p></td>
+<td><p>Make initialized mbarriers visible before later use.</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 <section id="pipeline-helpers">
-<h2><span class="section-number">8.2.7. </span>Pipeline Helpers<a class="headerlink" href="#pipeline-helpers" title="Permalink to this heading">¶</a></h2>
-<table class="docutils align-default">
+<h2>Pipeline Helpers<a class="headerlink" href="#pipeline-helpers" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>API</p></th>
 <th class="head"><p>Meaning</p></th>
@@ -496,8 +661,7 @@ later use.</p></td>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PipelineState(depth,</span> <span class="pre">phase=None)</span></code></p></td>
-<td><p>Track the current stage and phase for a
-ring buffer.</p></td>
+<td><p>Track the current stage and phase for a ring buffer.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">state.stage</span></code> / <code class="docutils literal notranslate"><span class="pre">state.phase</span></code></p></td>
 <td><p>Current stage index and phase.</p></td>
@@ -506,16 +670,13 @@ ring buffer.</p></td>
 <td><p>Initialize phase tracking.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">state.advance()</span></code></p></td>
-<td><p>Advance to the next stage and flip phase
-when the stage wraps.</p></td>
+<td><p>Advance to the next stage and flip phase when the stage wraps.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Pipeline(pool,</span> <span class="pre">stages,</span> <span class="pre">full=...,</span> <span class="pre">empty=...,</span> <span class="pre">init_full=...,</span> <span class="pre">init_empty=...,</span> <span class="pre">empty_phase_offset=...)</span></code></p></td>
-<td><p>Allocate matching full/empty barrier arrays
-for a software pipeline.</p></td>
+<td><p>Allocate matching full/empty barrier arrays for a software pipeline.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pipe.full</span></code> / <code class="docutils literal notranslate"><span class="pre">pipe.empty</span></code></p></td>
-<td><p>Barrier endpoints used by producer and
-consumer roles.</p></td>
+<td><p>Barrier endpoints used by producer and consumer roles.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MBarrier(pool,</span> <span class="pre">depth)</span></code></p></td>
 <td><p>Explicit thread-arrival barrier wrapper.</p></td>
@@ -524,25 +685,22 @@ consumer roles.</p></td>
 <td><p>TMA byte-counting barrier wrapper.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCGen05Bar(pool,</span> <span class="pre">depth)</span></code></p></td>
-<td><p>MMA completion barrier wrapper, signaled by
-<code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code>.</p></td>
+<td><p>MMA completion barrier wrapper, signaled by <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
-<p>These five helpers are <em>not</em> on the <code class="docutils literal notranslate"><span class="pre">Tx</span></code> namespace (unlike
-<code class="docutils literal notranslate"><span class="pre">Tx.SMEMPool</span></code>/<code class="docutils literal notranslate"><span class="pre">Tx.TMEMPool</span></code>). Import them explicitly from
-<code class="docutils literal notranslate"><span class="pre">tvm.tirx.lang.pipeline</span></code>:</p>
+</div>
+<p>These five helpers are <em>not</em> on the <code class="docutils literal notranslate"><span class="pre">Tx</span></code> namespace (unlike <code class="docutils literal notranslate"><span class="pre">T.SMEMPool</span></code>/<code class="docutils literal notranslate"><span class="pre">T.TMEMPool</span></code>). Import them explicitly from <code class="docutils literal notranslate"><span class="pre">tvm.tirx.lang.pipeline</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.lang.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineState</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">MBarrier</span><span class="p">,</span> <span class="n">TMABar</span><span class="p">,</span> <span class="n">TCGen05Bar</span>
 
 <span class="n">kv_state</span> <span class="o">=</span> <span class="n">PipelineState</span><span class="p">(</span><span class="n">SMEM_PIPE_DEPTH_KV</span><span class="p">)</span>
 <span class="n">kv_load</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">SMEM_PIPE_DEPTH_KV</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="s2">&quot;tma&quot;</span><span class="p">,</span> <span class="n">empty</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span> <span class="n">empty_phase_offset</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The state tracks which stage is current; the pipeline object owns the
-barriers that protect each stage.</p>
+<p>The state tracks which stage is current; the pipeline object owns the barriers that protect each stage.</p>
 </section>
 <section id="compile-and-inspect">
-<h2><span class="section-number">8.2.8. </span>Compile and Inspect<a class="headerlink" href="#compile-and-inspect" title="Permalink to this heading">¶</a></h2>
+<h2>Compile and Inspect<a class="headerlink" href="#compile-and-inspect" title="Link to this heading">#</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">target</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">target</span><span class="p">:</span>
     <span class="n">ex</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">}),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
@@ -551,77 +709,130 @@ barriers that protect each stage.</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">cuda_source</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Use generated CUDA to verify that scope guards and hardware instructions
-match the intended contract.</p>
+<p>Use generated CUDA to verify that scope guards and hardware instructions match the intended contract.</p>
 </section>
 <section id="common-pitfalls">
-<h2><span class="section-number">8.2.9. </span>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">¶</a></h2>
+<h2>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p>Use <code class="docutils literal notranslate"><span class="pre">&#64;Tx.jit(...)</span></code> for constexpr-specialized kernels; plain
-<code class="docutils literal notranslate"><span class="pre">&#64;Tx.prim_func</span></code> otherwise.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Tx.filter</span></code> does not have a range form. Pass a variable and a
-predicate.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Tx.ptx.elect_sync()</span></code> elects one thread per warp, not one thread per
-CTA or warpgroup.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Tx.decl_buffer(...,</span> <span class="pre">scope=&quot;tmem&quot;)</span></code> creates a view. TMEM must
-already have been allocated by <code class="docutils literal notranslate"><span class="pre">tcgen05.alloc</span></code> or <code class="docutils literal notranslate"><span class="pre">Tx.TMEMPool</span></code>.</p></li>
-<li><p>TMA stores use commit/wait-group completion, not the TMA-load mbarrier
-byte-counting protocol.</p></li>
-<li><p>An async copy or MMA is not safe to consume until the matching wait or
-barrier has completed.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> / <code class="docutils literal notranslate"><span class="pre">TCGen05Bar.arrive</span></code> must be guarded so only the
-intended MMA issuer calls it. Empty commit groups from non-issuer
-lanes can signal a barrier too early.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">&#64;T.jit(...)</span></code> for constexpr-specialized kernels; plain <code class="docutils literal notranslate"><span class="pre">&#64;T.prim_func</span></code> otherwise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T.filter</span></code> does not have a range form. Pass a variable and a predicate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T.ptx.elect_sync()</span></code> elects one thread per warp, not one thread per CTA or warpgroup.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T.decl_buffer(...,</span> <span class="pre">scope=&quot;tmem&quot;)</span></code> creates a view. TMEM must already have been allocated by <code class="docutils literal notranslate"><span class="pre">tcgen05.alloc</span></code> or <code class="docutils literal notranslate"><span class="pre">T.TMEMPool</span></code>.</p></li>
+<li><p>TMA stores use commit/wait-group completion, not the TMA-load mbarrier byte-counting protocol.</p></li>
+<li><p>An async copy or MMA is not safe to consume until the matching wait or barrier has completed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> / <code class="docutils literal notranslate"><span class="pre">TCGen05Bar.arrive</span></code> must be guarded so only the intended MMA issuer calls it. Empty commit groups from non-issuer lanes can signal a barrier too early.</p></li>
 </ul>
 </section>
 </section>
 
 
-        </div>
-        <div class="side-doc-outline">
-            <div class="side-doc-outline--content"> 
-<div class="localtoc">
-    <p class="caption">
-      <span class="caption-text">Table Of Contents</span>
-    </p>
-    <ul>
-<li><a class="reference internal" href="#">8.2. TIRX API Reference</a><ul>
-<li><a class="reference internal" href="#kernel-entry-and-coordinates">8.2.1. Kernel Entry and Coordinates</a></li>
-<li><a class="reference internal" href="#execution-scopes">8.2.2. Execution Scopes</a></li>
-<li><a class="reference internal" href="#buffers-and-storage">8.2.3. Buffers and Storage</a></li>
-<li><a class="reference internal" href="#layouts">8.2.4. Layouts</a></li>
-<li><a class="reference internal" href="#tile-primitives">8.2.5. Tile Primitives</a></li>
-<li><a class="reference internal" href="#synchronization-and-hardware-helpers">8.2.6. Synchronization and Hardware Helpers</a></li>
-<li><a class="reference internal" href="#pipeline-helpers">8.2.7. Pipeline Helpers</a></li>
-<li><a class="reference internal" href="#compile-and-inspect">8.2.8. Compile and Inspect</a></li>
-<li><a class="reference internal" href="#common-pitfalls">8.2.9. Common Pitfalls</a></li>
-</ul>
-</li>
-</ul>
+                </article>
+              
 
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../tirx_guide/api/backend.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">tvm.backend.cuda</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../chapter_fa4_source/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Flash Attention 4 Source</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
+                </footer>
+              
             </div>
-        </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      <div class="clearer"></div>
-    </div><div class="pagenation">
-     <a id="button-prev" href="../chapter_setup/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
-         <i class="pagenation-arrow-L fas fa-arrow-left fa-lg"></i>
-         <div class="pagenation-text">
-            <span class="pagenation-direction">Previous</span>
-            <div>8.1. Environment Setup</div>
-         </div>
-     </a>
-     <a id="button-next" href="../chapter_tirx_primer/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
-         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
-        <div class="pagenation-text">
-            <span class="pagenation-direction">Next</span>
-            <div>8.3. TIRX Language and Compile Pipeline</div>
-        </div>
-     </a>
+
+  <div class="sidebar-secondary-item"><div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
   </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kernel-entry-and-coordinates">Kernel Entry and Coordinates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#execution-scopes">Execution Scopes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#buffers-and-storage">Buffers and Storage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layouts">Layouts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tile-primitives">Tile Primitives</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#synchronization-and-hardware-helpers">Synchronization and Hardware Helpers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline-helpers">Pipeline Helpers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compile-and-inspect">Compile and Inspect</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-pitfalls">Common Pitfalls</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By TIRx Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright TIRx Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
         
-        </main>
+
+      </main>
     </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
   </body>
 </html>

@@ -1,0 +1,797 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tile Primitives &#8212; Modern GPU Programming</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=994f5abe" />
+    <link rel="stylesheet" type="text/css" href="../_static/demo-embed.css?v=98f4fe8c" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=e645c8fa"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tirx_guide/tile_primitives';</script>
+    <script src="../_static/demo-embed.js?v=2e476647"></script>
+    <link rel="icon" href="../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="copy" href="tile_primitives/copy.html" />
+    <link rel="prev" title="Tensor Layout" href="layout.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-light" alt="Modern GPU Programming - Home"/>
+    <img src="../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-dark pst-js-only" alt="Modern GPU Programming - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../index.html">
+                    Modern GPU Programming
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I — Understanding the GPU</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_background/index.html">The GPU Execution and Memory Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_data_layout/index.html">Deep Dive into Data Layout</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_data_layout/index.html">What Is Data Layout?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_memory/index.html">Memory</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tmem/index.html">Tensor Memory (TMEM)</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_compute/index.html">Compute</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_async_barriers/index.html">Async Coordination: mbarriers and Phases</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../part_advanced/index.html">Advanced Topics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../chapter_clc/index.html">Cluster Launch Control (CLC)</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="native_basics/cuda.html">CUDA C++/PTX</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/first_kernel.html">Your first kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/functions.html">Defining a function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/parser_utils.html">Parser utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/data_types.html">Data types and expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/buffers.html">Buffers and memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/control_flow.html">Control flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/threads_sync.html">CUDA C++/PTX intrinsics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/compiling.html">Compiling and inspecting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="layout.html">Tensor Layout</a></li>
+<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/reg.html">copy → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/fallback.html">copy → fallback</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tile_primitives/gemm.html">gemm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tile_primitives/gemm_async.html">gemm_async</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/reduction/local.html">reduction → local</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/reduction/shared.html">reduction → shared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tile_primitives/permute_layout.html">permute_layout</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_basics/index.html">Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_flash_attention/index.html">Flash Attention 4</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part V — Workflow &amp; Practice</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../chapter_profiling/index.html">Profiling and Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_ai_assisted/index.html">Writing TIRx Kernels with Agents</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../appendix/index.html">Appendix</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="arch/index.html">Compiler Internals</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="arch/lowering_pipeline.html">TIRx lowering pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/tirx.html">tvm.tirx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/analysis.html">tvm.tirx.analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/stmt_functor.html">tvm.tirx.stmt_functor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/transform.html">tvm.tirx.transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/backend.html">tvm.backend.cuda</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_api_reference/index.html">TIRx API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_fa4_source/index.html">Flash Attention 4 Source</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Tile Primitives</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#calling-convention">Calling convention</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#primitive-catalog">Primitive catalog</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-movement">Data movement</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#matrix-multiply">Matrix multiply</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fill-memset-zero">Fill / memset / zero</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cast-and-elementwise">Cast and elementwise</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#reductions">Reductions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fused-compose">Fused / compose</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-config">Dispatch config</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-mechanism">Dispatch mechanism</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline">Pipeline</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#selection-run-dispatch">Selection (<code class="docutils literal notranslate"><span class="pre">run_dispatch</span></code>)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-by-primitive">Dispatch by primitive</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#see-also">See also</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="tile-primitives">
+<h1>Tile Primitives<a class="headerlink" href="#tile-primitives" title="Link to this heading">#</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This page documents the tile-primitive surface and dispatch as it exists in
+the source today; signatures and variants may change.</p>
+</div>
+<p>Tile primitives are the dispatchable, hardware-level operations a TIRx kernel
+issues — data movement (<code class="docutils literal notranslate"><span class="pre">copy</span></code>, <code class="docutils literal notranslate"><span class="pre">copy_async</span></code>), matrix multiply (<code class="docutils literal notranslate"><span class="pre">gemm</span></code>,
+<code class="docutils literal notranslate"><span class="pre">gemm_async</span></code>), reductions, elementwise math, and a few fused/compose forms.
+A primitive call is recorded as an <strong>unresolved</strong> <code class="docutils literal notranslate"><span class="pre">TilePrimitiveCall</span></code> IR node;
+the compiler later <em>dispatches</em> it — selecting a concrete lowering from the
+primitive, the execution scope, the operand layouts, the target, and an optional
+explicit hint — and replaces it with native IR (loops, address arithmetic,
+synchronization, and backend intrinsics).</p>
+<section id="calling-convention">
+<h2>Calling convention<a class="headerlink" href="#calling-convention" title="Link to this heading">#</a></h2>
+<p>Tile primitives are called in TVMScript via <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">tvm.script</span> <span class="pre">import</span> <span class="pre">tirx</span> <span class="pre">as</span> <span class="pre">T</span></code>,
+on the injected <code class="docutils literal notranslate"><span class="pre">Tx</span></code> namespace. The namespace prefix selects the <strong>cooperation
+scope</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.&lt;name&gt;(...)</span></code> — unqualified, runs at <strong>thread</strong> scope.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Tx.warp.&lt;name&gt;</span></code> / <code class="docutils literal notranslate"><span class="pre">Tx.wg.&lt;name&gt;</span></code> (alias <code class="docutils literal notranslate"><span class="pre">Tx.warpgroup</span></code>) / <code class="docutils literal notranslate"><span class="pre">Tx.cta.&lt;name&gt;</span></code>
+/ <code class="docutils literal notranslate"><span class="pre">Tx.cluster.&lt;name&gt;</span></code> / <code class="docutils literal notranslate"><span class="pre">Tx.thread.&lt;name&gt;</span></code> — bind a wider scope.</p></li>
+</ul>
+<p>Every primitive also accepts, besides its operands: <code class="docutils literal notranslate"><span class="pre">scope</span></code> (usually set by the
+namespace), <code class="docutils literal notranslate"><span class="pre">workspace:</span> <span class="pre">dict[str,</span> <span class="pre">Buffer]</span> <span class="pre">|</span> <span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">dispatch:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></code>
+(force a named lowering variant), and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> collected into a <code class="docutils literal notranslate"><span class="pre">config</span></code>
+dict that tunes the chosen lowering. Operands are <code class="docutils literal notranslate"><span class="pre">Buffer</span></code> / <code class="docutils literal notranslate"><span class="pre">BufferRegion</span></code>
+values, each carrying a <a class="reference internal" href="layout.html"><span class="doc">TileLayout</span></a> that dispatch reads.</p>
+<p>Wiring (three layers): the authoritative op list is the C++ registry
+(<code class="docutils literal notranslate"><span class="pre">src/tirx/op/tirx.cc</span></code>, 29 ops named <code class="docutils literal notranslate"><span class="pre">tirx.tile.&lt;name&gt;</span></code>); the IR wrapper
+classes are in <code class="docutils literal notranslate"><span class="pre">python/tvm/tirx/operator/tile_primitive/ops.py</span></code>; the
+user-facing <code class="docutils literal notranslate"><span class="pre">Tx.*</span></code> builders are in <code class="docutils literal notranslate"><span class="pre">python/tvm/tirx/script/builder/tirx.py</span></code>.</p>
+</section>
+<section id="primitive-catalog">
+<h2>Primitive catalog<a class="headerlink" href="#primitive-catalog" title="Link to this heading">#</a></h2>
+<p>The 29 primitives, grouped. Signatures show the operands plus the common
+<code class="docutils literal notranslate"><span class="pre">workspace</span></code>/<code class="docutils literal notranslate"><span class="pre">dispatch</span></code>/<code class="docutils literal notranslate"><span class="pre">scope</span></code>/<code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> tail (abbreviated <code class="docutils literal notranslate"><span class="pre">...</span></code>).</p>
+<section id="data-movement">
+<h3>Data movement<a class="headerlink" href="#data-movement" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">copy</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>            <span class="c1"># synchronous element copy src -&gt; dst</span>
+<span class="n">copy_async</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>      <span class="c1"># asynchronous copy (caller commits/waits)</span>
+<span class="n">permute_layout</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="c1"># rearrange under a different layout (may alias)</span>
+</pre></div>
+</div>
+</section>
+<section id="matrix-multiply">
+<h3>Matrix multiply<a class="headerlink" href="#matrix-multiply" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gemm</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">transpose_A</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">transpose_B</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+     <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>          <span class="c1"># D = alpha*A*B + beta*C (register mma)</span>
+<span class="n">gemm_async</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">SFA</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">SFB</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+           <span class="n">transA</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">transB</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="c1"># async / block-scaled</span>
+</pre></div>
+</div>
+</section>
+<section id="fill-memset-zero">
+<h3>Fill / memset / zero<a class="headerlink" href="#fill-memset-zero" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fill</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>        <span class="c1"># fill region with a scalar</span>
+<span class="n">memset</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>      <span class="c1"># set all elements to a value</span>
+<span class="n">zero</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>     <span class="c1"># zero out (in place if src omitted)</span>
+</pre></div>
+</div>
+</section>
+<section id="cast-and-elementwise">
+<h3>Cast and elementwise<a class="headerlink" href="#cast-and-elementwise" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cast</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>                         <span class="c1"># dtype cast (buffer form)</span>
+<span class="n">sqrt</span> <span class="o">/</span> <span class="n">exp</span> <span class="o">/</span> <span class="n">exp2</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="n">reciprocal</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>                   <span class="c1"># dst = 1/src</span>
+<span class="n">silu</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>                              <span class="c1"># dst = src*sigmoid(src)</span>
+<span class="n">add</span> <span class="o">/</span> <span class="n">sub</span> <span class="o">/</span> <span class="n">mul</span> <span class="o">/</span> <span class="n">fdiv</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src1</span><span class="p">,</span> <span class="n">src2</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>     <span class="c1"># element-wise arithmetic</span>
+<span class="n">maximum</span> <span class="o">/</span> <span class="n">minimum</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src1</span><span class="p">,</span> <span class="n">src2</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>          <span class="c1"># element-wise max / min</span>
+<span class="n">fma</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>                  <span class="c1"># dst = src*scale + bias</span>
+<span class="n">select</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">true_value</span><span class="p">,</span> <span class="n">false_value</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>  <span class="c1"># dst = pred ? t : f</span>
+</pre></div>
+</div>
+</section>
+<section id="reductions">
+<h3>Reductions<a class="headerlink" href="#reductions" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">sum</span> <span class="o">/</span> <span class="nb">max</span> <span class="o">/</span> <span class="nb">min</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">axes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">accum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>   <span class="c1"># reduce over axes</span>
+</pre></div>
+</div>
+</section>
+<section id="fused-compose">
+<h3>Fused / compose<a class="headerlink" href="#fused-compose" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">binary_reduce</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>   <span class="c1"># binary op then reduce, fused</span>
+<span class="n">unary_reduce</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>    <span class="c1"># unary (with bias/scale) then reduce</span>
+<span class="n">binary_chain</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>    <span class="c1"># chain two binary ops</span>
+<span class="n">reduce_negate</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>   <span class="c1"># reduce then negate</span>
+<span class="n">compose_op</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>      <span class="c1"># frame/context manager to group primitives</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dispatch-config">
+<h2>Dispatch config<a class="headerlink" href="#dispatch-config" title="Link to this heading">#</a></h2>
+<p>A call is materialized as a <code class="docutils literal notranslate"><span class="pre">TilePrimitiveCall</span></code> node whose fields carry
+everything dispatch needs (<code class="docutils literal notranslate"><span class="pre">python/tvm/tirx/stmt.py</span></code>):</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 14.0%" />
+<col style="width: 22.0%" />
+<col style="width: 64.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">op</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tvm.Op</span></code></p></td>
+<td><p>primitive identity, e.g. <code class="docutils literal notranslate"><span class="pre">tirx.tile.copy_async</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">args</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Array</span></code></p></td>
+<td><p>operands (regions / scalars), in the order shown above</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">workspace</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Map[str,</span> <span class="pre">Buffer]</span></code></p></td>
+<td><p>pre-allocated scratch buffers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">config</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Map[str,</span> <span class="pre">Any]</span></code></p></td>
+<td><p>open-ended tuning bag (table below)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dispatch</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Optional[str]</span></code></p></td>
+<td><p>forced variant name; <code class="docutils literal notranslate"><span class="pre">None</span></code> = auto-select</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scope</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ExecScope</span></code></p></td>
+<td><p>cooperation scope (default <code class="docutils literal notranslate"><span class="pre">thread</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">config</span></code> has <strong>no central schema</strong> — each key is read only by the dispatch
+variant(s) that need it (via <code class="docutils literal notranslate"><span class="pre">config.get(...)</span></code>); a key meant for another
+primitive is simply ignored. Only <code class="docutils literal notranslate"><span class="pre">dispatch</span></code> is generic. The keys observed in
+the CUDA backend, by consumer:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 18.0%" />
+<col style="width: 30.0%" />
+<col style="width: 18.0%" />
+<col style="width: 34.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Used by</p></th>
+<th class="head"><p>Type / values</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dispatch</span></code></p></td>
+<td><p>any primitive</p></td>
+<td><p>variant name (str)</p></td>
+<td><p>force a lowering variant (also settable via the <code class="docutils literal notranslate"><span class="pre">dispatch=</span></code> kwarg)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vec_len</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy</span></code> / <code class="docutils literal notranslate"><span class="pre">copy_async</span></code> (vectorized variants)</p></td>
+<td><p>int | None</p></td>
+<td><p>vectorization width for the copy</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mbar</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code> (g2s), <code class="docutils literal notranslate"><span class="pre">dsmem</span></code></p></td>
+<td><p>mbarrier handle</p></td>
+<td><p>completion barrier</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cta_group</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code>, <code class="docutils literal notranslate"><span class="pre">smem→tmem</span></code>; <code class="docutils literal notranslate"><span class="pre">gemm_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code> | <code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p>CTA-group; <code class="docutils literal notranslate"><span class="pre">2</span></code> routes completion to the cluster</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cta_mask</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code> (g2s)</p></td>
+<td><p>int | None</p></td>
+<td><p>multicast CTA mask</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cache_hint</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;evict_normal&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code></p></td>
+<td><p>L2 cache eviction hint</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">oob</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;zero&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;nan&quot;</span></code> | None</p></td>
+<td><p>out-of-bounds fill policy (<code class="docutils literal notranslate"><span class="pre">nan</span></code> is float-only)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use_tma_reduce</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code> (s2g)</p></td>
+<td><p>str (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;add&quot;</span></code>) | None</p></td>
+<td><p>TMA store-with-reduction mode</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">prefetch_tensormap</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tma</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>prefetch the tensor map at kernel entry</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">remote_cta_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">copy_async</span></code>: <code class="docutils literal notranslate"><span class="pre">dsmem</span></code></p></td>
+<td><p>int | PrimExpr</p></td>
+<td><p>target CTA for a cross-CTA shared→shared copy</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">descI</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gemm_async</span></code>: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></p></td>
+<td><p>uint32 | None</p></td>
+<td><p>pre-encoded MMA instruction descriptor</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thread_reduce</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">reduction</span></code>: <code class="docutils literal notranslate"><span class="pre">local</span></code> (warp scope)</p></td>
+<td><p>bool</p></td>
+<td><p>per-thread shuffle reduction</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rounding_mode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">elementwise</span></code>: binary ops</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;rn&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;rz&quot;</span></code> | …</p></td>
+<td><p>FP rounding mode for the packed form</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Three dispatch inputs are <strong>implicit</strong>, not config keys: the <strong>execution scope</strong>
+(set by the namespace, then refined against the active thread set tracked through
+control flow into <code class="docutils literal notranslate"><span class="pre">inter</span></code>/<code class="docutils literal notranslate"><span class="pre">intra</span></code> maps and a <code class="docutils literal notranslate"><span class="pre">scope_kind</span></code>), the <strong>operand
+layouts</strong> (each <code class="docutils literal notranslate"><span class="pre">Buffer.layout</span></code>), and the <strong>target</strong> (the dispatch table is
+keyed by its kind, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code>).</p>
+</section>
+<section id="dispatch-mechanism">
+<h2>Dispatch mechanism<a class="headerlink" href="#dispatch-mechanism" title="Link to this heading">#</a></h2>
+<section id="pipeline">
+<h3>Pipeline<a class="headerlink" href="#pipeline" title="Link to this heading">#</a></h3>
+<p>Dispatch runs in the <code class="docutils literal notranslate"><span class="pre">tirx.TilePrimitiveDispatch</span></code> pass — the sole pass inside
+<code class="docutils literal notranslate"><span class="pre">LowerTIRx()</span></code>, the first stage of the compile pipeline. The C++ mutator
+<code class="docutils literal notranslate"><span class="pre">TilePrimitiveDispatcher</span></code> walks the IR and, per call:</p>
+<ol class="arabic simple">
+<li><p>resolves the <code class="docutils literal notranslate"><span class="pre">(inter,</span> <span class="pre">intra)</span></code> execution split for the call’s scope from the
+active set tracked through control flow (<code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">wg_id</span> <span class="pre">==</span> <span class="pre">...</span></code>, <code class="docutils literal notranslate"><span class="pre">warp_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">T.ptx.elect_sync()</span></code>);</p></li>
+<li><p>builds a <code class="docutils literal notranslate"><span class="pre">DispatchContext</span></code> carrying <code class="docutils literal notranslate"><span class="pre">target</span></code>, scope, launch params, value
+ranges, and the encoded <code class="docutils literal notranslate"><span class="pre">inter</span></code>/<code class="docutils literal notranslate"><span class="pre">intra</span></code> + <code class="docutils literal notranslate"><span class="pre">scope_kind</span></code>;</p></li>
+<li><p>invokes the global FFI hook <code class="docutils literal notranslate"><span class="pre">tirx.f_op_dispatcher</span></code> (Python) with the call
+and context, which returns a <code class="docutils literal notranslate"><span class="pre">PrimFunc</span></code>;</p></li>
+<li><p>splices that <code class="docutils literal notranslate"><span class="pre">PrimFunc</span></code> body in place of the call and drains side-effect
+callbacks (private allocs, device/host init statements).</p></li>
+</ol>
+<p>If any <code class="docutils literal notranslate"><span class="pre">TilePrimitiveCall</span></code> survives lowering, a verifier makes it a fatal error.</p>
+</section>
+<section id="selection-run-dispatch">
+<h3>Selection (<code class="docutils literal notranslate"><span class="pre">run_dispatch</span></code>)<a class="headerlink" href="#selection-run-dispatch" title="Link to this heading">#</a></h3>
+<p>The Python dispatcher holds a table <code class="docutils literal notranslate"><span class="pre">_DISPATCH_TABLE</span></code> keyed by
+<code class="docutils literal notranslate"><span class="pre">(Op,</span> <span class="pre">target_kind)</span></code>. Each entry is a list of <em>cases</em>, registered by backends
+via <code class="docutils literal notranslate"><span class="pre">&#64;register_dispatch(op_name,</span> <span class="pre">target_kind,</span> <span class="pre">variant=...,</span> <span class="pre">priority=...,</span>
+<span class="pre">when=[preds])</span></code>. <code class="docutils literal notranslate"><span class="pre">run_dispatch(op_call,</span> <span class="pre">sctx)</span></code>:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">key</span> <span class="pre">=</span> <span class="pre">(op_call.op,</span> <span class="pre">sctx.target.kind.name)</span></code>; look up cases. None → error.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">op_call.dispatch</span></code> is set, <strong>filter</strong> to that variant (error if unknown).</p></li>
+<li><p>Sort cases by <code class="docutils literal notranslate"><span class="pre">(-priority,</span> <span class="pre">variant)</span></code> — highest priority first.</p></li>
+<li><p>For each case, evaluate its predicates; if any fails, record the reason and
+continue. If all pass, run the impl; on success return its <code class="docutils literal notranslate"><span class="pre">PrimFunc</span></code>.</p></li>
+<li><p>An impl may still <strong>decline</strong> by raising <code class="docutils literal notranslate"><span class="pre">DispatchFail</span></code> (e.g. a hardware
+constraint found while emitting) — the search continues.</p></li>
+<li><p>If every variant is rejected, raise a <code class="docutils literal notranslate"><span class="pre">RuntimeError</span></code> listing each variant’s
+rejection reason.</p></li>
+</ol>
+<p>So dispatch is <strong>keyed by (primitive, target)</strong>, then a <strong>priority-ordered,
+predicate-guarded</strong> case list, with an optional <code class="docutils literal notranslate"><span class="pre">dispatch=</span></code> override.</p>
+<p>Two recurring predicate helpers: <code class="docutils literal notranslate"><span class="pre">validate_copy_op</span></code> (both operands have a
+layout, equal dtype, equal non-unit extents) and <code class="docutils literal notranslate"><span class="pre">_all_threads_active</span></code> (the
+exec scope is full — <code class="docutils literal notranslate"><span class="pre">laneid</span></code> spans 32, etc., none of it narrowed by an
+enclosing <code class="docutils literal notranslate"><span class="pre">if</span></code>), so a partial-warp copy is rejected rather than mis-lowered.</p>
+</section>
+</section>
+<section id="dispatch-by-primitive">
+<h2>Dispatch by primitive<a class="headerlink" href="#dispatch-by-primitive" title="Link to this heading">#</a></h2>
+<p>Each page below documents one primitive’s dispatch in detail — the variants, how
+each is selected, the algorithm it runs, the IR it emits, and when it declines.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/copy.html">copy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/copy_async.html">copy_async</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/gemm.html">gemm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/gemm_async.html">gemm_async</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/elementwise.html">elementwise</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/reduction.html">reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tile_primitives/permute_layout.html">permute_layout</a></li>
+</ul>
+</div>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="layout.html"><span class="doc">Tensor Layout</span></a> — the <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> model dispatch reads from operands.</p></li>
+<li><p><a class="reference internal" href="overview.html"><span class="doc">Overview</span></a> — execution scope, tensor layout, and tile primitive dispatch
+as the three core constructs.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="layout.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Tensor Layout</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="tile_primitives/copy.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">copy</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"><div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#calling-convention">Calling convention</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#primitive-catalog">Primitive catalog</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-movement">Data movement</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#matrix-multiply">Matrix multiply</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fill-memset-zero">Fill / memset / zero</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cast-and-elementwise">Cast and elementwise</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#reductions">Reductions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fused-compose">Fused / compose</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-config">Dispatch config</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-mechanism">Dispatch mechanism</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline">Pipeline</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#selection-run-dispatch">Selection (<code class="docutils literal notranslate"><span class="pre">run_dispatch</span></code>)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-by-primitive">Dispatch by primitive</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#see-also">See also</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By TIRx Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright TIRx Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

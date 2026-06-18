@@ -1,321 +1,601 @@
+
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="./" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    
-    <title>TIRX: Blackwell Tile-Primitive Programming &#8212; TIRX: High-Performance GPU Kernel Programming 0.0.1 documentation</title>
+    <title>Modern GPU Programming &#8212; Modern GPU Programming</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    <link rel="stylesheet" href="_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css" type="text/css" />
-    <link rel="stylesheet" href="_static/sphinx_materialdesign_theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/fontawesome/all.css" type="text/css" />
-    <link rel="stylesheet" href="_static/fonts.css" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/basic.css" />
-    <link rel="stylesheet" type="text/css" href="_static/d2l.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/d2l.js"></script>
-    <link rel="shortcut icon" href="_static/mlc-favicon.ico"/>
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=994f5abe" />
+    <link rel="stylesheet" type="text/css" href="_static/demo-embed.css?v=98f4fe8c" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=e645c8fa"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
+    <script src="_static/demo-embed.js?v=2e476647"></script>
+    <link rel="icon" href="_static/mlc-favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="1. Blackwell Background" href="chapter_background/index.html" /> 
+    <link rel="next" title="The GPU Execution and Memory Model" href="chapter_background/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
   </head>
-<body>
-    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
-    <div class="mdl-layout__header-row">
-        
-        <nav class="mdl-navigation breadcrumb">
-            <a class="mdl-navigation__link is-active">TIRX: Blackwell Tile-Primitive Programming</a>
-        </nav>
-        <div class="mdl-layout-spacer"></div>
-        <nav class="mdl-navigation">
-        
-<form class="form-inline pull-sm-right" action="search.html" method="get">
-      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
-        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
-          <i class="material-icons">search</i>
-        </label>
-        <div class="mdl-textfield__expandable-holder">
-          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
-          <input type="hidden" name="check_keywords" value="yes" />
-          <input type="hidden" name="area" value="default" />
-        </div>
-      </div>
-      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
-      Quick search
-      </div>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form>
-        
-<a id="button-show-source"
-    class="mdl-button mdl-js-button mdl-button--icon"
-    href="_sources/index.rst.txt" rel="nofollow">
-  <i class="material-icons">code</i>
-</a>
-<div class="mdl-tooltip" data-mdl-for="button-show-source">
-Show Source
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-        </nav>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="#">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/mlc-logo-with-text-landscape.svg" class="logo__image only-light" alt="Modern GPU Programming - Home"/>
+    <img src="_static/mlc-logo-with-text-landscape.svg" class="logo__image only-dark pst-js-only" alt="Modern GPU Programming - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1 current active">
+                <a class="reference internal" href="#">
+                    Modern GPU Programming
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I — Understanding the GPU</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="chapter_background/index.html">The GPU Execution and Memory Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_performance/index.html">What Makes a Kernel Fast</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="part_data_layout/index.html">Deep Dive into Data Layout</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_data_layout/index.html">What Is Data Layout?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="part_memory/index.html">Memory</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_tmem/index.html">Tensor Memory (TMEM)</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="part_compute/index.html">Compute</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_async_barriers/index.html">Async Coordination: mbarriers and Phases</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="part_advanced/index.html">Advanced Topics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_clc/index.html">Cluster Launch Control (CLC)</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/install.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tirx_guide/native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tirx_guide/native_basics/cuda.html">CUDA C++/PTX</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/first_kernel.html">Your first kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/functions.html">Defining a function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/parser_utils.html">Parser utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/data_types.html">Data types and expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/buffers.html">Buffers and memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/control_flow.html">Control flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/threads_sync.html">CUDA C++/PTX intrinsics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/native_basics/cuda/compiling.html">Compiling and inspecting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/layout.html">Tensor Layout</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tirx_guide/tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tirx_guide/tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy/reg.html">copy → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy/fallback.html">copy → fallback</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tirx_guide/tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives/gemm.html">gemm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives/gemm_async.html">gemm_async</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tirx_guide/tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tirx_guide/tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/reduction/local.html">reduction → local</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/reduction/shared.html">reduction → shared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tirx_guide/tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives/permute_layout.html">permute_layout</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_basics/index.html">Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">Flash Attention 4</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part V — Workflow &amp; Practice</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="chapter_profiling/index.html">Profiling and Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_ai_assisted/index.html">Writing TIRx Kernels with Agents</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="appendix/index.html">Appendix</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tirx_guide/arch/index.html">Compiler Internals</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/arch/lowering_pipeline.html">TIRx lowering pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tirx_guide/api/index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/tirx.html">tvm.tirx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/analysis.html">tvm.tirx.analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/stmt_functor.html">tvm.tirx.stmt_functor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/transform.html">tvm.tirx.transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/backend.html">tvm.backend.cuda</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_api_reference/index.html">TIRx API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_fa4_source/index.html">Flash Attention 4 Source</a></li>
+</ul>
+
     </div>
-    <div class="mdl-layout__header-row header-links">
-      <div class="mdl-layout-spacer"></div>
-      <nav class="mdl-navigation">
-      </nav>
+</nav></div>
     </div>
-</header><header class="mdl-layout__drawer">
-    
-          <!-- Title -->
-      <span class="mdl-layout-title">
-          <a class="title" href="#">
-              <img class="logo" src="_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
-          </a>
-      </span>
-    
-    
-      <div class="globaltoc">
-        <span class="mdl-layout-title toc">Table Of Contents</span>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
         
         
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Modern GPU Programming</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
             
-            <nav class="mdl-navigation">
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="chapter_background/index.html">1. Blackwell Background</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
-<li class="toctree-l1"><a class="reference internal" href="appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_setup/index.html">8.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_fa4_source/index.html">8.6. Flash Attention 4 Source</a></li>
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-this-book-is-organized">How This Book Is Organized</a><ul class="visible nav section-nav flex-column">
 </ul>
 </li>
 </ul>
-
             </nav>
-        
         </div>
-    
-</header>
-        <main class="mdl-layout__content" tabIndex="0">
+    </div>
+</div>
 
-	<script type="text/javascript" src="_static/sphinx_materialdesign_theme.js "></script>
-    <header class="mdl-layout__drawer">
-    
-          <!-- Title -->
-      <span class="mdl-layout-title">
-          <a class="title" href="#">
-              <img class="logo" src="_static/mlc-logo-with-text-landscape.svg" alt="TIRX: High-Performance GPU Kernel Programming"/>
-          </a>
-      </span>
-    
-    
-      <div class="globaltoc">
-        <span class="mdl-layout-title toc">Table Of Contents</span>
-        
-        
-            
-            <nav class="mdl-navigation">
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="chapter_background/index.html">1. Blackwell Background</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_layouts/index.html">2. Tile Primitive Mental Model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">6. Flash Attention 4</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a></li>
-<li class="toctree-l1"><a class="reference internal" href="appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_setup/index.html">8.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_fa4_source/index.html">8.6. Flash Attention 4 Source</a></li>
-</ul>
-</li>
-</ul>
-
-            </nav>
-        
-        </div>
-    
-</header>
-
-    <div class="document">
-        <div class="page-content" role="main">
-        
-  <section id="tirx-blackwell-tile-primitive-programming">
-<h1>TIRX: Blackwell Tile-Primitive Programming<a class="headerlink" href="#tirx-blackwell-tile-primitive-programming" title="Permalink to this heading">¶</a></h1>
-<p>TIRX (Tensor IR neXt) is a Python DSL for writing high-performance GPU
-kernels at the IR level. This tutorial targets Blackwell because its
-TIRX path exposes tile primitives for TMA tile copies, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA,
-TMEM layouts, mbarriers, and CTA clusters.</p>
-<p>TIRX sits between high-level kernel DSLs and raw CUDA/PTX. High-level
-DSLs are easier to write and often the right tool, but they can hide the
-exact hardware contract behind scheduling or library choices. Raw
-CUDA/PTX gives maximum control, but the program becomes descriptor
-setup, barrier state, layout bookkeeping, and instruction-level
-plumbing. TIRX is for the middle ground: the kernel still names
-Blackwell concepts directly, while the compiler can see scope, layout,
-and dispatch as structured IR instead of scattered intrinsic arguments.</p>
-<p>A tile primitive is a structured operation on tile values. Its lowering
-is controlled by three things:</p>
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="modern-gpu-programming">
+<h1>Modern GPU Programming<a class="headerlink" href="#modern-gpu-programming" title="Link to this heading">#</a></h1>
+<p>This book teaches modern GPU kernel programming as a progression: <strong>understand the GPU as a
+machine → learn to program it → write state-of-the-art kernels.</strong> It assumes you have seen
+CUDA basics (grid/block/thread, shared memory, a naive tiled GEMM), but it treats the modern,
+Blackwell-class GPU as the real subject — its memory hierarchy and Tensor Memory, its
+tensor-core and asynchronous data-movement engines, warpgroups and clusters — rather than as a
+quick review.</p>
+<p>The vehicle is <strong>TIRx</strong> (Tensor IR neXt), a Python DSL for writing GPU kernels at the IR
+level. TIRx sits between high-level kernel DSLs and raw CUDA/PTX: the kernel still names
+hardware concepts directly, while the compiler sees scope, layout, and dispatch as structured
+IR instead of scattered intrinsic arguments. Like the framework in <em>Dive into Deep Learning</em>,
+TIRx is the consistent medium through which every concept becomes runnable code.</p>
+<p>A <strong>tile primitive</strong> is a structured operation on tile values, and its lowering is controlled
+by three knobs that recur throughout the book:</p>
 <ul class="simple">
-<li><p><strong>Scope</strong> — which group of threads issues or cooperates on the
-operation.</p></li>
-<li><p><strong>Layout</strong> — how the operand tiles map to GMEM, SMEM, TMEM, or
-registers.</p></li>
-<li><p><strong>Dispatch</strong> — which hardware path is intended when there is a choice,
-such as TMA or <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>.</p></li>
+<li><p><strong>Scope</strong> — which group of threads issues or cooperates on the operation.</p></li>
+<li><p><strong>Layout</strong> — how the operand tiles map to GMEM, SMEM, TMEM, or registers.</p></li>
+<li><p><strong>Dispatch</strong> — which hardware path is intended when there is a choice, such as TMA or <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>.</p></li>
 </ul>
-<p>For asynchronous primitives, a barrier, commit, wait, or fence describes
-the handoff between tile operations.</p>
-<section id="reading-path">
-<h2>Reading Path<a class="headerlink" href="#reading-path" title="Permalink to this heading">¶</a></h2>
+<p>For asynchronous primitives, a barrier, commit, wait, or fence describes the handoff between
+tile operations.</p>
+<section id="how-this-book-is-organized">
+<h2>How This Book Is Organized<a class="headerlink" href="#how-this-book-is-organized" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><strong>Part I: TIRX and Blackwell</strong></p>
-<ol class="arabic simple">
-<li><p><strong>Blackwell Background</strong> — Thread groups, memory spaces, TMEM, TMA,
-<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, async barriers, and CTA clusters.</p></li>
-</ol>
-</li>
-<li><p><strong>Part II: Tile Primitive Programming</strong></p>
-<ol class="arabic simple" start="2">
-<li><p><strong>Tile Primitive Mental Model</strong> — Why tile primitives matter, then
-execution scope, tensor layout, and dispatch.</p></li>
-</ol>
-</li>
-<li><p><strong>Part III: GEMM Deep Dive</strong></p>
-<ol class="arabic simple" start="3">
-<li><p><strong>Building a Tiled GEMM</strong> — Single-tile GEMM, K-loop accumulation,
-and spatial tiling across CTAs.</p></li>
-<li><p><strong>Pipelining GEMM with TMA</strong> — TMA async loads, software
-pipelining, and persistent tile scheduling.</p></li>
-<li><p><strong>Scaling GEMM with Warp Specialization and Clusters</strong> — Warp
-specialization, 2-CTA cooperative MMA, and multi-consumer
-execution.</p></li>
-</ol>
-</li>
-<li><p><strong>Part IV: Advanced Kernel</strong></p>
-<ol class="arabic simple" start="6">
-<li><p><strong>Flash Attention 4</strong></p></li>
-</ol>
-</li>
-<li><p><strong>Part V: Kernel Development Workflow</strong></p>
-<ol class="arabic simple" start="7">
-<li><p><strong>Writing TIRX Kernels with Agents</strong> — Use the tile-primitive
-contract as prompt structure for explanation, review, debugging,
-and test generation.</p></li>
-</ol>
-</li>
-<li><p><strong>Appendix</strong></p>
-<ul>
-<li><p>Setup, API reference, language/compile notes, practice kernels, and
-source maps.</p></li>
-</ul>
-</li>
+<li><p><strong>Part I — Understanding the GPU.</strong> What the hardware <em>is</em>: the execution and memory model and
+the performance model (roofline, overlap) that defines “fast”; then a deep dive into data
+layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
+coordination model, and advanced scheduling (CLC). Everything later is programming <em>this</em> machine.</p></li>
+<li><p><strong>Part II — Programming a GPU with TIRx.</strong> Setup, the TIRx language and compile pipeline,
+the scope/layout/dispatch framework, data layouts and swizzle, and your first complete
+kernels (elementwise and reductions).</p></li>
+<li><p><strong>Part III — GEMM: Tiled to SOTA.</strong> The optimization spine — a tiled GEMM built up through
+TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.</p></li>
+<li><p><strong>Part IV — Capstone: Flash Attention.</strong> Composing the whole machine into a real kernel.</p></li>
+<li><p><strong>Part V — Workflow &amp; Practice.</strong> Profiling/debugging and writing kernels with agents.</p></li>
+<li><p><strong>Appendix.</strong> API reference and full source listings.</p></li>
 </ul>
 <div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I — Understanding the GPU</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="chapter_background/index.html">1. Blackwell Background</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#thread-hierarchy">1.1. Thread Hierarchy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#memory-spaces">1.2. Memory Spaces</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#tma">1.3. TMA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#tensor-cores-and-blackwell-mma">1.4. Tensor Cores and Blackwell MMA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#memory-barrier-mbarrier">1.5. Memory Barrier (mbarrier)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#synchronization-rules">1.6. Synchronization Rules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#cta-clusters">1.7. CTA Clusters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#numbers-to-keep-in-mind">1.8. Numbers to Keep in Mind</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_background/index.html">The GPU Execution and Memory Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#the-execution-hierarchy">The Execution Hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#compute-cuda-cores-and-tensor-cores">Compute: CUDA Cores and Tensor Cores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#memory-spaces">Memory Spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#cta-clusters">CTA Clusters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#the-gemm-data-pipeline">The GEMM Data Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_background/index.html#numbers-to-keep-in-mind">Numbers to Keep in Mind</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_layouts/index.html">2. Tile Primitive Mental Model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_layouts/index.html#why-tile-primitives">2.1. Why Tile Primitives?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_layouts/index.html#execution-scope">2.2. Execution Scope</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_layouts/index.html#tensor-layout">2.3. Tensor Layout</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_layouts/index.html#tile-primitive-dispatch">2.4. Tile Primitive Dispatch</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_layouts/index.html#core-apis-for-reading-gemm">2.5. Core APIs for Reading GEMM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_layouts/index.html#exercises">2.6. Exercises</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_performance/index.html">What Makes a Kernel Fast</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#the-roofline-model">The Roofline Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#arithmetic-intensity-of-real-workloads">Arithmetic Intensity of Real Workloads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#when-arithmetic-intensity-is-low">When Arithmetic Intensity Is Low</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#the-optimization-ladder">The Optimization Ladder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#overlap-is-the-lever">Overlap Is the Lever</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#occupancy-and-resource-pressure">Occupancy and Resource Pressure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_performance/index.html#what-this-buys-you-later">What This Buys You Later</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_basics/index.html">3. Building a Tiled GEMM</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#gemm">3.1. GEMM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#optimization-path">3.2. Optimization Path</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#step-1-sequential-single-tile-gemm">3.3. Step 1: Sequential Single-Tile GEMM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#step-2-k-loop-accumulation">3.4. Step 2: K-Loop Accumulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#step-3-spatial-tiling-multi-cta">3.5. Step 3: Spatial Tiling (Multi-CTA)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#exercises">3.6. Exercises</a></li>
+<li class="toctree-l1"><a class="reference internal" href="part_data_layout/index.html">Deep Dive into Data Layout</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_data_layout/index.html">What Is Data Layout?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_async/index.html">4. Pipelining GEMM with TMA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#step-4-tma-async-load">4.1. Step 4: TMA Async Load</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#step-5-software-pipeline-pipe-depth-2">4.2. Step 5: Software Pipeline (PIPE_DEPTH=2)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#step-6-persistent-kernel-tile-scheduler">4.3. Step 6: Persistent Kernel + Tile Scheduler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#exercises">4.4. Exercises</a></li>
+<li class="toctree-l1"><a class="reference internal" href="part_memory/index.html">Memory</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_tmem/index.html">Tensor Memory (TMEM)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_advanced/index.html">5. Scaling GEMM with Warp Specialization and Clusters</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#step-7-warp-specialization-pipeline">5.1. Step 7: Warp Specialization + Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#step-8-2-cta-cluster">5.2. Step 8: 2-CTA Cluster</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#step-9-multi-consumer-warp-specialization">5.3. Step 9: Multi-Consumer Warp Specialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#debugging-warp-specialized-kernels">5.4. Debugging Warp-Specialized Kernels</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#end-to-end-result">5.5. End-to-End Result</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#exercises">5.6. Exercises</a></li>
+<li class="toctree-l1"><a class="reference internal" href="part_compute/index.html">Compute</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">6. Flash Attention 4</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#algorithm-shape">6.1. Algorithm Shape</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#tile-primitive-graph">6.2. Tile-Primitive Graph</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#warp-roles-and-scopes">6.3. Warp Roles and Scopes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#reading-the-fragments">6.4. Reading the Fragments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#the-two-mma-phases">6.5. The Two MMA Phases</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#tmem-layout-and-reuse">6.6. TMEM Layout and Reuse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#how-barriers-connect-the-roles">6.7. How Barriers Connect the Roles</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#pipelining-structure">6.8. Pipelining Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#rescaling-and-writeback">6.9. Rescaling and Writeback</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#causal-masking">6.10. Causal Masking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#gqa-support">6.11. GQA Support</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#tile-scheduling">6.12. Tile Scheduling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#compile-and-verify">6.13. Compile and Verify</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#differences-from-gemm">6.14. Differences from GEMM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#exercises">6.15. Exercises</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_async_barriers/index.html">Async Coordination: mbarriers and Phases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_async_barriers/index.html#the-mbarrier">The mbarrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_async_barriers/index.html#phase-tracking">Phase Tracking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_async_barriers/index.html#synchronization-rules">Synchronization Rules</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="chapter_ai_assisted/index.html">7. Writing TIRX Kernels with Agents</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#workflow">7.1. Workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#from-goal-to-instruction">7.2. From Goal to Instruction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#the-tirx-contract-prompt">7.3. The TIRX Contract Prompt</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#case-study-elected-mma-commit-bug">7.4. Case Study: Elected MMA Commit Bug</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-1-explain-a-kernel-as-tile-primitives">7.5. Use Case 1: Explain a Kernel as Tile Primitives</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-2-review-a-kernel-change">7.6. Use Case 2: Review a Kernel Change</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-3-debug-from-symptoms">7.7. Use Case 3: Debug from Symptoms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-4-generate-reference-tests">7.8. Use Case 4: Generate Reference Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-5-inspect-generated-cuda">7.9. Use Case 5: Inspect Generated CUDA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#agent-review-boundaries">7.10. Agent Review Boundaries</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#project-context-file">7.11. Project Context File</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#exercises">7.12. Exercises</a></li>
+<li class="toctree-l1"><a class="reference internal" href="part_advanced/index.html">Advanced Topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_clc/index.html">Cluster Launch Control (CLC)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="appendix/index.html">8. Appendix</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="chapter_setup/index.html">8.1. Environment Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html">8.2. TIRX API Reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_tirx_primer/index.html">8.3. TIRX Language and Compile Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_fused_gelu/index.html">8.4. Practice Kernel: Fused GELU Gate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_rmsnorm/index.html">8.5. Practice Kernel: RMSNorm Reduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="chapter_fa4_source/index.html">8.6. Flash Attention 4 Source</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/overview.html#design-philosophy">Design Philosophy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/overview.html#the-programming-model">The Programming Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/overview.html#what-tirx-enables">What TIRx Enables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/overview.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/install.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/install.html#install-the-tirx-compiler">Install the TIRx compiler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/install.html#install-the-kernel-library-optional">Install the kernel library (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/install.html#build-from-source">Build from source</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/native_basics.html">TIRx Basics: Native Level</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/native_basics.html#what-native-level-means">What “native level” means</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/native_basics.html#the-shared-model">The shared model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/layout.html">Tensor Layout</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/layout.html#interactive-demo">Interactive demo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/layout.html#tilelayout">TileLayout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/layout.html#swizzlelayout-composelayout">SwizzleLayout, ComposeLayout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/layout.html#design-rationale">Design rationale</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/tile_primitives.html">Tile Primitives</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives.html#calling-convention">Calling convention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives.html#primitive-catalog">Primitive catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives.html#dispatch-config">Dispatch config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives.html#dispatch-mechanism">Dispatch mechanism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives.html#dispatch-by-primitive">Dispatch by primitive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/tile_primitives.html#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_basics/index.html">Building a Tiled GEMM</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#gemm">GEMM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#optimization-path">Optimization Path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#step-1-sequential-single-tile-gemm">Step 1: Sequential Single-Tile GEMM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#step-2-k-loop-accumulation">Step 2: K-Loop Accumulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#step-3-spatial-tiling-multi-cta">Step 3: Spatial Tiling (Multi-CTA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_basics/index.html#exercises">Exercises</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_async/index.html">Pipelining GEMM with TMA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#step-4-tma-async-load">Step 4: TMA Async Load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#step-5-software-pipeline-pipe-depth-2">Step 5: Software Pipeline (PIPE_DEPTH=2)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#step-6-persistent-kernel-tile-scheduler">Step 6: Persistent Kernel + Tile Scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_async/index.html#exercises">Exercises</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#step-7-warp-specialization-pipeline">Step 7: Warp Specialization + Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#step-8-2-cta-cluster">Step 8: 2-CTA Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#step-9-multi-consumer-warp-specialization">Step 9: Multi-Consumer Warp Specialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#debugging-warp-specialized-kernels">Debugging Warp-Specialized Kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#end-to-end-result">End-to-End Result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_gemm_advanced/index.html#exercises">Exercises</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">Flash Attention 4</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#algorithm-shape">Algorithm Shape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#tile-primitive-graph">Tile-Primitive Graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#warp-roles-and-scopes">Warp Roles and Scopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#reading-the-fragments">Reading the Fragments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#the-two-mma-phases">The Two MMA Phases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#tmem-layout-and-reuse">TMEM Layout and Reuse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#how-barriers-connect-the-roles">How Barriers Connect the Roles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#pipelining-structure">Pipelining Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#rescaling-and-writeback">Rescaling and Writeback</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#causal-masking">Causal Masking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#gqa-support">GQA Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#tile-scheduling">Tile Scheduling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#compile-and-verify">Compile and Verify</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#differences-from-gemm">Differences from GEMM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#exercises">Exercises</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part V — Workflow &amp; Practice</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chapter_profiling/index.html">Profiling and Debugging</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_profiling/index.html#reading-the-generated-code">Reading the Generated Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_profiling/index.html#nsight-compute-basics">Nsight Compute Basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_profiling/index.html#debugging-barriers-and-correctness">Debugging Barriers and Correctness</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_ai_assisted/index.html">Writing TIRx Kernels with Agents</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#workflow">Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#from-goal-to-instruction">From Goal to Instruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#the-tirx-contract-prompt">The TIRx Contract Prompt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#case-study-elected-mma-commit-bug">Case Study: Elected MMA Commit Bug</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-1-explain-a-kernel-as-tile-primitives">Use Case 1: Explain a Kernel as Tile Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-2-review-a-kernel-change">Use Case 2: Review a Kernel Change</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-3-debug-from-symptoms">Use Case 3: Debug from Symptoms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-4-generate-reference-tests">Use Case 4: Generate Reference Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#use-case-5-inspect-generated-cuda">Use Case 5: Inspect Generated CUDA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#agent-review-boundaries">Agent Review Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#project-context-file">Project Context File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_ai_assisted/index.html#exercises">Exercises</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="appendix/index.html">Appendix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/arch/index.html">Compiler Internals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/arch/lowering_pipeline.html">TIRx lowering pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tirx_guide/api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/tirx.html">tvm.tirx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/analysis.html">tvm.tirx.analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/stmt_functor.html">tvm.tirx.stmt_functor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/transform.html">tvm.tirx.transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tirx_guide/api/backend.html">tvm.backend.cuda</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_api_reference/index.html">TIRx API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#kernel-entry-and-coordinates">Kernel Entry and Coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#execution-scopes">Execution Scopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#buffers-and-storage">Buffers and Storage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#layouts">Layouts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#tile-primitives">Tile Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#synchronization-and-hardware-helpers">Synchronization and Hardware Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#pipeline-helpers">Pipeline Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#compile-and-inspect">Compile and Inspect</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_api_reference/index.html#common-pitfalls">Common Pitfalls</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chapter_fa4_source/index.html">Flash Attention 4 Source</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chapter_fa4_source/index.html#reading-guide">Reading guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_fa4_source/index.html#full-source">Full source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chapter_fa4_source/index.html#how-to-run-it">How to run it</a></li>
 </ul>
 </li>
 </ul>
@@ -324,36 +604,98 @@ source maps.</p></li>
 </section>
 
 
-        </div>
-        <div class="side-doc-outline">
-            <div class="side-doc-outline--content"> 
-<div class="localtoc">
-    <p class="caption">
-      <span class="caption-text">Table Of Contents</span>
-    </p>
-    <ul>
-<li><a class="reference internal" href="#">TIRX: Blackwell Tile-Primitive Programming</a><ul>
-<li><a class="reference internal" href="#reading-path">Reading Path</a></li>
-</ul>
-</li>
-</ul>
+                </article>
+              
 
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="right-next"
+       href="chapter_background/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">The GPU Execution and Memory Model</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
+                </footer>
+              
             </div>
-        </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      <div class="clearer"></div>
-    </div><div class="pagenation">
-     <a id="button-next" href="chapter_background/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
-         <i class="pagenation-arrow-R fas fa-arrow-right fa-lg"></i>
-        <div class="pagenation-text">
-            <span class="pagenation-direction">Next</span>
-            <div>1. Blackwell Background</div>
-        </div>
-     </a>
+
+  <div class="sidebar-secondary-item"><div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
   </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-this-book-is-organized">How This Book Is Organized</a><ul class="visible nav section-nav flex-column">
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By TIRx Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright TIRx Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
         
-        </main>
+
+      </main>
     </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
   </body>
 </html>

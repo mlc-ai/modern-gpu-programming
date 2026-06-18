@@ -1,0 +1,794 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Defining a function &#8212; Modern GPU Programming</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=994f5abe" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/demo-embed.css?v=98f4fe8c" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=e645c8fa"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tirx_guide/native_basics/cuda/functions';</script>
+    <script src="../../../_static/demo-embed.js?v=2e476647"></script>
+    <link rel="icon" href="../../../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Parser utilities" href="parser_utils.html" />
+    <link rel="prev" title="Your first kernel" href="first_kernel.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-light" alt="Modern GPU Programming - Home"/>
+    <img src="../../../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-dark pst-js-only" alt="Modern GPU Programming - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../index.html">
+                    Modern GPU Programming
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I — Understanding the GPU</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_background/index.html">The GPU Execution and Memory Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_data_layout/index.html">Deep Dive into Data Layout</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_data_layout/index.html">What Is Data Layout?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_memory/index.html">Memory</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_tmem/index.html">Tensor Memory (TMEM)</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_compute/index.html">Compute</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_async_barriers/index.html">Async Coordination: mbarriers and Phases</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_advanced/index.html">Advanced Topics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_clc/index.html">Cluster Launch Control (CLC)</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../cuda.html">CUDA C++/PTX</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="first_kernel.html">Your first kernel</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">Defining a function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parser_utils.html">Parser utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_types.html">Data types and expressions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="buffers.html">Buffers and memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_flow.html">Control flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="threads_sync.html">CUDA C++/PTX intrinsics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compiling.html">Compiling and inspecting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../layout.html">Tensor Layout</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/reg.html">copy → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/fallback.html">copy → fallback</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tile_primitives/gemm.html">gemm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tile_primitives/gemm_async.html">gemm_async</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/reduction/local.html">reduction → local</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/reduction/shared.html">reduction → shared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tile_primitives/permute_layout.html">permute_layout</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_gemm_basics/index.html">Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_flash_attention/index.html">Flash Attention 4</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part V — Workflow &amp; Practice</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_profiling/index.html">Profiling and Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_ai_assisted/index.html">Writing TIRx Kernels with Agents</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../appendix/index.html">Appendix</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../arch/index.html">Compiler Internals</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../arch/lowering_pipeline.html">TIRx lowering pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tirx.html">tvm.tirx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">tvm.tirx.analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/stmt_functor.html">tvm.tirx.stmt_functor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/transform.html">tvm.tirx.transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/backend.html">tvm.backend.cuda</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_api_reference/index.html">TIRx API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_fa4_source/index.html">Flash Attention 4 Source</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Defining a function</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#declaring-buffer-parameters">Declaring buffer parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-parameter-list-accepts">What the parameter list accepts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symbolic-shapes">Symbolic shapes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#t-prim-func-vs-t-jit"><code class="docutils literal notranslate"><span class="pre">@T.prim_func</span></code> vs <code class="docutils literal notranslate"><span class="pre">@T.jit</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-parameters">Launch parameters</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#t-device-entry"><code class="docutils literal notranslate"><span class="pre">T.device_entry()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-ids">Scope ids</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launching-the-kernel">Launching the kernel</a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="defining-a-function">
+<h1>Defining a function<a class="headerlink" href="#defining-a-function" title="Link to this heading">#</a></h1>
+<p>A kernel is a <code class="docutils literal notranslate"><span class="pre">&#64;T.prim_func</span></code> (like <code class="docutils literal notranslate"><span class="pre">scale</span></code> in <a class="reference internal" href="first_kernel.html"><span class="doc">Your first kernel</span></a>), or a
+<code class="docutils literal notranslate"><span class="pre">&#64;T.jit</span></code> when it has compile-time parameters (see the last section). This
+chapter covers the parameter list — how to declare buffers, what types you can
+pass, symbolic shapes, and the <code class="docutils literal notranslate"><span class="pre">prim_func</span></code> / <code class="docutils literal notranslate"><span class="pre">jit</span></code> distinction.</p>
+<section id="declaring-buffer-parameters">
+<h2>Declaring buffer parameters<a class="headerlink" href="#declaring-buffer-parameters" title="Link to this heading">#</a></h2>
+<p>There are two equivalent ways to take a tensor parameter:</p>
+<ul>
+<li><p><strong>Handle + match_buffer.</strong> Take a <code class="docutils literal notranslate"><span class="pre">T.handle</span></code> (an opaque data pointer) and bind
+it in the body with <code class="docutils literal notranslate"><span class="pre">T.match_buffer</span></code>. This is the explicit form and the one
+that exposes every descriptor field — <code class="docutils literal notranslate"><span class="pre">layout</span></code>, <code class="docutils literal notranslate"><span class="pre">elem_offset</span></code>, <code class="docutils literal notranslate"><span class="pre">scope</span></code>,
+<code class="docutils literal notranslate"><span class="pre">align</span></code>, and symbolic shapes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">(</span><span class="mi">256</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">(</span><span class="mi">256</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>T.Buffer annotation.</strong> Annotate the parameter directly. This is the concise
+form — equivalent to a handle bound with <code class="docutils literal notranslate"><span class="pre">match_buffer</span></code> using the defaults:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="mi">256</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span> <span class="n">B</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="mi">256</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Both give you a <code class="docutils literal notranslate"><span class="pre">Buffer</span></code> you index with <code class="docutils literal notranslate"><span class="pre">A[i]</span></code> / <code class="docutils literal notranslate"><span class="pre">A[i,</span> <span class="pre">j]</span></code>. Use <code class="docutils literal notranslate"><span class="pre">T.Buffer</span></code>
+for the common case; drop to <code class="docutils literal notranslate"><span class="pre">T.handle</span></code> + <code class="docutils literal notranslate"><span class="pre">match_buffer</span></code> when you need a custom
+layout/offset/scope/alignment or a <a class="reference internal" href="#symbolic-shapes"><span class="std std-ref">symbolic shape</span></a>.</p>
+</section>
+<section id="what-the-parameter-list-accepts">
+<h2>What the parameter list accepts<a class="headerlink" href="#what-the-parameter-list-accepts" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">PrimFunc</span></code> parameter is one of the following. The third column is what you
+pass on the Python side when you call the compiled <code class="docutils literal notranslate"><span class="pre">Executable</span></code>:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 40.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Annotation</p></th>
+<th class="head"><p>Is</p></th>
+<th class="head"><p>Pass at call time</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.Buffer((d0,</span> <span class="pre">d1),</span> <span class="pre">dtype)</span></code></p></td>
+<td><p>a tensor parameter (shape + dtype fixed)</p></td>
+<td><p>a tensor on the right device</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.handle</span></code></p></td>
+<td><p>an opaque data pointer (bind with <code class="docutils literal notranslate"><span class="pre">match_buffer</span></code>)</p></td>
+<td><p>a tensor</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T.int32</span></code> / <code class="docutils literal notranslate"><span class="pre">T.float32</span></code> / …</p></td>
+<td><p>a runtime scalar</p></td>
+<td><p>a Python <code class="docutils literal notranslate"><span class="pre">int</span></code> / <code class="docutils literal notranslate"><span class="pre">float</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T.constexpr</span></code> (<code class="docutils literal notranslate"><span class="pre">&#64;T.jit</span></code> only)</p></td>
+<td><p>a compile-time constant</p></td>
+<td><p>supplied to <code class="docutils literal notranslate"><span class="pre">.specialize(...)</span></code>, <strong>not</strong> at the call</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Tensors may be CUDA <code class="docutils literal notranslate"><span class="pre">torch</span></code> tensors (zero-copy via DLPack) or
+<code class="docutils literal notranslate"><span class="pre">tvm.runtime.tensor(...)</span></code>. Arguments are positional and match the parameter
+order. For example, a kernel with a scalar parameter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scal</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">(</span><span class="mi">256</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">(</span><span class="mi">256</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">device_entry</span><span class="p">();</span> <span class="n">bx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="mi">1</span><span class="p">]);</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">256</span><span class="p">])</span>
+    <span class="n">B</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span>
+
+<span class="n">exe</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)</span>        <span class="c1"># pass the scalar as a Python float</span>
+</pre></div>
+</div>
+</section>
+<section id="symbolic-shapes">
+<span id="id1"></span><h2>Symbolic shapes<a class="headerlink" href="#symbolic-shapes" title="Link to this heading">#</a></h2>
+<p>For a size that varies at run time, declare a free symbolic extent with
+<code class="docutils literal notranslate"><span class="pre">T.int32()</span></code> and use it in the buffer shape. Its value is <strong>inferred from the
+passed tensor</strong> at run time, so a <em>single compiled kernel</em> handles any size:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scale_dyn</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>                          <span class="c1"># free symbolic extent</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+    <span class="n">bx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="mi">1</span><span class="p">]);</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>                     <span class="c1"># loop / launch bounds may use n</span>
+        <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="n">exe</span> <span class="o">=</span> <span class="n">tvm</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">tvm</span><span class="o">.</span><span class="n">IRModule</span><span class="p">({</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">scale_dyn</span><span class="p">}),</span>
+                  <span class="n">target</span><span class="o">=</span><span class="n">tvm</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">Target</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">),</span> <span class="n">tir_pipeline</span><span class="o">=</span><span class="s2">&quot;tirx&quot;</span><span class="p">)</span>
+<span class="n">exe</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">))</span>   <span class="c1"># n = 100</span>
+<span class="n">exe</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">))</span>   <span class="c1"># n = 200, same kernel</span>
+</pre></div>
+</div>
+<p>Both <code class="docutils literal notranslate"><span class="pre">match_buffer</span></code> calls share <code class="docutils literal notranslate"><span class="pre">n</span></code>, so the two shapes are constrained equal;
+<code class="docutils literal notranslate"><span class="pre">n</span></code> is never passed explicitly — it comes from the tensor.</p>
+<p>In the generated CUDA, <code class="docutils literal notranslate"><span class="pre">n</span></code> is just a runtime kernel argument; the host launcher
+reads it from the tensor’s shape and passes it, and the loop bound uses it
+(boilerplate elided):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span>
+<span class="n">scale_dyn_kernel</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">__restrict__</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">__restrict__</span><span class="w"> </span><span class="n">B_ptr</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">B_ptr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You passed only two tensors, yet the kernel takes a third argument <code class="docutils literal notranslate"><span class="pre">n</span></code> — who
+supplies it? A compiled <code class="docutils literal notranslate"><span class="pre">Executable</span></code> has two halves: a <strong>host launcher</strong> and
+the <strong>device kernel</strong> above. When you call <code class="docutils literal notranslate"><span class="pre">exe(a,</span> <span class="pre">b)</span></code>, the host launcher
+unpacks the two tensors, reads <code class="docutils literal notranslate"><span class="pre">n</span></code> from <code class="docutils literal notranslate"><span class="pre">a</span></code>’s shape (<code class="docutils literal notranslate"><span class="pre">a</span></code> was matched as
+<code class="docutils literal notranslate"><span class="pre">(n,)</span></code>), checks that <code class="docutils literal notranslate"><span class="pre">b</span></code> agrees, computes the launch configuration, and then
+invokes the device kernel — forwarding the data pointers <strong>and</strong> the resolved
+<code class="docutils literal notranslate"><span class="pre">n</span></code> as explicit arguments. Nothing passes <code class="docutils literal notranslate"><span class="pre">n</span></code> by hand; the host side derives
+it from the tensor metadata. The pass that does this is
+<code class="docutils literal notranslate"><span class="pre">tirx.transform.SplitHostDevice</span></code> (followed by <code class="docutils literal notranslate"><span class="pre">tirx.transform.MakePackedAPI</span></code>).</p>
+</div>
+<p>You can see it in the IR. <strong>Before</strong> the split, the lowered module is a single
+merged function (trimmed):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+    <span class="k">with</span> <span class="n">T</span><span class="o">.</span><span class="n">launch_thread</span><span class="p">(</span><span class="s2">&quot;blockIdx.x&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">T</span><span class="o">.</span><span class="n">launch_thread</span><span class="p">(</span><span class="s2">&quot;threadIdx.x&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>After</strong> <code class="docutils literal notranslate"><span class="pre">SplitHostDevice</span></code>, it is two functions — a device kernel that takes
+<code class="docutils literal notranslate"><span class="pre">n</span></code> as a parameter, and a host <code class="docutils literal notranslate"><span class="pre">main</span></code> that calls it, forwarding <code class="docutils literal notranslate"><span class="pre">n</span></code> (the
+trailing <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1</span></code> are the grid/block launch dims):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>   <span class="c1"># device</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">scale_dyn_kernel</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">),</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="s2">&quot;float32&quot;</span><span class="p">),</span> <span class="n">n</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">int32</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>   <span class="c1"># host</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">int32</span><span class="p">()</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">call_packed</span><span class="p">(</span><span class="s2">&quot;scale_dyn_kernel&quot;</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>   <span class="c1"># n forwarded</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">MakePackedAPI</span></code> then fills in where <code class="docutils literal notranslate"><span class="pre">n</span></code> comes from — reading it from the
+argument’s shape (essentially <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">a.shape[0]</span></code>) — and adds the dtype / shape /
+device checks (e.g. asserting <code class="docutils literal notranslate"><span class="pre">B.shape[0]</span> <span class="pre">==</span> <span class="pre">n</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">Cast</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">,</span> <span class="n">T</span><span class="o">.</span><span class="n">tvm_struct_get</span><span class="p">(</span><span class="n">a_shape</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="s2">&quot;int64&quot;</span><span class="p">))</span>   <span class="c1"># = a.shape[0]</span>
+</pre></div>
+</div>
+</section>
+<section id="t-prim-func-vs-t-jit">
+<h2><code class="docutils literal notranslate"><span class="pre">&#64;T.prim_func</span></code> vs <code class="docutils literal notranslate"><span class="pre">&#64;T.jit</span></code><a class="headerlink" href="#t-prim-func-vs-t-jit" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;T.prim_func</span></code> parses the function immediately into a <code class="docutils literal notranslate"><span class="pre">PrimFunc</span></code>. Sizes are
+whatever you wrote — concrete ints, or runtime-symbolic vars (above).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;T.jit</span></code> <strong>defers</strong> parsing until you call <code class="docutils literal notranslate"><span class="pre">.specialize(**constexpr)</span></code>:
+parameters annotated <code class="docutils literal notranslate"><span class="pre">T.constexpr</span></code> are baked in as compile-time constants and
+the result is an ordinary <code class="docutils literal notranslate"><span class="pre">PrimFunc</span></code>. Use it when you want sizes/flags fixed at
+compile time (so the compiler can unroll, statically size shared memory, etc.).
+Referencing a constexpr inside an annotation (e.g. <code class="docutils literal notranslate"><span class="pre">T.Buffer((N,),</span> <span class="pre">...)</span></code>)
+requires <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">annotations</span></code> at the top of the file.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">A</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span> <span class="n">B</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span>
+        <span class="n">C</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">Buffer</span><span class="p">((</span><span class="n">N</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span> <span class="o">*</span><span class="p">,</span> <span class="n">N</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">constexpr</span><span class="p">):</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">device_entry</span><span class="p">();</span> <span class="n">bx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="mi">1</span><span class="p">]);</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="n">N</span><span class="p">])</span>
+    <span class="n">C</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">+</span> <span class="n">B</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span>
+
+<span class="n">kernel</span> <span class="o">=</span> <span class="n">add</span><span class="o">.</span><span class="n">specialize</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>   <span class="c1"># -&gt; a PrimFunc with N = 256 baked in</span>
+</pre></div>
+</div>
+<p>So: a <strong>symbolic shape</strong> is one kernel whose size is resolved at run time; a
+<strong>constexpr + jit</strong> produces a specialized kernel per value, resolved at compile
+time.</p>
+</section>
+<section id="launch-parameters">
+<h2>Launch parameters<a class="headerlink" href="#launch-parameters" title="Link to this heading">#</a></h2>
+<section id="t-device-entry">
+<h3><code class="docutils literal notranslate"><span class="pre">T.device_entry()</span></code><a class="headerlink" href="#t-device-entry" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">T.device_entry()</span></code> is a flat marker (no <code class="docutils literal notranslate"><span class="pre">with</span></code>) that splits the function:
+everything <strong>before</strong> it is host code — the <code class="docutils literal notranslate"><span class="pre">T.match_buffer</span></code> parameter binding
+and any shape reads — and everything <strong>after</strong> it is the <strong>device kernel body</strong>. It
+lowers to an <code class="docutils literal notranslate"><span class="pre">AttrStmt(&quot;tirx.device_entry&quot;,</span> <span class="pre">...)</span></code> and is exactly the boundary the
+host/device split cuts along (the merged-vs-split modules shown above are split
+here).</p>
+</section>
+<section id="scope-ids">
+<h3>Scope ids<a class="headerlink" href="#scope-ids" title="Link to this heading">#</a></h3>
+<p>After <code class="docutils literal notranslate"><span class="pre">device_entry</span></code> you declare the thread hierarchy with <em>scope-id</em> intrinsics
+— each takes its launch extent as a list:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">T</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+<span class="n">bx</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="n">GM</span><span class="p">,</span> <span class="n">GN</span><span class="p">])</span>     <span class="c1"># blockIdx.x / .y  (grid extents)</span>
+<span class="n">warp_id</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">warp_id</span><span class="p">([</span><span class="mi">4</span><span class="p">])</span>        <span class="c1"># cta -&gt; warp</span>
+<span class="n">lane_id</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">lane_id</span><span class="p">([</span><span class="mi">32</span><span class="p">])</span>       <span class="c1"># warp -&gt; thread</span>
+<span class="n">tx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>         <span class="c1"># cta -&gt; flat thread id</span>
+</pre></div>
+</div>
+<p>Available ids include <code class="docutils literal notranslate"><span class="pre">cta_id</span></code>, <code class="docutils literal notranslate"><span class="pre">thread_id</span></code>, <code class="docutils literal notranslate"><span class="pre">warp_id</span></code>, <code class="docutils literal notranslate"><span class="pre">warpgroup_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">warp_id_in_wg</span></code>, <code class="docutils literal notranslate"><span class="pre">lane_id</span></code>, <code class="docutils literal notranslate"><span class="pre">cluster_id</span></code>, <code class="docutils literal notranslate"><span class="pre">cta_id_in_cluster</span></code>. (The legacy
+<code class="docutils literal notranslate"><span class="pre">T.launch_thread</span></code> exists but native TIRx uses <code class="docutils literal notranslate"><span class="pre">device_entry</span></code> + scope-ids.)</p>
+<p><strong>Thread-block clusters</strong> (Hopper/Blackwell) are declared with <code class="docutils literal notranslate"><span class="pre">cluster_id</span></code>
+(kernel → cluster) and <code class="docutils literal notranslate"><span class="pre">cta_id_in_cluster</span></code> (cluster → cta). The
+<code class="docutils literal notranslate"><span class="pre">cta_id_in_cluster</span></code> extent is the cluster’s CTA dimension; its <code class="docutils literal notranslate"><span class="pre">preferred=</span></code>
+argument sets the <em>preferred</em> cluster dimension (CUDA 12.8+):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cid</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cluster_id</span><span class="p">([</span><span class="n">NUM_CLUSTERS</span><span class="p">])</span>                  <span class="c1"># kernel -&gt; cluster (grid of clusters)</span>
+<span class="n">rank</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id_in_cluster</span><span class="p">([</span><span class="n">CLUSTER_SIZE</span><span class="p">],</span>           <span class="c1"># cluster -&gt; cta</span>
+                           <span class="n">preferred</span><span class="o">=</span><span class="p">[</span><span class="n">CLUSTER_SIZE</span><span class="p">])</span>
+<span class="c1"># -&gt; cluster_dim = CLUSTER_SIZE, preferred_cluster_dim = CLUSTER_SIZE</span>
+</pre></div>
+</div>
+<p>These become the <code class="docutils literal notranslate"><span class="pre">CLUSTER_DIMENSION</span></code> / <code class="docutils literal notranslate"><span class="pre">PREFERRED_CLUSTER_DIMENSION</span></code> launch
+attributes in the config below. (<code class="docutils literal notranslate"><span class="pre">cta_id</span></code> and <code class="docutils literal notranslate"><span class="pre">cta_id_in_cluster</span></code> also take an
+optional <code class="docutils literal notranslate"><span class="pre">preferred=</span></code>.) In the device code they lower to reads of the cluster
+PTX special registers:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">cid</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">   </span><span class="c1">// mov.u32 %0, %clusterid.x;      (cluster index)</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">   </span><span class="c1">// mov.u32 %0, %cluster_ctarank;  (CTA rank within the cluster)</span>
+</pre></div>
+</div>
+<p>The cluster <em>dimensions</em> themselves are not in the device code — they are set at
+launch time via the attributes above.</p>
+</section>
+<section id="launching-the-kernel">
+<h3>Launching the kernel<a class="headerlink" href="#launching-the-kernel" title="Link to this heading">#</a></h3>
+<p>During lowering the compiler <strong>extracts every launch parameter</strong> the kernel uses —
+the grid and block dimensions, plus the dynamic shared-memory size if any — into
+the device function’s <code class="docutils literal notranslate"><span class="pre">tirx.kernel_launch_params</span></code> attribute. For the <code class="docutils literal notranslate"><span class="pre">scale</span></code>
+kernel that list is <code class="docutils literal notranslate"><span class="pre">[&quot;blockIdx.x&quot;,</span> <span class="pre">&quot;threadIdx.x&quot;]</span></code>; the host launcher computes
+each one’s extent (from the scope-id extents and any symbolic shapes) and supplies
+them alongside the kernel arguments.</p>
+<p>The block size also drives the kernel’s <code class="docutils literal notranslate"><span class="pre">__launch_bounds__</span></code>. The first argument
+(max threads per block) is set automatically from the thread extent. To also set
+the second argument — the minimum blocks per SM, an occupancy hint — add
+<code class="docutils literal notranslate"><span class="pre">T.attr({&quot;tirx.launch_bounds_min_blocks_per_sm&quot;:</span> <span class="pre">N})</span></code> in the device region (note:
+<code class="docutils literal notranslate"><span class="pre">T.attr</span></code>, not <code class="docutils literal notranslate"><span class="pre">func_attr</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">T</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+<span class="n">T</span><span class="o">.</span><span class="n">attr</span><span class="p">({</span><span class="s2">&quot;tirx.launch_bounds_min_blocks_per_sm&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>   <span class="c1"># second launch-bounds arg</span>
+<span class="n">bx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="mi">1</span><span class="p">]);</span> <span class="n">tx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">256</span><span class="p">])</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__launch_bounds__</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="n">scale_kernel</span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Without the attr the second argument is omitted (just <code class="docutils literal notranslate"><span class="pre">__launch_bounds__(256)</span></code>).</p>
+<p>At run time the kernel is launched through the <strong>CUDA Driver API</strong>. TVM’s CUDA
+runtime loads the module (<code class="docutils literal notranslate"><span class="pre">cuModuleLoadData</span></code>), fetches the function
+(<code class="docutils literal notranslate"><span class="pre">cuModuleGetFunction</span></code>, cached), and calls <code class="docutils literal notranslate"><span class="pre">cuLaunchKernelEx</span></code> with a
+<code class="docutils literal notranslate"><span class="pre">CUlaunchConfig</span></code>. Besides the grid/block dims, dynamic shared size, and stream,
+the config carries a list of launch <em>attributes</em> — the thread-block <strong>cluster
+dimension</strong> and <strong>preferred cluster dimension</strong> (Hopper/Blackwell), plus optional
+programmatic-dependent-launch and cooperative-launch flags. From
+<code class="docutils literal notranslate"><span class="pre">src/backend/cuda/runtime/cuda_module.cc</span></code>:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">CUlaunchAttribute</span><span class="o">&gt;</span><span class="w"> </span><span class="n">attrs</span><span class="p">;</span>
+
+<span class="c1">// 1) thread-block cluster dimension</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">wl</span><span class="p">.</span><span class="n">cluster_dim</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">cluster_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">cluster_dim</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">CUlaunchAttribute</span><span class="w"> </span><span class="n">attr</span><span class="p">{};</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION</span><span class="p">;</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">clusterDim</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">cluster_dim</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">clusterDim</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">cluster_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">clusterDim</span><span class="p">.</span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">cluster_dim</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="w">  </span><span class="n">attrs</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">attr</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="c1">// 1b) preferred cluster dimension (CUDA 12.8+); (2) programmatic stream</span>
+<span class="c1">//     serialization and (3) cooperative launch are appended the same way</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">wl</span><span class="p">.</span><span class="n">preferred_cluster_dim</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">preferred_cluster_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">||</span>
+<span class="w">    </span><span class="n">wl</span><span class="p">.</span><span class="n">preferred_cluster_dim</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">CUlaunchAttribute</span><span class="w"> </span><span class="n">attr</span><span class="p">{};</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CU_LAUNCH_ATTRIBUTE_PREFERRED_CLUSTER_DIMENSION</span><span class="p">;</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">clusterDim</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">preferred_cluster_dim</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">clusterDim</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">preferred_cluster_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">attr</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">clusterDim</span><span class="p">.</span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">preferred_cluster_dim</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="w">  </span><span class="n">attrs</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">attr</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">CUlaunchConfig</span><span class="w"> </span><span class="n">config</span><span class="p">{};</span>
+<span class="n">config</span><span class="p">.</span><span class="n">gridDimX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">grid_dim</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">gridDimY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">grid_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">gridDimZ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">grid_dim</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">blockDimX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">block_dim</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">blockDimY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">block_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">blockDimZ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">block_dim</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">sharedMemBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wl</span><span class="p">.</span><span class="n">dyn_shmem_size</span><span class="p">;</span>
+<span class="n">config</span><span class="p">.</span><span class="n">hStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">strm</span><span class="p">;</span>
+<span class="n">config</span><span class="p">.</span><span class="n">attrs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attrs</span><span class="p">.</span><span class="n">empty</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nb">nullptr</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">attrs</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+<span class="n">config</span><span class="p">.</span><span class="n">numAttrs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">attrs</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="n">CUresult</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuLaunchKernelEx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">fcache_</span><span class="p">[</span><span class="n">device_id</span><span class="p">],</span><span class="w"> </span><span class="n">void_args</span><span class="p">,</span><span class="w"> </span><span class="nb">nullptr</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">wl</span></code> is the resolved workload (the grid/block/cluster extents derived from
+the launch parameters), <code class="docutils literal notranslate"><span class="pre">fcache_[device_id]</span></code> is the cached <code class="docutils literal notranslate"><span class="pre">CUfunction</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">void_args</span></code> are the kernel arguments — the data pointers plus scalars like the
+symbolic <code class="docutils literal notranslate"><span class="pre">n</span></code>.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="first_kernel.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Your first kernel</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="parser_utils.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Parser utilities</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"><div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#declaring-buffer-parameters">Declaring buffer parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-parameter-list-accepts">What the parameter list accepts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#symbolic-shapes">Symbolic shapes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#t-prim-func-vs-t-jit"><code class="docutils literal notranslate"><span class="pre">@T.prim_func</span></code> vs <code class="docutils literal notranslate"><span class="pre">@T.jit</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-parameters">Launch parameters</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#t-device-entry"><code class="docutils literal notranslate"><span class="pre">T.device_entry()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-ids">Scope ids</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launching-the-kernel">Launching the kernel</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By TIRx Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright TIRx Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

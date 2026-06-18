@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEMM Data Pipeline on Blackwell</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 14px 28px; max-width: 1300px; margin: 0 auto; }
+
+  /* ── Pipeline (top) ──────────────────────────────────── */
+  .pipeline {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 10px auto 14px; flex-wrap: nowrap;
+  }
+  .stage {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; flex-shrink: 0;
+  }
+  .stage-box {
+    padding: 10px 12px; border-radius: 8px; text-align: center;
+    font-weight: 700; font-size: 13px; border: 2.5px solid;
+    width: 80px; height: 46px; cursor: pointer;
+    transition: all .3s ease;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .stage-box.dimmed { opacity: 0.2; }
+  .stage-sub { font-size: 10px; font-weight: 600; color: var(--dim); }
+
+  .s-gmem  { border-color: #6b7280; background: #f3f4f6; color: #374151; }
+  .s-smem  { border-color: #8b5cf6; background: #ede9fe; color: #5b21b6; }
+  .s-tmem  { border-color: #d97706; background: #fef3c7; color: #92400e; }
+  .s-reg   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+
+  .arrow-h {
+    display: flex; align-items: center; flex-direction: column;
+    gap: 2px; flex-shrink: 0; padding: 0 2px;
+  }
+  .arrow-h svg { width: 32px; height: 16px; }
+  .p-arrow-label {
+    font-size: 9px; font-weight: 700; white-space: nowrap;
+    cursor: pointer; transition: all .2s;
+    padding: 2px 5px; border-radius: 4px;
+    background: rgba(0,0,0,.05);
+  }
+  .p-arrow-label:hover { background: rgba(0,0,0,.1); }
+  .p-arrow-label.c-blue   { color: #3b82f6; }
+  .p-arrow-label.c-green  { color: #059669; }
+  .p-arrow-label.c-amber  { color: #d97706; }
+  .p-arrow-label.c-red    { color: #dc2626; }
+
+  /* ── Architecture (bottom) ───────────────────────────── */
+  .arch-wrap {
+    max-width: 860px; margin: 0 auto; position: relative;
+  }
+  .sm-box {
+    border: 2.5px solid #334155; border-radius: 12px;
+    background: #f8fafc; padding: 14px 18px 28px;
+    position: relative; margin-bottom: 8px;
+  }
+  .sm-label {
+    position: absolute; top: -10px; left: 18px;
+    background: #334155; color: #fff; font-size: 10px; font-weight: 700;
+    padding: 1px 10px; border-radius: 4px; letter-spacing: .04em;
+  }
+
+  .hw-unit {
+    border: 2px solid; border-radius: 7px; padding: 7px 10px;
+    text-align: center; cursor: pointer; transition: all .2s;
+  }
+  .hw-unit.dimmed { opacity: 0.15; }
+  .hw-name { font-size: 11px; font-weight: 700; margin-bottom: 0; }
+  .hw-sub  { font-size: 8.5px; color: #64748b; }
+
+  .u-tc   { border-color: #059669; background: #dcfce7; }
+  .u-tc .hw-name { color: #065f46; }
+  .u-smem { border-color: #8b5cf6; background: #ede9fe; }
+  .u-smem .hw-name { color: #5b21b6; }
+  .u-tmem { border-color: #d97706; background: #fef3c7; }
+  .u-tmem .hw-name { color: #92400e; }
+  .u-rf   { border-color: #dc2626; background: #fee2e2; }
+  .u-rf .hw-name { color: #991b1b; }
+  .u-tma  { border-color: #3b82f6; background: #dbeafe; }
+  .u-tma .hw-name { color: #1e40af; }
+  .u-cuda { border-color: #6b7280; background: #f3f4f6; }
+  .u-cuda .hw-name { color: #374151; }
+
+  .row-compute {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    margin-bottom: 28px;
+  }
+  .row-mem {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    margin-bottom: 28px;
+  }
+  .row-tma {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+  }
+
+  .hbm-box {
+    border: 2.5px solid #6b7280; border-radius: 8px;
+    background: #f3f4f6; color: #374151; padding: 7px 14px;
+    text-align: center; transition: opacity .2s;
+  }
+  .hbm-box.dimmed { opacity: 0.15; }
+  .hbm-name { font-size: 12px; font-weight: 700; }
+
+  .svg-overlay {
+    position: absolute; top: 0; left: 0;
+    pointer-events: none; z-index: 10;
+  }
+  .svg-overlay .arrow-label {
+    font-family: 'SF Mono','Fira Code',monospace;
+    font-size: 8px; font-weight: 600;
+  }
+
+  /* ── Detail panel ────────────────────────────────────── */
+  .detail-panel {
+    max-width: 860px; margin: 8px auto 0;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); padding: 8px 14px;
+    min-height: 36px; transition: border-color .3s;
+  }
+  .detail-panel .dp-title { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+  .detail-panel .dp-body { font-size: 11px; line-height: 1.5; color: #475569; }
+  .detail-panel.empty .dp-body { color: #94a3b8; font-size: 10px; }
+
+  .gpu-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 10px;
+    align-items: stretch; margin-bottom: 8px;
+  }
+  .sm-ghost {
+    border: 2.5px dashed #94a3b8; border-radius: 12px;
+    background: #f1f5f9; min-width: 60px;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 13px; font-weight: 700;
+    position: relative;
+  }
+  .sm-ghost-label {
+    position: absolute; top: -10px; left: 10px;
+    background: #94a3b8; color: #fff; font-size: 9px; font-weight: 700;
+    padding: 1px 8px; border-radius: 4px; letter-spacing: .04em;
+  }
+</style>
+</head>
+<body>
+  <h1>GEMM Data Pipeline on Blackwell</h1>
+  <p class="sub" style="margin-bottom:4px;">D = A × B — click an action to see the data path on the architecture</p>
+
+  <!-- ── Pipeline ──────────────────────────────────────── -->
+  <div class="pipeline">
+    <div class="stage">
+      <div class="stage-box s-gmem" data-stage="gmem1">GMEM<br><span style="font-size:11px;font-weight:500;">A, B</span></div>
+    </div>
+    <div class="arrow-h">
+      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#3b82f6" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#3b82f6"/></svg>
+      <div class="p-arrow-label c-blue" data-action="tma_load">TMA load</div>
+    </div>
+    <div class="stage">
+      <div class="stage-box s-smem" data-stage="smem1">SMEM</div>
+    </div>
+    <div class="arrow-h">
+      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#059669" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#059669"/></svg>
+      <div class="p-arrow-label c-green" data-action="mma">tcgen05.mma</div>
+    </div>
+    <div class="stage">
+      <div class="stage-box s-tmem" data-stage="tmem">TMEM<br><span style="font-size:11px;font-weight:500;">accum</span></div>
+    </div>
+    <div class="arrow-h">
+      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#d97706" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#d97706"/></svg>
+      <div class="p-arrow-label c-amber" data-action="ld">tcgen05.ld</div>
+    </div>
+    <div class="stage">
+      <div class="stage-box s-reg" data-stage="reg">Reg<br><span style="font-size:11px;font-weight:500;">cast</span></div>
+    </div>
+    <div class="arrow-h">
+      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#dc2626" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#dc2626"/></svg>
+      <div class="p-arrow-label c-red" data-action="store">store</div>
+    </div>
+    <div class="stage">
+      <div class="stage-box s-smem" data-stage="smem2">SMEM</div>
+    </div>
+    <div class="arrow-h">
+      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#3b82f6" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#3b82f6"/></svg>
+      <div class="p-arrow-label c-blue" data-action="tma_store">TMA store</div>
+    </div>
+    <div class="stage">
+      <div class="stage-box s-gmem" data-stage="gmem2">GMEM<br><span style="font-size:11px;font-weight:500;">D</span></div>
+    </div>
+  </div>
+
+  <div style="max-width:860px; margin:2px auto 6px; display:flex; align-items:center; gap:10px;">
+    <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+    <span style="font-size:10px; font-weight:600; color:#94a3b8; letter-spacing:.05em; text-transform:uppercase;">Blackwell Architecture</span>
+    <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+  </div>
+
+  <!-- ── Architecture diagram ──────────────────────────── -->
+  <div class="arch-wrap" id="archWrap">
+    <div class="gpu-row">
+    <div class="sm-box" id="smBox" style="margin-bottom:0;">
+      <div class="sm-label">Streaming Multiprocessor (SM)</div>
+
+      <div class="row-compute">
+        <div class="hw-unit u-tc" data-unit="tc" id="boxTC">
+          <div class="hw-name">Tensor Core (tcgen05)</div>
+          <div class="hw-sub">5th-gen MMA</div>
+        </div>
+        <div></div>
+        <div class="hw-unit u-cuda" data-unit="cuda" id="boxCUDA">
+          <div class="hw-name">CUDA Core</div>
+          <div class="hw-sub">FP/INT units</div>
+        </div>
+      </div>
+
+      <div class="row-mem">
+        <div class="hw-unit u-smem" data-unit="smem" id="boxSMEM">
+          <div class="hw-name">Shared Memory (SMEM)</div>
+          <div class="hw-sub">228 KB per SM</div>
+        </div>
+        <div class="hw-unit u-tmem" data-unit="tmem" id="boxTMEM">
+          <div class="hw-name">Tensor Memory (TMEM)</div>
+          <div class="hw-sub">128 lanes</div>
+        </div>
+        <div class="hw-unit u-rf" data-unit="rf" id="boxRF">
+          <div class="hw-name">Register File</div>
+        </div>
+      </div>
+
+      <div class="row-tma">
+        <div class="hw-unit u-tma" data-unit="tma" id="boxTMA">
+          <div class="hw-name">TMA Engine</div>
+          <div class="hw-sub">Data Mover</div>
+        </div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+    <div class="sm-ghost">
+      <div class="sm-ghost-label">SM ...</div>
+      &times; N
+    </div>
+    </div>
+
+    <div class="hbm-box" id="boxHBM">
+      <div class="hbm-name">Global Memory (GMEM)</div>
+    </div>
+
+    <!-- SVG overlay for data path arrows -->
+    <svg class="svg-overlay" id="arrowSvg" style="display:none;">
+      <defs>
+        <marker id="ah-blue" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+          <polygon points="0 0,6 2,0 4" fill="#3b82f6"/>
+        </marker>
+        <marker id="ah-green" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+          <polygon points="0 0,6 2,0 4" fill="#059669"/>
+        </marker>
+        <marker id="ah-amber" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+          <polygon points="0 0,6 2,0 4" fill="#d97706"/>
+        </marker>
+        <marker id="ah-red" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+          <polygon points="0 0,6 2,0 4" fill="#dc2626"/>
+        </marker>
+      </defs>
+      <!-- Load path — hidden by default -->
+      <path id="arr1" class="arch-arrow" data-arrows="tma_load" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)" style="display:none;"/>
+      <text id="lbl1" class="arrow-label" fill="#3b82f6" style="display:none;"></text>
+      <path id="arr2" class="arch-arrow" data-arrows="tma_load" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)" style="display:none;"/>
+      <text id="lbl2" class="arrow-label" fill="#3b82f6" style="display:none;"></text>
+      <path id="arr3" class="arch-arrow" data-arrows="mma" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#ah-green)" style="display:none;"/>
+      <text id="lbl3" class="arrow-label" fill="#059669" style="display:none;"></text>
+      <path id="arr4" class="arch-arrow" data-arrows="mma" stroke="#d97706" stroke-width="2" fill="none" marker-end="url(#ah-amber)" style="display:none;"/>
+      <text id="lbl4" class="arrow-label" fill="#d97706" style="display:none;"></text>
+      <path id="arr5" class="arch-arrow" data-arrows="ld" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#ah-red)" style="display:none;"/>
+      <text id="lbl5" class="arrow-label" fill="#dc2626" style="display:none;"></text>
+      <!-- RF → SMEM (store) — hidden by default -->
+      <path id="arr6" class="arch-arrow" data-arrows="store" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#ah-red)" style="display:none;"/>
+      <text id="lbl6" class="arrow-label" fill="#dc2626" style="display:none;"></text>
+      <!-- Store path (dashed) — hidden by default -->
+      <path id="arr7" class="arch-arrow" data-arrows="tma_store" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)" style="display:none;"/>
+      <text id="lbl7" class="arrow-label" fill="#3b82f6" style="display:none;"></text>
+      <path id="arr8" class="arch-arrow" data-arrows="tma_store" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)" style="display:none;"/>
+      <text id="lbl8" class="arrow-label" fill="#3b82f6" style="display:none;"></text>
+    </svg>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-panel empty" id="detailPanel">
+    <div class="dp-title" id="dpTitle"></div>
+    <div class="dp-body" id="dpBody">Click an action in the pipeline to highlight the data path.</div>
+  </div>
+
+<script>
+(function() {
+  /* ── Action definitions ──────────────────────────────── */
+  var actions = {
+    tma_load:  { title: 'TMA Load — cp.async.bulk.tensor', color: '#3b82f6',
+      body: 'TMA engine copies a tile from GMEM to SMEM. One thread issues the instruction; HW handles address calculation, swizzling, and async transfer.',
+      pipeStages: ['gmem1', 'smem1'],
+      archUnits: ['boxHBM', 'boxTMA', 'boxSMEM'],
+      archArrows: 'tma_load' },
+    mma:       { title: 'tcgen05.mma — Tensor Core MMA', color: '#059669',
+      body: 'Tensor Core reads A/B tiles from SMEM and accumulates C += A × B into TMEM. Single warp issues; HW distributes across 128 TMEM lanes.',
+      pipeStages: ['smem1', 'tmem'],
+      archUnits: ['boxSMEM', 'boxTC', 'boxTMEM'],
+      archArrows: 'mma' },
+    ld:        { title: 'tcgen05.ld — Load from Tensor Memory', color: '#d97706',
+      body: 'Reads accumulated fp32 results from TMEM into registers for writeback. Each thread gets its slice of the output tile.',
+      pipeStages: ['tmem', 'reg'],
+      archUnits: ['boxTMEM', 'boxRF'],
+      archArrows: 'ld' },
+    store:     { title: 'Store — Cast & Write to SMEM', color: '#dc2626',
+      body: 'CUDA cores cast fp32 → fp16 in registers, then store results to SMEM writeback buffer for TMA to flush to GMEM.',
+      pipeStages: ['reg', 'smem2'],
+      archUnits: ['boxRF', 'boxCUDA', 'boxSMEM'],
+      archArrows: 'store' },
+    tma_store: { title: 'TMA Store — cp.async.bulk.tensor', color: '#3b82f6',
+      body: 'TMA engine copies the fp16 result tile from SMEM writeback buffer back to GMEM. Async — overlaps with next iteration.',
+      pipeStages: ['smem2', 'gmem2'],
+      archUnits: ['boxSMEM', 'boxTMA', 'boxHBM'],
+      archArrows: 'tma_store' }
+  };
+
+  var panel = document.getElementById('detailPanel');
+  var titleEl = document.getElementById('dpTitle');
+  var bodyEl = document.getElementById('dpBody');
+
+  var pipeBoxes = document.querySelectorAll('.stage-box');
+  var actionLabels = document.querySelectorAll('.p-arrow-label[data-action]');
+  var archUnits = document.querySelectorAll('.hw-unit');
+  var hbmBox = document.getElementById('boxHBM');
+  var archArrows = document.querySelectorAll('.arch-arrow');
+  var archLabels = document.querySelectorAll('.svg-overlay .arrow-label');
+  var activeAction = null;
+
+  function clearAll() {
+    activeAction = null;
+    pipeBoxes.forEach(function(b) { b.classList.remove('selected', 'dimmed'); });
+    actionLabels.forEach(function(l) { l.style.fontWeight = ''; });
+    archUnits.forEach(function(u) { u.classList.remove('selected', 'dimmed'); });
+    hbmBox.classList.remove('dimmed');
+    archArrows.forEach(function(a) { a.style.opacity = ''; a.style.display = 'none'; });
+    archLabels.forEach(function(l) { l.style.opacity = ''; l.style.display = 'none'; });
+    panel.classList.add('empty');
+    panel.style.borderColor = '';
+    titleEl.textContent = '';
+    bodyEl.innerHTML = 'Click an action in the pipeline to highlight the data path.';
+  }
+
+  function showAction(key) {
+    if (key === activeAction) { clearAll(); return; }
+    clearAll();
+    activeAction = key;
+    var d = actions[key];
+    if (!d) return;
+
+    /* Detail panel */
+    panel.classList.remove('empty');
+    panel.style.borderColor = d.color;
+    titleEl.textContent = d.title;
+    titleEl.style.color = d.color;
+    bodyEl.textContent = d.body;
+
+    /* Pipeline: highlight involved stages, dim others */
+    pipeBoxes.forEach(function(b) {
+      if (d.pipeStages.indexOf(b.dataset.stage) >= 0) {
+        b.classList.add('selected');
+      } else {
+        b.classList.add('dimmed');
+      }
+    });
+
+    /* Architecture: highlight involved units, dim others */
+    var unitSet = d.archUnits;
+    archUnits.forEach(function(u) {
+      if (unitSet.indexOf(u.id) >= 0) {
+        u.classList.add('selected');
+      } else {
+        u.classList.add('dimmed');
+      }
+    });
+    if (unitSet.indexOf('boxHBM') < 0) {
+      hbmBox.classList.add('dimmed');
+    }
+
+    /* Architecture: show only matching arrows */
+    if (d.archArrows) {
+      archArrows.forEach(function(a) {
+        if (a.dataset.arrows === d.archArrows) {
+          a.style.display = '';
+          var lblId = 'lbl' + a.id.replace('arr', '');
+          var lbl = document.getElementById(lblId);
+          if (lbl) lbl.style.display = '';
+        }
+      });
+    }
+  }
+
+  actionLabels.forEach(function(el) {
+    el.addEventListener('click', function() {
+      showAction(el.dataset.action);
+    });
+  });
+
+  pipeBoxes.forEach(function(el) {
+    el.addEventListener('click', function() {
+      clearAll();
+    });
+  });
+
+  archUnits.forEach(function(el) {
+    el.addEventListener('click', function() {
+      clearAll();
+    });
+  });
+
+  /* ── Arrow positioning ───────────────────────────────── */
+  function positionArrows() {
+    var svg = document.getElementById('arrowSvg');
+    var wrap = document.getElementById('archWrap');
+    var wr = wrap.getBoundingClientRect();
+
+    svg.style.display = 'block';
+    svg.setAttribute('width', wr.width);
+    svg.setAttribute('height', wr.height);
+
+    function rel(el) {
+      var r = el.getBoundingClientRect();
+      return {
+        top: r.top - wr.top, bottom: r.bottom - wr.top,
+        left: r.left - wr.left, right: r.right - wr.left,
+        cx: (r.left + r.right) / 2 - wr.left,
+        cy: (r.top + r.bottom) / 2 - wr.top
+      };
+    }
+
+    var hbm  = rel(document.getElementById('boxHBM'));
+    var tma  = rel(document.getElementById('boxTMA'));
+    var smem = rel(document.getElementById('boxSMEM'));
+    var tmem = rel(document.getElementById('boxTMEM'));
+    var rf   = rel(document.getElementById('boxRF'));
+    var tc   = rel(document.getElementById('boxTC'));
+
+    var G = 4;
+
+    /* 1. HBM → TMA */
+    setLine('arr1', tma.cx, hbm.top - G, tma.cx, tma.bottom + G);
+    setLabel('lbl1', '', 0, 0);
+
+    /* 2. TMA → SMEM */
+    setLine('arr2', tma.cx, tma.top - G, smem.cx, smem.bottom + G);
+    setLabel('lbl2', 'cp.async.bulk', tma.cx - 5, (tma.top + smem.bottom) / 2, 'end');
+
+    /* 3. SMEM → TC */
+    setLine('arr3', smem.cx, smem.top - G, smem.cx, tc.bottom + G);
+    setLabel('lbl3', 'tcgen05.mma', smem.cx + 5, (smem.top + tc.bottom) / 2);
+
+    /* 4. TC → TMEM (elbow) */
+    setElbow('arr4', tc.right + G, tc.cy, tc.right + G + 8, tc.cy, tmem.cx, tc.cy, tmem.cx, tmem.top - G);
+    setLabel('lbl4', 'accumulate', (tc.right + tmem.cx) / 2 + 8, tc.cy - 6, 'middle');
+
+    /* 5. TMEM → RF (elbow below) */
+    var y5 = tmem.bottom + 18;
+    setElbow('arr5', tmem.cx, tmem.bottom + G, tmem.cx, y5, rf.cx, y5, rf.cx, rf.bottom + G);
+    setLabel('lbl5', 'tcgen05.ld', (tmem.cx + rf.cx) / 2, y5 + 10, 'middle');
+
+    /* 6. RF → SMEM (rectangular elbow below tcgen05.ld) */
+    var y6 = y5 + 22;
+    setElbow('arr6', rf.cx, rf.bottom + G, rf.cx, y6, smem.cx, y6, smem.cx, smem.bottom + G);
+    setLabel('lbl6', 'store', (rf.cx + smem.cx) / 2, y6 + 10, 'middle');
+
+    /* Store path — centered like load path, label on right */
+
+    /* 7. SMEM → TMA */
+    setLine('arr7', smem.cx, smem.bottom + G, tma.cx, tma.top - G);
+    setLabel('lbl7', 'cp.async.bulk', smem.cx + 6, (smem.bottom + tma.top) / 2);
+
+    /* 8. TMA → HBM */
+    setLine('arr8', tma.cx, tma.bottom + G, tma.cx, hbm.top - G);
+    setLabel('lbl8', '', 0, 0);
+  }
+
+  function setLine(id, x1, y1, x2, y2) {
+    document.getElementById(id).setAttribute('d', 'M'+x1+','+y1+' L'+x2+','+y2);
+  }
+  function setElbow(id, x1, y1, x2, y2, x3, y3, x4, y4) {
+    document.getElementById(id).setAttribute('d',
+      'M'+x1+','+y1+' L'+x2+','+y2+' L'+x3+','+y3+' L'+x4+','+y4);
+  }
+  function setLabel(id, text, x, y, anchor) {
+    var el = document.getElementById(id);
+    el.textContent = text;
+    el.setAttribute('x', x);
+    el.setAttribute('y', y);
+    el.setAttribute('text-anchor', anchor || 'start');
+  }
+
+  requestAnimationFrame(function() {
+    requestAnimationFrame(positionArrows);
+  });
+  window.addEventListener('resize', positionArrows);
+})();
+</script>
+</body>
+</html>

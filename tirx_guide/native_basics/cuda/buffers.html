@@ -1,0 +1,937 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Buffers and memory &#8212; Modern GPU Programming</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=994f5abe" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/demo-embed.css?v=98f4fe8c" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=e645c8fa"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tirx_guide/native_basics/cuda/buffers';</script>
+    <script src="../../../_static/demo-embed.js?v=2e476647"></script>
+    <link rel="icon" href="../../../_static/mlc-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Control flow" href="control_flow.html" />
+    <link rel="prev" title="Data types and expressions" href="data_types.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-light" alt="Modern GPU Programming - Home"/>
+    <img src="../../../_static/mlc-logo-with-text-landscape.svg" class="logo__image only-dark pst-js-only" alt="Modern GPU Programming - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../index.html">
+                    Modern GPU Programming
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I — Understanding the GPU</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_background/index.html">The GPU Execution and Memory Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_data_layout/index.html">Deep Dive into Data Layout</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_data_layout/index.html">What Is Data Layout?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_memory/index.html">Memory</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_tmem/index.html">Tensor Memory (TMEM)</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_compute/index.html">Compute</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_async_barriers/index.html">Async Coordination: mbarriers and Phases</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../part_advanced/index.html">Advanced Topics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../chapter_clc/index.html">Cluster Launch Control (CLC)</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../cuda.html">CUDA C++/PTX</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="first_kernel.html">Your first kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="functions.html">Defining a function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parser_utils.html">Parser utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_types.html">Data types and expressions</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">Buffers and memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_flow.html">Control flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="threads_sync.html">CUDA C++/PTX intrinsics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compiling.html">Compiling and inspecting</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../layout.html">Tensor Layout</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/reg.html">copy → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy/fallback.html">copy → fallback</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tile_primitives/gemm.html">gemm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tile_primitives/gemm_async.html">gemm_async</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/reduction/local.html">reduction → local</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/reduction/shared.html">reduction → shared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tile_primitives/permute_layout.html">permute_layout</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_gemm_basics/index.html">Building a Tiled GEMM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_flash_attention/index.html">Flash Attention 4</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part V — Workflow &amp; Practice</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_profiling/index.html">Profiling and Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_ai_assisted/index.html">Writing TIRx Kernels with Agents</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../appendix/index.html">Appendix</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../arch/index.html">Compiler Internals</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../arch/lowering_pipeline.html">TIRx lowering pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tirx.html">tvm.tirx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">tvm.tirx.analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/stmt_functor.html">tvm.tirx.stmt_functor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/transform.html">tvm.tirx.transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/backend.html">tvm.backend.cuda</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_api_reference/index.html">TIRx API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../chapter_fa4_source/index.html">Flash Attention 4 Source</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Buffers and memory</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#declaring-buffers">Declaring buffers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-memory">Shared memory</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#static">Static</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dynamic">Dynamic</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pool-sugar">Pool sugar</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#registers">Registers</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scalar">Scalar</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#let"><code class="docutils literal notranslate"><span class="pre">let</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tensor-memory">Tensor memory</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pool">Pool</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#buffer-apis">Buffer APIs</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="buffers-and-memory">
+<h1>Buffers and memory<a class="headerlink" href="#buffers-and-memory" title="Link to this heading">#</a></h1>
+<p>Parameter buffers are bound with <code class="docutils literal notranslate"><span class="pre">T.match_buffer</span></code>; scratch buffers are created
+in the body with one of two declaration APIs (below). Index a buffer with
+<code class="docutils literal notranslate"><span class="pre">A[i,</span> <span class="pre">j]</span></code>, slice it with <code class="docutils literal notranslate"><span class="pre">A[m0:m0+BM,</span> <span class="pre">0:BK]</span></code> (a <code class="docutils literal notranslate"><span class="pre">BufferRegion</span></code>), and take a
+pointer with <code class="docutils literal notranslate"><span class="pre">A.ptr_to([i,</span> <span class="pre">j])</span></code> or the raw data pointer <code class="docutils literal notranslate"><span class="pre">A.data</span></code>.</p>
+<section id="declaring-buffers">
+<h2>Declaring buffers<a class="headerlink" href="#declaring-buffers" title="Link to this heading">#</a></h2>
+<p>Two fundamental APIs create a buffer:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">T.alloc_buffer(shape,</span> <span class="pre">dtype,</span> <span class="pre">scope=...,</span> <span class="pre">...)</span></code> — <strong>allocates new storage</strong>
+(emits an <code class="docutils literal notranslate"><span class="pre">AllocBuffer</span></code> node) and returns the <code class="docutils literal notranslate"><span class="pre">Buffer</span></code>. <code class="docutils literal notranslate"><span class="pre">T.alloc_shared</span></code> /
+<code class="docutils literal notranslate"><span class="pre">T.alloc_local</span></code> are just <code class="docutils literal notranslate"><span class="pre">alloc_buffer</span></code> with <code class="docutils literal notranslate"><span class="pre">scope=&quot;shared&quot;</span></code> /
+<code class="docutils literal notranslate"><span class="pre">scope=&quot;local&quot;</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T.decl_buffer(shape,</span> <span class="pre">dtype,</span> <span class="pre">data=...,</span> <span class="pre">...)</span></code> — <strong>declares a view</strong> over an
+existing pointer <code class="docutils literal notranslate"><span class="pre">data</span></code> (no allocation); use it to alias or reinterpret
+storage — a sub-region of a pool, or a tensor-memory address. With <code class="docutils literal notranslate"><span class="pre">data=None</span></code>
+it allocates, like <code class="docutils literal notranslate"><span class="pre">alloc_buffer</span></code>.</p></li>
+</ul>
+<p>A buffer’s <code class="docutils literal notranslate"><span class="pre">data</span></code> pointer is an immutable <code class="docutils literal notranslate"><span class="pre">Var</span></code> (<code class="docutils literal notranslate"><span class="pre">alloc_buffer</span></code> defines it;
+<code class="docutils literal notranslate"><span class="pre">decl_buffer</span></code> takes one). To back a buffer with a pointer <em>expression</em>, bind it
+first — see <a class="reference internal" href="data_types.html"><span class="doc">Data types and expressions</span></a>.</p>
+<p>Both share one descriptor; the parameters that matter most:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 28.0%" />
+<col style="width: 72.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dtype</span></code></p></td>
+<td><p>element type — <code class="docutils literal notranslate"><span class="pre">&quot;float32&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;float16&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;float4_e2m1fn&quot;</span></code>, …</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">shape</span></code></p></td>
+<td><p>logical shape (a tuple of extents)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">layout</span></code></p></td>
+<td><p>physical mapping (<a class="reference internal" href="../../layout.html"><span class="doc">TileLayout</span></a>); <code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code> = dense
+row-major</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elem_offset</span></code> / <code class="docutils literal notranslate"><span class="pre">allocated_addr</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">elem_offset</span></code> (or <code class="docutils literal notranslate"><span class="pre">byte_offset</span></code>) places a <em>view</em> at an offset into
+<code class="docutils literal notranslate"><span class="pre">data</span></code>; <code class="docutils literal notranslate"><span class="pre">allocated_addr</span></code> carries a pre-assigned address (tensor memory)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">align</span></code></p></td>
+<td><p>alignment of the data pointer, in bytes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">scope</span></code> argument selects the memory space:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 26.0%" />
+<col style="width: 22.0%" />
+<col style="width: 52.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Scope</p></th>
+<th class="head"><p>Shorthand</p></th>
+<th class="head"><p>Memory</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;global&quot;</span></code></p></td>
+<td><p>(default)</p></td>
+<td><p>device global memory</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;shared&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">T.alloc_shared</span></code></p></td>
+<td><p>static shared memory (<code class="docutils literal notranslate"><span class="pre">__shared__</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;shared.dyn&quot;</span></code></p></td>
+<td><p>(pool)</p></td>
+<td><p>dynamic shared memory (pooled — see below)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;local&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">T.alloc_local</span></code></p></td>
+<td><p>per-thread registers</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;tmem&quot;</span></code></p></td>
+<td><p>(TMEM pool)</p></td>
+<td><p>Blackwell tensor memory (see below)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>   <span class="c1"># parameter buffer</span>
+<span class="n">As</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_shared</span><span class="p">((</span><span class="n">BM</span><span class="p">,</span> <span class="n">BK</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>                 <span class="c1"># new shared tile</span>
+<span class="n">acc</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="mi">4</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>                     <span class="c1"># register accumulator</span>
+<span class="n">view</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">((</span><span class="n">BM</span><span class="p">,</span> <span class="n">BK</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">As</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># a view over As</span>
+</pre></div>
+</div>
+<p><strong>A ptr-based buffer is just metadata over a pointer.</strong> For any non-tmem buffer,
+the declaration is a pointer plus a layout, and indexing resolves to an address:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">addr</span><span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="n">coord</span><span class="p">])</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">data</span> <span class="o">+</span> <span class="n">elem_offset</span> <span class="o">+</span> <span class="n">layout</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">)[</span><span class="s2">&quot;m&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>(<code class="docutils literal notranslate"><span class="pre">layout.apply</span></code> returns the per-axis mapping; its <code class="docutils literal notranslate"><span class="pre">&quot;m&quot;</span></code> component is the
+element offset.) So the <em>same</em> logical access compiles to different address
+arithmetic depending purely on the buffer’s metadata. Writing
+<code class="docutils literal notranslate"><span class="pre">B[i,</span> <span class="pre">j]</span> <span class="pre">=</span> <span class="pre">A[i,</span> <span class="pre">j]</span> <span class="pre">+</span> <span class="pre">1</span></code> over a 4×8 region, with <code class="docutils literal notranslate"><span class="pre">B</span></code> declared four ways:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.layout</span><span class="w"> </span><span class="kn">import</span> <span class="n">TileLayout</span><span class="p">,</span> <span class="n">S</span>
+
+<span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>                                       <span class="c1"># row-major</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">):(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]))</span>  <span class="c1"># column-major</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">elem_offset</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>                       <span class="c1"># shifted view</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">):(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]))</span> <span class="c1"># row stride 16</span>
+</pre></div>
+</div>
+<p>each makes <code class="docutils literal notranslate"><span class="pre">B[i,</span> <span class="pre">j]</span></code> lower to a different index in the generated CUDA (the
+<code class="docutils literal notranslate"><span class="pre">A[i,</span> <span class="pre">j]</span></code> load stays <code class="docutils literal notranslate"><span class="pre">i*8</span> <span class="pre">+</span> <span class="pre">j</span></code> — only <code class="docutils literal notranslate"><span class="pre">B</span></code>’s metadata changed):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">B_ptr</span><span class="p">[((</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">j</span><span class="p">)]</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">   </span><span class="c1">// row-major:        i*8 + j</span>
+<span class="n">B_ptr</span><span class="p">[((</span><span class="n">j</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">)]</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">   </span><span class="c1">// column-major:     j*4 + i</span>
+<span class="n">B_ptr</span><span class="p">[(((</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">64</span><span class="p">)]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">   </span><span class="c1">// elem_offset=64:   i*8 + j + 64</span>
+<span class="n">B_ptr</span><span class="p">[((</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">j</span><span class="p">)]</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span><span class="w">   </span><span class="c1">// row stride 16:    i*16 + j</span>
+</pre></div>
+</div>
+</section>
+<section id="shared-memory">
+<h2>Shared memory<a class="headerlink" href="#shared-memory" title="Link to this heading">#</a></h2>
+<p>Shared memory comes in two flavors — <strong>static</strong> (fixed at compile time) and
+<strong>dynamic</strong> (sized at launch) — plus a pool helper that manages the dynamic case.</p>
+<section id="static">
+<h3>Static<a class="headerlink" href="#static" title="Link to this heading">#</a></h3>
+<p>The simplest shared buffer is a <strong>static</strong> one — <code class="docutils literal notranslate"><span class="pre">T.alloc_shared</span></code> (that is,
+<code class="docutils literal notranslate"><span class="pre">scope=&quot;shared&quot;</span></code>), sized at compile time. Stage data into it, <code class="docutils literal notranslate"><span class="pre">cta_sync</span></code> so the
+whole block sees the writes, then read it back:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@T</span><span class="o">.</span><span class="n">prim_func</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smem_demo</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">B_ptr</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">handle</span><span class="p">):</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">A_ptr</span><span class="p">,</span> <span class="p">(</span><span class="mi">128</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">match_buffer</span><span class="p">(</span><span class="n">B_ptr</span><span class="p">,</span> <span class="p">(</span><span class="mi">128</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">device_entry</span><span class="p">()</span>
+    <span class="n">bx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cta_id</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">thread_id</span><span class="p">([</span><span class="mi">128</span><span class="p">])</span>
+    <span class="n">sm</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_shared</span><span class="p">((</span><span class="mi">128</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>   <span class="c1"># static shared memory</span>
+    <span class="n">sm</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
+    <span class="n">B</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">sm</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It lowers to a plain <code class="docutils literal notranslate"><span class="pre">__shared__</span></code> array (generated CUDA, boilerplate elided):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__launch_bounds__</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
+<span class="n">smem_demo_kernel</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">__restrict__</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">__restrict__</span><span class="w"> </span><span class="n">B_ptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="kt">int</span><span class="p">)</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
+<span class="w">  </span><span class="n">__shared__</span><span class="w"> </span><span class="nf">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">sm_ptr</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span><span class="w">      </span><span class="c1">// T.alloc_shared</span>
+<span class="w">  </span><span class="n">sm_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">];</span>
+<span class="w">  </span><span class="n">__syncthreads</span><span class="p">();</span><span class="w">                               </span><span class="c1">// T.cuda.cta_sync()</span>
+<span class="w">  </span><span class="n">B_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sm_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="dynamic">
+<h3>Dynamic<a class="headerlink" href="#dynamic" title="Link to this heading">#</a></h3>
+<p><strong>Dynamic</strong> shared memory (<code class="docutils literal notranslate"><span class="pre">scope=&quot;shared.dyn&quot;</span></code>) is sized per launch (the
+<code class="docutils literal notranslate"><span class="pre">sharedMemBytes</span></code> launch parameter), not at compile time. A kernel may have <strong>only
+one</strong> dynamic-shared allocation — the <em>arena</em>. So you allocate it once and <code class="docutils literal notranslate"><span class="pre">decl</span></code>
+each buffer as a view into it: <code class="docutils literal notranslate"><span class="pre">T.decl_buffer</span></code> with <code class="docutils literal notranslate"><span class="pre">data=</span></code> the arena pointer
+and an <code class="docutils literal notranslate"><span class="pre">elem_offset</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">arena</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_buffer</span><span class="p">((</span><span class="mi">128</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;shared.dyn&quot;</span><span class="p">)</span>   <span class="c1"># the one arena</span>
+<span class="n">As</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">((</span><span class="mi">64</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">arena</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;shared.dyn&quot;</span><span class="p">)</span>                 <span class="c1"># offset 0</span>
+<span class="n">Bs</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">((</span><span class="mi">64</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">arena</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">elem_offset</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;shared.dyn&quot;</span><span class="p">)</span> <span class="c1"># offset 64</span>
+<span class="n">As</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span>
+<span class="n">Bs</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span>
+<span class="n">T</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cta_sync</span><span class="p">()</span>
+<span class="n">C</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">As</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">+</span> <span class="n">Bs</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Both views share the single <code class="docutils literal notranslate"><span class="pre">extern</span> <span class="pre">__shared__</span></code> arena (generated CUDA,
+boilerplate elided; arena named <code class="docutils literal notranslate"><span class="pre">smem</span></code> for clarity):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="n">__shared__</span><span class="w"> </span><span class="nf">__align__</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">smem</span><span class="p">[];</span><span class="w">   </span><span class="c1">// the one dynamic-shared arena</span>
+<span class="n">smem</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">];</span><span class="w">                       </span><span class="c1">// As — view at offset 0</span>
+<span class="n">smem</span><span class="p">[</span><span class="n">tx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">64</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">];</span><span class="w">                       </span><span class="c1">// Bs — view at offset 64</span>
+<span class="n">__syncthreads</span><span class="p">();</span>
+<span class="n">C_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">smem</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">smem</span><span class="p">[</span><span class="n">tx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">64</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>(Two separate <code class="docutils literal notranslate"><span class="pre">alloc_buffer(scope=&quot;shared.dyn&quot;)</span></code> is an error — <em>only one dynamic
+shared memory allocation is allowed</em>.) So static shared memory is sized at compile
+time (<code class="docutils literal notranslate"><span class="pre">__shared__</span> <span class="pre">T</span> <span class="pre">x[N];</span></code>); dynamic shared memory is this one launch-sized arena
+with views decl’d at offsets inside it.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>How TVM annotates the dynamic-shared size.</strong> The arena’s size is known at
+compile time (here <code class="docutils literal notranslate"><span class="pre">128</span></code> floats = <code class="docutils literal notranslate"><span class="pre">512</span></code> bytes). During lowering TVM appends
+a <code class="docutils literal notranslate"><span class="pre">&quot;tirx.use_dyn_shared_memory&quot;</span></code> tag to the device kernel’s
+<code class="docutils literal notranslate"><span class="pre">tirx.kernel_launch_params</span></code>, and the host launcher computes the total bytes and
+passes them as the last launch argument:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># device kernel attribute:</span>
+<span class="s2">&quot;tirx.kernel_launch_params&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;blockIdx.x&quot;</span><span class="p">,</span> <span class="s2">&quot;threadIdx.x&quot;</span><span class="p">,</span> <span class="s2">&quot;tirx.use_dyn_shared_memory&quot;</span><span class="p">]</span>
+
+<span class="c1"># host-side launch call  (..., gridDim.x, blockDim.x, dyn_shared_bytes):</span>
+<span class="n">T</span><span class="o">.</span><span class="n">call_packed</span><span class="p">(</span><span class="s2">&quot;dyn_kernel&quot;</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">B</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">C</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>At run time that <code class="docutils literal notranslate"><span class="pre">512</span></code> becomes <code class="docutils literal notranslate"><span class="pre">config.sharedMemBytes</span></code> in the
+<code class="docutils literal notranslate"><span class="pre">cuLaunchKernelEx</span></code> call. You never set it by hand — it is derived from the
+<code class="docutils literal notranslate"><span class="pre">shared.dyn</span></code> allocation’s size.</p>
+</div>
+</section>
+<section id="pool-sugar">
+<h3>Pool sugar<a class="headerlink" href="#pool-sugar" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">T.SMEMPool</span></code> automates that arena bookkeeping — it bump-allocates the offsets so
+you don’t <code class="docutils literal notranslate"><span class="pre">decl</span></code> views by hand. Beyond <code class="docutils literal notranslate"><span class="pre">alloc</span></code> / <code class="docutils literal notranslate"><span class="pre">commit</span></code>, it offers
+per-buffer <code class="docutils literal notranslate"><span class="pre">align=</span></code>, an <code class="docutils literal notranslate"><span class="pre">alloc_mma</span></code> helper that builds an MMA-compatible
+swizzle layout for you, and <code class="docutils literal notranslate"><span class="pre">move_base_to</span></code> to rewind the cursor and reuse space:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">SMEMPool</span><span class="p">()</span>                          <span class="c1"># bump allocator over shared.dyn</span>
+<span class="n">As</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BM</span><span class="p">,</span> <span class="n">BK</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>   <span class="c1"># carve a tile</span>
+<span class="n">Bs</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">BK</span><span class="p">,</span> <span class="n">BN</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+<span class="n">Cs</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc_mma</span><span class="p">((</span><span class="n">BM</span><span class="p">,</span> <span class="n">BN</span><span class="p">),</span> <span class="s2">&quot;float16&quot;</span><span class="p">)</span>     <span class="c1"># MMA-compatible, swizzle inferred</span>
+<span class="n">pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>                                 <span class="c1"># finalize the pool&#39;s size</span>
+<span class="c1"># pool.move_base_to(offset) rewinds the cursor to reuse space</span>
+</pre></div>
+</div>
+<p>The TMEM pool (<a class="reference internal" href="#tensor-memory">Tensor memory</a>, below) is layered on top of an <code class="docutils literal notranslate"><span class="pre">SMEMPool</span></code>.</p>
+</section>
+</section>
+<section id="registers">
+<h2>Registers<a class="headerlink" href="#registers" title="Link to this heading">#</a></h2>
+<p>Per-thread scratch lives in registers. Allocate it with <code class="docutils literal notranslate"><span class="pre">T.alloc_local(shape,</span>
+<span class="pre">dtype)</span></code> (i.e. <code class="docutils literal notranslate"><span class="pre">scope=&quot;local&quot;</span></code>): it is private to each thread and lowers to a
+local array kept in registers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">r</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="mi">4</span><span class="p">,),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>   <span class="c1"># per-thread register array</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">T</span><span class="o">.</span><span class="n">unroll</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span>
+<span class="c1"># ... compute on r[0..3] ...</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">r_ptr</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span><span class="w">          </span><span class="c1">// per-thread, register-resident</span>
+<span class="n">r_ptr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">[</span><span class="n">tx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">0</span><span class="p">];</span>
+<span class="n">r_ptr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A_ptr</span><span class="p">[</span><span class="n">tx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">];</span>
+<span class="c1">// ...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">alignas(64)</span></code> is the <em>default</em> buffer alignment — a buffer’s
+<code class="docutils literal notranslate"><span class="pre">data_alignment</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">runtime::kAllocAlignment</span></code> (64 bytes), and the
+CUDA codegen stamps it onto every allocation, including per-thread <code class="docutils literal notranslate"><span class="pre">local</span></code>
+arrays where it is meaningless. For these register-resident arrays it has <strong>no
+performance impact</strong>: a thread-local array with statically-resolvable indices is
+promoted to registers by nvcc/ptxas (scalar replacement of aggregates, SROA), so
+it never lives in addressable local memory and the alignment is a no-op. (A
+dynamically-indexed array that spilled to local memory would actually pick up the
+over-alignment, but that is the unusual case.) This over-alignment of register
+locals is a known rough edge we plan to fix (use the dtype’s natural alignment
+for <code class="docutils literal notranslate"><span class="pre">local</span></code> scope).</p>
+</div>
+<section id="scalar">
+<h3>Scalar<a class="headerlink" href="#scalar" title="Link to this heading">#</a></h3>
+<p>A scalar is just a register array with <strong>one element</strong> — strictly, you don’t need a
+separate concept. You can allocate a size-1 <code class="docutils literal notranslate"><span class="pre">local</span></code> buffer and index <code class="docutils literal notranslate"><span class="pre">[0]</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">phase</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_local</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;int32&quot;</span><span class="p">)</span>   <span class="c1"># 1-element register array</span>
+<span class="n">phase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">phase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+    <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="n">phase</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">phase</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>But writing <code class="docutils literal notranslate"><span class="pre">phase[0]</span></code> everywhere is clumsy, so a <strong>scalar</strong> is sugar for exactly
+this — a one-element register buffer you read and write <strong>by name</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">phase</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">int32</span> <span class="o">=</span> <span class="mi">0</span>                 <span class="c1"># mutable scalar (sugar for the above)</span>
+<span class="k">while</span> <span class="n">phase</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+    <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="n">phase</span><span class="p">]</span>
+    <span class="n">phase</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">local_scalar</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>        <span class="c1"># explicit form; assign by name (s = ..., not s[0])</span>
+<span class="n">acc</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">float32</span> <span class="o">=</span> <span class="mf">0.0</span>               <span class="c1"># a type-annotated assignment also makes one</span>
+</pre></div>
+</div>
+<p>The two are not just similar — they parse to <strong>structurally identical TIRx</strong>. The
+sugar is resolved entirely in the parser: <code class="docutils literal notranslate"><span class="pre">phase:</span> <span class="pre">T.int32</span></code> <em>is</em> that one-element
+<code class="docutils literal notranslate"><span class="pre">local</span></code> buffer, and <code class="docutils literal notranslate"><span class="pre">phase</span></code> / <code class="docutils literal notranslate"><span class="pre">phase</span> <span class="pre">+=</span> <span class="pre">1</span></code> <em>are</em> <code class="docutils literal notranslate"><span class="pre">phase[0]</span></code> /
+<code class="docutils literal notranslate"><span class="pre">phase[0]</span> <span class="pre">+=</span> <span class="pre">1</span></code>. <code class="docutils literal notranslate"><span class="pre">tvm.ir.assert_structural_equal</span></code> on the two kernels passes, and
+the printer even renders the explicit <code class="docutils literal notranslate"><span class="pre">alloc_local</span></code> + <code class="docutils literal notranslate"><span class="pre">[0]</span></code> form <strong>back</strong> as the
+scalar form — so once parsing is done there is no difference at all. Both therefore
+lower to the same <code class="docutils literal notranslate"><span class="pre">alignas(64)</span> <span class="pre">int</span> <span class="pre">phase_ptr[1];</span></code>; the scalar just lets you drop
+the <code class="docutils literal notranslate"><span class="pre">[0]</span></code>. (<code class="docutils literal notranslate"><span class="pre">T.local_scalar</span></code> / <code class="docutils literal notranslate"><span class="pre">T.shared_scalar</span></code> / <code class="docutils literal notranslate"><span class="pre">T.alloc_scalar</span></code> choose
+the scope explicitly.)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Why not a</strong> <code class="docutils literal notranslate"><span class="pre">Var</span></code><strong>?</strong> A TIRx <code class="docutils literal notranslate"><span class="pre">Var</span></code> is <em>immutable</em> — a single static
+binding (it is exactly what <code class="docutils literal notranslate"><span class="pre">T.let</span></code> produces, below). A scalar needs to be
+<em>mutable</em> — you reassign it in loops and accumulators — so it must be backed by a
+one-element buffer you can store into repeatedly, not a <code class="docutils literal notranslate"><span class="pre">Var</span></code>.</p>
+</div>
+</section>
+<section id="let">
+<h3><code class="docutils literal notranslate"><span class="pre">let</span></code><a class="headerlink" href="#let" title="Link to this heading">#</a></h3>
+<p>A <code class="docutils literal notranslate"><span class="pre">T.let</span></code> binding is <strong>immutable</strong> — a single <code class="docutils literal notranslate"><span class="pre">LetStmt</span></code> (a named value, not a
+buffer). Use it for derived constants:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">n</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">let</span> <span class="o">=</span> <span class="n">M</span> <span class="o">*</span> <span class="n">K</span>               <span class="c1"># immutable binding (LetStmt)</span>
+<span class="n">half</span><span class="p">:</span> <span class="n">T</span><span class="o">.</span><span class="n">let</span><span class="p">[</span><span class="n">T</span><span class="o">.</span><span class="n">int32</span><span class="p">]</span> <span class="o">=</span> <span class="n">N</span> <span class="o">//</span> <span class="mi">2</span>  <span class="c1"># ... with an explicit type</span>
+</pre></div>
+</div>
+<p>It lowers to a <strong>plain scalar C variable</strong> — not a buffer (no array, no <code class="docutils literal notranslate"><span class="pre">[0]</span></code>).
+For <code class="docutils literal notranslate"><span class="pre">half:</span> <span class="pre">T.let</span> <span class="pre">=</span> <span class="pre">m</span> <span class="pre">*</span> <span class="pre">2</span></code> (with a runtime <code class="docutils literal notranslate"><span class="pre">m</span></code>):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">half</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">     </span><span class="c1">// the `let` -&gt; a const-like local</span>
+</pre></div>
+</div>
+<p>Because the value is immutable, the simplifier is free to propagate and CSE it, so
+at the use sites you often see <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">2</span></code> substituted directly (or shared through a
+common-subexpression temporary) rather than a reference to <code class="docutils literal notranslate"><span class="pre">half</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Why have an immutable binding at all?</strong> Because the value cannot change, the
+arithmetic analyzer binds the var to it (<code class="docutils literal notranslate"><span class="pre">analyzer.Bind(var,</span> <span class="pre">value)</span></code> when it
+simplifies a <code class="docutils literal notranslate"><span class="pre">LetStmt</span></code>), so facts proven about the value — constant bounds, the
+modular set (divisibility / alignment), ranges — <strong>propagate through every use</strong>.
+That feeds index simplification, bounds-check elimination, and
+alignment/vectorization decisions. A <em>mutable</em> scalar is a memory load
+(<code class="docutils literal notranslate"><span class="pre">buf[0]</span></code>): the analyzer cannot assume it stays constant, so none of those
+properties carry through. A <code class="docutils literal notranslate"><span class="pre">let</span></code> is also a pure value — no allocation, and
+free to inline / substitute / CSE — whereas a scalar is a one-element buffer with
+load/store semantics.</p>
+</div>
+</section>
+</section>
+<section id="tensor-memory">
+<h2>Tensor memory<a class="headerlink" href="#tensor-memory" title="Link to this heading">#</a></h2>
+<p>Blackwell <em>tensor memory</em> is not a plain scratch scope: it must be explicitly
+reserved and freed with the warp-uniform <code class="docutils literal notranslate"><span class="pre">T.ptx.tcgen05.alloc</span></code> /
+<code class="docutils literal notranslate"><span class="pre">tcgen05.dealloc</span></code> intrinsics, and each tensor is a view into it declared with
+<code class="docutils literal notranslate"><span class="pre">T.decl_buffer(...,</span> <span class="pre">scope=&quot;tmem&quot;,</span> <span class="pre">allocated_addr=&lt;column&gt;,</span> <span class="pre">layout=&lt;tmem</span> <span class="pre">layout&gt;)</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">allocated_addr</span></code> (a column offset) is mandatory — the tensor-core dispatch
+asserts it — so <code class="docutils literal notranslate"><span class="pre">T.alloc_buffer(scope=&quot;tmem&quot;)</span></code> (which does <strong>not</strong> set it) will not
+work. Unlike shared memory, tensor memory is not directly addressable: it is read
+and written only through <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> <code class="docutils literal notranslate"><span class="pre">mma</span></code> / <code class="docutils literal notranslate"><span class="pre">ld</span></code> / <code class="docutils literal notranslate"><span class="pre">st</span></code> / <code class="docutils literal notranslate"><span class="pre">cp</span></code>.</p>
+<p>By hand, one warp issues the allocation into a shared slot, you <code class="docutils literal notranslate"><span class="pre">decl</span></code> each
+tensor as a view at a column offset, and one warp frees it at the end:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">addr</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_shared</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>             <span class="c1"># slot for the allocated base</span>
+<span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="n">alloc_warp</span><span class="p">:</span>                         <span class="c1"># tcgen05.alloc is warp-uniform</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">address_of</span><span class="p">(</span><span class="n">addr</span><span class="p">),</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">cta_group</span><span class="p">)</span>
+<span class="n">acc</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">((</span><span class="n">CTA_M</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;tmem&quot;</span><span class="p">,</span>
+                    <span class="n">allocated_addr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">tmem_layout</span><span class="p">)</span>   <span class="c1"># view at column 0</span>
+<span class="c1"># ... use acc as a gemm_async / copy_async operand ...</span>
+<span class="k">if</span> <span class="n">warp_id</span> <span class="o">==</span> <span class="n">alloc_warp</span><span class="p">:</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">relinquish_alloc_permit</span><span class="p">(</span><span class="n">cta_group</span><span class="o">=</span><span class="n">cta_group</span><span class="p">)</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">tcgen05</span><span class="o">.</span><span class="n">dealloc</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="n">n_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">cta_group</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You manage the column offsets and the <code class="docutils literal notranslate"><span class="pre">tmem_layout</span></code> (a datapath D/F layout)
+yourself. This is exactly the sequence the pool below emits.</p>
+<section id="pool">
+<h3>Pool<a class="headerlink" href="#pool" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">T.TMEMPool</span></code> wraps all of that — the warp-uniform alloc/dealloc, the column
+bump-allocation, and the datapath layout:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem_addr</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="s2">&quot;uint32&quot;</span><span class="p">)</span>          <span class="c1"># pool = the kernel&#39;s smem pool</span>
+<span class="n">tmem_pool</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">TMEMPool</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">total_cols</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">cta_group</span><span class="o">=</span><span class="n">cta_group</span><span class="p">,</span>
+                       <span class="n">tmem_addr</span><span class="o">=</span><span class="n">tmem_addr</span><span class="p">)</span>
+<span class="n">acc</span> <span class="o">=</span> <span class="n">tmem_pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">((</span><span class="n">CTA_M</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>  <span class="c1"># allocated_addr set for you</span>
+<span class="n">tmem_pool</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>                               <span class="c1"># emits tcgen05.alloc (one warp)</span>
+<span class="c1"># ... use acc ...</span>
+<span class="n">tmem_pool</span><span class="o">.</span><span class="n">dealloc</span><span class="p">()</span>                              <span class="c1"># emits tcgen05.dealloc (one warp)</span>
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="../../tile_primitives.html"><span class="doc">Tile Primitives</span></a> walkthroughs for full examples.</p>
+</section>
+</section>
+<section id="buffer-apis">
+<h2>Buffer APIs<a class="headerlink" href="#buffer-apis" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">Buffer</span></code> is metadata over a pointer (see <em>Declaring buffers</em> above), so most of
+its methods are <em>compile-time</em> reshapes/reinterprets that change index arithmetic
+or hand you a pointer — they emit no runtime op of their own. The common ones:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 34.0%" />
+<col style="width: 66.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>What it is</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">B.data</span></code></p></td>
+<td><p>the raw data pointer (a <code class="docutils literal notranslate"><span class="pre">Var</span></code>); prints as <code class="docutils literal notranslate"><span class="pre">B_ptr</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">B.ptr_to([i,</span> <span class="pre">j])</span></code></p></td>
+<td><p>a typed pointer to an element (<code class="docutils literal notranslate"><span class="pre">address_of</span></code>); prints as <code class="docutils literal notranslate"><span class="pre">&amp;B_ptr[…]</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">B.vload([i],</span> <span class="pre">dtype=&quot;float32x4&quot;)</span></code> / <code class="docutils literal notranslate"><span class="pre">B.vstore([i],</span> <span class="pre">v)</span></code></p></td>
+<td><p>a vectorized load / store; prints as <code class="docutils literal notranslate"><span class="pre">*(float4*)(B_ptr</span> <span class="pre">+</span> <span class="pre">…)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">B.view(*shape,</span> <span class="pre">layout=…)</span></code></p></td>
+<td><p>reinterpret the same storage under a new shape/layout (no copy)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">B.local(*shape,</span> <span class="pre">layout=…)</span></code></p></td>
+<td><p>the calling thread’s private register slice of a <code class="docutils literal notranslate"><span class="pre">local</span></code> buffer</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">B.permute(*dims)</span></code></p></td>
+<td><p>a view with axes permuted (a transposed layout)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">B.access_ptr(mask,</span> <span class="pre">…)</span></code></p></td>
+<td><p>a masked access pointer (the <code class="docutils literal notranslate"><span class="pre">tvm_access_ptr</span></code> builtin), for passing a
+region to an intrinsic</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Pointers — ``ptr_to`` / ``data``.</strong> <code class="docutils literal notranslate"><span class="pre">ptr_to</span></code> is how you hand an element address
+to an intrinsic or inline function; <code class="docutils literal notranslate"><span class="pre">data</span></code> is the base pointer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">B</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">func_call</span><span class="p">(</span><span class="s2">&quot;ld&quot;</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">ptr_to</span><span class="p">([</span><span class="n">tx</span><span class="p">]),</span> <span class="n">source_code</span><span class="o">=</span><span class="n">SRC</span><span class="p">,</span> <span class="n">return_type</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">B_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ld</span><span class="p">(</span><span class="o">&amp;</span><span class="n">A_ptr</span><span class="p">[</span><span class="n">tx</span><span class="p">]);</span><span class="w">          </span><span class="c1">// ptr_to([tx]) -&gt; &amp;A_ptr[tx];  A.data -&gt; A_ptr</span>
+</pre></div>
+</div>
+<p><strong>Vectorized access — ``vload`` / ``vstore``.</strong> Move several elements as one wide
+transfer (see also <a class="reference internal" href="data_types.html"><span class="doc">Data types and expressions</span></a>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">B</span><span class="o">.</span><span class="n">vstore</span><span class="p">([</span><span class="n">tx</span> <span class="o">*</span> <span class="mi">4</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">vload</span><span class="p">([</span><span class="n">tx</span> <span class="o">*</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32x4&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="o">*</span><span class="p">(</span><span class="n">float4</span><span class="o">*</span><span class="p">)(</span><span class="n">B_ptr</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="n">float4</span><span class="o">*</span><span class="p">)(</span><span class="n">A_ptr</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Reshape / reinterpret — ``view`` / ``permute``.</strong> Both are pure metadata; the
+data pointer is unchanged, only the index arithmetic differs. <code class="docutils literal notranslate"><span class="pre">A.view(64,</span> <span class="pre">4)</span></code>
+sees the 256-element buffer as <code class="docutils literal notranslate"><span class="pre">64×4</span></code>; <code class="docutils literal notranslate"><span class="pre">A.permute(1,</span> <span class="pre">0)</span></code> transposes the axes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">A2</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>     <span class="n">y</span> <span class="o">=</span> <span class="n">A2</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">A2</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>   <span class="c1"># A2[tx, j] -&gt; A_ptr[tx*4 + j]</span>
+<span class="n">At</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>   <span class="n">z</span> <span class="o">=</span> <span class="n">At</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>                <span class="c1"># At[i, j]  -&gt; A_ptr[j*4 + i]</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">A2_ptr</span><span class="p">[</span><span class="n">tx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="p">]</span><span class="w">  </span><span class="cm">/* +3 */</span><span class="w">                 </span><span class="c1">// view: row-major 64x4 index</span>
+<span class="n">At_ptr</span><span class="p">[(</span><span class="n">j</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">]</span><span class="w">                       </span><span class="c1">// permute: swapped strides</span>
+</pre></div>
+</div>
+<p><strong>Registers — ``local``.</strong> Decomposes a thread-axis <code class="docutils literal notranslate"><span class="pre">local</span></code> layout into the
+calling thread’s flat register bundle (used pervasively by the tile primitives):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">R</span>  <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">alloc_buffer</span><span class="p">((</span><span class="mi">32</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">@</span> <span class="n">laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]))</span>
+<span class="n">Rl</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>          <span class="c1"># this lane&#39;s 8 registers</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Rl_ptr</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span><span class="w">             </span><span class="c1">// the lane&#39;s private registers</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="data_types.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Data types and expressions</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="control_flow.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Control flow</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"><div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#declaring-buffers">Declaring buffers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#shared-memory">Shared memory</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#static">Static</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dynamic">Dynamic</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pool-sugar">Pool sugar</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#registers">Registers</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scalar">Scalar</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#let"><code class="docutils literal notranslate"><span class="pre">let</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tensor-memory">Tensor memory</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pool">Pool</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#buffer-apis">Buffer APIs</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By TIRx Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright TIRx Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Swizzle Atoms — All Formats</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  .cell { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); line-height:normal; }
+  .cell.rd { border-color:#222; border-width:3px; z-index:1; }
+  .cell.prev { border-color:rgba(0,0,0,.2); border-width:2px; }
+  .cell.dm { opacity:.18; }
+  .cell.hov { box-shadow:none; }
+  .cell.blank { background:transparent !important; color:transparent; cursor:default; border:none; }
+  .panel h2 { margin-bottom:10px; }
+
+  .anno { max-width:1100px; margin:0 auto 14px; display:flex; gap:10px; justify-content:center;
+    align-items:center; flex-wrap:wrap; font-size:13px; color:var(--dim); }
+  .anno .tag { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+    padding:4px 12px; font-weight:600; display:inline-flex; align-items:center; }
+  #annos-tags { display:contents; }
+
+  .blab { font-size:11px; color:var(--dim); text-align:center; margin-top:12px; margin-bottom:3px; font-weight:600; }
+  .bbar { display:flex; gap:3px; }
+  .bs {
+    flex:1; height:30px; border-radius:5px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#fff; border:2.5px solid transparent; transition:all .18s;
+    text-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .bs.ac { border-color:#222; box-shadow:0 0 6px rgba(59,130,246,.3); }
+  .bs.cf { border-color:#d32f2f; box-shadow:0 0 8px rgba(211,47,47,.4); }
+  .bs.dm { opacity:.12; }
+
+  .st { text-align:center; margin-top:8px; font-size:13px; font-weight:600; min-height:20px; }
+  .good { color:var(--color-good); } .bad { color:var(--color-bad); }
+
+  .leg { gap:0; }
+  .swtch.brd { border:3px solid #222; background:#ccc; }
+  .swtch.brd-prev { border:2px solid rgba(0,0,0,.2); background:#ccc; }
+  .swtch.faded { background:#ccc; opacity:.18; }
+  .leg-row+.leg-row { margin-top:6px; }
+
+  .cbar { display:flex; gap:5px; justify-content:center; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+  .cb { width:34px; height:30px; border:1px solid var(--border); background:var(--surface); color:var(--text);
+    cursor:pointer; border-radius:5px; font-size:13px; font-family:inherit; display:flex; align-items:center;
+    justify-content:center; transition:all .12s; font-weight:500; }
+  .cb:hover { background:#eef0f4; }
+  .cb.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .play { width:34px; font-size:16px; }
+
+  .tl-wrap { max-width:1100px; margin:24px auto 0; }
+  .tl-head { font-size:15px; font-weight:700; text-align:center; margin-bottom:14px; }
+  .tl-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .tl-box { background:var(--surface); border-radius:10px; padding:14px; border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .tl-box h3 { font-size:13px; font-weight:700; text-align:center; margin-bottom:10px; color:var(--dim); }
+  .tl-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; cursor:pointer; border-radius:6px;
+    padding:3px 4px; transition:background .12s; }
+  .tl-row:hover { background:#f0f1f4; }
+  .tl-row.sel { background:#e8edf5; }
+  .tl-row.done { background:#f0f7f0; }
+  .tl-cyc { font-size:11px; font-weight:700; color:var(--dim); width:52px; text-align:right; flex-shrink:0; }
+  .tl-banks { display:flex; gap:2px; flex:1; }
+  .tl-b {
+    flex:1; height:26px; border-radius:4px; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2);
+    border:2px solid transparent;
+  }
+  .tl-b.on { border-color:#222; }
+  .tl-b.empty { background:#e8e8e8 !important; color:#bbb; text-shadow:none; }
+  .tl-cnt { font-size:11px; color:var(--dim); width:38px; text-align:left; flex-shrink:0; font-weight:600; }
+  .tl-sum { text-align:center; margin-top:10px; font-size:13px; font-weight:600; }
+
+  .dtype-info { display:flex; gap:10px; align-items:center; }
+  .dtype-tag { font-size:12px; font-weight:600; color:var(--accent);
+    font-family:'SF Mono','Fira Code',monospace; background:var(--surface);
+    border:1px solid var(--border); border-radius:5px; padding:3px 8px; }
+
+  @media(max-width:700px) { .tl-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Swizzle Atoms — All Formats</h1>
+<div class="sub">A swizzle atom is the basic contiguous region in memory where swizzle is applied</div>
+
+<div class="anno">
+  <div class="tag">
+    <span class="lbl" style="margin-right:2px">Format</span>
+    <span class="bg" id="fmt">
+      <button class="btn on" data-v="128">128B</button>
+      <button class="btn" data-v="64">64B</button>
+      <button class="btn" data-v="32">32B</button>
+      <button class="btn" data-v="16">16B (interleaved)</button>
+    </span>
+  </div>
+  <span id="annos-tags"></span>
+
+</div>
+
+<div class="controls">
+  <div><span class="lbl">Read</span>
+    <div class="bg" id="rt">
+      <button class="btn on" data-v="col" id="rtCol">Col Tile (8×1)</button>
+      <button class="btn" data-v="row" id="rtRow">Row Tile (1×8)</button>
+    </div>
+  </div>
+  <div><span class="lbl">Index</span><div class="bg" id="ri"></div></div>
+</div>
+<div class="controls">
+  <div><span class="lbl">dtype</span>
+    <div class="bg" id="dt">
+      <button class="btn" data-v="1">f8</button>
+      <button class="btn on" data-v="2">f16</button>
+      <button class="btn" data-v="4">f32</button>
+    </div>
+  </div>
+  <div class="dtype-info" id="dtype-info"></div>
+</div>
+
+<div class="panels">
+  <svg class="arrow-svg" id="arrow"></svg>
+  <div class="panel"><h2>Without Swizzle</h2>
+    <div class="grid" id="g0"></div><div class="blab">Bank Sector Activity (all 8)</div>
+    <div class="bbar" id="b0"></div><div class="st" id="s0"></div>
+  </div>
+  <div class="panel"><h2>With Swizzle (XOR)</h2>
+    <div class="grid" id="g1"></div><div class="blab">Bank Sector Activity (all 8)</div>
+    <div class="bbar" id="b1"></div><div class="st" id="s1"></div>
+  </div>
+</div>
+<div class="leg" id="lg"></div>
+<div style="text-align:center;font-size:12px;color:var(--dim);margin-top:4px;font-weight:600" id="sector-info"></div>
+<div style="text-align:center;margin-top:16px;font-size:18px;font-weight:800;color:#d32f2f">Key: if we swizzle, read of any 8&times;16B column is conflict-free!</div>
+
+<div class="tl-wrap">
+  <div class="tl-head">Cycle-by-Cycle Reads</div>
+  <div class="cbar" id="cb"></div>
+  <div class="tl-grid">
+    <div class="tl-box"><h3>Without Swizzle</h3><div id="tl0"></div><div class="tl-sum" id="ts0"></div></div>
+    <div class="tl-box"><h3>With Swizzle (XOR)</h3><div id="tl1"></div><div class="tl-sum" id="ts1"></div></div>
+  </div>
+</div>
+
+<script>
+const BK = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+const SECS = 8, ROWS = 8, DISPLAY_COLS = 8;
+
+// Format configs: atomCols, div (rows per sector group), formula text
+const FMTS = {
+  '128': { ac: 8, div: 1, formula: 'swizzled_col = logical_col XOR row',
+           rowTile: '1\u00d78', bytes: 1024 },
+  '64':  { ac: 4, div: 2, formula: 'swizzled_col = logical_col XOR (row // 2)',
+           rowTile: '2\u00d74', bytes: 512 },
+  '32':  { ac: 2, div: 4, formula: 'swizzled_col = logical_col XOR (row // 4)',
+           rowTile: '4\u00d72', bytes: 256 },
+  '16':  { ac: 1, div: 8, formula: 'No swizzle needed (trivially conflict-free)',
+           rowTile: '8\u00d71', bytes: 128 },
+};
+
+const DTYPES = {1:'f8', 2:'f16', 4:'f32'};
+const ST = { fmt: '128', t: 'col', i: -1, c: 0, pl: false, tm: null, dsize: 2 };
+
+function f() { return FMTS[ST.fmt]; }
+
+// Sector = (r % div) * ac + physical_position
+function sectorOf(r, c, sw) {
+  const { ac, div } = f();
+  const col = sw ? (c ^ Math.floor(r / div)) : c;
+  return (r % div) * ac + col;
+}
+
+function logAtPhys(r, p, sw) {
+  const { div } = f();
+  return sw ? (p ^ Math.floor(r / div)) : p;
+}
+
+function getCells() {
+  if (ST.i < 0) return [];
+  const { ac, div } = f();
+  if (ST.t === 'col') return Array.from({length: ROWS}, (_, j) => ({r: j, c: ST.i}));
+  // Row tile: div consecutive rows × ac cols = 8 elements
+  const rStart = ST.i * div;
+  const cells = [];
+  for (let dr = 0; dr < div; dr++)
+    for (let c = 0; c < ac; c++)
+      cells.push({r: rStart + dr, c});
+  return cells;
+}
+
+function getCycles(cl, sw) {
+  if (cl.length === 0) return [];
+  const g = new Map();
+  for (const x of cl) {
+    const b = sectorOf(x.r, x.c, sw);
+    if (!g.has(b)) g.set(b, []);
+    g.get(b).push({...x, b});
+  }
+  const mx = Math.max(...[...g.values()].map(v => v.length));
+  const out = [];
+  for (let ci = 0; ci < mx; ci++) {
+    const rd = [];
+    for (const [, v] of g) if (ci < v.length) rd.push(v[ci]);
+    out.push(rd);
+  }
+  return out;
+}
+
+function updateDtype() {
+  const { ac, div } = f();
+  const epc = 16 / ST.dsize;
+  const dn = DTYPES[ST.dsize];
+  const atomC = ac * epc;
+  const tileR = ST.t === 'col' ? ROWS : div, tileC = ST.t === 'col' ? epc : ac * epc;
+  const info = document.getElementById('dtype-info'); info.innerHTML = '';
+  const items = [
+    '1 cell = ' + epc + ' ' + dn,
+    'Atom = ' + ROWS + '\u00d7' + atomC + ' ' + dn,
+    'Read tile = ' + tileR + '\u00d7' + tileC + ' ' + dn,
+  ];
+  for (const t of items) { const d = mk('span', 'dtype-tag'); d.textContent = t; info.appendChild(d); }
+}
+
+function draw() {
+  const { ac, div, formula } = f();
+  const cl = getCells(), rs = new Set(cl.map(x => x.r + ',' + x.c));
+  const cy = [getCycles(cl, false), getCycles(cl, true)], mc = Math.max(cy[0].length, cy[1].length);
+
+  // Annotations — blue monospace tags on same row as format selector
+  const annos = document.getElementById('annos-tags'); annos.innerHTML = '';
+  const style = 'font-family:\'SF Mono\',\'Fira Code\',monospace;color:var(--accent)';
+  const tags = [
+    'Atom = 8 rows \u00d7 ' + ac + ' cols = 8 \u00d7 ' + (ac * 16) + 'B',
+    formula,
+  ];
+  for (const t of tags) { const d = mk('div', 'tag'); d.textContent = t; d.style.cssText = style; annos.appendChild(d); }
+
+  // Sector info in legend
+  document.getElementById('sector-info').textContent = ac + ' sector' + (ac > 1 ? 's' : '') + ' per row \u00b7 every ' + div + ' row' + (div > 1 ? 's' : '') + ' spans all sectors';
+
+  updateDtype();
+
+  // Cycle bar
+  const cb = document.getElementById('cb'); cb.innerHTML = '';
+  if (mc > 0) {
+    cb.appendChild(Object.assign(mk('span'), {style: 'font-size:11px;color:var(--dim);margin-right:6px', textContent: 'Click to show reads per cycle'}));
+    const pb = mk('button', 'cb play'); pb.textContent = ST.pl ? '\u23f8' : '\u25b6'; pb.onclick = doPlay; cb.appendChild(pb);
+    cb.appendChild(Object.assign(mk('span'), {style: 'font-size:13px;color:var(--dim);margin:0 6px', textContent: 'Cycle:'}));
+    const allBtn = mk('button', 'cb' + (ST.c === 0 ? ' on' : '')); allBtn.textContent = 'All'; allBtn.onclick = () => {ST.c = 0; draw();}; cb.appendChild(allBtn);
+    for (let i = 1; i <= mc; i++) {const b = mk('button', 'cb' + (ST.c === i ? ' on' : '')); b.textContent = i; b.onclick = (v => () => {ST.c = v; draw();})(i); cb.appendChild(b);}
+  }
+
+  for (let sw = 0; sw < 2; sw++) {
+    const swz = sw === 1, myc = cy[sw], tot = myc.length;
+    let cur = rs, prev = new Set();
+    if (ST.c > 0 && ST.c <= tot) {
+      cur = new Set(myc[ST.c - 1].map(x => x.r + ',' + x.c));
+      for (let ci = 0; ci < ST.c - 1; ci++) for (const x of myc[ci]) prev.add(x.r + ',' + x.c);
+    } else if (ST.c > 0 && ST.c > tot) {
+      cur = new Set(); for (const x of cl) prev.add(x.r + ',' + x.c);
+    }
+
+    const ab = new Map();
+    const bsrc = ST.c === 0 ? cl : (ST.c <= tot ? myc[ST.c - 1] : []);
+    for (const x of bsrc) {const b = 'b' in x ? x.b : sectorOf(x.r, x.c, swz); ab.set(b, (ab.get(b) || 0) + 1);}
+
+    // Grid: 8 rows x 8 display columns (blank cells after ac)
+    const g = document.getElementById('g' + sw); g.innerHTML = '';
+    g.style.gridTemplateColumns = '24px repeat(' + DISPLAY_COLS + ',1fr)';
+    g.appendChild(mk('div', 'hdr'));
+    for (let p = 0; p < DISPLAY_COLS; p++) {
+      const h = mk('div', 'hdr');
+      h.textContent = p < ac ? 'c' + p : '';
+      g.appendChild(h);
+    }
+    for (let r = 0; r < ROWS; r++) {
+      const l = mk('div', 'rl'); l.textContent = 'r' + r; g.appendChild(l);
+      for (let p = 0; p < DISPLAY_COLS; p++) {
+        if (p >= ac) {
+          g.appendChild(mk('div', 'cell blank'));
+          continue;
+        }
+        const lc = logAtPhys(r, p, swz);
+        const d = mk('div', 'cell');
+        d.textContent = lc;
+        d.style.background = BK[(r % div) * ac + p];  // sector color
+        d.dataset.r = r; d.dataset.c = lc;
+        const k = r + ',' + lc;
+        if (cur.has(k)) d.classList.add('rd');
+        else if (prev.has(k)) d.classList.add('prev');
+        else if (rs.size > 0 && !rs.has(k)) d.classList.add('dm');
+        g.appendChild(d);
+      }
+    }
+
+    // Bank sector bar
+    const bb = document.getElementById('b' + sw); bb.innerHTML = '';
+    for (let b = 0; b < SECS; b++) {
+      const d = mk('div', 'bs'); d.style.background = BK[b]; const cnt = ab.get(b) || 0;
+      if (rs.size === 0) {d.textContent = 'S' + b;}
+      else if (cnt > 1) {d.textContent = 'S' + b + ' \u00d7' + cnt; d.classList.add('ac', 'cf');}
+      else if (cnt === 1) {d.textContent = 'S' + b; d.classList.add('ac');}
+      else {d.textContent = 'S' + b; d.classList.add('dm');}
+      bb.appendChild(d);
+    }
+
+    const se = document.getElementById('s' + sw);
+    if (rs.size === 0) se.innerHTML = '';
+    else if (ST.c === 0) {
+      if (tot <= 1) se.innerHTML = '<span class="good">' + ab.size + '/' + SECS + ' sectors \u00b7 1 cycle \u00b7 No conflicts</span>';
+      else se.innerHTML = '<span class="bad">' + ab.size + '/' + SECS + ' sectors \u00b7 ' + tot + ' cycles \u00b7 ' + tot + '-way conflict</span>';
+    } else {
+      se.innerHTML = '<span style="color:var(--dim)">Cycle ' + ST.c + ': ' + ab.size + '/' + SECS + ' sectors active</span>';
+    }
+  }
+  drawTimeline(cy, mc);
+}
+
+function drawTimeline(cy, mc) {
+  for (let sw = 0; sw < 2; sw++) {
+    const myc = cy[sw], tot = myc.length;
+    const el = document.getElementById('tl' + sw); el.innerHTML = '';
+    const ts = document.getElementById('ts' + sw);
+    if (mc === 0) {ts.innerHTML = '<span style="color:var(--dim)">Select a read index to see cycles</span>'; continue;}
+    for (let ci = 0; ci < mc; ci++) {
+      if (ST.c > 0 && ci + 1 > ST.c) continue;
+      let cls = 'tl-row';
+      if (ST.c > 0 && ci + 1 === ST.c) cls += ' sel';
+      else if (ST.c > 0 && ci + 1 < ST.c && ci < tot) cls += ' done';
+      const row = mk('div', cls);
+      row.onclick = (v => () => {ST.c = v; draw();})(ci + 1);
+      const lbl = mk('div', 'tl-cyc'); lbl.textContent = 'Cycle ' + (ci + 1); row.appendChild(lbl);
+      const bbar = mk('div', 'tl-banks');
+      let active = 0;
+      for (let b = 0; b < SECS; b++) {
+        const slot = mk('div', 'tl-b');
+        const rds = []; if (ci < tot) for (const rd of myc[ci]) if (rd.b === b) rds.push(rd);
+        if (rds.length > 0) {
+          slot.style.background = BK[b]; slot.textContent = rds.map(x => x.c).join(',');
+          if (ST.c === ci + 1) slot.classList.add('on');
+          active++;
+        } else {
+          slot.classList.add('empty'); slot.textContent = '\u00b7';
+        }
+        bbar.appendChild(slot);
+      }
+      row.appendChild(bbar);
+      const cnt = mk('div', 'tl-cnt');
+      if (ci < tot) cnt.textContent = active + '/' + SECS;
+      else cnt.textContent = '\u2014';
+      row.appendChild(cnt);
+      el.appendChild(row);
+    }
+    if (tot <= 1) ts.innerHTML = '<span class="good">1 cycle \u2014 no conflicts</span>';
+    else ts.innerHTML = '<span class="bad">' + tot + ' cycles \u2014 bank sector conflicts</span>';
+  }
+}
+
+function mk(t, c) {const d = document.createElement(t); if (c) d.className = c; return d;}
+
+function doPlay() {
+  if (ST.pl) {clearInterval(ST.tm); ST.pl = false; draw(); return;}
+  const mc = Math.max(getCycles(getCells(), false).length, getCycles(getCells(), true).length);
+  ST.c = 1; ST.pl = true; draw();
+  ST.tm = setInterval(() => {ST.c++; if (ST.c > mc) {ST.c = 0; clearInterval(ST.tm); ST.pl = false;} draw();}, 700);
+}
+
+function updateReadButtons() {
+  const { ac, rowTile } = f();
+  document.getElementById('rtCol').textContent = 'Col Tile (8\u00d71)';
+  document.getElementById('rtRow').textContent = 'Row Tile (' + rowTile + ')';
+}
+
+function rebuildIndex() {
+  const ig = document.getElementById('ri'); ig.innerHTML = '';
+  const { ac, div } = f();
+  const max = ST.t === 'col' ? ac : ROWS / div;
+  if (ST.i >= max) ST.i = -1;
+  const nb = mk('button', 'btn' + (ST.i < 0 ? ' on' : '')); nb.textContent = 'None';
+  nb.onclick = () => {ST.i = -1; ST.c = 0; ig.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); nb.classList.add('on'); draw();};
+  ig.appendChild(nb);
+  for (let i = 0; i < max; i++) {
+    const b = mk('button', 'btn' + (ST.i === i ? ' on' : ''));
+    if (ST.t === 'row' && div > 1) {
+      b.textContent = 'r' + (i * div) + '-' + (i * div + div - 1);
+    } else {
+      b.textContent = i;
+    }
+    b.onclick = (v => () => {ST.i = v; ST.c = 0; ig.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); draw();})(i);
+    ig.appendChild(b);
+  }
+}
+
+(function init() {
+  document.getElementById('fmt').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.fmt = b.dataset.v; ST.i = -1; ST.c = 0;
+    document.querySelectorAll('#fmt .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    updateReadButtons(); rebuildIndex(); draw();
+  };
+  document.getElementById('rt').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.t = b.dataset.v; ST.c = 0;
+    document.querySelectorAll('#rt .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    rebuildIndex(); draw();
+  };
+  document.getElementById('dt').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.dsize = +b.dataset.v;
+    document.querySelectorAll('#dt .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    draw();
+  };
+  updateReadButtons();
+  rebuildIndex();
+
+  // Legend
+  const lg = document.getElementById('lg');
+  const r1 = mk('div', 'leg-row');
+  for (let i = 0; i < SECS; i++) {const d = mk('div', 'li'), w = mk('div', 'swtch'); w.style.background = BK[i]; d.appendChild(w); d.appendChild(document.createTextNode('Sector ' + i)); r1.appendChild(d);}
+  lg.appendChild(r1);
+  const r2 = mk('div', 'leg-row');
+  const enc = [['brd', 'Current read'], ['brd-prev', 'Earlier cycle'], ['faded', 'Not read']];
+  for (const [cls, txt] of enc) {const d = mk('div', 'li'), w = mk('div', 'swtch ' + cls); d.appendChild(w); d.appendChild(document.createTextNode(txt)); r2.appendChild(d);}
+  r2.appendChild(mk('div', 'leg-sep'));
+  r2.appendChild(Object.assign(mk('div', 'li'), {textContent: '1 cell = 16 bytes = 1 bank sector \u00a0|\u00a0 Cell value = logical column index'}));
+  lg.appendChild(r2);
+
+  // Hover-to-map arrow
+  const panels = document.querySelector('.panels');
+  const arrowSvg = document.getElementById('arrow');
+  function drawArrow() {
+    arrowSvg.innerHTML = ''; const hovs = panels.querySelectorAll('.cell.hov');
+    if (hovs.length < 2) return;
+    const pr = panels.getBoundingClientRect();
+    const a = hovs[0].getBoundingClientRect(), b = hovs[1].getBoundingClientRect();
+    const x1 = a.left + a.width / 2 - pr.left, y1 = a.top - pr.top, x2 = b.left + b.width / 2 - pr.left, y2 = b.top - pr.top;
+    const mx = (x1 + x2) / 2, my = Math.min(y1, y2) - 30;
+    const ns = 'http://www.w3.org/2000/svg';
+    const defs = document.createElementNS(ns, 'defs'); const marker = document.createElementNS(ns, 'marker');
+    marker.setAttribute('id', 'ah'); marker.setAttribute('markerWidth', '8'); marker.setAttribute('markerHeight', '6');
+    marker.setAttribute('refX', '7'); marker.setAttribute('refY', '3'); marker.setAttribute('orient', 'auto');
+    const poly = document.createElementNS(ns, 'polygon'); poly.setAttribute('points', '0 0, 8 3, 0 6'); poly.setAttribute('fill', '#222');
+    marker.appendChild(poly); defs.appendChild(marker); arrowSvg.appendChild(defs);
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', 'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2);
+    path.setAttribute('marker-end', 'url(#ah)'); arrowSvg.appendChild(path);
+    const tx = document.createElementNS(ns, 'text'); tx.setAttribute('x', mx); tx.setAttribute('y', my - 4); tx.setAttribute('text-anchor', 'middle');
+    tx.textContent = 'swizzle mapped location'; arrowSvg.appendChild(tx);
+  }
+  let hovCell = null;
+  function clearArrow() {panels.querySelectorAll('.cell.hov').forEach(d => d.classList.remove('hov')); arrowSvg.innerHTML = ''; hovCell = null;}
+  panels.addEventListener('mouseenter', e => {
+    const cell = e.target.closest('.cell'); if (!cell || !cell.dataset.r || cell.classList.contains('blank')) return;
+    clearArrow(); hovCell = cell; const r = cell.dataset.r, c = cell.dataset.c;
+    panels.querySelectorAll('.cell').forEach(d => {d.classList.toggle('hov', d.dataset.r === r && d.dataset.c === c && !d.classList.contains('blank'));});
+    drawArrow();
+  }, true);
+  panels.addEventListener('mouseleave', e => {
+    const cell = e.target.closest('.cell'); if (!cell || !cell.dataset.r) return;
+    clearArrow();
+  }, true);
+  document.addEventListener('keydown', e => {
+    const mc = Math.max(getCycles(getCells(), false).length, getCycles(getCells(), true).length);
+    if (e.key === 'ArrowRight') {ST.c = Math.min(ST.c + 1, mc); draw();}
+    else if (e.key === 'ArrowLeft') {ST.c = Math.max(ST.c - 1, 0); draw();}
+    else if (e.key === ' ') {e.preventDefault(); doPlay();}
+  });
+  draw();
+})();
+</script>
+</body>
+</html>

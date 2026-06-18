@@ -1,0 +1,41 @@
+/* Zoomable viewer for embedded slide demos (see demo-embed.js). */
+.demo-embed {
+  margin: 0.6rem 0;
+  border: 1px solid var(--pst-color-border, #d0d0d0);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.demo-toolbar {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  padding: 4px 6px;
+  background: var(--pst-color-surface, #f3f3f3);
+  border-bottom: 1px solid var(--pst-color-border, #e2e2e2);
+}
+.demo-zoom-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--pst-color-border, #cccccc);
+  border-radius: 4px;
+  background: var(--pst-color-on-background, #ffffff);
+  color: var(--pst-color-text-base, #333333);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.demo-zoom-btn:hover {
+  background: var(--pst-color-surface, #ececec);
+}
+.demo-viewport {
+  overflow: auto;
+  max-height: 80vh;
+}
+.demo-stage {
+  position: relative;
+}
+.demo-stage iframe {
+  display: block;
+  border: 0;
+}
