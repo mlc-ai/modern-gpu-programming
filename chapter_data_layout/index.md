@@ -77,7 +77,7 @@ S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
 ```
 *Interactive: a layout distributed over a 2×2 GPU mesh.*
 
-### Replication in practice: scale factors in TMEM
+### Intra-kernel replication pattern: scale factors in TMEM
 
 Replication is not only about multiple GPUs — it also describes data the hardware *broadcasts across
 lanes*. Blackwell's block-scaled MMA ({ref}`chap_layout_generations`) is the clean example. Its
