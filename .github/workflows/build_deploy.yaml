@@ -1,45 +1,45 @@
-# GH actions.
-name: Build_Deploy
+# Build the Sphinx book and deploy it to GitHub Pages.
+name: Build and Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
-jobs:
-  Build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
+# peaceiris pushes the built site to the gh-pages branch with GITHUB_TOKEN.
+permissions:
+  contents: write
 
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: tirx
-        environment-file: static/build.yml
-    - name: Conda info
-      run: |
-        conda info
-        conda list
-    - name: Install dependencies
-      run: |
-        conda install pandoc
-        pip install git+https://github.com/d2l-ai/d2l-book
-    - name: Build
-      run: |
-        d2lbook build html
-    - name: Deploy
-      if: github.ref == 'refs/heads/main'
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./_build/html
-        cname: tirx-tutorial.mlc.ai
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install doc dependencies
+        run: pip install -r requirements-docs.txt
+
+      # tvm is a from-source build and not available on CI, so mock it for the
+      # API autodoc (DOCS_MOCK_TVM=1). The rest of the book builds in full.
+      - name: Build (Sphinx)
+        env:
+          DOCS_MOCK_TVM: "1"
+        run: sphinx-build -b html . _build/html
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_build/html
+          # Custom domain: the repo was renamed to modern-gpu-programming; update
+          # or remove this to match your DNS. Remove the line to serve at
+          # https://mlc-ai.github.io/modern-gpu-programming/
+          cname: tirx-tutorial.mlc.ai
