@@ -26,8 +26,8 @@ What "native level" means
 A native-level TIRx kernel reads like a structured device kernel: you place
 threads yourself, allocate shared/register buffers, write loops and barriers, and
 call device intrinsics directly. There is no automatic scheduling — what you write
-is what is emitted. This is the foundation the tile primitives
-(:doc:`tile_primitives`) are built on; everything here is what those primitives
+is what is emitted. This is the foundation the higher-level tile primitives are built on; everything
+here is what those primitives
 ultimately lower to, so it is also where you go when a hardware feature does not
 have a primitive yet.
 

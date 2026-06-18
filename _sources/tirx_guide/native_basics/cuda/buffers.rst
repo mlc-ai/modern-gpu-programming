@@ -397,7 +397,7 @@ bump-allocation, and the datapath layout:
     # ... use acc ...
     tmem_pool.dealloc()                              # emits tcgen05.dealloc (one warp)
 
-See the :doc:`../../tile_primitives` walkthroughs for full examples.
+See the Part III GEMM kernels for full examples.
 
 Buffer APIs
 -----------

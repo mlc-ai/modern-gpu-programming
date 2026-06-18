@@ -130,8 +130,7 @@ The placement has one new twist: **the scale factors live in TMEM**, not SMEM (t
 | C (M, N) | f32 | TMEM |
 
 So the scale factors take a detour the data operands don't: they are TMA-loaded into SMEM, then
-copied SMEM → TMEM with `tcgen05.cp` (a `Tx.copy_async` whose destination is a `tmem` buffer)
-before the MMA. In TMEM they are packed as `uint32` cells, with logical row `r` landing at
+copied SMEM → TMEM with `tcgen05.cp` before the MMA. In TMEM they are packed as `uint32` cells, with logical row `r` landing at
 TMEM lane `r % 128`, column `col0 + r / 128`.
 
 Under **`cta_group::2`** the scale factors split exactly like the data they describe: **SFA follows

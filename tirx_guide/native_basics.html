@@ -51,7 +51,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="CUDA C++/PTX" href="native_basics/cuda.html" />
-    <link rel="prev" title="Installation" href="install.html" />
+    <link rel="prev" title="Cluster Launch Control (CLC)" href="../chapter_clc/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -181,8 +181,6 @@
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 <li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="native_basics/cuda.html">CUDA C++/PTX</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="native_basics/cuda/first_kernel.html">Your first kernel</a></li>
@@ -198,38 +196,6 @@
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="layout.html">Tensor Layout</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/reg.html">copy → reg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy/fallback.html">copy → fallback</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="tile_primitives/gemm.html">gemm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tile_primitives/gemm_async.html">gemm_async</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/reduction/local.html">reduction → local</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/reduction/shared.html">reduction → shared</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="tile_primitives/permute_layout.html">permute_layout</a></li>
-</ul>
-</details></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
 <ul class="nav bd-sidenav">
@@ -364,8 +330,8 @@
 <p>A native-level TIRx kernel reads like a structured device kernel: you place
 threads yourself, allocate shared/register buffers, write loops and barriers, and
 call device intrinsics directly. There is no automatic scheduling — what you write
-is what is emitted. This is the foundation the tile primitives
-(<a class="reference internal" href="tile_primitives.html"><span class="doc">Tile Primitives</span></a>) are built on; everything here is what those primitives
+is what is emitted. This is the foundation the higher-level tile primitives are built on; everything
+here is what those primitives
 ultimately lower to, so it is also where you go when a hardware feature does not
 have a primitive yet.</p>
 </section>
@@ -404,12 +370,12 @@ and device intrinsics, and the generated source. Pick your backend:</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="install.html"
+       href="../chapter_clc/index.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Installation</p>
+        <p class="prev-next-title">Cluster Launch Control (CLC)</p>
       </div>
     </a>
     <a class="right-next"

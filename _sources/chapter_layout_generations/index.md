@@ -186,8 +186,7 @@ genuinely new here is the **scale factors** of a block-scaled MMA.
 
 A block-scaled MMA (mxfp8, nvfp4) carries two operands beyond A and B — `SFA (M, SFK)` and
 `SFB (N, SFK)`, where `SFK = K / block` — and, unlike A and B, **the scale factors live in TMEM**,
-not SMEM. They take the SMEM→TMEM detour: a TMA load brings them into SMEM, then `tcgen05.cp` (a
-`Tx.copy_async` whose destination is a `tmem` buffer) copies them into TMEM before the MMA.
+not SMEM. They take the SMEM→TMEM detour: a TMA load brings them into SMEM, then `tcgen05.cp` copies them into TMEM before the MMA.
 
 The TMEM layout itself (`sf_tmem_layout`, the PTX *tcgen05 MMA scale-factor A layout*) is the
 lane-replication example from {ref}`chap_data_layout`: a 128-row scale vector packs into 32 lanes

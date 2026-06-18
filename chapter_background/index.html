@@ -183,8 +183,6 @@
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/install.html">Installation</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/native_basics/cuda.html">CUDA C++/PTX</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/first_kernel.html">Your first kernel</a></li>
@@ -200,38 +198,6 @@
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../tirx_guide/layout.html">Tensor Layout</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/reg.html">copy → reg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/fallback.html">copy → fallback</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/gemm.html">gemm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/gemm_async.html">gemm_async</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/local.html">reduction → local</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/shared.html">reduction → shared</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/permute_layout.html">permute_layout</a></li>
-</ul>
-</details></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
 <ul class="nav bd-sidenav">
@@ -460,11 +426,9 @@ TMEM into registers for the epilogue. Two consequences show up everywhere later:
 <p><strong>Distributed shared memory (DSMEM).</strong> SMEM is per-CTA, but within a cluster (covered in the next
 section) a CTA can reach a <em>peer</em> CTA’s shared memory. The hardware exposes this
 in two parts. First, an address: the <code class="docutils literal notranslate"><span class="pre">mapa</span></code> instruction maps a local SMEM pointer to a specific
-CTA rank in the cluster — in TIRx that is <code class="docutils literal notranslate"><span class="pre">T.ptx.map_shared_rank(ptr,</span> <span class="pre">cta_id)</span></code>, which returns the
-same offset in CTA <code class="docutils literal notranslate"><span class="pre">cta_id</span></code>’s SMEM. Second, a transfer: a single thread can bulk-copy a tile
-between two CTAs’ shared memory through the cluster. That is the <strong>DSMEM</strong> dispatch of
-<code class="docutils literal notranslate"><span class="pre">Tx.copy_async</span></code> — given a remote CTA id and an mbarrier it emits
-<code class="docutils literal notranslate"><span class="pre">cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes</span></code>, copying from the issuing
+CTA rank in the cluster, returning the same offset in CTA <code class="docutils literal notranslate"><span class="pre">cta_id</span></code>’s SMEM. Second, a transfer: a single thread can bulk-copy a tile
+between two CTAs’ shared memory through the cluster: given a remote CTA id and an mbarrier, the
+hardware emits <code class="docutils literal notranslate"><span class="pre">cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes</span></code>, copying from the issuing
 CTA’s SMEM into the mapped peer SMEM and signalling the mbarrier when the bytes land. The 2-CTA
 cluster GEMM in Part III uses exactly this to share operand tiles across the pair without a round
 trip through global memory.</p>

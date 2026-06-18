@@ -40,8 +40,7 @@ the only lever is moving fewer bytes (or moving them faster). A kernel **above**
 
 Where a kernel lands on the roofline is mostly decided by the algorithm, not the code.
 
-- **Elementwise and reductions** (the GELU and RMSNorm kernels of {ref}`chap_fused_gelu` and
-  {ref}`chap_rmsnorm`) read and write large tensors but do only a few FLOPs per element. Their
+- **Elementwise and reductions** (GELU, RMSNorm) read and write large tensors but do only a few FLOPs per element. Their
   AI is well below 1 — deep in the memory-bound region. The best such a kernel can do is
   saturate HBM bandwidth, so the design goals are coalesced/TMA loads and fusion (do more math
   per byte loaded).

@@ -17,8 +17,7 @@ are a Hopper feature ({ref}`chap_background`). CLC is the Blackwell addition tha
 
 ## The Two Instructions
 
-CLC is two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6), exposed in TIRx as
-`T.ptx.clc_try_cancel` and `T.ptx.clc_query_cancel`:
+CLC is two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6):
 
 - **`try_cancel`** — `clusterlaunchcontrol.try_cancel.async`. A single asynchronous request that
   asks the scheduler to *cancel the launch* of the next pending cluster and hand this cluster its

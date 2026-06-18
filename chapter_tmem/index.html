@@ -181,8 +181,6 @@
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tirx_guide/install.html">Installation</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/native_basics.html">TIRx Basics: Native Level</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/native_basics/cuda.html">CUDA C++/PTX</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../tirx_guide/native_basics/cuda/first_kernel.html">Your first kernel</a></li>
@@ -198,38 +196,6 @@
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../tirx_guide/layout.html">Tensor Layout</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives.html">Tile Primitives</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/copy.html">copy</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/gmem_smem.html">copy → gmem_smem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/reg.html">copy → reg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/ldstmatrix.html">copy → ldstmatrix</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy/fallback.html">copy → fallback</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async.html">copy_async</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/ldgsts.html">copy_async → ldgsts</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tma.html">copy_async → tma</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/dsmem.html">copy_async → dsmem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tcgen05_cp.html">copy_async → tcgen05_cp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/copy_async/tcgen05_ldst.html">copy_async → tcgen05_ldst</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/gemm.html">gemm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/gemm_async.html">gemm_async</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise.html">elementwise</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise/reg.html">elementwise → reg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/elementwise/smem.html">elementwise → smem</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction.html">reduction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/local.html">reduction → local</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/shared.html">reduction → shared</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tirx_guide/tile_primitives/reduction/sm100_packed.html">reduction → sm100_packed</a></li>
-</ul>
-</details></li>
-<li class="toctree-l2"><a class="reference internal" href="../tirx_guide/tile_primitives/permute_layout.html">permute_layout</a></li>
-</ul>
-</details></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III — GEMM: Tiled to SOTA</span></p>
 <ul class="nav bd-sidenav">
@@ -389,12 +355,11 @@ out through three dedicated <code class="docutils literal notranslate"><span cla
 (the <code class="docutils literal notranslate"><span class="pre">.32x32b</span></code> / <code class="docutils literal notranslate"><span class="pre">.16x*b</span></code> datapath atoms). It distributes the TMEM tile into registers in the
 <strong>m8n8 register fragment</strong> (<a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Through GPU Generations</span></a>) — lane <code class="docutils literal notranslate"><span class="pre">l</span></code> gets row <code class="docutils literal notranslate"><span class="pre">l/4</span></code>, two
 columns. So the epilogue pulls the accumulator out of TMEM into the <em>same</em> per-lane fragment an
-Ampere <code class="docutils literal notranslate"><span class="pre">mma</span></code> or Hopper <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> produces, then casts and stores it. In TIRx:
-<code class="docutils literal notranslate"><span class="pre">Tx.wg.copy_async(reg,</span> <span class="pre">tmem[...])</span></code>.</p></li>
+Ampere <code class="docutils literal notranslate"><span class="pre">mma</span></code> or Hopper <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> produces, then casts and stores it.</p></li>
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code> — registers → TMEM.</strong> The reverse, in that same fragment — used to stage data a
-thread already holds in registers (e.g. an A operand) into TMEM. <code class="docutils literal notranslate"><span class="pre">Tx.wg.copy_async(tmem[...],</span> <span class="pre">reg)</span></code>.</p></li>
+thread already holds in registers (e.g. an A operand) into TMEM.</p></li>
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">tcgen05.cp</span></code> — SMEM → TMEM.</strong> A bulk copy (the <code class="docutils literal notranslate"><span class="pre">32x128b.warpx4</span></code> form) — this is what stages the
-block-scaled MMA’s scale factors. <code class="docutils literal notranslate"><span class="pre">Tx.copy_async(tmem,</span> <span class="pre">smem)</span></code>.</p></li>
+block-scaled MMA’s scale factors.</p></li>
 </ul>
 <p><img alt="tcgen05.ld / st move the TMEM accumulator to and from registers in the m8n8 fragment (lane l → row l/4, two columns)" src="../_images/tcgen05_ldst.svg" /></p>
 <p>All three are <strong>asynchronous</strong>: like TMA and the MMA, they return before the data has moved, so a
