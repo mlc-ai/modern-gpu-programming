@@ -57,10 +57,14 @@ function splitTopLevel(s, sep) {
   let depth = 0, cur = '';
   for (const ch of s) {
     if (ch === '(' || ch === '[') depth++;
-    else if (ch === ')' || ch === ']') depth--;
+    else if (ch === ')' || ch === ']') {
+      depth--;
+      if (depth < 0) throw new Error('unmatched closing bracket or parenthesis');
+    }
     if (ch === sep && depth === 0) { out.push(cur); cur = ''; }
     else cur += ch;
   }
+  if (depth !== 0) throw new Error('unmatched opening bracket or parenthesis');
   out.push(cur);
   return out;
 }
@@ -100,15 +104,27 @@ function defaultStrides(extents) {
   return strides;
 }
 
+function parseExtents(s) {
+  // Parse a comma-separated extent list and reject non-positive / oversized
+  // extents, so bad input (e.g. R[1000000:...] or a 0/negative extent) can't
+  // NaN-propagate or freeze the tab with huge loops in physOwners().
+  const extents = splitTopLevel(stripParens(s), ',').map(parseIntStrict);
+  for (const e of extents) {
+    if (e <= 0) throw new Error(`extent must be positive, got ${e}`);
+    if (e > MAX_ELEMENTS) throw new Error(`extent ${e} exceeds maximum ${MAX_ELEMENTS}`);
+  }
+  return extents;
+}
+
 function parseBracket(inner) {
   const parts = splitTopLevel(inner, ':');
   if (parts.length === 1) {
-    const extents = splitTopLevel(stripParens(parts[0]), ',').map(parseIntStrict);
+    const extents = parseExtents(parts[0]);
     const strides = defaultStrides(extents);
     return extents.map((e, i) => ({ extent: e, stride: strides[i], axis: 'm' }));
   }
   if (parts.length !== 2) throw new Error('layout bracket must be "shape : stride"');
-  const extents = splitTopLevel(stripParens(parts[0]), ',').map(parseIntStrict);
+  const extents = parseExtents(parts[0]);
   const terms = splitTopLevel(stripParens(parts[1]), ',').map(parseTerm);
   if (extents.length !== terms.length) {
     throw new Error(`shape has ${extents.length} dims but stride has ${terms.length}`);
@@ -132,8 +148,10 @@ function parseSwizzlePrefix(src) {
   const per_element = parseIntStrict(a[0]);
   const swizzle_len = parseIntStrict(a[1]);
   const atom_len = parseIntStrict(a[2]);
-  if (per_element < 0 || swizzle_len < 0 || atom_len < swizzle_len) {
-    throw new Error('swizzle requires per_element≥0, swizzle_len≥0, atom_len≥swizzle_len');
+  if (per_element < 0 || swizzle_len < 0 || atom_len < swizzle_len
+      || per_element >= 31 || atom_len >= 31) {
+    // atom_len/per_element feed 32-bit bitwise shifts in swizzleAddr; cap < 31.
+    throw new Error('swizzle requires 0≤per_element<31, swizzle_len≥0, swizzle_len≤atom_len<31');
   }
   const inner = a[3] === undefined ? true : (a[3] === 'true' || a[3] === '1');
   return { swizzle: { per_element, swizzle_len, atom_len, inner }, rest: m[2].trim() };
@@ -272,7 +290,7 @@ const ST = {
   gridAxes: [], yAxis: null, xAxis: null, cellAxes: [],
   yVals: [], xVals: [],
   byFlat: [],     // flat -> { owners:[phys], keys:[gridKey], color }
-  byCell: null,   // "y#x" -> [{flat, slot}]
+  byCell: new Map(),   // "y#x" -> [{flat, slot}]
 };
 let hovFlat = null;
 let drawing = false;
