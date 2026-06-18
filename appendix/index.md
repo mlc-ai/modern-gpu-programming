@@ -9,6 +9,5 @@ while reading the chapters:
 | Look up the spelling of a TIRx API used in the book | **{ref}`chap_api_reference`** |
 | Read the full Flash Attention 4 kernel source | **{ref}`chap_fa4_source`** |
 
-Setup ({ref}`chap_setup`), the TIRx language and compile pipeline ({ref}`chap_tirx_primer`),
-and the first kernels ({ref}`chap_fused_gelu`, {ref}`chap_rmsnorm`) are now part of the main
-path in Parts I–II rather than the appendix.
+The TIRx native level ({ref}`chap_tirx_primer`) and the tensor layout model
+({ref}`chap_data_layouts`) are covered in Part II.

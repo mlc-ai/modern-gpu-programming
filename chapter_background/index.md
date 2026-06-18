@@ -81,11 +81,9 @@ TMEM into registers for the epilogue. Two consequences show up everywhere later:
 **Distributed shared memory (DSMEM).** SMEM is per-CTA, but within a cluster (covered in the next
 section) a CTA can reach a *peer* CTA's shared memory. The hardware exposes this
 in two parts. First, an address: the `mapa` instruction maps a local SMEM pointer to a specific
-CTA rank in the cluster — in TIRx that is `T.ptx.map_shared_rank(ptr, cta_id)`, which returns the
-same offset in CTA `cta_id`'s SMEM. Second, a transfer: a single thread can bulk-copy a tile
-between two CTAs' shared memory through the cluster. That is the **DSMEM** dispatch of
-`Tx.copy_async` — given a remote CTA id and an mbarrier it emits
-`cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes`, copying from the issuing
+CTA rank in the cluster, returning the same offset in CTA `cta_id`'s SMEM. Second, a transfer: a single thread can bulk-copy a tile
+between two CTAs' shared memory through the cluster: given a remote CTA id and an mbarrier, the
+hardware emits `cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes`, copying from the issuing
 CTA's SMEM into the mapped peer SMEM and signalling the mbarrier when the bytes land. The 2-CTA
 cluster GEMM in Part III uses exactly this to share operand tiles across the pair without a round
 trip through global memory.

@@ -55,11 +55,8 @@ part_advanced/index
 :caption: Part II — Programming a GPU with TIRx
 :maxdepth: 2
 
-tirx_guide/overview
-tirx_guide/install
 tirx_guide/native_basics
 tirx_guide/layout
-tirx_guide/tile_primitives
 ```
 
 ```{toctree}

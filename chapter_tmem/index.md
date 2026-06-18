@@ -32,12 +32,11 @@ out through three dedicated `tcgen05` instructions:
   (the `.32x32b` / `.16x*b` datapath atoms). It distributes the TMEM tile into registers in the
   **m8n8 register fragment** ({ref}`chap_layout_generations`) — lane `l` gets row `l/4`, two
   columns. So the epilogue pulls the accumulator out of TMEM into the *same* per-lane fragment an
-  Ampere `mma` or Hopper `wgmma` produces, then casts and stores it. In TIRx:
-  `Tx.wg.copy_async(reg, tmem[...])`.
+  Ampere `mma` or Hopper `wgmma` produces, then casts and stores it.
 - **`tcgen05.st` — registers → TMEM.** The reverse, in that same fragment — used to stage data a
-  thread already holds in registers (e.g. an A operand) into TMEM. `Tx.wg.copy_async(tmem[...], reg)`.
+  thread already holds in registers (e.g. an A operand) into TMEM.
 - **`tcgen05.cp` — SMEM → TMEM.** A bulk copy (the `32x128b.warpx4` form) — this is what stages the
-  block-scaled MMA's scale factors. `Tx.copy_async(tmem, smem)`.
+  block-scaled MMA's scale factors.
 
 ![tcgen05.ld / st move the TMEM accumulator to and from registers in the m8n8 fragment (lane l → row l/4, two columns)](../img/tcgen05_ldst.svg)
 
