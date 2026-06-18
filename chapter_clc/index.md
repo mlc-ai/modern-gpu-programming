@@ -12,7 +12,7 @@ scheduler — in hardware — for the next not-yet-launched cluster's work and t
 handed out dynamically, so an SM that finishes early immediately pulls more.
 
 Thread block clusters *themselves* — launching CTAs in clusters with DSMEM and cluster barriers —
-are a Hopper feature ({ref}`part_hopper`). CLC is the Blackwell addition that makes their
+are a Hopper feature ({ref}`chap_background`). CLC is the Blackwell addition that makes their
 **scheduling** dynamic.
 
 ## The Two Instructions

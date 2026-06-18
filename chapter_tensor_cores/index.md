@@ -1,5 +1,5 @@
 (chap_tensor_cores)=
-# Blackwell's Tensor Core: `tcgen05` and TMEM
+# Tensor Cores: `tcgen05`
 
 Tensor Cores are not new. They have executed tile-level matrix multiply-accumulate
 ($D = AB + C$) since Volta (2017), and every generation since has carried them — see
@@ -9,8 +9,8 @@ results live*.
 
 Blackwell's **fifth-generation** Tensor Core, exposed through the **`tcgen05`** instruction
 family, changes where the accumulator lives: it moves out of registers and into a dedicated
-on-chip memory, **Tensor Memory (TMEM)**. This
-chapter covers the `tcgen05` MMA and how TMEM is addressed and managed.
+on-chip memory, **Tensor Memory (TMEM)** ({ref}`chap_tmem`). This chapter covers the `tcgen05`
+MMA itself.
 
 ```{raw} html
 <div style="overflow-x:auto;">
@@ -31,7 +31,7 @@ knobs from the introduction:
    single elected thread.
 2. **Layout — where operands and result live.** Operands are tiles in SMEM (some variants also
    read an A-operand from TMEM); the accumulator is written to TMEM. Operand layouts must match
-   what the Tensor Core expects, which is where swizzle ({ref}`chap_data_layouts`) comes in.
+   what the Tensor Core expects, which is where swizzle ({ref}`chap_data_layout`) comes in.
 3. **Dispatch — which path runs it.** `tcgen05` issues the MMA and *returns before the math is
    done* — it is asynchronous. Completion is tracked with a barrier ({ref}`chap_async_barriers`).
 
@@ -39,29 +39,12 @@ knobs from the introduction:
 fast kernel issues the next tile's loads while the current MMA is still running, then waits on the
 barrier only when it actually needs the result.
 
-## Tensor Memory (TMEM)
+## The accumulator lives in TMEM
 
-The defining Blackwell change is *where the accumulator lives*. Earlier generations kept large MMA
-accumulators in registers throughout the compute phase; `tcgen05.mma` instead writes them to
-**TMEM**, a per-SM 2D scratchpad of 128 rows × up to 512 32-bit columns.
-
-![TMEM 2D layout: TLane rows × TCol columns](../img/tmem_layout.png)
-
-Three properties of TMEM shape every Blackwell tensor-core kernel:
-
-- **Its own 2D address space.** TMEM is not addressed like linear memory. Rows are indexed by a
-  hardware axis called `TLane` (128 lanes) and columns by `TCol` (up to 512). A TMEM buffer is
-  declared with a layout over these axes (you will see `S[(128, N) : (1@TLane, 1@TCol)]` in the
-  GEMM chapters).
-- **Explicit, warpgroup-cooperative reads.** To consume results, the kernel explicitly loads TMEM
-  into registers, and that load is performed by the full warpgroup (128 threads, one TMEM row
-  each). It is asynchronous too, so it is followed by a `tcgen05.wait` before the registers are read.
-- **Explicit allocation.** TMEM must be allocated and freed by the kernel. Allocation is done by a
-  single warp, in units of 32 columns, with the column count rounded up to a power of two — so
-  TMEM is a budgeted resource, like SMEM.
-
-When you reach {ref}`chap_gemm_basics`, this is the path you will write directly: TMA stages the
-operands, `tcgen05.mma` accumulates into TMEM, and the epilogue reads TMEM back to produce output.
+The defining Blackwell change is *where the accumulator lives*: `tcgen05.mma` writes it to
+**Tensor Memory (TMEM)** — the per-SM 2D scratchpad covered in {ref}`chap_tmem` — instead of to
+registers, and the epilogue reads it back with `tcgen05.ld`. The rest of this chapter is the MMA
+itself: how it is issued and how its operands split.
 
 ## `cta_group::1` vs `cta_group::2`, and the M Dimension
 

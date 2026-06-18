@@ -1,16 +1,11 @@
 (chap_layout_generations)=
 # Data Layout Through GPU Generations
 
-A *layout* is the map from a tensor's logical indices `(i, j, …)` to a physical location — which
-lane holds a value, which SMEM bank it sits in, which byte of global memory it came from. On a GPU
-the layout is a first-class performance concern: the memory system and the compute engines each
-demand a *specific* layout, and getting it wrong is silently slow (or wrong). This chapter is
-organized by generation — **Ampere, Hopper, Blackwell** — because what changed across them is
-exactly *how operands reach the tensor core*.
-
-The TIRx mechanics for *expressing* layouts — the `S[...]` notation, named axes, and swizzle
-atoms — are in {ref}`chap_data_layouts`; the Blackwell TMEM specifics are in
-{ref}`chap_tensor_cores`. This chapter is the cross-generation hardware picture.
+Building on the layout notation from {ref}`chap_data_layout` (`S[...]`, named axes, swizzle), this
+chapter is organized by generation — **Ampere, Hopper, Blackwell** — because what changed across
+them is exactly *how operands reach the tensor core*. Each generation's memory and compute engines
+demand a *specific* operand layout, and getting it wrong is silently slow (or wrong); the Blackwell
+TMEM specifics are in {ref}`chap_tmem`.
 
 ## Two Constraints That Never Went Away
 
@@ -213,29 +208,9 @@ matches the PTX *scale-factor A* 1x/2x/4x layouts:
 Under `cta_group::2` the scale factors split the way their data does — **SFA follows A** (each CTA
 holds the M-half matching its A rows) and **SFB is multicast** to both CTAs ({ref}`chap_tensor_cores`).
 
-### Reading and writing TMEM
-
-TMEM is not addressed like SMEM — there is no `ld.shared`/`st.shared` for it. Data moves in and out
-through three dedicated `tcgen05` instructions:
-
-- **`tcgen05.ld` — TMEM → registers.** A warpgroup-cooperative load with a *fixed fragment layout*
-  (the `.32x32b` / `.16x*b` datapath atoms). It distributes the TMEM tile into registers in the
-  **m8n8 register fragment** from the Ampere section — lane `l` gets row `l/4`, two columns. So the
-  epilogue pulls the accumulator out of TMEM into the *same* per-lane fragment an Ampere `mma` or
-  Hopper `wgmma` produces, then casts and stores it. In TIRx: `Tx.wg.copy_async(reg, tmem[...])`.
-- **`tcgen05.st` — registers → TMEM.** The reverse, in that same fragment — used to stage data a
-  thread already holds in registers (e.g. an A operand) into TMEM. `Tx.wg.copy_async(tmem[...], reg)`.
-- **`tcgen05.cp` — SMEM → TMEM.** A bulk copy (the `32x128b.warpx4` form) — this is what stages the
-  scale factors above. `Tx.copy_async(tmem, smem)`.
-
-![tcgen05.ld / st move the TMEM accumulator to and from registers in the m8n8 fragment (lane l → row l/4, two columns)](../img/tcgen05_ldst.svg)
-
-All three are **asynchronous**: like TMA and the MMA, they return before the data has moved, so a
-`tcgen05.wait` / commit gates any consumer ({ref}`chap_async_barriers`).
-
-So the **m8n8 register fragment** closes the loop of this chapter: it is what `ldmatrix` builds on
-Ampere, what `wgmma` outputs on Hopper, and what `tcgen05.ld` reads TMEM into on Blackwell — one
-register layout across all three generations.
+So the **m8n8 register fragment** recurs across generations: it is what `ldmatrix` builds on
+Ampere, what `wgmma` outputs on Hopper, and what `tcgen05.ld` reads TMEM into on Blackwell
+({ref}`chap_tmem`) — one register layout across all three.
 
 ## The Throughline
 

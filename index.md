@@ -25,10 +25,10 @@ tile operations.
 
 ## How This Book Is Organized
 
-- **Part I — Understanding the GPU.** What the hardware *is*: the execution and memory model,
-  the tensor-core compute engine and Tensor Memory, asynchronous data movement (TMA), the
-  barrier/phase coordination model, and the performance model (roofline, overlap) that defines
-  what "fast" means. Everything later is programming *this* machine.
+- **Part I — Understanding the GPU.** What the hardware *is*: the execution and memory model and
+  the performance model (roofline, overlap) that defines "fast"; then a deep dive into data
+  layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
+  coordination model, and advanced scheduling (CLC). Everything later is programming *this* machine.
 - **Part II — Programming a GPU with TIRx.** Setup, the TIRx language and compile pipeline,
   the scope/layout/dispatch framework, data layouts and swizzle, and your first complete
   kernels (elementwise and reductions).
@@ -44,9 +44,11 @@ tile operations.
 
 chapter_background/index
 chapter_performance/index
-arch_hopper/index
-arch_blackwell/index
-chapter_layout_generations/index
+part_data_layout/index
+part_memory/index
+part_compute/index
+chapter_async_barriers/index
+part_advanced/index
 ```
 
 ```{toctree}
