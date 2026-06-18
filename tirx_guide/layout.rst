@@ -37,13 +37,13 @@ it.
 .. raw:: html
 
    <p>
-     <a class="reference external" href="https://cdn.jsdelivr.net/gh/tlc-pack/web-data@main/images/tirx/tirx-layout-demo/index.html"
+     <a class="reference external" href="../_static/tirx-layout-demo/index.html"
         target="_blank" rel="noopener"
         style="display:inline-block; padding:10px 18px; background:#3b82f6;
         color:#fff !important; font-weight:700; border-radius:8px;
         text-decoration:none;">▶ Open the demo full screen ↗</a>
    </p>
-   <iframe src="https://cdn.jsdelivr.net/gh/tlc-pack/web-data@main/images/tirx/tirx-layout-demo/index.html?notitle"
+   <iframe src="../_static/tirx-layout-demo/index.html?notitle"
            style="width:100%; height:1040px; border:1px solid #dfe1e6;
            border-radius:10px; margin:10px 0 6px;"
            title="TIRx interactive layout demo" loading="lazy"></iframe>
