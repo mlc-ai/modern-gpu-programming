@@ -20,7 +20,7 @@ CUDA C++/PTX
 
 .. note::
 
-   Draft. Native-level kernel authoring for the **CUDA backend** (the ``"cuda"``
+   Native-level kernel authoring for the **CUDA backend** (the ``"cuda"``
    target) — the thread hierarchy, memory scopes, the ``T.cuda.*`` / ``T.ptx.*``
    intrinsics, and the compile / run / inspect loop. For what "native level"
    means in general, see :doc:`../native_basics`. The complete kernels in these

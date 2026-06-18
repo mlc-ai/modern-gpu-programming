@@ -47,8 +47,6 @@ exclude_patterns = [
     "chapter_data_layouts",
     "chapter_fused_gelu",
     "chapter_rmsnorm",
-    # "Kernel Tutorials" (how_to) dropped from Part II — Parts III–IV are the tutorials.
-    "tirx_guide/how_to",
 ]
 
 # --- HTML / theme ---

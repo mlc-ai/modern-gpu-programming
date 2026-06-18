@@ -18,9 +18,9 @@
 Compiler Internals
 ==================
 
-Design and internals of the TIRx compiler, for contributors.
+Internals of the TIRx compiler, for contributors.
 
 .. toctree::
    :maxdepth: 1
 
-   design
+   lowering_pipeline

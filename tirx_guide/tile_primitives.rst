@@ -20,8 +20,8 @@ Tile Primitives
 
 .. note::
 
-   Draft. This page documents the tile-primitive surface and dispatch as it
-   exists in the source today; signatures and variants may change.
+   This page documents the tile-primitive surface and dispatch as it exists in
+   the source today; signatures and variants may change.
 
 Tile primitives are the dispatchable, hardware-level operations a TIRx kernel
 issues — data movement (``copy``, ``copy_async``), matrix multiply (``gemm``,

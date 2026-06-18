@@ -20,13 +20,6 @@
 TIRx Basics: Native Level
 =========================
 
-.. note::
-
-   Draft. The **native level** is where you write kernels directly — placing
-   threads, allocating buffers, writing loops and barriers, and calling device
-   intrinsics — *below* the tile primitives. It maps almost one-to-one to the
-   target's native programming model.
-
 What "native level" means
 -------------------------
 

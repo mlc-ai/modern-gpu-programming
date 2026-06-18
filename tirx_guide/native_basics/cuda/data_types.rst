@@ -42,8 +42,9 @@ shared buffers across several dtypes, plus a vectorized ``float32x4`` load/store
         u8   = T.alloc_local((1,), "uint8")
         b1   = T.alloc_local((1,), "bool")
         sm   = T.alloc_shared((64,), "float16")      # ... and a shared tile
-        v    = A.vload([tx * 4], dtype="float32x4")  # a float32x4 vector value
-        O.vstore([tx * 4], v)                        # vectorized store
+        v    = T.alloc_local((1,), "float32x4")      # a vector-dtype register (float4)
+        v[0] = A.vload([tx * 4], dtype="float32x4")  # vectorized load
+        O.vstore([tx * 4], v[0])                     # vectorized store
         # ... (use f16/bf16/i32/u8/b1/sm) ...
 
 lowers to (generated CUDA, elided):
@@ -59,6 +60,11 @@ lowers to (generated CUDA, elided):
     float4        v_ptr[1];                 // float32x4  (vector)
     v_ptr[0]                  = *(float4*)(A_ptr + tx * 4);   // vectorized load
     *(float4*)(O_ptr + tx * 4) = v_ptr[0];                   // vectorized store
+
+A buffer's dtype can itself be a **vector type**: ``T.alloc_local((1,), "float32x4")``
+declares a ``float4`` register directly (you index it as ``v[0]``), and a
+``float32x4`` ``vload`` / ``vstore`` then moves it as one 16-byte access. The vector
+dtype is not tied to ``vload`` — any buffer or scalar can carry it.
 
 so the dtype → CUDA mapping is:
 

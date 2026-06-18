@@ -397,4 +397,81 @@ bump-allocation, and the datapath layout:
     # ... use acc ...
     tmem_pool.dealloc()                              # emits tcgen05.dealloc (one warp)
 
-See the kernel tutorials for full examples.
+See the :doc:`../../tile_primitives` walkthroughs for full examples.
+
+Buffer APIs
+-----------
+
+A ``Buffer`` is metadata over a pointer (see *Declaring buffers* above), so most of
+its methods are *compile-time* reshapes/reinterprets that change index arithmetic
+or hand you a pointer — they emit no runtime op of their own. The common ones:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 66
+
+   * - Method
+     - What it is
+   * - ``B.data``
+     - the raw data pointer (a ``Var``); prints as ``B_ptr``
+   * - ``B.ptr_to([i, j])``
+     - a typed pointer to an element (``address_of``); prints as ``&B_ptr[…]``
+   * - ``B.vload([i], dtype="float32x4")`` / ``B.vstore([i], v)``
+     - a vectorized load / store; prints as ``*(float4*)(B_ptr + …)``
+   * - ``B.view(*shape, layout=…)``
+     - reinterpret the same storage under a new shape/layout (no copy)
+   * - ``B.local(*shape, layout=…)``
+     - the calling thread's private register slice of a ``local`` buffer
+   * - ``B.permute(*dims)``
+     - a view with axes permuted (a transposed layout)
+   * - ``B.access_ptr(mask, …)``
+     - a masked access pointer (the ``tvm_access_ptr`` builtin), for passing a
+       region to an intrinsic
+
+**Pointers — ``ptr_to`` / ``data``.** ``ptr_to`` is how you hand an element address
+to an intrinsic or inline function; ``data`` is the base pointer:
+
+.. code-block:: python
+
+    B[tx] = T.cuda.func_call("ld", A.ptr_to([tx]), source_code=SRC, return_type="float32")
+
+.. code-block:: c++
+
+    B_ptr[tx] = ld(&A_ptr[tx]);          // ptr_to([tx]) -> &A_ptr[tx];  A.data -> A_ptr
+
+**Vectorized access — ``vload`` / ``vstore``.** Move several elements as one wide
+transfer (see also :doc:`data_types`):
+
+.. code-block:: python
+
+    B.vstore([tx * 4], A.vload([tx * 4], dtype="float32x4"))
+
+.. code-block:: c++
+
+    *(float4*)(B_ptr + tx * 4) = *(float4*)(A_ptr + tx * 4);
+
+**Reshape / reinterpret — ``view`` / ``permute``.** Both are pure metadata; the
+data pointer is unchanged, only the index arithmetic differs. ``A.view(64, 4)``
+sees the 256-element buffer as ``64×4``; ``A.permute(1, 0)`` transposes the axes:
+
+.. code-block:: python
+
+    A2 = A.view(64, 4);     y = A2[tx, 0] + A2[tx, 3]   # A2[tx, j] -> A_ptr[tx*4 + j]
+    At = A.permute(1, 0);   z = At[i, j]                # At[i, j]  -> A_ptr[j*4 + i]
+
+.. code-block:: c++
+
+    A2_ptr[tx * 4]  /* +3 */                 // view: row-major 64x4 index
+    At_ptr[(j * 4) + i]                       // permute: swapped strides
+
+**Registers — ``local``.** Decomposes a thread-axis ``local`` layout into the
+calling thread's flat register bundle (used pervasively by the tile primitives):
+
+.. code-block:: python
+
+    R  = T.alloc_buffer((32, 8), "float32", scope="local", layout=TileLayout(S[(32, 8) : (1 @ laneid, 1)]))
+    Rl = R.local(8)          # this lane's 8 registers
+
+.. code-block:: c++
+
+    alignas(64) float Rl_ptr[8];             // the lane's private registers
