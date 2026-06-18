@@ -40,7 +40,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_build/html
-          # Custom domain. Requires a DNS CNAME: modern-gpu-programming.mlc.ai ->
-          # mlc-ai.github.io. Remove this line to serve at the default
-          # https://mlc-ai.github.io/modern-gpu-programming/
-          cname: modern-gpu-programming.mlc.ai
+          # No custom domain: the site serves at the org default,
+          # https://mlc.ai/modern-gpu-programming/ . To use a custom domain, add a
+          # `cname:` line here and the matching DNS record.
