@@ -49,7 +49,8 @@ organizes its threads into a nested hierarchy, and on Blackwell the levels are t
   access, where the 128 threads cooperatively move a TMEM tile to or from registers.
 - **CTA** (*Cooperative Thread Array*, a.k.a. a CUDA thread block) — the basic scheduling unit.
   A CTA runs on a single SM and owns that SM's shared memory.
-- **Cluster** — a group of cooperating CTAs (across SMs) that can share memory and synchronize.
+- **Cluster** — a group of cooperating CTAs (across SMs) that can synchronize and access each
+  other's shared memory (distributed shared memory).
 
 These levels are not just an organizational convenience; they matter because Blackwell operations
 are **not all issued by the same group of threads**. A TMA copy is issued by one thread and
