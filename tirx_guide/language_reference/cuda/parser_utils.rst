@@ -77,4 +77,4 @@ scratch views) instead of threading many separate locals through the body.
 ---------------
 
 ``T.constexpr`` marks a compile-time kernel parameter, baked in by ``@T.jit``'s
-``.specialize(...)``. See :doc:`functions` for the details.
+``.specialize(...)``. See :ref:`chap_tirx_primer` for the details.

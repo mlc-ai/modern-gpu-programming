@@ -54,7 +54,7 @@ Both share one descriptor; the parameters that matter most:
    * - ``shape``
      - logical shape (a tuple of extents)
    * - ``layout``
-     - physical mapping (:doc:`TileLayout <../../layout>`); ``"default"`` = dense
+     - physical mapping (:ref:`TileLayout <chap_data_layouts>`); ``"default"`` = dense
        row-major
    * - ``elem_offset`` / ``allocated_addr``
      - ``elem_offset`` (or ``byte_offset``) places a *view* at an offset into
