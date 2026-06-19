@@ -6,7 +6,7 @@
 
 - Attention runs two MMAs with softmax wedged between them, so it cannot just repeat one MMA the way GEMM does.
 - The kernel composes everything from Part III (TMA, `tcgen05`, TMEM, barriers) with warp roles, online-softmax rescaling, causal masking, and GQA.
-- It is the capstone: the whole machine in one real kernel.
+- This is the book's final, integrative chapter: almost no new hardware — just every earlier technique combined into one complete, real kernel.
 :::
 
 Everything we built for GEMM — TMA tile movement, `tcgen05` MMA, TMEM, warpgroup-local register tiles, explicit barriers — carries over here unchanged. So why does Flash Attention deserve its own chapter? Because GEMM repeats *one* MMA, whereas attention runs *two* MMAs with real work wedged in between them: online softmax, masking, rescaling, and a final normalization. That middle stage is where all the new difficulty lives, and it is what we spend the chapter understanding.
