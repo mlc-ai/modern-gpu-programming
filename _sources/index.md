@@ -1,4 +1,4 @@
-# Modern GPU Programming
+# Modern GPU Programming For MLSys
 
 This book teaches modern GPU kernel programming as a progression: **understand the GPU as a
 machine → learn to program it → write state-of-the-art kernels.** It assumes you have seen
