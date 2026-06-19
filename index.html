@@ -171,7 +171,7 @@
 <li class="toctree-l1"><a class="reference internal" href="chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Flash Attention 4</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">Flash Attention 4</a></li>
 </ul>
@@ -327,7 +327,8 @@ tensor layout model (<code class="docutils literal notranslate"><span class="pre
 the Reference.</p></li>
 <li><p><strong>Part III — GEMM: Tiled to SOTA.</strong> The optimization spine — a tiled GEMM built up through
 TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.</p></li>
-<li><p><strong>Part IV — Capstone: Flash Attention.</strong> Composing the whole machine into a real kernel.</p></li>
+<li><p><strong>Part IV — Flash Attention 4.</strong> A complete attention kernel built from the Part III techniques:
+two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.</p></li>
 <li><p><strong>Part V — Workflow &amp; Practice.</strong> Profiling/debugging and writing kernels with agents.</p></li>
 <li><p><strong>Reference.</strong> TIRx language reference, the API cheat sheet, compiler internals, and the full
 Flash Attention 4 source.</p></li>
@@ -384,7 +385,7 @@ Flash Attention 4 source.</p></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Flash Attention 4</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="chapter_flash_attention/index.html">Flash Attention 4</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="chapter_flash_attention/index.html#algorithm-shape">Algorithm Shape</a></li>

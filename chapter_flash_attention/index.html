@@ -172,7 +172,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_async/index.html">Pipelining GEMM with TMA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_gemm_advanced/index.html">Scaling GEMM with Warp Specialization and Clusters</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Capstone: Flash Attention</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV — Flash Attention 4</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Flash Attention 4</a></li>
 </ul>
@@ -317,7 +317,6 @@
 <ul class="simple">
 <li><p>Attention runs two MMAs with softmax wedged between them, so it cannot just repeat one MMA the way GEMM does.</p></li>
 <li><p>The kernel composes everything from Part III (TMA, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, TMEM, barriers) with warp roles, online-softmax rescaling, causal masking, and GQA.</p></li>
-<li><p>This is the book’s final, integrative chapter: almost no new hardware — just every earlier technique combined into one complete, real kernel.</p></li>
 </ul>
 </div>
 <p>Everything we built for GEMM — TMA tile movement, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA, TMEM, warpgroup-local register tiles, explicit barriers — carries over here unchanged. So why does Flash Attention deserve its own chapter? Because GEMM repeats <em>one</em> MMA, whereas attention runs <em>two</em> MMAs with real work wedged in between them: online softmax, masking, rescaling, and a final normalization. That middle stage is where all the new difficulty lives, and it is what we spend the chapter understanding.</p>
