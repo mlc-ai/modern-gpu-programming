@@ -9,14 +9,16 @@
 - Every later optimization serves one tile pipeline — load (GMEM → SMEM), compute (SMEM → TMEM), epilogue (TMEM → registers → GMEM) — and aims to keep the compute and data-movement engines busy at once.
 :::
 
-Before we can reason about why one kernel is fast and another is slow, we need a picture of the
-hardware it runs on. A GPU runs a kernel across a hierarchy of threads, a set of distinct memory
-spaces, and a few compute and data-movement engines, and every optimization later in this book is
-ultimately a way of arranging work across those three things. This chapter assembles the picture:
-the thread hierarchy, the compute units, the memory spaces, and how a GEMM flows across them. The
-`tcgen05` compute path ({ref}`chap_tensor_cores`), TMA data movement ({ref}`chap_tma`), and the
-mbarrier coordination model ({ref}`chap_async_barriers`) each get their own chapter; here we
-establish the hierarchy and dataflow they build on.
+**Why start with the hardware?** Two kernels can compute the same result over the same numbers and
+still differ in speed by an order of magnitude — and the gap is almost never the arithmetic, it is
+how well the code fits the chip underneath. So before we write a single kernel, this chapter brings
+that chip into focus: the hierarchy of threads that run the work, the distinct memory spaces they
+move data through, and the handful of compute and data-movement engines that do the heavy lifting.
+Nearly every optimization later in the book is a way of arranging work across those three things. We
+assemble the picture here — the thread hierarchy, the compute units, the memory spaces, and how a
+GEMM flows across them — and the `tcgen05` compute path ({ref}`chap_tensor_cores`), TMA data
+movement ({ref}`chap_tma`), and the mbarrier model ({ref}`chap_async_barriers`) each build on it in
+their own chapters.
 
 ```{raw} html
 <div style="overflow-x:auto;">
