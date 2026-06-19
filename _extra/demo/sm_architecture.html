@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="../viz-base.css">
 <script src="../viz-base.js"></script>
 <style>
-  body { padding: 16px 28px; max-width: 1300px; margin: 0 auto; }
+  body { padding: 14px 24px; max-width: 1300px; margin: 0 auto; }
+  h1 { font-size: 28px; line-height: 1.1; margin-bottom: 12px; }
 
   .diagram-wrap {
     max-width: 1000px; margin: 0 auto; position: relative;
@@ -25,31 +26,31 @@
   }
   .sm-ghost-label {
     position: absolute; top: -12px; left: 14px;
-    background: #94a3b8; color: #fff; font-size: 11px; font-weight: 700;
+    background: #94a3b8; color: #fff; font-size: 13px; line-height: 1.1; font-weight: 700;
     padding: 2px 10px; border-radius: 4px; letter-spacing: .04em;
   }
 
   /* ── SM outer box ──────────────────────────────────────── */
   .sm-box {
     border: 3px solid #334155; border-radius: 14px;
-    background: #f8fafc; padding: 18px 24px 28px;
+    background: #f8fafc; padding: 16px 20px 22px;
     position: relative; margin-bottom: 12px;
   }
   .sm-label {
     position: absolute; top: -12px; left: 24px;
-    background: #334155; color: #fff; font-size: 11px; font-weight: 700;
+    background: #334155; color: #fff; font-size: 13px; line-height: 1.1; font-weight: 700;
     padding: 2px 12px; border-radius: 4px; letter-spacing: .04em;
   }
 
   /* ── HW units ──────────────────────────────────────────── */
   .hw-unit {
-    border: 2px solid; border-radius: 8px; padding: 10px 16px;
+    border: 2px solid; border-radius: 8px; padding: 8px 12px;
     text-align: center; background: #fff; cursor: pointer;
     transition: all .2s;
   }
   .hw-unit.selected { box-shadow: 0 0 0 3px rgba(0,0,0,.12); }
-  .hw-name { font-size: 12px; font-weight: 700; margin-bottom: 1px; }
-  .hw-sub  { font-size: 9.5px; color: #64748b; }
+  .hw-name { font-size: 16px; line-height: 1.05; font-weight: 700; margin-bottom: 1px; }
+  .hw-sub  { font-size: 12.5px; line-height: 1.1; color: #64748b; }
 
   .u-tc   { border-color: #059669; background: #dcfce7; }
   .u-tc .hw-name { color: #065f46; }
@@ -66,15 +67,15 @@
 
   /* ── Layout rows ───────────────────────────────────────── */
   .row-compute {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
-    margin-bottom: 28px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-bottom: 34px;
   }
   .row-mem {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
-    margin-bottom: 28px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-bottom: 34px;
   }
   .row-tma {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
     margin-bottom: 0;
   }
 
@@ -84,8 +85,8 @@
     background: #f3f4f6; color: #374151; padding: 10px 18px;
     text-align: center;
   }
-  .hbm-name { font-size: 13px; font-weight: 700; }
-  .hbm-sub  { font-size: 10px; color: #6b7280; }
+  .hbm-name { font-size: 16px; line-height: 1.1; font-weight: 700; }
+  .hbm-sub  { font-size: 12.5px; line-height: 1.1; color: #6b7280; }
 
   /* ── SVG overlay ───────────────────────────────────────── */
   .svg-overlay {
@@ -94,25 +95,25 @@
   }
   .arrow-label {
     font-family: 'SF Mono','Fira Code',monospace;
-    font-size: 9px; font-weight: 600;
+    font-size: 12px; font-weight: 600;
   }
 
   /* ── Detail panel ──────────────────────────────────────── */
   .detail-panel {
-    max-width: 900px; margin: 10px auto 0;
+    max-width: 1000px; margin: 10px auto 0;
     border: 1px solid var(--border); border-radius: 10px;
     background: var(--surface); padding: 10px 16px;
     min-height: 110px; transition: border-color .3s;
   }
-  .detail-panel .dp-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  .detail-panel .dp-title { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
   .detail-panel .dp-body {
-    font-size: 11.5px; line-height: 1.6; color: #475569;
+    font-size: 14px; line-height: 1.32; color: #475569;
   }
   .detail-panel .dp-body code {
-    font-family: 'SF Mono','Fira Code',monospace; font-size: 10px;
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 12px;
     background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #1e293b;
   }
-  .detail-panel.empty .dp-body { color: #94a3b8; font-size: 11px; }
+  .detail-panel.empty .dp-body { color: #94a3b8; font-size: 16px; line-height: 1.3; }
 
   /* ── Legend ─────────────────────────────────────────────── */
   .leg { display: flex; gap: 16px; justify-content: center;
