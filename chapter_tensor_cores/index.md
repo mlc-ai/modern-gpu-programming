@@ -61,7 +61,7 @@ what makes overlap possible: a fast kernel issues the loads for the next tile wh
 is still grinding away, and only waits on the barrier at the last moment, when it genuinely needs
 the result in hand.
 
-## The accumulator lives in TMEM
+## The Accumulator Lives in TMEM
 
 Of all the things Blackwell changes, where the accumulator lives is the defining one. On earlier
 generations the running sum $C$ sat in registers, and that had a real cost: it tied how large an

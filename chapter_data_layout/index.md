@@ -29,7 +29,7 @@ modern GPU programming, and to keep the discussion tractable we will develop a s
 runs into. We will close with **swizzling**, the mechanism that makes both row-wise and column-wise
 access to a tile efficient at the same time.
 
-## The shape–stride model
+## The Shape–Stride Model
 
 It is worth starting from the simplest possible layout, because everything else in the chapter is
 built on top of it. At its core, a layout is just two things: a **shape** and a matching set of
@@ -81,7 +81,7 @@ ownership arrangement. The moment you change which thread or register owns an el
 SMEM swizzle, you generally need real data movement — loads, stores, shuffles, `ldmatrix`,
 transposes.
 
-## Tile layout
+## Tile Layout
 
 So far we have described layouts for whole tensors. GPU kernels, however, rarely operate on an
 entire matrix at once; they work on smaller tiles, which are loaded, transformed, and computed on by
@@ -107,7 +107,7 @@ coordinates and then mapped to a physical address.
 ```
 *Interactive: click a cell to see its tiled index and address.*
 
-## Named axes
+## Named Axes
 
 Up to this point we have treated an address as a location in linear memory. On a GPU, though, data
 can live in more than one place: besides memory, a tile may be spread across warp lanes, across
@@ -138,7 +138,7 @@ lanes and per-lane registers, rather than placing them in linear memory.
 ```
 *Interactive: a layout over `@laneid` and `@reg` — click a cell to see which lane/register holds it.*
 
-## Distributed layout
+## Distributed Layout
 
 What makes named axes so useful is that they let us describe placement uniformly across many levels
 of the system. We have just used them for lanes and registers inside a single GPU, but the very same
@@ -159,7 +159,7 @@ S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
 ```
 *Interactive: a layout distributed over a 2×2 GPU mesh.*
 
-### Intra-kernel replication pattern: scale factors in TMEM
+### Intra-Kernel Replication Pattern: Scale Factors in TMEM
 
 The same replication dimension turns out to describe something that happens entirely inside a single
 kernel as well: data that the hardware *broadcasts across lanes*. Blackwell's block-scaled MMA
@@ -191,7 +191,7 @@ covered in {ref}`chap_layout_generations`.
 Readers who already know CuTe can think of the notation in this chapter as a row-major variant of it,
 extended with explicit hardware-named axes and a dedicated replication structure.
 
-## Swizzle layout
+## Swizzle Layout
 
 The final layout in this chapter exists to solve one specific hardware problem. Shared memory on a
 GPU is organized into memory banks, and accesses run fastest when different lanes land on different

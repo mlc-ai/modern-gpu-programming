@@ -6,7 +6,7 @@ This appendix is the full reference source of the Flash Attention 4 kernel that 
 
 The benchmarking harness at the end of the file (the `run_bench` function with its FlashInfer and CuTe-DSL baseline plumbing) is omitted: it is test scaffolding, not part of the kernel. Everything through `run_test` is included verbatim.
 
-## Reading guide
+## Reading Guide
 
 Use this table to navigate the listing; each row points at a region of the source and the Chapter 6 concept it implements.
 
@@ -25,7 +25,7 @@ Use this table to navigate the listing; each row points at a region of the sourc
 | Correction and epilogue region | O rescale, normalization, TMEM readback, SMEM staging, and the TMA store. |
 | Scheduler setup | Linear scheduling for non-causal mode, LPT scheduling for causal mode. |
 
-## Full source
+## Full Source
 
 ```python
 from __future__ import annotations
@@ -905,7 +905,7 @@ def run_test(batch_size, seq_len, num_qo_heads, num_kv_heads, head_dim, is_causa
     np.testing.assert_allclose(O_tir.cpu().numpy(), ref.cpu().numpy(), rtol=0.01, atol=0.01)
 ```
 
-## How to run it
+## How to Run It
 
 The kernel takes five arguments: `Q`, `K`, `V`, `O`, and a `profiler_buffer`. The profiler buffer is part of the signature even when profiling is off (`PROFILER_ON = False`), so it must still be passed.
 

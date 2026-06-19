@@ -36,7 +36,7 @@ Both of these are really about *ordinary* memory traffic — they would matter e
 never touched a tensor core. What the rest of this chapter adds is a third demand layered on top of
 them: the specific layout the *tensor core* itself insists on for its operands.
 
-## Ampere — Register Fragment over warp/lane
+## Ampere — Register Fragment over Warp/Lane
 
 On Ampere-class GPUs (`sm_80`) the tensor-core instruction is the warp-level
 `mma.sync.aligned.m16n8k*`, and the defining fact about it is where it reads its operands from:
@@ -49,7 +49,7 @@ afterward:
 SMEM --ldmatrix--> registers --mma.sync--> registers --st.shared--> SMEM
 ```
 
-### What the Tensor Core expects: an m8n8 register fragment
+### What the Tensor Core Expects: an m8n8 Register Fragment
 
 To use the instruction at all, we have to know precisely which value sits in which lane's register —
 the layout is not an implementation detail we can ignore, it is part of the instruction's contract.
@@ -71,7 +71,7 @@ This is exactly the concrete `m16n8k16` C/D fragment hiding behind the named-axe
 {ref}`chap_data_layout` (`S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)]`), where each lane holds two
 adjacent columns per 8×8 and four consecutive lanes cover one row.
 
-### `ldmatrix`: SMEM → the fragment
+### `ldmatrix`: SMEM → the Fragment
 
 ![ldmatrix loads an 8x8 SMEM tile into the warp register fragment; stmatrix, the reverse, is a Hopper (sm_90+) instruction](../img/ldstmatrix.svg)
 
@@ -93,7 +93,7 @@ what make it line up with the MMA:
 A plain per-lane `ld.shared` loop simply cannot produce the MMA's scattered fragment cheaply, whereas
 this one `ldmatrix` performs the entire SMEM→register shuffle the tensor core demands.
 
-### Writing the fragment back
+### Writing the Fragment Back
 
 Once the MMA finishes, its result sits scattered across the lanes in the C/D layout we described
 above, and we still have to get it out. On Ampere we write it back with ordinary per-thread
@@ -104,7 +104,7 @@ not exist on `sm_80` and only arrives with Hopper (`sm_90+`). So the Ampere stor
 simple: the register fragment is fixed by the hardware, `ldmatrix` bridges SMEM into it on the way in,
 and plain stores bridge it back out on the way out.
 
-### Swizzle: the same conflict, already on Ampere
+### Swizzle: the Same Conflict, Already on Ampere
 
 Ampere kernels already needed swizzle, and the reason is the conflicting access pattern we have just
 set up. The same SMEM tile is *written* one way and *read* another: it is filled coalesced from GMEM
@@ -123,7 +123,7 @@ live in hand-written index math.
 
 ## Hopper — `wgmma`, SMEM Descriptors, and Swizzle Formats
 
-### What the Tensor Core expects: a SMEM matrix descriptor
+### What the Tensor Core Expects: a SMEM Matrix Descriptor
 
 Recall that the Ampere data path spends real instructions shuffling operands through registers.
 Hopper (`sm_90`) removes that cost on the *input* side. Its `wgmma` instruction reads its operands
@@ -177,7 +177,7 @@ Moving the accumulator out of registers altogether is the change that waits for 
 
 ## Blackwell — `tcgen05` and TMEM
 
-### What the Tensor Core expects: SMEM operands and a TMEM accumulator
+### What the Tensor Core Expects: SMEM Operands and a TMEM Accumulator
 
 Blackwell (`sm_100`) inherits Hopper's SMEM matrix descriptor for the A/B operands — and an A operand
 may additionally be read from TMEM — so the input side will feel largely familiar. The real change is
@@ -188,7 +188,7 @@ how the (M, N) accumulator and the A/B operands split across one or two CTAs (`c
 `cta_group::2`) to {ref}`chap_tensor_cores`. The layout that is genuinely new at this generation, and
 the one we will focus on here, is the **scale factors** of a block-scaled MMA.
 
-### Scale-factor layout in TMEM
+### Scale-Factor Layout in TMEM
 
 A block-scaled MMA (mxfp8, nvfp4) carries two extra operands beyond A and B — `SFA (M, SFK)` and
 `SFB (N, SFK)`, where `SFK = K / block`. The thing that sets them apart is where they live: unlike A

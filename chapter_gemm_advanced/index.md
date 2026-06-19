@@ -303,7 +303,7 @@ Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) cannot keep
 
 - This pattern --- warp specialization plus software pipelining --- is common in high-performance GEMM kernels, including CUTLASS-style designs.
 
-### When Step 7 misbehaves
+### When Step 7 Misbehaves
 
 The same concurrency that makes Step 7 fast also makes it the first GEMM kernel that is genuinely easy to break. With TMA, MMA, and writeback all in flight at once, a single misplaced barrier can deadlock the kernel, crash the CUDA context, or quietly corrupt the output. These same failure modes come back in Steps 8 and 9, so rather than repeat them three times, we have gathered the whole debugging playbook into *Debugging Warp-Specialized Kernels* at the end of this chapter — turn to it whenever something goes wrong.
 
@@ -944,7 +944,7 @@ Almost every deadlock comes down to *one* of the following, so it pays to work t
 
 - **`PipelineState` initial phase wrong.** Producer must start at `phase=1` (first wait passes); consumer at `phase=0` (first wait blocks). Same starting phase ⇒ instant deadlock.
 
-### Crashes (XID 43 / illegal memory access)
+### Crashes (XID 43 / Illegal Memory Access)
 
 These corrupt the CUDA context, and the tell-tale sign is that a *later*, perfectly innocent `torch.randn` fails too. All three causes are allocation- or warp-shape mistakes:
 
@@ -952,7 +952,7 @@ These corrupt the CUDA context, and the tell-tale sign is that a *later*, perfec
 - **`tcgen05.alloc` / `dealloc` with a lane guard.** They require all 32 lanes of the warp to participate; `if lane_id == 0:` runs one thread, which is undefined behavior — often observed as an illegal-instruction or context error, a hang, or (worst) silently wrong results.
 - **Missing `cta_sync()` before `tcgen05.dealloc`** — TMEM is freed while writeback is still reading.
 
-### Wrong results
+### Wrong Results
 
 The tell here lives in the error pattern itself. Mismatch counts that come out as exact multiples of 128 (128, 256, or 384 rows) point to a sync race rather than bad arithmetic — whole warpgroup-sized stripes are wrong because a handoff slipped, not because any single number was computed incorrectly.
 

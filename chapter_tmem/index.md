@@ -21,7 +21,7 @@ cannot write a Blackwell GEMM without understanding it. This chapter covers what
 addressed and allocated, and how data moves in and out of it — the foundation you will then put to
 work in {ref}`chap_gemm_basics`.
 
-## A 2D address space
+## A 2D Address Space
 
 On earlier generations a large MMA accumulator stayed in registers for the whole compute phase. On
 Blackwell `tcgen05.mma` writes it to TMEM instead, and the space it writes into is **128 rows × up to
@@ -44,7 +44,7 @@ way you think of shared memory. It is a budgeted resource that belongs to the CT
 much as you would size your SMEM ring buffers, and you have to stay within the per-CTA limit the
 hardware gives you.
 
-## Reading and writing TMEM
+## Reading and Writing TMEM
 
 Since TMEM is an address space of its own, the ordinary `ld.shared` and `st.shared` instructions
 cannot reach into it. Data travels in and out through three dedicated `tcgen05` instructions, one for

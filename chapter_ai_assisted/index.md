@@ -355,17 +355,17 @@ For example:
 ```markdown
 # TIRx Blackwell Bug Notes
 
-### tcgen05.commit outside elected scope
+### tcgen05.commit Outside Elected Scope
 Symptom: zeros or random garbage.
 Cause: only the elected thread has a non-empty commit group; other lanes can signal early.
 Fix: keep TCGen05Bar.arrive inside the same elect_sync scope as gemm_async.
 
-### MBarrier.init from wrong warpgroup
+### MBarrier.init from Wrong Warpgroup
 Symptom: deadlock.
 Cause: default leader is CTA thread 0. If init is inside wg_id == 1, no thread runs it.
 Fix: initialize barriers at CTA level before role branches.
 
-### TMA store reused Dsmem too early
+### TMA Store Reused Dsmem Too Early
 Symptom: intermittent wrong rows.
 Cause: the TMA store group was not committed or waited far enough before Dsmem reuse.
 Fix: commit the store group and wait far enough for the staging SMEM buffer's reuse pattern.

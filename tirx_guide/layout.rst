@@ -66,7 +66,7 @@ places at once. That map breaks cleanly into three parts — shard (``D``), repl
 (``R``), and offset (``O``) — and the rest of the chapter builds it up one piece
 at a time.
 
-Interactive demo
+Interactive Demo
 ----------------
 
 Before we get into the mechanics, it helps to have something concrete to poke at.
@@ -166,7 +166,7 @@ a CTA or warpgroup; ``m`` is linear memory; ``P`` / ``F`` are the partition and
 free axes of a 2D scratchpad; ``Bank`` is a shared-memory bank; and ``TLane`` /
 ``TCol`` address Blackwell tensor memory.
 
-Forward mapping
+Forward Mapping
 ~~~~~~~~~~~~~~~
 
 Evaluating a layout means taking a logical coordinate and working out where it
@@ -214,7 +214,7 @@ hard-codes the input shape. A layout *admits* any shape whose total size equals
 the flatten/split step simply re-derives the per-iter components from whatever shape
 it happens to be handed.
 
-Case study: NVIDIA tensor-core tile
+Case Study: NVIDIA Tensor-Core Tile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The quickest way to see that these four steps do something real is to run them on
@@ -297,7 +297,7 @@ concrete:
      - ``{6, 10}``
      - 1
 
-Case study: Blackwell tensor memory
+Case Study: Blackwell Tensor Memory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The previous example bound its strides to thread axes, but the model does not
@@ -369,7 +369,7 @@ and double-buffering. The payoff is that a single ``TileLayout`` model expresses
 both the accumulator (a pure placement, no replica) and its scale factors (a
 replicated, routed placement) within the very same tensor-memory address space.
 
-Beyond GPU registers
+Beyond GPU Registers
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The two case studies were not special cases at all; they were the one model pointed
@@ -382,7 +382,7 @@ memory axes instead and it expresses the native accelerator memories — a
 (``TLane`` × ``TCol``). The demo ships a preset for each of these, so you can swap
 the target hardware without ever leaving the layout language.
 
-Ready-made layouts
+Ready-Made Layouts
 ~~~~~~~~~~~~~~~~~~~
 
 In practice you rarely hand-write the hardware tiles above. The placements that come
@@ -425,7 +425,7 @@ out of shape to accommodate it, TIRx keeps it separate and composes the two: a
 and the swizzle then permutes that address. The next few sections explain why the
 permutation is needed in the first place and how it is defined.
 
-Why swizzle
+Why Swizzle
 ~~~~~~~~~~~
 
 Recall the mechanism from :ref:`chap_data_layout`. Shared memory is organized as
@@ -440,7 +440,7 @@ lands on the **same bank** each time — an 8-way column conflict (8 rows all fu
 into one bank). The transform below is what scatters those accesses back across the
 banks, and we will close the loop on this very tile in the worked example.
 
-The transform
+The Transform
 ~~~~~~~~~~~~~
 
 The idea behind the cure is simple: make a column's addresses depend on the row, so
@@ -459,7 +459,7 @@ low ``M`` bits untouched while XOR-ing a higher group of bits down into a lower 
 In words, the bits at positions ``[S, S+B)`` of ``x = m >> M`` are XOR-ed into the
 bits ``[0, B)``. For the layout to be well-formed we need ``S ≥ B``.
 
-Choosing the parameters
+Choosing the Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You will seldom choose ``M``, ``B``, and ``S`` by hand. In practice they are
@@ -482,7 +482,7 @@ vector access so the swizzle never splits a vectorized load. You attach the resu
 to a buffer by composing the two layers: ``ComposeLayout(SwizzleLayout(3, 3, 3),
 tile)`` is what you pass to the ``layout=`` of a swizzled SMEM allocation.
 
-Bank and line of an element
+Bank and Line of an Element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Before we can claim the swizzle removed the conflict, we need a way to translate a
@@ -498,7 +498,7 @@ address ``a = addr(m)`` lands in
    \qquad
    \text{line} = \left\lfloor \frac{\text{bankword}}{32} \right\rfloor .
 
-Worked example: 128B swizzle, ``float16``, ``(8, 64)`` tile
+Worked Example: 128B Swizzle, ``float16``, ``(8, 64)`` Tile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let us return to the conflicting tile from earlier and finish the story. Applying
@@ -529,7 +529,7 @@ word holding ``4 / dtype_bytes`` elements side by side. Choose ``none`` and a co
 collapses onto a single bank — the conflict, made visible; turn a swizzle on and the
 same column scatters across the banks.
 
-Design rationale
+Design Rationale
 ----------------
 
 It is worth closing by naming the three choices that pushed this model toward what
