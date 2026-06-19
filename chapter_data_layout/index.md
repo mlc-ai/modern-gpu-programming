@@ -124,7 +124,11 @@ Four replicas at a stride of 32 lanes: lanes `l`, `l+32`, `l+64`, `l+96` all hol
 The replication dimension carries no new data — it says "the same value, in four lane positions,"
 exactly as `@gpuid_x` broadcast a row across the GPU mesh above.
 
-![SFA/SFB in TMEM: 128 rows packed into 32 lanes (TLane = r % 32), replicated warpx4 to all 128 lanes of the reading warpgroup](../img/sf_tmem.svg)
+```{raw} html
+<iframe src="../demo/sf_tmem.html" title="Scale factors in TMEM: packing and warpx4 replication" loading="lazy"
+        style="width:100%; min-width:1040px; height:560px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
+```
+*Interactive: hover a TMEM lane — it stores 4 logical M-rows (`m // 32` → column) and is broadcast `warpx4` to 4 of the warpgroup's 128 reading lanes.*
 
 The byte packing inside each column (the `scale_vec` 1X/2X/4X modes) and the `cta_group::2` split
 are in {ref}`chap_layout_generations`.

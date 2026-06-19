@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scale Factors in TMEM</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { max-width:1040px; margin:0 auto; }
+  .panels { max-width:1000px; }
+  .panel h2 { margin-bottom:2px; }
+  .sfgrid { display:grid; grid-template-columns:46px repeat(4,1fr); gap:2px; align-items:stretch; }
+  .colhdr { font-size:10px; color:var(--dim); font-weight:700; text-align:center; padding:2px 0 4px; }
+  .corner { }
+  .rowlab { font-size:9.5px; color:var(--dim); font-weight:600; text-align:right;
+            display:flex; align-items:center; justify-content:flex-end; padding-right:5px; cursor:pointer; }
+  .sfcell { height:15px; border-radius:3px; display:flex; align-items:center; justify-content:center;
+            font-size:8.5px; font-weight:700; color:#fff; cursor:pointer; border:2px solid transparent;
+            transition:opacity .1s, border-color .1s, box-shadow .1s; text-shadow:0 1px 1px rgba(0,0,0,.2); }
+  .sfcell.dm, .rowlab.dm { opacity:.16; }
+  .sfcell.hl { border-color:#111; box-shadow:0 0 7px rgba(59,130,246,.55); z-index:2; }
+  .rowlab.hl { color:#111; opacity:1; }
+  .ell { text-align:center; color:var(--dim); font-size:12px; grid-column:1 / -1; line-height:1.2; }
+  .formula-bar { max-width:1000px; }
+  #stc { min-height:22px; }
+</style>
+</head>
+<body>
+<h1>Scale Factors in TMEM</h1>
+<div class="sub">TLane = m % 32 · warpx4 broadcast R[4 : 32@TLane]</div>
+
+<div class="panels">
+  <div class="panel">
+    <h2>① Packed: 128 M-rows → 32 TMEM lanes</h2>
+    <div class="nota">cell = logical M-row · column = m // 32</div>
+    <div id="gridA" class="sfgrid"></div>
+  </div>
+  <div class="panel">
+    <h2>② Read by the 128-lane warpgroup</h2>
+    <div class="nota">one stored lane → 4 reading lanes (warpx4)</div>
+    <div id="gridB" class="sfgrid"></div>
+  </div>
+</div>
+
+<div class="formula-bar">
+  <div class="ftitle" id="stt">Hover a lane</div>
+  <div class="fcontent" id="stc">Each TMEM lane stores 4 logical M-rows (m // 32 → column) and is broadcast to 4 of the warpgroup's 128 reading lanes.</div>
+</div>
+
+<script>
+(function () {
+  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];           // m//32 group / quadrant colors
+  // Show lanes 0,1,2,3,4,  ⋮ , 30,31  (a representative window; the pattern is uniform)
+  var LANES = [0, 1, 2, 3, 4, 5, 6, 7, null, 30, 31];
+  var HDRA = ['0', '1', '2', '3'];
+  var HDRB = ['0–31', '32–63', '64–95', '96–127'];
+
+  function build(el, headers, valueFn) {
+    el.innerHTML = '';
+    el.appendChild(Object.assign(document.createElement('div'), { className: 'corner' }));
+    headers.forEach(function (h) {
+      var c = document.createElement('div'); c.className = 'colhdr'; c.textContent = h; el.appendChild(c);
+    });
+    LANES.forEach(function (k) {
+      if (k === null) {
+        var e = document.createElement('div'); e.className = 'ell'; e.textContent = '⋮'; el.appendChild(e); return;
+      }
+      var lab = document.createElement('div'); lab.className = 'rowlab'; lab.textContent = 'TLane ' + k;
+      lab.dataset.k = k; el.appendChild(lab);
+      for (var g = 0; g < 4; g++) {
+        var cell = document.createElement('div'); cell.className = 'sfcell';
+        cell.style.background = G[g]; cell.dataset.k = k;
+        cell.textContent = valueFn(g, k);
+        el.appendChild(cell);
+      }
+    });
+  }
+
+  var gridA = document.getElementById('gridA');
+  var gridB = document.getElementById('gridB');
+  build(gridA, HDRA, function (g, k) { return 'r' + (g * 32 + k); });        // logical M-row stored
+  build(gridB, HDRB, function (g, k) { return 'L' + (g * 32 + k); });        // reading warpgroup lane
+
+  var all = document.querySelectorAll('[data-k]');
+  var stt = document.getElementById('stt'), stc = document.getElementById('stc');
+
+  function set(k) {
+    all.forEach(function (e) {
+      var on = e.dataset.k === String(k);
+      e.classList.toggle('hl', on);
+      e.classList.toggle('dm', !on);
+    });
+    var four = [k, k + 32, k + 64, k + 96].join(', ');
+    stt.textContent = 'TLane ' + k;
+    stc.textContent = 'stores logical M-rows { ' + four + ' }  →  broadcast to warpgroup lanes { ' + four + ' }';
+  }
+  function clear() {
+    all.forEach(function (e) { e.classList.remove('hl', 'dm'); });
+    stt.textContent = 'Hover a lane';
+    stc.textContent = 'Each TMEM lane stores 4 logical M-rows (m // 32 → column) and is broadcast to 4 of the warpgroup’s 128 reading lanes.';
+  }
+  all.forEach(function (e) {
+    e.addEventListener('mouseenter', function () { set(parseInt(e.dataset.k, 10)); });
+  });
+  document.querySelector('.panels').addEventListener('mouseleave', clear);
+  set(2);   // start with a lane highlighted so the broadcast is visible on load
+})();
+</script>
+</body>
+</html>
