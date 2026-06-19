@@ -412,9 +412,9 @@ into the stage being released. Explain the phase flips before editing.
 <section id="the-tirx-contract-prompt">
 <h2>The TIRx Contract Prompt<a class="headerlink" href="#the-tirx-contract-prompt" title="Link to this heading">#</a></h2>
 <p>When asking an agent about a TIRx kernel, do not start with only a code dump. Start with the kernel contract.</p>
-<p>Each field has a job. The tile path gives the data flow. Then come the same three pillars as the per-step cards in Chapters 3–5: <strong>scope</strong> (roles) says who executes each tile operation, <strong>layout</strong> says where its tiles live, and <strong>dispatch</strong> says which hardware path lowers it. <strong>Barriers</strong> say which producer-consumer edges make the async work safe to consume. The example below is the kind of prompt you can derive from the warp-specialized GEMM chapter.</p>
+<p>Each field has a job. The tile path gives the data flow. Then come the same three pillars as the per-step cards in the GEMM and Flash Attention chapters: <strong>scope</strong> (roles) says who executes each tile operation, <strong>layout</strong> says where its tiles live, and <strong>dispatch</strong> says which hardware path lowers it. <strong>Barriers</strong> say which producer-consumer edges make the async work safe to consume. The example below is the kind of prompt you can derive from the warp-specialized GEMM chapter.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Target: NVIDIA Blackwell SM100a.
-Kernel: multi-consumer warp-specialized GEMM (Chapter 5, Step 9).
+Kernel: multi-consumer warp-specialized GEMM (Step 9, {ref}`chap_gemm_advanced`).
 
 Tile path:
 GMEM -&gt; SMEM by TMA.
@@ -435,7 +435,7 @@ Dispatch:
 TMA for GMEM&lt;-&gt;SMEM loads and stores.
 tcgen05 for the MMA; tcgen05.ld for the TMEM-&gt;RF readback.
 
-Barriers (the Chapter 5 names):
+Barriers (the names from {ref}`chap_gemm_advanced`):
 tma2mma: TMA -&gt; MMA (A/B SMEM stage loaded).
 mma2tma: MMA -&gt; TMA (SMEM stage free to refill).
 mma2ld: MMA -&gt; writeback (accumulator ready).
@@ -553,7 +553,7 @@ barrier waited before the primitive, and barrier signaled after it.
 <li><p>move writeback through SMEM and TMA store.</p></li>
 </ul>
 <p>Ask for invariant checks, not a broad review:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I changed a warp-specialized single-CTA GEMM into the clustered Chapter 5 form with CTA_GROUP=2.
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I changed a warp-specialized single-CTA GEMM into the clustered form from {ref}`chap_gemm_advanced` with CTA_GROUP=2.
 Check only the cluster invariants:
 - tcgen05.alloc / gemm_async / commit / dealloc cta_group values
 - scheduler tile shape
@@ -740,7 +740,7 @@ Fix: commit the store group and wait far enough for the staging SMEM buffer&#39;
 <section id="exercises">
 <h2>Exercises<a class="headerlink" href="#exercises" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
-<li><p>Take the warp-specialized GEMM from Chapter 5 and ask an agent to produce a tile-primitive table: primitive, scope, layout, dispatch, wait-before, signal-after. Which entries did it miss?</p></li>
+<li><p>Take the warp-specialized GEMM from <a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-ref">Scaling GEMM with Warp Specialization and Clusters</span></a> and ask an agent to produce a tile-primitive table: primitive, scope, layout, dispatch, wait-before, signal-after. Which entries did it miss?</p></li>
 <li><p>Move <code class="docutils literal notranslate"><span class="pre">mma2tma.arrive()</span></code> outside the elected MMA issue scope in a local experiment. Ask the agent to diagnose the failure using only the symptom, then ask again with the <code class="docutils literal notranslate"><span class="pre">tcgen05.commit</span></code> hardware constraint. Compare the answers.</p></li>
 <li><p>Ask for a PyTorch reference for the Flash Attention kernel with GQA. Check whether the agent handles <code class="docutils literal notranslate"><span class="pre">repeat_interleave</span></code> for K/V heads correctly.</p></li>
 <li><p>Give the agent the generated CUDA for a warp-specialized kernel and ask it to identify the TMA, MMA, and writeback branches. Verify against the source.</p></li>

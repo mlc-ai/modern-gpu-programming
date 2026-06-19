@@ -77,22 +77,20 @@ per-SM 2D scratchpad (128 rows × up to 512 32-bit columns). The kernel then exp
 TMEM into registers for the epilogue. Two consequences show up everywhere later: TMEM reads are
 **explicit and warpgroup-cooperative**, and TMEM must be **explicitly allocated and freed**.
 
-**Distributed shared memory (DSMEM).** SMEM is per-CTA, but within a cluster (covered in the next
-section) a CTA can reach a *peer* CTA's shared memory. The hardware exposes this
-in two parts. First, an address: the `mapa` instruction maps a local SMEM pointer to a specific
-CTA rank in the cluster, returning the same offset in CTA `cta_id`'s SMEM. Second, a transfer: a single thread can bulk-copy a tile
-between two CTAs' shared memory through the cluster: given a remote CTA id and an mbarrier, the
-hardware emits `cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes`, copying from the issuing
-CTA's SMEM into the mapped peer SMEM and signalling the mbarrier when the bytes land. The 2-CTA
-cluster GEMM in Part III uses exactly this to share operand tiles across the pair without a round
-trip through global memory.
-
 ## CTA Clusters
 
 Hopper introduced **thread block clusters**: a group of CTAs that cooperate more tightly than
 independent blocks — cluster CTAs can synchronize together and access each other's shared memory
 (distributed shared memory, DSMEM). Blackwell builds on clusters with dynamic scheduling
 ({ref}`chap_clc`) and 2-CTA cooperative MMA.
+
+**Distributed shared memory (DSMEM).** Cluster CTAs can reach each other's shared memory, and the
+hardware exposes this in two parts. First, an *address*: the `mapa` instruction maps a local SMEM
+pointer to a peer CTA's rank, returning the same offset in that CTA's SMEM. Second, a *transfer*: a
+single thread can bulk-copy a tile from its own SMEM into a peer's, signalling a completion barrier
+({ref}`chap_async_barriers`) when the bytes land — a cluster-scoped `cp.async.bulk`. The 2-CTA
+cluster GEMM in Part III uses this to share operand tiles across the pair without a round trip
+through global memory.
 
 ![A CTA cluster sharing distributed shared memory](../img/cta_cluster.png)
 

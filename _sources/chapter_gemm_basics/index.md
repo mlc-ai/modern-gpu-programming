@@ -1,7 +1,7 @@
 (chap_gemm_basics)=
 # Building a Tiled GEMM
 
-This chapter turns the tile-primitive model into working GEMM kernels. It starts with one 128 x 128 output tile, then adds the two pieces needed for larger matrices: accumulation over K and spatial tiling across CTAs.
+This chapter turns the TIRx tile primitives (the scope / layout / dispatch model from {ref}`chap_tirx_primer` and {ref}`chap_data_layouts`) into working GEMM kernels. It starts with one 128 x 128 output tile, then adds the two pieces needed for larger matrices: accumulation over K and spatial tiling across CTAs.
 
 This chapter and the next two ({ref}`chap_gemm_async`, {ref}`chap_gemm_advanced`) follow one optimization path for GEMM: build a correct tiled kernel, replace thread copies with TMA and pipelining, then add warp specialization and CTA clusters.
 
@@ -36,7 +36,7 @@ After the basic GEMM path works, the rest of the tutorial adds Blackwell feature
 
 - **TMA async movement:** move GMEM <-> SMEM tiles through Blackwell's hardware copy path, with barriers tracking completion.
 - **Software pipelining:** use multiple SMEM stages so data movement for the next K tile can overlap Tensor Core compute on the current tile.
-- **Persistent scheduling:** let CTAs pull output tiles dynamically instead of relying only on a fixed launch-grid mapping.
+- **Persistent scheduling:** a fixed pool of CTAs each processes many output tiles via a tile scheduler, instead of one CTA per tile.
 - **Warp specialization:** split producer, MMA consumer, and writeback roles across warpgroups.
 - **CTA clusters:** let two CTAs cooperate on a larger Blackwell MMA tile.
 - **Multi-consumer execution:** use multiple consumer warpgroups to compute different parts of the tile, increasing compute density.
@@ -439,12 +439,10 @@ def hgemm_v2(M, N, K):
 
 ---
 
-K-loop accumulation still leaves one missing piece: tiling over M and N to support larger matrices.
-
 (chap_spatial_tiling)=
 ## Step 3: Spatial Tiling (Multi-CTA)
 
-Steps 1-2 compute one output tile. Step 3 launches a 2D grid of CTAs so larger M and N dimensions are covered by multiple 128 x 128 output tiles. The example uses M=N=K=256.
+K-loop accumulation still leaves one missing piece: tiling over M and N to support larger matrices. Steps 1-2 compute one output tile; Step 3 launches a 2D grid of CTAs so larger M and N dimensions are covered by multiple 128 x 128 output tiles. The example uses M=N=K=256.
 
 > **What this step changes — Scope**
 > - Scope: a 2D grid of CTAs, each CTA owns one 128 x 128 output tile.

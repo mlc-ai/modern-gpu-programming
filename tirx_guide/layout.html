@@ -366,6 +366,10 @@ it.</p>
         title="TIRx interactive layout demo" loading="lazy"></iframe></section>
 <section id="tilelayout">
 <h2>TileLayout<a class="headerlink" href="#tilelayout" title="Link to this heading">#</a></h2>
+<p>A <strong>TileLayout</strong> is written <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code> — the <code class="docutils literal notranslate"><span class="pre">S</span></code> shard spec, read as “a tile of this
+<em>shape</em>, with each logical index mapped by these per-axis <em>strides</em>” — optionally extended with a
+replica set, <code class="docutils literal notranslate"><span class="pre">S[...]</span> <span class="pre">+</span> <span class="pre">R[...]</span></code>. It is built from three parts (shard <code class="docutils literal notranslate"><span class="pre">D</span></code>, replica <code class="docutils literal notranslate"><span class="pre">R</span></code>, offset
+<code class="docutils literal notranslate"><span class="pre">O</span></code>) described next.</p>
 <p>An <strong>iter</strong> is a triple <code class="docutils literal notranslate"><span class="pre">(extent,</span> <span class="pre">stride,</span> <span class="pre">axis)</span></code> that defines a linear,
 strided access on one axis.</p>
 <ul class="simple">
@@ -681,8 +685,8 @@ formulation cannot always represent for strided patterns.</p></li>
 itself, so an expression is unambiguous without external context. For instance
 <code class="docutils literal notranslate"><span class="pre">1&#64;tid</span></code> (block-wide thread id) and <code class="docutils literal notranslate"><span class="pre">1&#64;tid_in_wg</span></code> (thread id within a
 warpgroup) are distinct rather than a generic <code class="docutils literal notranslate"><span class="pre">t</span></code> whose meaning depends on the
-definition site. Legality and feasibility checks are left to tile primitive
-dispatch.</p></li>
+definition site. Legality and feasibility checks are left to the higher-level
+tile-primitive layer (Parts III–IV), not the layout itself.</p></li>
 </ul>
 </section>
 </section>

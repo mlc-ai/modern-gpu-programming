@@ -370,8 +370,9 @@ is therefore a shuffle through registers:</p>
 </div>
 <section id="what-the-tensor-core-expects-an-m8n8-register-fragment">
 <h3>What the Tensor Core expects: an m8n8 register fragment<a class="headerlink" href="#what-the-tensor-core-expects-an-m8n8-register-fragment" title="Link to this heading">#</a></h3>
-<p>For <code class="docutils literal notranslate"><span class="pre">mma.m16n8k16</span></code> (fp16/bf16 in, fp32 accumulate), the 32 lanes are carved <strong>8 along M × 4 along
-N</strong>, and each lane owns a few registers:</p>
+<p>The register fragment is built from <strong>8×8 (“m8n8”) sub-tiles</strong> — the unit <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> moves and the
+tensor core reads. For <code class="docutils literal notranslate"><span class="pre">mma.m16n8k16</span></code> (fp16/bf16 in, fp32 accumulate), the 32 lanes are carved
+<strong>8 along M × 4 along N</strong>, and each lane owns a few registers:</p>
 <ul class="simple">
 <li><p><strong>C/D accumulator (M×N = 16×8):</strong> lane <code class="docutils literal notranslate"><span class="pre">l</span></code> holds rows <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">∈</span> <span class="pre">{l/4,</span> <span class="pre">l/4</span> <span class="pre">+</span> <span class="pre">8}</span></code> and columns
 <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">∈</span> <span class="pre">{2·(l%4),</span> <span class="pre">2·(l%4)+1}</span></code> — four fp32 values per lane (two 8-row halves × two adjacent columns).

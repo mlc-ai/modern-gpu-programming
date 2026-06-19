@@ -1,10 +1,11 @@
 (chap_clc)=
 # Cluster Launch Control (CLC)
 
-A persistent kernel launches one CTA per SM and loops over output tiles with a tile scheduler
-(Part III). With a *static* assignment — tile = f(grid index) — the work can imbalance: if tiles
-cost different amounts, or the tile count doesn't divide evenly across the SMs, some SMs finish
-early and idle while others carry the tail.
+A *persistent* kernel keeps one CTA resident per SM and has it loop over many output tiles —
+instead of launching a fresh CTA per tile — taking each next tile from a scheduler (the pattern
+Part III builds). With a *static* assignment — tile = f(grid index) — the work can imbalance: if
+tiles cost different amounts, or the tile count doesn't divide evenly across the SMs, some SMs
+finish early and idle while others carry the tail.
 
 **Cluster Launch Control (CLC)** is the Blackwell (`sm_100`) hardware mechanism that addresses
 this. Instead of computing its next tile from a fixed formula, a persistent cluster asks the grid

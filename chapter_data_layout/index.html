@@ -365,14 +365,16 @@ tiling without any special “tile” concept — it is the same shape–stride 
 <h2>Named axes<a class="headerlink" href="#named-axes" title="Link to this heading">#</a></h2>
 <p>A GPU has more than one “address space”: linear memory, but also the lanes of a warp, a thread’s
 registers, and TMEM’s lanes/columns. So a stride coefficient carries an <strong>axis tag</strong> — <code class="docutils literal notranslate"><span class="pre">&#64;m</span></code> for
-ordinary memory, and others like <code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code> (thread lane), <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code> (register), <code class="docutils literal notranslate"><span class="pre">&#64;warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;tmemcol</span></code>.
+ordinary memory, and others like <code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code> (thread lane), <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code> (register), <code class="docutils literal notranslate"><span class="pre">&#64;warpid</span></code>, and TMEM’s
+<code class="docutils literal notranslate"><span class="pre">&#64;TLane</span></code> / <code class="docutils literal notranslate"><span class="pre">&#64;TCol</span></code>.
 A row-major 8×16 tile in memory is</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>S[(8, 16) : (16@m, 1@m)]
 </pre></div>
 </div>
-<p>Named axes let one layout describe data that is <em>spread across threads</em>. The MMA register fragment
-from <a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Through GPU Generations</span></a>, for instance, is <code class="docutils literal notranslate"><span class="pre">S[(8,</span> <span class="pre">4,</span> <span class="pre">2)</span> <span class="pre">:</span> <span class="pre">(4&#64;laneid,</span> <span class="pre">1&#64;laneid,</span> <span class="pre">1&#64;reg)]</span></code>:
-the rows and columns map onto lane IDs and a per-lane register, not onto linear memory.</p>
+<p>Named axes let one layout describe data <em>spread across threads</em>. For instance,
+<code class="docutils literal notranslate"><span class="pre">S[(8,</span> <span class="pre">4,</span> <span class="pre">2)</span> <span class="pre">:</span> <span class="pre">(4&#64;laneid,</span> <span class="pre">1&#64;laneid,</span> <span class="pre">1&#64;reg)]</span></code> maps rows and columns onto lane IDs and a per-lane
+register rather than linear memory — this is exactly the tensor-core register fragment you will meet
+in <a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Through GPU Generations</span></a>.</p>
 <iframe src="../demo/thread_register.html" title="Thread + register layout via named axes" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe><p><em>Interactive: a layout over <code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code> — click a cell to see which lane/register holds it.</em></p>
 </section>

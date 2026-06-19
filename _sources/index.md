@@ -20,8 +20,8 @@ by three knobs that recur throughout the book:
 - **Layout** — how the operand tiles map to GMEM, SMEM, TMEM, or registers.
 - **Dispatch** — which hardware path is intended when there is a choice, such as TMA or `tcgen05`.
 
-For asynchronous primitives, a barrier, commit, wait, or fence describes the handoff between
-tile operations.
+Asynchronous primitives add one more concern — *coordination*: a barrier, commit, wait, or fence
+marks each handoff between tile operations.
 
 ## How This Book Is Organized
 

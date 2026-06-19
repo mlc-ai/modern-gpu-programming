@@ -422,15 +422,6 @@ accumulators in registers; Blackwell instead writes <code class="docutils litera
 per-SM 2D scratchpad (128 rows × up to 512 32-bit columns). The kernel then explicitly reads
 TMEM into registers for the epilogue. Two consequences show up everywhere later: TMEM reads are
 <strong>explicit and warpgroup-cooperative</strong>, and TMEM must be <strong>explicitly allocated and freed</strong>.</p>
-<p><strong>Distributed shared memory (DSMEM).</strong> SMEM is per-CTA, but within a cluster (covered in the next
-section) a CTA can reach a <em>peer</em> CTA’s shared memory. The hardware exposes this
-in two parts. First, an address: the <code class="docutils literal notranslate"><span class="pre">mapa</span></code> instruction maps a local SMEM pointer to a specific
-CTA rank in the cluster, returning the same offset in CTA <code class="docutils literal notranslate"><span class="pre">cta_id</span></code>’s SMEM. Second, a transfer: a single thread can bulk-copy a tile
-between two CTAs’ shared memory through the cluster: given a remote CTA id and an mbarrier, the
-hardware emits <code class="docutils literal notranslate"><span class="pre">cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes</span></code>, copying from the issuing
-CTA’s SMEM into the mapped peer SMEM and signalling the mbarrier when the bytes land. The 2-CTA
-cluster GEMM in Part III uses exactly this to share operand tiles across the pair without a round
-trip through global memory.</p>
 </section>
 <section id="cta-clusters">
 <h2>CTA Clusters<a class="headerlink" href="#cta-clusters" title="Link to this heading">#</a></h2>
@@ -438,6 +429,13 @@ trip through global memory.</p>
 independent blocks — cluster CTAs can synchronize together and access each other’s shared memory
 (distributed shared memory, DSMEM). Blackwell builds on clusters with dynamic scheduling
 (<a class="reference internal" href="../chapter_clc/index.html#chap-clc"><span class="std std-ref">Cluster Launch Control (CLC)</span></a>) and 2-CTA cooperative MMA.</p>
+<p><strong>Distributed shared memory (DSMEM).</strong> Cluster CTAs can reach each other’s shared memory, and the
+hardware exposes this in two parts. First, an <em>address</em>: the <code class="docutils literal notranslate"><span class="pre">mapa</span></code> instruction maps a local SMEM
+pointer to a peer CTA’s rank, returning the same offset in that CTA’s SMEM. Second, a <em>transfer</em>: a
+single thread can bulk-copy a tile from its own SMEM into a peer’s, signalling a completion barrier
+(<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers and Phases</span></a>) when the bytes land — a cluster-scoped <code class="docutils literal notranslate"><span class="pre">cp.async.bulk</span></code>. The 2-CTA
+cluster GEMM in Part III uses this to share operand tiles across the pair without a round trip
+through global memory.</p>
 <p><img alt="A CTA cluster sharing distributed shared memory" src="../_images/cta_cluster.png" /></p>
 <p>Clusters matter for large tiles because one CTA’s SMEM budget is finite. Two cluster features
 recur in the GEMM chapters: <strong>2-CTA cooperative MMA</strong> (two CTAs contribute SMEM operands to one

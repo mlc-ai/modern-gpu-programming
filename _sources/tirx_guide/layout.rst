@@ -51,6 +51,11 @@ it.
 TileLayout
 ----------
 
+A **TileLayout** is written ``S[shape : strides]`` — the ``S`` shard spec, read as "a tile of this
+*shape*, with each logical index mapped by these per-axis *strides*" — optionally extended with a
+replica set, ``S[...] + R[...]``. It is built from three parts (shard ``D``, replica ``R``, offset
+``O``) described next.
+
 An **iter** is a triple ``(extent, stride, axis)`` that defines a linear,
 strided access on one axis.
 
@@ -385,5 +390,5 @@ Design rationale
   itself, so an expression is unambiguous without external context. For instance
   ``1@tid`` (block-wide thread id) and ``1@tid_in_wg`` (thread id within a
   warpgroup) are distinct rather than a generic ``t`` whose meaning depends on the
-  definition site. Legality and feasibility checks are left to tile primitive
-  dispatch.
+  definition site. Legality and feasibility checks are left to the higher-level
+  tile-primitive layer (Parts III–IV), not the layout itself.

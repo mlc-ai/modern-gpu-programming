@@ -20,8 +20,10 @@ The defining property of TMA: a **single thread issues** a tile copy, and the **
 the transfer** in the background. There is no per-thread load/store loop — the descriptor tells
 the engine the tile shape, strides, and destination, and the engine streams the bytes.
 
-This is the **dispatch** knob again: the same logical "copy this tile" becomes a TMA transfer
-rather than a cooperative thread copy, with very different performance and synchronization.
+The same logical "copy this tile" can be realized two very different ways — a cooperative copy by
+all the threads, or a single-thread TMA transfer — with very different performance and
+synchronization. Which one the hardware uses is a *dispatch* choice (the scope / layout / dispatch
+lens from the book's introduction).
 
 ## Swizzled Layouts
 

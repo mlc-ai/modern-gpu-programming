@@ -521,7 +521,7 @@ row_max = m_new
 <td><p>MMA inner-K step in <code class="docutils literal notranslate"><span class="pre">P</span></code>/<code class="docutils literal notranslate"><span class="pre">V</span></code> columns (16); <code class="docutils literal notranslate"><span class="pre">K_SPLIT</span> <span class="pre">=</span> <span class="pre">6</span> <span class="pre">*</span> <span class="pre">MMA_K</span> <span class="pre">=</span> <span class="pre">96</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">K_SPLIT</span></code></p></td>
-<td><p>split point of the <code class="docutils literal notranslate"><span class="pre">96</span> <span class="pre">+</span> <span class="pre">32</span></code> value-MMA schedule (<code class="docutils literal notranslate"><span class="pre">6</span> <span class="pre">*</span> <span class="pre">MMA_K</span> <span class="pre">=</span> <span class="pre">96</span></code>); the first value MMA consumes <code class="docutils literal notranslate"><span class="pre">P</span></code>/<code class="docutils literal notranslate"><span class="pre">V</span></code> columns <code class="docutils literal notranslate"><span class="pre">0:K_SPLIT</span></code></p></td>
+<td><p>split point of the value-MMA schedule (see <em>The Two MMA Phases</em>); the first value MMA covers columns <code class="docutils literal notranslate"><span class="pre">0:K_SPLIT</span></code> (<code class="docutils literal notranslate"><span class="pre">6</span> <span class="pre">*</span> <span class="pre">MMA_K</span> <span class="pre">=</span> <span class="pre">96</span></code>)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">should_rescale</span></code></p></td>
 <td><p>WG2 per-row flag: whether the old <code class="docutils literal notranslate"><span class="pre">O</span></code> needs rescaling before the next value MMA (reduced across the warpgroup with <code class="docutils literal notranslate"><span class="pre">any_sync</span></code>)</p></td>
@@ -631,9 +631,8 @@ P, V -&gt; value MMA -&gt; O
     <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;tcgen05&quot;</span><span class="p">,</span>
     <span class="n">cta_group</span><span class="o">=</span><span class="n">CTA_GROUP</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="c1"># Second sub-MMA over columns K_SPLIT:BLK_N (the last 32) elided for brevity;</span>
-<span class="c1"># it has the same form with accum=True and waits on p_ready_2 first. The two</span>
-<span class="c1"># sub-MMAs together cover all BLK_N columns of P — the last 32 are NOT dropped.</span>
+<span class="c1"># The second sub-MMA (same form, accum=True, gated on p_ready_2) covers the</span>
+<span class="c1"># remaining columns K_SPLIT:BLK_N.</span>
 </pre></div>
 </div>
 <blockquote>

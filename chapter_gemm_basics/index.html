@@ -348,7 +348,7 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="building-a-tiled-gemm">
 <span id="chap-gemm-basics"></span><h1>Building a Tiled GEMM<a class="headerlink" href="#building-a-tiled-gemm" title="Link to this heading">#</a></h1>
-<p>This chapter turns the tile-primitive model into working GEMM kernels. It starts with one 128 x 128 output tile, then adds the two pieces needed for larger matrices: accumulation over K and spatial tiling across CTAs.</p>
+<p>This chapter turns the TIRx tile primitives (the scope / layout / dispatch model from <a class="reference internal" href="../tirx_guide/native_basics.html#chap-tirx-primer"><span class="std std-ref">TIRx Basics: Native Level</span></a> and <a class="reference internal" href="../tirx_guide/layout.html#chap-data-layouts"><span class="std std-ref">Tensor Layout</span></a>) into working GEMM kernels. It starts with one 128 x 128 output tile, then adds the two pieces needed for larger matrices: accumulation over K and spatial tiling across CTAs.</p>
 <p>This chapter and the next two (<a class="reference internal" href="../chapter_gemm_async/index.html#chap-gemm-async"><span class="std std-ref">Pipelining GEMM with TMA</span></a>, <a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-ref">Scaling GEMM with Warp Specialization and Clusters</span></a>) follow one optimization path for GEMM: build a correct tiled kernel, replace thread copies with TMA and pipelining, then add warp specialization and CTA clusters.</p>
 <p>Read each step as a change to the <strong>scope / layout / dispatch</strong> contract — which <strong>scope</strong> runs the operation, which <strong>layout</strong> the operand tiles use, which <strong>dispatch</strong> path executes it. A small card at the start of each step names the pillar that changes; the others stay fixed. Step 1 sets the baseline.</p>
 <section id="gemm">
@@ -377,7 +377,7 @@
 <ul class="simple">
 <li><p><strong>TMA async movement:</strong> move GMEM &lt;-&gt; SMEM tiles through Blackwell’s hardware copy path, with barriers tracking completion.</p></li>
 <li><p><strong>Software pipelining:</strong> use multiple SMEM stages so data movement for the next K tile can overlap Tensor Core compute on the current tile.</p></li>
-<li><p><strong>Persistent scheduling:</strong> let CTAs pull output tiles dynamically instead of relying only on a fixed launch-grid mapping.</p></li>
+<li><p><strong>Persistent scheduling:</strong> a fixed pool of CTAs each processes many output tiles via a tile scheduler, instead of one CTA per tile.</p></li>
 <li><p><strong>Warp specialization:</strong> split producer, MMA consumer, and writeback roles across warpgroups.</p></li>
 <li><p><strong>CTA clusters:</strong> let two CTAs cooperate on a larger Blackwell MMA tile.</p></li>
 <li><p><strong>Multi-consumer execution:</strong> use multiple consumer warpgroups to compute different parts of the tile, increasing compute density.</p></li>
@@ -773,12 +773,11 @@
 </pre></div>
 </div>
 <hr class="docutils" />
-<p>K-loop accumulation still leaves one missing piece: tiling over M and N to support larger matrices.</p>
 </section>
 </section>
 <section id="step-3-spatial-tiling-multi-cta">
 <span id="chap-spatial-tiling"></span><h2>Step 3: Spatial Tiling (Multi-CTA)<a class="headerlink" href="#step-3-spatial-tiling-multi-cta" title="Link to this heading">#</a></h2>
-<p>Steps 1-2 compute one output tile. Step 3 launches a 2D grid of CTAs so larger M and N dimensions are covered by multiple 128 x 128 output tiles. The example uses M=N=K=256.</p>
+<p>K-loop accumulation still leaves one missing piece: tiling over M and N to support larger matrices. Steps 1-2 compute one output tile; Step 3 launches a 2D grid of CTAs so larger M and N dimensions are covered by multiple 128 x 128 output tiles. The example uses M=N=K=256.</p>
 <blockquote>
 <div><p><strong>What this step changes — Scope</strong></p>
 <ul class="simple">

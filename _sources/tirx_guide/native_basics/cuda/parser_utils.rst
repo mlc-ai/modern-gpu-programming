@@ -49,7 +49,7 @@ scoping with late binding, so a parameter shadows an enclosing variable:
     def add_into(acc, x):
         acc[0] = acc[0] + x
 
-    add_into(s.acc, A[tx, j])     # inlined -> s.acc[0] = s.acc[0] + A[tx, j]
+    add_into(acc, A[tx, j])       # inlined -> acc[0] = acc[0] + A[tx, j]
 
 ``@T.meta_class`` — parser-side state objects
 ---------------------------------------------

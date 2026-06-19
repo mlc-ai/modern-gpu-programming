@@ -44,16 +44,18 @@ tiling without any special "tile" concept — it is the same shape–stride mode
 
 A GPU has more than one "address space": linear memory, but also the lanes of a warp, a thread's
 registers, and TMEM's lanes/columns. So a stride coefficient carries an **axis tag** — `@m` for
-ordinary memory, and others like `@laneid` (thread lane), `@reg` (register), `@warpid`, `@tmemcol`.
+ordinary memory, and others like `@laneid` (thread lane), `@reg` (register), `@warpid`, and TMEM's
+`@TLane` / `@TCol`.
 A row-major 8×16 tile in memory is
 
 ```text
 S[(8, 16) : (16@m, 1@m)]
 ```
 
-Named axes let one layout describe data that is *spread across threads*. The MMA register fragment
-from {ref}`chap_layout_generations`, for instance, is `S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)]`:
-the rows and columns map onto lane IDs and a per-lane register, not onto linear memory.
+Named axes let one layout describe data *spread across threads*. For instance,
+`S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)]` maps rows and columns onto lane IDs and a per-lane
+register rather than linear memory — this is exactly the tensor-core register fragment you will meet
+in {ref}`chap_layout_generations`.
 
 ```{raw} html
 <iframe src="../demo/thread_register.html" title="Thread + register layout via named axes" loading="lazy"

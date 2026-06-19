@@ -345,8 +345,8 @@ by three knobs that recur throughout the book:</p>
 <li><p><strong>Layout</strong> — how the operand tiles map to GMEM, SMEM, TMEM, or registers.</p></li>
 <li><p><strong>Dispatch</strong> — which hardware path is intended when there is a choice, such as TMA or <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>.</p></li>
 </ul>
-<p>For asynchronous primitives, a barrier, commit, wait, or fence describes the handoff between
-tile operations.</p>
+<p>Asynchronous primitives add one more concern — <em>coordination</em>: a barrier, commit, wait, or fence
+marks each handoff between tile operations.</p>
 <section id="how-this-book-is-organized">
 <h2>How This Book Is Organized<a class="headerlink" href="#how-this-book-is-organized" title="Link to this heading">#</a></h2>
 <ul class="simple">

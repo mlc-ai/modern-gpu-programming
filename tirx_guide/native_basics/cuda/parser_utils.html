@@ -351,7 +351,7 @@ scoping with late binding, so a parameter shadows an enclosing variable:</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">add_into</span><span class="p">(</span><span class="n">acc</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
     <span class="n">acc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">acc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span>
 
-<span class="n">add_into</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">acc</span><span class="p">,</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>     <span class="c1"># inlined -&gt; s.acc[0] = s.acc[0] + A[tx, j]</span>
+<span class="n">add_into</span><span class="p">(</span><span class="n">acc</span><span class="p">,</span> <span class="n">A</span><span class="p">[</span><span class="n">tx</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>       <span class="c1"># inlined -&gt; acc[0] = acc[0] + A[tx, j]</span>
 </pre></div>
 </div>
 </section>
