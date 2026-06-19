@@ -64,9 +64,16 @@
       apply();
       settleUntil = Date.now() + 120;             // ignore ResizeObserver echoes from our own writes
     }
-    // Re-measure when the demo's own content changes height (e.g. a click expands a
-    // panel). Same-origin, so we observe the inner <body> directly — no postMessage
-    // needed. (A cross-origin embed would instead have the demo postMessage its height.)
+    // Push-based height: the demo measures itself and postMessages its content
+    // height (see viz-base.js), which the global listener below routes here. This
+    // is the reliable path — the demo catches its own DOM changes that an outside
+    // observer can miss. We only update the height; width/zoom stay as recompute()
+    // set them, so the demo still fits the column width.
+    iframe._setNatHeight = function (h) {
+      if (h && Math.abs(h - nat.h) > 1) { nat.h = h; apply(); settleUntil = Date.now() + 120; }
+    };
+    // Fallback: re-measure when the demo's own content changes height (e.g. a click
+    // expands a panel). Same-origin, so we observe the inner <body> directly.
     function observe() {
       try {
         var doc = iframe.contentDocument;
@@ -101,6 +108,19 @@
       rt = setTimeout(function () { recompute(true); }, 200);
     });
   }
+
+  // A demo posts its content height (viz-base.js); route it to the matching iframe.
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (!d || d.type !== "demoHeight" || !d.height) return;
+    var frames = document.querySelectorAll('iframe[src*="/demo/"]');
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow === e.source && frames[i]._setNatHeight) {
+        frames[i]._setNatHeight(d.height);
+        break;
+      }
+    }
+  });
 
   function init() {
     document.querySelectorAll('iframe[src*="/demo/"]').forEach(setup);
