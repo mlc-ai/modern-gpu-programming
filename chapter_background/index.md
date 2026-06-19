@@ -77,9 +77,8 @@ in {ref}`chap_tensor_cores`.
 
 ## Memory Spaces
 
-Memory is a hierarchy too. No single memory is both large and fast, so a GPU provides several
-levels, and a kernel moves data through them, each
-with its own capacity, latency, and access rules:
+No single memory can be both large and fast, so a GPU offers several, and a kernel moves data
+through them, each with its own capacity, latency, and access rules:
 
 | Memory | Ownership | Role | Notes |
 |--------|-----------|------|-------|
