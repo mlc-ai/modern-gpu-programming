@@ -21,8 +21,9 @@ to ask "is this fast?" — arithmetic intensity, the roofline, and overlap.
 
 The numbers here are for the NVIDIA B200. Following the convention of {ref}`chap_background`,
 we use order-of-magnitude ceilings: **on the order of 2 PFLOP/s** dense fp16/bf16 tensor-core
-throughput and **on the order of 8 TB/s** of HBM3e bandwidth. The exact values depend on SKU
-and clock, so treat them as round numbers for reasoning, not datasheet guarantees.
+throughput and **on the order of 8 TB/s** of HBM3e bandwidth. The exact values depend on the
+specific GPU model and its clock, so treat them as round numbers for reasoning, not datasheet
+guarantees.
 
 ## The Roofline Model
 

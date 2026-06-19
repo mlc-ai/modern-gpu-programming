@@ -198,8 +198,8 @@ lengths to keep the Tensor Cores fed. The figures below are for the B200 and are
 | HBM3e bandwidth | order of 8 TB/s | the memory roof |
 | One fp16 128×64 tile in SMEM | 16 KB | example staged operand-tile size |
 
-The exact peak numbers depend on the SKU, the clock, and the sparsity mode, so treat the table as a
-sense of *scale* rather than as a performance model. The lesson it teaches is a simple one. SMEM is
+The exact peak numbers depend on the specific GPU model, its clock, and the sparsity mode, so treat
+the table as a sense of *scale* rather than as a performance model. The lesson it teaches is a simple one. SMEM is
 large enough to hold only a handful of staged tiles, TMEM is scarce enough that it must be budgeted,
 and tensor-core throughput is so high that data movement *has* to overlap compute — there is no other
 way to keep those engines busy.
