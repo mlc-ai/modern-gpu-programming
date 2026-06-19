@@ -306,16 +306,17 @@
 <li><p>Swizzle is an XOR remapping of addresses that removes shared-memory bank conflicts.</p></li>
 </ul>
 </div>
-<p>Two kernels can compute the same result over the same numbers and yet differ in speed by an order
-of magnitude, purely because of where those numbers sit in the hardware. That “where” is the <em>data
-layout</em>: the map from a tensor’s logical indices <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j,</span> <span class="pre">…)</span></code> to a physical location — which byte of
-memory, which thread’s register, which SMEM bank. The data and its logical shape do not change; the
-layout is what decides whether an access coalesces, hits distinct banks, or matches the format an
-engine expects, and so it is where much of GPU performance is won or lost. To talk about it
-precisely we need a way to write layouts down. This chapter builds a compact <strong>notation</strong> for
-layouts that the rest of Part I uses; <a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Across GPU Generations</span></a> then applies it to each GPU
-generation’s hardware requirements. Treat the notation here as plain mathematical notation — the
-goal is to get fluent at reading a layout.</p>
+<p>Modern GPUs have Tensor Cores that can carry out matrix computations extremely quickly. Yet the
+hardware can run only as fast as we can deliver data to those compute units. For this reason,
+performance depends not only on the amount of computation, but also on how data is organized
+throughout the computation and how that organization interacts with the memory system.</p>
+<p>In machine learning, we usually work with multi-dimensional tensors. A <strong>data layout</strong> specifies how
+a tensor element with logical indices <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j,</span> <span class="pre">…)</span></code> is mapped to a physical location in memory,
+registers, or other hardware storage. This chapter introduces the main data layouts that arise in
+modern GPU programming. To reason about them clearly, we will develop a compact <strong>notation</strong> for
+describing layouts across different machine learning system scenarios. We will also study
+<strong>swizzling</strong>, a key mechanism for enabling efficient row-wise and column-wise memory access on
+GPUs.</p>
 <section id="the-shapestride-model">
 <h2>The shape–stride model<a class="headerlink" href="#the-shapestride-model" title="Link to this heading">#</a></h2>
 <p>We start from the simplest possible layout and build everything else on top of it. At its core a
@@ -415,6 +416,8 @@ exactly as <code class="docutils literal notranslate"><span class="pre">&#64;gpu
         style="width:100%; min-width:1040px; height:560px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe><p><em>Interactive: hover a TMEM lane — it stores 4 logical M-rows (<code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">//</span> <span class="pre">32</span></code> → column) and is broadcast <code class="docutils literal notranslate"><span class="pre">warpx4</span></code> to 4 of the warpgroup’s 128 reading lanes.</em></p>
 <p>The byte packing inside each column (the <code class="docutils literal notranslate"><span class="pre">scale_vec</span></code> 1X/2X/4X modes) and the <code class="docutils literal notranslate"><span class="pre">cta_group::2</span></code> split
 are in <a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Across GPU Generations</span></a>.</p>
+<p>For readers familiar with CuTe, you can view the notation in this chapter as a row-major variant
+of CuTe, extended with explicit hardware-named axes and a designated replication structure.</p>
 </section>
 </section>
 <section id="swizzle-layout">
