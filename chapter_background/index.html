@@ -448,8 +448,7 @@ accumulates into a TMEM tile. It is issued by one elected thread and signals a b
 <li><p><strong>Epilogue.</strong> The warpgroup reads the TMEM accumulator into registers, casts it to the output
 dtype, and stores it back to GMEM (often via SMEM staging + a TMA store).</p></li>
 </ol>
-<p>Listed this way the stages look strictly sequential, and that is exactly the trap. The difference
-between a slow and a fast kernel is <strong>overlap</strong>. A naive kernel runs the steps in order — load,
+<p>These stages look sequential, but the difference between a slow and a fast kernel is <strong>overlap</strong>. A naive kernel runs the steps in order — load,
 wait, compute, wait, store — leaving each engine idle while it waits for the previous one. A fast
 kernel instead pipelines them: while the Tensor Core computes on tile <code class="docutils literal notranslate"><span class="pre">k</span></code>, the TMA engine is
 already fetching tile <code class="docutils literal notranslate"><span class="pre">k+1</span></code> and the epilogue is draining tile <code class="docutils literal notranslate"><span class="pre">k-1</span></code>, so all three engines stay
