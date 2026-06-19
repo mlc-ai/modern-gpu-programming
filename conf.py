@@ -1,8 +1,8 @@
-# Sphinx configuration for the Modern GPU Programming book.
+# Sphinx configuration for the Modern GPU Programming For MLSys book.
 # Migrated off d2lbook to plain Sphinx + MyST-Parser + sphinx-book-theme.
 # Build:  sphinx-build -b html . _build/html
 
-project = "Modern GPU Programming"
+project = "Modern GPU Programming For MLSys"
 author = "MLC Community"
 copyright = "2026, MLC Community"
 release = "0.0.1"

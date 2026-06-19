@@ -1,6 +1,6 @@
-# Modern GPU Programming — Book Outline (planning doc)
+# Modern GPU Programming For MLSys — Book Outline (planning doc)
 
-*Title:* **Modern GPU Programming** · *Vehicle:* **TIRx** · *Model:* Dive-into-Deep-Learning
+*Title:* **Modern GPU Programming For MLSys** · *Vehicle:* **TIRx** · *Model:* Dive-into-Deep-Learning
 (runnable, build-it-up, one framework as the spine).
 
 **Audience assumption (locked):** reader *knows some CUDA* — grid/block/thread, SMEM,
