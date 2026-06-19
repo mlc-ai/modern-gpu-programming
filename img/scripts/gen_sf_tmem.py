@@ -3,78 +3,105 @@ tvm sf_tmem_layout (backend/cuda/.../gemm_async/tcgen05.py): rows must be a
 multiple of 32; M = rows // 32; epc = 4 (four 8-bit SFs per 32-bit TMEM column);
 the atom is one 32-row chunk with R[4 : 32@TLane] (a warpx4 broadcast).
 
-Net: 128 M-rows occupy only 32 TMEM lanes. TLane = m % 32; the m // 32 group runs
-along TCol (stride epc); each u32 column packs the per-MMA K-blocks. The warpx4
-broadcast feeds the 32 stored rows to all 128 warpgroup lanes. Outputs SVG.
+Two distinct mappings, drawn as two panels:
+  (1) Packing  — 128 M-rows occupy only 32 TMEM lanes (TLane = m % 32; the m // 32
+      group runs along TCol).
+  (2) Replication — those 32 stored lanes are broadcast (warpx4, R[4 : 32@TLane])
+      to all 128 lanes of the reading warpgroup: lane l reads TLane (l mod 32).
+Outputs SVG (and a PNG for inspection).
 """
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, FancyArrowPatch
 
 from pathlib import Path; OUT = str(Path(__file__).resolve().parent.parent)  # the repo img/ dir
 TXT = "#1f2937"
 PURPLE = ["#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd"]
 
-fig, ax = plt.subplots(figsize=(9.8, 5.8))
+fig, ax = plt.subplots(figsize=(11.6, 5.7))
 fig.patch.set_facecolor("white")
 ax.set_xlim(0, 100)
 ax.set_ylim(0, 100)
 ax.axis("off")
-ax.text(50, 98.5, "Scale factors in TMEM:  128 M-rows → 32 TMEM rows", ha="center", va="top",
-        fontsize=12.5, fontweight="bold", color=TXT)
+ax.text(50, 98.5, "Scale factors in TMEM — packed into 32 lanes, then warpx4-broadcast to 128",
+        ha="center", va="top", fontsize=12.8, fontweight="bold", color=TXT)
 
-X0 = 26
-CW = 17
-YT = 84
-RH = 8.5
-# columns = the m // 32 row-group (for M = 128 there are 4); within a column the
-# u32 packs the per-MMA K-blocks.
-GROUPS = ["m//32 = 0\n(rows 0–31)", "= 1\n(rows 32–63)", "= 2\n(rows 64–95)", "= 3\n(rows 96–127)"]
-lanes = [(0, "TLane 0"), (1, "TLane 1"), (2, "TLane 2"), (3, "TLane 3"), (None, "⋮"), (31, "TLane 31")]
+# ----------------------------------------------------------------------------
+# Panel 1 — packing: 128 M-rows -> 32 TMEM lanes
+# ----------------------------------------------------------------------------
+ax.text(22, 90, "① Packed: 128 M-rows → 32 TMEM lanes", ha="center", fontsize=9.6,
+        fontweight="bold", color=TXT)
+ax.text(22, 86.3, "TLane = m % 32      m // 32 → TCol", ha="center", fontsize=7.6,
+        color=TXT, style="italic")
 
-for gi, glab in enumerate(GROUPS):
+X0, CW, YT, RH = 12, 7.4, 79, 8.0
+rows = [0, 1, 2, None, 31]
+for gi in range(4):                       # m // 32 group -> TCol
     cx = X0 + gi * CW
-    ax.text(cx + CW / 2, YT + 2.5, glab, ha="center", va="bottom", fontsize=7.2, fontweight="bold", color=TXT)
-    for ri, (lane, _) in enumerate(lanes):
+    ax.text(cx + CW / 2, YT + 1.3, str(gi), ha="center", va="bottom", fontsize=7,
+            fontweight="bold", color=TXT)
+    for ri, lane in enumerate(rows):
         y = YT - (ri + 1) * RH
         if lane is None:
-            ax.text(cx + CW / 2, y + RH / 2, "⋮", ha="center", va="center", fontsize=12, color=TXT)
+            ax.text(cx + CW / 2, y + RH / 2, "⋮", ha="center", va="center", fontsize=11, color=TXT)
             continue
         ax.add_patch(Rectangle((cx, y), CW, RH, facecolor=PURPLE[gi], edgecolor="white",
-                               linewidth=1.5, alpha=0.92))
-        ax.text(cx + CW / 2, y + RH / 2, f"row {gi * 32 + lane}", ha="center", va="center",
-                color="white", fontsize=7.5, fontweight="bold")
-
-# lane labels (left) — physical TMEM row
-for ri, (lane, llab) in enumerate(lanes):
+                               linewidth=1.3, alpha=0.92))
+        ax.text(cx + CW / 2, y + RH / 2, f"r{gi * 32 + lane}", ha="center", va="center",
+                color="white", fontsize=6.4, fontweight="bold")
+for ri, lane in enumerate(rows):          # left lane labels
     y = YT - (ri + 1) * RH
-    ax.text(X0 - 2, y + RH / 2, llab, ha="right", va="center", fontsize=8, fontweight="bold", color=TXT)
+    lab = "⋮" if lane is None else f"TLane {lane}"
+    ax.text(X0 - 1.3, y + RH / 2, lab, ha="right", va="center", fontsize=7, fontweight="bold", color=TXT)
+ax.text(X0 + 2 * CW, YT + 4.6, "TCol →  (m // 32 group, then K)", ha="center", fontsize=7.3, color=TXT)
+ax.text(22, 16, "Only 32 lanes hold all 128 M-rows.", ha="center", fontsize=7.6, color=TXT, style="italic")
 
-# axes
-gx1 = X0 + 4 * CW
-ax.annotate("", xy=(X0 - 11, YT - 6 * RH), xytext=(X0 - 11, YT), arrowprops=dict(arrowstyle="-|>", color=TXT, lw=1.2))
-ax.text(X0 - 13, YT - 3 * RH, "TLane ↓\n(only 32)", ha="right", va="center", fontsize=8, color=TXT)
-ax.text((X0 + gx1) / 2, YT + 7.5, "TCol →  (m // 32 group, then K)", ha="center", fontsize=8.5, color=TXT)
+# ----------------------------------------------------------------------------
+# Bridge arrow — the warpx4 broadcast
+# ----------------------------------------------------------------------------
+ax.annotate("", xy=(50.5, 52), xytext=(43.5, 52),
+            arrowprops=dict(arrowstyle="-|>", color="#7c3aed", lw=2.4))
+ax.text(47, 56, "warpx4\nbroadcast", ha="center", va="bottom", fontsize=7.6,
+        fontweight="bold", color="#7c3aed")
 
-# byte detail: one M-row's u32 along K (scale_vec mode), per the PTX SF-A diagrams
-BYTE = ["#a78bfa", "#c4b5fd", "#8b5cf6", "#6d28d9"]
-sx, sw, syy, sh = 35, 23, 23, 6.5
-ax.text(sx - 1.5, syy + sh / 2, "row 0 u32:", ha="right", va="center", fontsize=8, fontweight="bold", color=TXT)
-for b, lab in enumerate(["SF0", "SF1", "SF2", "SF3"]):
-    bw = sw / 4
-    ax.add_patch(Rectangle((sx + b * bw, syy), bw, sh, facecolor=BYTE[b], edgecolor="white", linewidth=1.2))
-    ax.text(sx + (b + 0.5) * bw, syy + sh / 2, lab, ha="center", va="center", color="white",
-            fontsize=7.5, fontweight="bold")
-ax.text(sx + sw + 2, syy + sh / 2, "scale_vec::4X (nvfp4).  1X (fp8): SF0 ×4.  2X: SF0,1 ×2.",
-        ha="left", va="center", fontsize=7, color=TXT)
+# ----------------------------------------------------------------------------
+# Panel 2 — replication: 32 stored lanes -> 128 reading lanes (4 copies)
+# ----------------------------------------------------------------------------
+ax.text(76, 90, "② Replicated to all 128 warpgroup lanes", ha="center", fontsize=9.6,
+        fontweight="bold", color=TXT)
+ax.text(76, 86.3, "R[4 : 32@TLane]  —  4 copies at lane stride 32", ha="center", fontsize=7.6,
+        color=TXT, style="italic")
 
-# notes
-ax.text(50, 13, "TLane = m % 32 → all 128 M-rows live in 32 TMEM lanes; the m // 32 group runs along "
-        "TCol, then K.", ha="center", fontsize=8.2, color=TXT, style="italic")
-ax.text(50, 7.5, "Loaded SMEM→TMEM via `tcgen05.cp`; the 32 stored rows feed all 128 warpgroup lanes "
-        "(`R[4:32@TLane]` warpx4 broadcast).", ha="center", fontsize=8.2, color=TXT, style="italic")
+# source: the 32 stored lanes
+SX, SY, SW, SH = 52.5, 38, 11, 28
+ax.add_patch(Rectangle((SX, SY), SW, SH, facecolor="#ede9fe", edgecolor="#7c3aed", linewidth=1.8))
+ax.text(SX + SW / 2, SY + SH / 2, "TLane\n0–31\n\n(stored\nonce)", ha="center", va="center",
+        fontsize=7.4, fontweight="bold", color="#5b21b6")
+
+# 4 destination quadrants of the reading warpgroup
+DX, DW, DH = 78, 19, 11
+ranges = ["lanes 0–31", "lanes 32–63", "lanes 64–95", "lanes 96–127"]
+dys = [66, 52, 38, 24]
+for i, (rg, dy) in enumerate(zip(ranges, dys)):
+    ax.add_patch(Rectangle((DX, dy), DW, DH, facecolor=PURPLE[i], edgecolor="white",
+                           linewidth=1.4, alpha=0.92))
+    ax.text(DX + DW / 2, dy + DH * 0.66, rg, ha="center", va="center", color="white",
+            fontsize=7.6, fontweight="bold")
+    ax.text(DX + DW / 2, dy + DH * 0.30, "≡ TLane 0–31", ha="center", va="center",
+            color="white", fontsize=6.6)
+    ax.add_patch(FancyArrowPatch((SX + SW, SY + SH / 2), (DX, dy + DH / 2),
+                                 arrowstyle="-|>", mutation_scale=11,
+                                 color="#8b5cf6", lw=1.3, shrinkA=0, shrinkB=0))
+
+ax.text(76, 16, "lane l reads TLane (l mod 32) — no extra storage.", ha="center",
+        fontsize=7.6, color=TXT, style="italic")
+
+# ----------------------------------------------------------------------------
+ax.text(50, 7.5, "Loaded SMEM→TMEM via `tcgen05.cp`; the block-scaled `tcgen05.mma` reads the "
+        "scale factors from all 128 warpgroup lanes.", ha="center", fontsize=8.0, color=TXT, style="italic")
 
 fig.savefig(f"{OUT}/sf_tmem.svg", facecolor="white", bbox_inches="tight")
+fig.savefig("/tmp/sf_tmem_preview.png", dpi=130, facecolor="white", bbox_inches="tight")
 plt.close(fig)
 print("wrote sf_tmem.svg")
