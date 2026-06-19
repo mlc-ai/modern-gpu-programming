@@ -6,7 +6,7 @@
 
 - A kernel runs over a thread hierarchy (thread → warp → warpgroup → CTA → cluster → grid) across distinct memory spaces (registers, SMEM, GMEM, TMEM).
 - Compute splits into CUDA cores and Tensor Cores; dedicated engines like TMA move the data that feeds them.
-- Every later optimization serves one pipeline — GMEM → SMEM → Tensor Core → back — whose goal is to keep the cores fed.
+- Every later optimization serves one tile pipeline — load (GMEM → SMEM), compute (SMEM → TMEM), epilogue (TMEM → registers → GMEM) — and aims to keep the compute and data-movement engines busy at once.
 :::
 
 Before we can reason about why one kernel is fast and another is slow, we need a picture of the
