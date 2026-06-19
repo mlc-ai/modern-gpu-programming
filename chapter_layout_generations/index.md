@@ -1,6 +1,14 @@
 (chap_layout_generations)=
 # Data Layout Across GPU Generations
 
+:::{admonition} Overview
+:class: overview
+
+- Across Ampere → Hopper → Blackwell the MMA math is unchanged; what changes is how operands must be laid out to reach the Tensor Core.
+- Ampere uses a per-lane register fragment, Hopper a SMEM matrix descriptor with swizzle formats, Blackwell SMEM operands plus a TMEM accumulator.
+- Two constraints hold every generation: global-memory coalescing and shared-memory bank conflicts.
+:::
+
 Why organize a chapter by GPU generation at all? Because the thing that actually changed from
 **Ampere** to **Hopper** to **Blackwell** is not the math the tensor core does — it is *how operands
 reach the tensor core*. Each generation's memory and compute engines demand a *specific* operand

@@ -1,6 +1,14 @@
 (chap_gemm_basics)=
 # Building a Tiled GEMM
 
+:::{admonition} Overview
+:class: overview
+
+- Builds a correct tiled GEMM from the TIRx tile primitives, starting from a single output tile.
+- Step 1 is a single-tile GEMM, Step 2 adds the K-loop accumulation, Step 3 tiles spatially across CTAs for full matrices.
+- Correctness comes first; performance is the job of the next two chapters.
+:::
+
 So far we have the TIRx tile primitives in the abstract — the scope / layout / dispatch model from {ref}`chap_tirx_primer` and {ref}`chap_data_layouts`. Now we put them to work on a real kernel. We start small, with a single 128 x 128 output tile, and grow it into a kernel that handles full-size matrices. Getting there takes two additions on top of the first tile: accumulating partial products along the K dimension, and tiling the output spatially across many CTAs.
 
 This is the first of three chapters that walk one GEMM optimization path end to end. Here we build a correct tiled kernel. The next chapter ({ref}`chap_gemm_async`) replaces thread copies with TMA and overlaps movement with compute through pipelining, and {ref}`chap_gemm_advanced` adds warp specialization and CTA clusters. Each chapter assumes the previous one, so the kernels accumulate features rather than restart.

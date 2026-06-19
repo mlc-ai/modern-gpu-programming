@@ -1,6 +1,14 @@
 (chap_performance)=
 # What Makes a Kernel Fast
 
+:::{admonition} Overview
+:class: overview
+
+- The roofline model bounds a kernel by either memory bandwidth or compute, decided by its *arithmetic intensity* (FLOPs per byte moved).
+- Low arithmetic intensity means memory-bound: raise it (bigger tiles, fusion) or you cannot reach peak FLOPs.
+- The main lever for speed is *overlap* — running data movement and compute at once — limited by occupancy and resource pressure.
+:::
+
 Suppose you have written a kernel and it runs. Is it fast? The question is meaningless on its own:
 fast compared to what? Before optimizing anything, you need a way to answer two more precise
 questions — *how fast could this kernel possibly run on this GPU?* and *which resource is stopping

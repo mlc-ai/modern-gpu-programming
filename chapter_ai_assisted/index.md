@@ -1,6 +1,13 @@
 (chap_ai_assisted)=
 # Writing TIRx Kernels with Agents
 
+:::{admonition} Overview
+:class: overview
+
+- Coding agents get TIRx wrong by default, so you must ground them in the real `tvm` / `tirx-kernels` source and a contract prompt.
+- The chapter gives a workflow plus five concrete use cases (explain, review, debug, generate tests, inspect CUDA) and where agent review stops being trustworthy.
+:::
+
 An agent is only as good as what it knows about your problem, and TIRx is exactly the kind of problem a general coding model gets wrong by default. So before asking an agent to work on TIRx, give it the source code it must reason from. It should be able to read the `tvm` codebase for the TIRx DSL, layout objects, tile primitives, and lowering rules, and the `tirx-kernels` codebase for real kernels, scheduler helpers, and barrier patterns. Without those references, the agent will fall back to generic CUDA, Triton, or Hopper assumptions, which are often wrong for Blackwell TIRx.
 
 Once the agent can read the right code, the question becomes how you talk to it. There are two ways. The first is delegation: give it a broad goal, such as "make the FA4 barrier section easier to understand," and let it choose the method. That is useful for mechanical edits after you already know the direction, but it teaches you less, because the important choices stay hidden inside the agent. The second is learning-oriented: turn the broad goal into a specific instruction, such as "explain `softmax_corr.full` and `softmax_corr.empty` as a mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram, then rebuild the tutorial." For TIRx the second is usually the better investment, because the real work is not changing text or code — it is learning what choices are possible and which hardware contracts those choices imply.

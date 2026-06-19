@@ -20,6 +20,13 @@
 Tensor Layout
 =============
 
+.. admonition:: Overview
+   :class: overview
+
+   - The TIRx layout API: ``TileLayout`` (shard / replica / offset over named axes), ``SwizzleLayout``, and ``ComposeLayout``.
+   - A layout maps each logical index to a *set* of physical coordinates; ``layout.apply()`` evaluates it.
+   - Ready-made constructors (``tmem_datapath_layout``, ``tcgen05_atom_layout``, ``wg_local_layout``) cover the common hardware tiles.
+
 :ref:`chap_data_layout` introduced the layout *notation* — the shape–stride pair
 ``S[shape : strides]``, strides tagged with named **axes**, and the replication
 term ``R[n : stride]`` for data the hardware copies rather than partitions. This

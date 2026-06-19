@@ -1,6 +1,14 @@
 (chap_data_layout)=
 # Introduction to Data Layout
 
+:::{admonition} Overview
+:class: overview
+
+- A *data layout* maps a tensor's logical indices to physical locations, and it decides coalescing, bank conflicts, and whether an engine can read a tile.
+- The book writes layouts in one notation: `S[(shape) : (strides)]`, with named axes (`@laneid`, `@TLane`, …) and a replication term `R[...]` for broadcast or copied data.
+- Swizzle is an XOR remapping of addresses that removes shared-memory bank conflicts.
+:::
+
 Two kernels can compute the same result over the same numbers and yet differ in speed by an order
 of magnitude, purely because of where those numbers sit in the machine. That "where" is the *data
 layout*: the map from a tensor's logical indices `(i, j, …)` to a physical location — which byte of
