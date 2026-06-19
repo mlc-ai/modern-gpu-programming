@@ -34,7 +34,6 @@ hardware, which lets us reason about low-level control while still learning thro
   TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Flash Attention 4.** A complete attention kernel built from the Part III techniques:
   two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
-- **Part V — Workflow & Practice.** Profiling/debugging and writing kernels with agents.
 - **Reference.** TIRx language reference, the API cheat sheet, compiler internals, and the full
   Flash Attention 4 source.
 
@@ -75,14 +74,6 @@ chapter_gemm_advanced/index
 :maxdepth: 2
 
 chapter_flash_attention/index
-```
-
-```{toctree}
-:caption: Part V — Workflow & Practice
-:maxdepth: 2
-
-chapter_profiling/index
-chapter_ai_assisted/index
 ```
 
 ```{toctree}
