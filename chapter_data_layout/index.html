@@ -370,12 +370,15 @@ shape–stride model, just with the index split into outer and inner coordinates
 </section>
 <section id="named-axes">
 <h2>Named axes<a class="headerlink" href="#named-axes" title="Link to this heading">#</a></h2>
-<p>So far an address has meant a byte in linear memory. But a GPU has more than one “address space”:
-besides memory there are the lanes of a warp, a thread’s registers, and TMEM’s lanes and columns,
-and a tile can be spread across any of them. To say <em>which</em> space a stride moves through, we let a
-stride coefficient carry an <strong>axis tag</strong> — <code class="docutils literal notranslate"><span class="pre">&#64;m</span></code> for ordinary memory, and others like <code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code>
-(thread lane), <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code> (register), <code class="docutils literal notranslate"><span class="pre">&#64;warpid</span></code>, and TMEM’s <code class="docutils literal notranslate"><span class="pre">&#64;TLane</span></code> / <code class="docutils literal notranslate"><span class="pre">&#64;TCol</span></code>. With memory tags
-explicit, a row-major 8×16 tile in memory is just</p>
+<p>So far, we have treated an address as a location in linear memory. On a GPU, however, data can
+live in more than one place. Besides memory, a tile may also be distributed across warp lanes,
+thread registers, or TMEM lanes and columns. To describe these cases in a uniform way, we extend
+the notation with <strong>named axes</strong>. A stride coefficient can now carry an axis tag that tells us
+which space it moves through: <code class="docutils literal notranslate"><span class="pre">&#64;m</span></code> for ordinary memory, <code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code> for warp lanes, <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code> for
+registers, <code class="docutils literal notranslate"><span class="pre">&#64;warpid</span></code> for warps, and <code class="docutils literal notranslate"><span class="pre">&#64;TLane</span></code> / <code class="docutils literal notranslate"><span class="pre">&#64;TCol</span></code> for TMEM coordinates. With this notation,
+a layout can describe not only where data sits in memory, but also how it is distributed across
+the hardware resources that operate on it.</p>
+<p>With memory tags explicit, a row-major 8×16 tile in memory is just</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>S[(8, 16) : (16@m, 1@m)]
 </pre></div>
 </div>
@@ -383,6 +386,8 @@ explicit, a row-major 8×16 tile in memory is just</p>
 in memory. For instance, <code class="docutils literal notranslate"><span class="pre">S[(8,</span> <span class="pre">4,</span> <span class="pre">2)</span> <span class="pre">:</span> <span class="pre">(4&#64;laneid,</span> <span class="pre">1&#64;laneid,</span> <span class="pre">1&#64;reg)]</span></code> maps rows and columns onto
 lane IDs and a per-lane register instead of linear memory — this is
 the tensor-core register fragment you will meet in <a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Across GPU Generations</span></a>.</p>
+<p>The following interactive visualization shows how a layout can distribute tensor elements across
+warp lanes and per-lane registers, instead of placing them in linear memory.</p>
 <iframe src="../demo/thread_register.html" title="Thread + register layout via named axes" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe><p><em>Interactive: a layout over <code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code> — click a cell to see which lane/register holds it.</em></p>
 </section>

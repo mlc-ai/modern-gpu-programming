@@ -89,12 +89,16 @@ shape–stride model, just with the index split into outer and inner coordinates
 
 ## Named axes
 
-So far an address has meant a byte in linear memory. But a GPU has more than one "address space":
-besides memory there are the lanes of a warp, a thread's registers, and TMEM's lanes and columns,
-and a tile can be spread across any of them. To say *which* space a stride moves through, we let a
-stride coefficient carry an **axis tag** — `@m` for ordinary memory, and others like `@laneid`
-(thread lane), `@reg` (register), `@warpid`, and TMEM's `@TLane` / `@TCol`. With memory tags
-explicit, a row-major 8×16 tile in memory is just
+So far, we have treated an address as a location in linear memory. On a GPU, however, data can
+live in more than one place. Besides memory, a tile may also be distributed across warp lanes,
+thread registers, or TMEM lanes and columns. To describe these cases in a uniform way, we extend
+the notation with **named axes**. A stride coefficient can now carry an axis tag that tells us
+which space it moves through: `@m` for ordinary memory, `@laneid` for warp lanes, `@reg` for
+registers, `@warpid` for warps, and `@TLane` / `@TCol` for TMEM coordinates. With this notation,
+a layout can describe not only where data sits in memory, but also how it is distributed across
+the hardware resources that operate on it.
+
+With memory tags explicit, a row-major 8×16 tile in memory is just
 
 ```text
 S[(8, 16) : (16@m, 1@m)]
@@ -104,6 +108,9 @@ The tags matter when a layout describes data *spread across threads* rather than
 in memory. For instance, `S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)]` maps rows and columns onto
 lane IDs and a per-lane register instead of linear memory — this is
 the tensor-core register fragment you will meet in {ref}`chap_layout_generations`.
+
+The following interactive visualization shows how a layout can distribute tensor elements across
+warp lanes and per-lane registers, instead of placing them in linear memory.
 
 ```{raw} html
 <iframe src="../demo/thread_register.html" title="Thread + register layout via named axes" loading="lazy"
