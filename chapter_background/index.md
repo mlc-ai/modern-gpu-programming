@@ -42,7 +42,8 @@ organizes its threads into a nested hierarchy, and on Blackwell the levels are t
 
 - **Thread** — the scalar unit of execution, identified by a lane ID within its warp.
 - **Warp** — 32 threads executing in SIMT (*single instruction, multiple threads*): the lanes
-  issue the same instruction together, but each keeps its own registers and data.
+  issue the same instruction together, but each has its own registers and can be masked off
+  independently (so lanes can take different branches).
 - **Warpgroup** — 4 consecutive warps (128 threads). Introduced on Hopper as the unit for
   warpgroup-level MMA (`wgmma`), it is also the cooperation unit for Blackwell Tensor Memory
   access, where the 128 threads cooperatively move a TMEM tile to or from registers.
