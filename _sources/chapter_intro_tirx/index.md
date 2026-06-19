@@ -152,6 +152,12 @@ print("PASS")
 
 With the kernel running, we can read it back as what it really is: a set of choices along three knobs. Every operation answers three questions — *who* runs it, *where* its data lives, and *how* it executes — and those answers are scope, layout, and dispatch.
 
+```{raw} html
+<iframe src="../demo/tirx_dispatch.html" title="TIRx: scope, layout, dispatch" loading="lazy"
+        style="width:100%; min-width:960px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
+```
+*Interactive: click Scope / Layout / Dispatch to spotlight the lines of the kernel each knob controls.*
+
 **Scope — which threads issue or cooperate.** Operations name the group of threads that runs them. `Tx.cta.copy(...)` is CTA-scoped: all 128 threads cooperate on the global-to-shared copy, each handling a slice. The MMA is the opposite extreme — `tcgen05.mma` is a *single-instruction* cooperative op, so the kernel narrows scope to one thread with `if warp_id == 0: if T.ptx.elect_sync():`, and that one elected thread issues `Tx.gemm_async` plus `tcgen05.commit`. The hardware still runs the whole tile's MMA; issuing it once avoids launching the same MMA 128 times. The readback `Tx.wg.copy_async(...)` is warpgroup-scoped: the 128 threads of the warpgroup split the 128 x 128 accumulator row-by-row, each thread pulling its own row out of TMEM.
 
 **Layout — where the operands and accumulator live.** Each tile carries an explicit placement. The A and B operands go into SMEM under a `tma_shared_layout` (`A_layout` / `B_layout`) — a swizzled shared-memory layout that `tcgen05.mma` requires. The accumulator lives in TMEM, declared with `T.decl_buffer(..., scope="tmem", ...)` and a `TileLayout` over `TLane`/`TCol`. The register readback view `Dreg_wg` uses `TileLayout(S[(128, BLK_N) : (1@tid_in_wg, 1)])`, which maps the first tile axis onto warpgroup threads — row *i* is owned by warpgroup thread *i*. Layout is part of the operation's contract: the MMA reads the SMEM layouts of its operands and the TMEM layout of its accumulator to know how the tile is physically arranged.
