@@ -310,17 +310,17 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="writing-tirx-kernels-with-agents">
 <span id="chap-ai-assisted"></span><h1>Writing TIRx Kernels with Agents<a class="headerlink" href="#writing-tirx-kernels-with-agents" title="Link to this heading">#</a></h1>
-<p>Before asking an agent to work on TIRx, give it the source code it must reason from. It should be able to read the <code class="docutils literal notranslate"><span class="pre">tvm</span></code> codebase for the TIRx DSL, layout objects, tile primitives, and lowering rules, and the <code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> codebase for real kernels, scheduler helpers, and barrier patterns. Without those references, the agent will fall back to generic CUDA, Triton, or Hopper assumptions, which are often wrong for Blackwell TIRx.</p>
-<p>There are two ways to use an agent. The first is delegation: give it a broad goal, such as “make the FA4 barrier section easier to understand,” and let it choose the method. That is useful for mechanical edits after you already know the direction, but it teaches you less because the important choices stay hidden. The second is learning-oriented: turn the broad goal into a specific instruction, such as “explain <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code> and <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> as a mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram, then rebuild the tutorial.” This is usually more effective for TIRx because the important work is not just changing text or code; it is learning what choices are possible and which hardware contracts those choices imply.</p>
-<p>When you do not yet know the right instruction, ask the agent for candidates first. A good prompt is:</p>
+<p>An agent is only as good as what it knows about your problem, and TIRx is exactly the kind of problem a general coding model gets wrong by default. So before asking an agent to work on TIRx, give it the source code it must reason from. It should be able to read the <code class="docutils literal notranslate"><span class="pre">tvm</span></code> codebase for the TIRx DSL, layout objects, tile primitives, and lowering rules, and the <code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code> codebase for real kernels, scheduler helpers, and barrier patterns. Without those references, the agent will fall back to generic CUDA, Triton, or Hopper assumptions, which are often wrong for Blackwell TIRx.</p>
+<p>Once the agent can read the right code, the question becomes how you talk to it. There are two ways. The first is delegation: give it a broad goal, such as “make the FA4 barrier section easier to understand,” and let it choose the method. That is useful for mechanical edits after you already know the direction, but it teaches you less, because the important choices stay hidden inside the agent. The second is learning-oriented: turn the broad goal into a specific instruction, such as “explain <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code> and <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> as a mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram, then rebuild the tutorial.” For TIRx the second is usually the better investment, because the real work is not changing text or code — it is learning what choices are possible and which hardware contracts those choices imply.</p>
+<p>Of course, you cannot write a specific instruction when you do not yet know what the right instruction is. In that case, make the agent do the discovery: ask it for candidates first. A good prompt is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>I want to make the FA4 barrier section clearer, but I do not know the best form yet.
 Give me 3 candidate rewrites. For each one, say what it explains well,
 what it hides, and what code or diagram evidence I should verify.
 Do not edit yet.
 </pre></div>
 </div>
-<p>After reading the candidates, choose one and turn it into an explicit instruction. The next time you face the same kind of problem, you should be able to write that instruction yourself. This is the real value of using agents while learning TIRx: they help you discover “what is possible” and convert vague goals into reusable engineering moves.</p>
-<p>The previous chapters built up a way to read Blackwell kernels: identify the tile path, then check scope, layout, dispatch, and synchronization. That same structure is also the right way to move from a vague goal to a useful agent instruction. The unit of interaction is not a Python function or a whole CUDA file. It is a TIRx kernel contract. TIRx kernels are full of local contracts:</p>
+<p>After reading the candidates, choose one and turn it into an explicit instruction. The point of the round-trip is that the next time you face the same kind of problem, you can write that instruction yourself. This is the real value of using agents while learning TIRx: they help you discover “what is possible” and convert vague goals into reusable engineering moves.</p>
+<p>To do that reliably, you need a unit of interaction that both you and the agent can be precise about. The previous chapters built up a way to read Blackwell kernels — identify the tile path, then check scope, layout, dispatch, and synchronization — and that same structure is the right way to move from a vague goal to a useful agent instruction. The unit is not a Python function or a whole CUDA file; it is a TIRx kernel contract. TIRx kernels are full of local contracts:</p>
 <ul class="simple">
 <li><p>which scope owns a tile operation,</p></li>
 <li><p>where each tile lives and how it is laid out,</p></li>
@@ -328,12 +328,11 @@ Do not edit yet.
 <li><p>which barrier proves an async producer is complete,</p></li>
 <li><p>and whether the generated CUDA matches the intended hardware path.</p></li>
 </ul>
-<p>Those contracts, plus the source references above, are the context an agent needs.</p>
-<p>The agent can help you draft, compare, and execute choices. The programmer still owns the final contract.</p>
+<p>Those contracts, plus the source references above, are the context an agent needs. With them in hand, the agent can help you draft, compare, and execute choices — but the programmer still owns the final contract. Keep that division of labor in mind for the rest of the chapter.</p>
 <section id="workflow">
 <h2>Workflow<a class="headerlink" href="#workflow" title="Link to this heading">#</a></h2>
 <p><img alt="Writing TIRx Kernels with Agents Workflow" src="../_images/ai_assisted_tirx_workflow.png" /></p>
-<p>A practical workflow is:</p>
+<p>Putting those ideas together gives a practical loop:</p>
 <ol class="arabic simple">
 <li><p>Point the agent at <code class="docutils literal notranslate"><span class="pre">tvm</span></code> and <code class="docutils literal notranslate"><span class="pre">tirx-kernels</span></code>.</p></li>
 <li><p>Start with the goal, but do not stop there.</p></li>
@@ -347,7 +346,7 @@ Do not edit yet.
 </section>
 <section id="from-goal-to-instruction">
 <h2>From Goal to Instruction<a class="headerlink" href="#from-goal-to-instruction" title="Link to this heading">#</a></h2>
-<p>For tutorial writing, the difference looks like this:</p>
+<p>The loop above hinges on one step: turning a goal into an instruction sharp enough to act on. It helps to see that progression spelled out. For tutorial writing, it looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Broad goal:
 Make the FA4 barrier section easier to understand.
 
@@ -382,11 +381,11 @@ then in the K loop wait current stage, run MMA, and prefetch the next tile
 into the stage being released. Explain the phase flips before editing.
 </pre></div>
 </div>
-<p>This pattern matters because it turns the agent into a learning tool. You are not only getting a patch. You are learning the vocabulary of possible patches.</p>
+<p>In both cases the broad goal is the same one you started with; what changed is that you now name the tile path, the barriers, and the checks. That is why the pattern turns the agent into a learning tool: you are not only getting a patch, you are learning the vocabulary of possible patches.</p>
 </section>
 <section id="the-tirx-contract-prompt">
 <h2>The TIRx Contract Prompt<a class="headerlink" href="#the-tirx-contract-prompt" title="Link to this heading">#</a></h2>
-<p>When asking an agent about a TIRx kernel, do not start with only a code dump. Start with the kernel contract.</p>
+<p>That vocabulary has a natural shape, and it pays to make it explicit in the prompt itself. When asking an agent about a TIRx kernel, do not start with only a code dump; start with the kernel contract.</p>
 <p>Each field has a job. The tile path gives the data flow. Then come the same three pillars as the per-step cards in the GEMM and Flash Attention chapters: <strong>scope</strong> (roles) says who executes each tile operation, <strong>layout</strong> says where its tiles live, and <strong>dispatch</strong> says which hardware path lowers it. <strong>Barriers</strong> say which producer-consumer edges make the async work safe to consume. The example below is the kind of prompt you can derive from the warp-specialized GEMM chapter.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Target: NVIDIA Blackwell SM100a.
 Kernel: multi-consumer warp-specialized GEMM (Step 9, {ref}`chap_gemm_advanced`).
@@ -427,7 +426,7 @@ Which handoff should I inspect first?
 </section>
 <section id="case-study-elected-mma-commit-bug">
 <h2>Case Study: Elected MMA Commit Bug<a class="headerlink" href="#case-study-elected-mma-commit-bug" title="Link to this heading">#</a></h2>
-<p>This case shows why the prompt needs a hardware fact, not just code. The broken loop comes from a warp-specialized GEMM. The MMA is issued by one elected thread, but the barrier arrive is outside the elected-thread scope:</p>
+<p>To see why the contract is not just bureaucracy, look at a bug the contract catches and a raw code dump does not. The lesson here is that the prompt sometimes needs a hardware fact, not just code. The broken loop comes from a warp-specialized GEMM. The MMA is issued by one elected thread, but the barrier arrive sits outside the elected-thread scope:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K_TILES</span><span class="p">):</span>
     <span class="n">tma2mma</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">mma_ps</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">mma_ps</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">ptx</span><span class="o">.</span><span class="n">elect_sync</span><span class="p">():</span>
@@ -472,11 +471,11 @@ Can empty commit groups signal the barrier early?
     <span class="n">mma_ps</span><span class="o">.</span><span class="n">advance</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This is the pattern for the rest of the chapter: state the contract, ask the agent to check one edge, then verify the answer against source, generated CUDA, and a runnable test.</p>
+<p>This is the pattern for the rest of the chapter: state the contract, ask the agent to check one edge, then verify the answer against source, generated CUDA, and a runnable test. The next sections walk through the recurring jobs you will hand an agent — explaining, reviewing, debugging, testing, and reading generated code — each one an instance of that same pattern.</p>
 </section>
 <section id="use-case-1-explain-a-kernel-as-tile-primitives">
 <h2>Use Case 1: Explain a Kernel as Tile Primitives<a class="headerlink" href="#use-case-1-explain-a-kernel-as-tile-primitives" title="Link to this heading">#</a></h2>
-<p>The first useful task is explanation. Ask the agent to convert a code region into a tile-primitive table:</p>
+<p>The most basic job, and the one that builds your own understanding fastest, is explanation. Ask the agent to convert a code region into a tile-primitive table:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Read this TIRx code and make a table with:
 primitive, scope, source tile, destination tile, dispatch path,
 barrier waited before the primitive, and barrier signaled after it.
@@ -519,7 +518,7 @@ barrier waited before the primitive, and barrier signaled after it.
 </section>
 <section id="use-case-2-review-a-kernel-change">
 <h2>Use Case 2: Review a Kernel Change<a class="headerlink" href="#use-case-2-review-a-kernel-change" title="Link to this heading">#</a></h2>
-<p>Agent review works best when the change has a small, checkable contract. Examples:</p>
+<p>Explanation reads code that already works; review asks whether a change still honors the contract. It works best when the change has a small, checkable contract. Examples:</p>
 <ul class="simple">
 <li><p>change <code class="docutils literal notranslate"><span class="pre">PIPE_DEPTH</span></code> from 2 to 4,</p></li>
 <li><p>change <code class="docutils literal notranslate"><span class="pre">cta_group=1</span></code> to <code class="docutils literal notranslate"><span class="pre">cta_group=2</span></code>,</p></li>
@@ -564,7 +563,7 @@ Check only the cluster invariants:
 </section>
 <section id="use-case-3-debug-from-symptoms">
 <h2>Use Case 3: Debug from Symptoms<a class="headerlink" href="#use-case-3-debug-from-symptoms" title="Link to this heading">#</a></h2>
-<p>When a kernel fails, first classify the symptom. Then ask the agent to map the symptom back to the nearest producer-consumer handoff. The table here is the prompt-level version; use the <em>TIRx Language and Compile Pipeline</em> appendix page when you need generated-CUDA inspection.</p>
+<p>Review assumes you know what changed; debugging starts from a failure and works backward. The discipline is the same — classify the symptom first, then ask the agent to map it back to the nearest producer-consumer handoff. The table here is the prompt-level version; use the <em>TIRx Language and Compile Pipeline</em> appendix page when you need generated-CUDA inspection.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Symptom</p></th>
@@ -610,7 +609,7 @@ Does this allow an empty commit group to signal the barrier early?
 </section>
 <section id="use-case-4-generate-reference-tests">
 <h2>Use Case 4: Generate Reference Tests<a class="headerlink" href="#use-case-4-generate-reference-tests" title="Link to this heading">#</a></h2>
-<p>Test generation is one of the safest agent use cases. Let the agent write the reference, not the kernel. It does not need to understand Blackwell barriers to write a PyTorch or NumPy reference, but the prompt must still state the layout convention.</p>
+<p>Debugging needs something to debug against, which is where reference tests come in — and they happen to be one of the safest agent use cases. The rule is to let the agent write the reference, not the kernel. It does not need to understand Blackwell barriers to write a PyTorch or NumPy reference, but the prompt must still state the layout convention, or the reference will silently disagree with the kernel.</p>
 <p>Good prompt:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Generate a PyTorch reference for this TIRx kernel.
 Operation: D = A @ B.T.
@@ -641,7 +640,7 @@ If seq_len_q and seq_len_kv differ, verify causal-mask alignment explicitly.
 </section>
 <section id="use-case-5-inspect-generated-cuda">
 <h2>Use Case 5: Inspect Generated CUDA<a class="headerlink" href="#use-case-5-inspect-generated-cuda" title="Link to this heading">#</a></h2>
-<p>For scope guards and issued intrinsics, the generated CUDA is the ground truth. TIRx source expresses intent; generated CUDA shows the guards and instructions that will actually run. Agents can help read it if you ask a concrete question:</p>
+<p>A reference tells you the math is wrong; it does not tell you whether the right threads ran the operation. For that, the generated CUDA is the ground truth. TIRx source expresses intent; generated CUDA shows the guards and instructions that will actually run. Agents can help read it if you ask a concrete question:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Here is the generated CUDA guard around tcgen05_alloc.
 Does it require all lanes of one warp, or only lane 0?
 </pre></div>
@@ -677,7 +676,7 @@ Does it require all lanes of one warp, or only lane 0?
 </section>
 <section id="agent-review-boundaries">
 <h2>Agent Review Boundaries<a class="headerlink" href="#agent-review-boundaries" title="Link to this heading">#</a></h2>
-<p>The risky cases are the ones where the agent has to invent the hardware contract.</p>
+<p>All five use cases share a precondition: the contract is already on the table for the agent to check. The risky cases are the opposite ones, where the agent has to invent the hardware contract instead of verifying it.</p>
 <ul class="simple">
 <li><p>Do not ask “fix the barriers.” Ask “who arrives at this barrier, and how many arrivals does init expect?”</p></li>
 <li><p>Do not ask “add the right fence.” Ask “which producer-consumer edge does this fence order?”</p></li>
@@ -690,7 +689,7 @@ Does it require all lanes of one warp, or only lane 0?
 </section>
 <section id="project-context-file">
 <h2>Project Context File<a class="headerlink" href="#project-context-file" title="Link to this heading">#</a></h2>
-<p>A project context file is a short bug log that you paste into future prompts. It prevents the agent from rediscovering or contradicting lessons you already learned.</p>
+<p>Drawing the boundary once is not enough, because each new conversation starts an agent with no memory of the last. A project context file fixes that: it is a short bug log that you paste into future prompts, so the agent does not rediscover or contradict lessons you already learned.</p>
 <p>Example:</p>
 <div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gh"># TIRx Blackwell Bug Notes</span>
 

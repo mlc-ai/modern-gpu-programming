@@ -20,19 +20,30 @@
 Tensor Layout
 =============
 
-A tensor layout describes how a logical tensor is stored in physical resources.
-TIRx generalizes the classical *shape–stride* model: strides are semantically
-**named** and bound to **axes** that represent hardware resources — memory,
-threads, and devices. A layout maps each logical index to a *set* of coordinates
-on these named axes, decomposed into shard (``D``), replica (``R``), and offset
-(``O``).
+Every tensor you compute on lives somewhere physical — in memory, spread across
+threads, or replicated over devices — and a *layout* is the bookkeeping that
+records where. The familiar tool for this is the shape–stride pair: a stride per
+axis tells you how far to step in memory for each logical step. That model is
+enough for a single linear address space, but a GPU tile is not one address
+space; the same logical element may live in a particular thread's register, in a
+shared-memory bank, or on a specific device in a mesh.
+
+TIRx keeps the shape–stride intuition and extends it to cover those cases.
+Strides are semantically **named** and bound to **axes** that represent hardware
+resources — memory, threads, and devices — so a stride says not just *how far*
+but *along which resource*. Because one element can live in several places at
+once, a layout maps each logical index to a *set* of coordinates on these named
+axes, decomposed into shard (``D``), replica (``R``), and offset (``O``). The
+rest of this chapter builds that map up one piece at a time.
 
 Interactive demo
 ----------------
 
-Pick a preset, edit the logical shape and the ``S/R/O`` layout, choose a dtype +
+Before the formalism, it helps to see a layout move. The demo below lets you pick
+a preset, edit the logical shape and the ``S/R/O`` layout, choose a dtype +
 swizzle mode, then click an element to see exactly which physical thread(s) own
-it.
+it. Come back to it as each piece of notation is introduced — the math in the
+next sections is just a precise description of what you can watch happen here.
 
 .. raw:: html
 
@@ -51,13 +62,17 @@ it.
 TileLayout
 ----------
 
-A **TileLayout** is written ``S[shape : strides]`` — the ``S`` shard spec, read as "a tile of this
-*shape*, with each logical index mapped by these per-axis *strides*" — optionally extended with a
-replica set, ``S[...] + R[...]``. It is built from three parts (shard ``D``, replica ``R``, offset
-``O``) described next.
+The workhorse layout is the **TileLayout**, written ``S[shape : strides]`` — the
+``S`` shard spec, read as "a tile of this *shape*, with each logical index mapped
+by these per-axis *strides*" — optionally extended with a replica set,
+``S[...] + R[...]``. This is shape–stride with named axes, and nothing more until
+you add replication. It is built from three parts (shard ``D``, replica ``R``,
+offset ``O``) that we take in turn.
 
-An **iter** is a triple ``(extent, stride, axis)`` that defines a linear,
-strided access on one axis.
+The atom every part is built from is the **iter**: a triple
+``(extent, stride, axis)`` that defines a linear, strided access on one axis. An
+iter is the named-axis version of a single shape/stride entry — *extent* many
+steps, *stride* apart, along *axis*.
 
 - **D (Shard).** A list of one or more iters, each with an extent and a stride on
   some axis. ``D`` partitions the logical index across these iters and produces a
@@ -70,7 +85,9 @@ strided access on one axis.
 - **O (Offset).** A fixed coordinate offset (one integer per axis) added to every
   result. This places data at a base position or reserves exclusive resources.
 
-Formally, for a logical index ``x`` the layout produces
+These three parts compose in the obvious way: shard to find the base coordinate,
+replica to fan it out, offset to shift the whole result. Formally, for a logical
+index ``x`` the layout produces
 
 .. math::
 
@@ -78,15 +95,19 @@ Formally, for a logical index ``x`` the layout produces
 
 where ``D(x)`` is the base coordinate from the sharded iters, ``r`` ranges over
 all combinations of the replica iters (a single zero offset when ``R`` is empty),
-and ``O`` is the constant offset. ``L(x)`` can be a singleton or contain multiple
-coordinates. A term is written ``n @ axis``; if a stride is not paired with an
+and ``O`` is the constant offset. The set notation is what lets ``L(x)`` be a
+singleton in the common case yet hold several coordinates when ``R`` is
+non-empty. A term is written ``n @ axis``; if a stride is not paired with an
 axis, the memory axis ``m`` is used by default.
 
 Forward mapping
 ~~~~~~~~~~~~~~~
 
-Evaluating ``L(x)`` for a logical coordinate ``x = (x_0, …, x_{r-1})`` in a shape
-``(S_0, …, S_{r-1})`` is four mechanical steps.
+So much for what a layout *is*; the next question is how to evaluate it. Given a
+logical coordinate, where does it land? Evaluating ``L(x)`` for a coordinate
+``x = (x_0, …, x_{r-1})`` in a shape ``(S_0, …, S_{r-1})`` is four mechanical
+steps — flatten, split, accumulate, broadcast — and once you have done it by hand
+once, the rest of the chapter is just applying it.
 
 **1. Flatten** the coordinate row-major to a single index:
 
@@ -119,16 +140,20 @@ axis ``a_t`` — yielding the set ``L(x)``:
 
    L(x)[a] = D(x)[a] + O[a] + \sum_{t\,:\,a_t = a} r_t\, s_t .
 
-A shape is *admitted* by a layout when its total size equals
-``∏_k e_k``; the same layout then works for any such shape (the flatten/split
-re-derives the per-iter components).
+One consequence of flatten-then-split is worth noting: the layout never hard-codes
+the input shape. A shape is *admitted* by a layout when its total size equals
+``∏_k e_k``, and the same layout then works for any such shape, because the
+flatten/split step re-derives the per-iter components from whatever shape it is
+handed.
 
 Case study: NVIDIA tensor-core tile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Consider a logical ``(8, 16)`` tile distributed across 2 warps of 32 lanes each,
-with each lane holding part of the tile in its registers (the ``reg`` slot is the
-default memory axis ``m``)::
+The four steps are easier to trust once you have watched them produce a real
+hardware mapping, so we run them on a tensor-core tile. Consider a logical
+``(8, 16)`` tile distributed across 2 warps of 32 lanes each, with each lane
+holding part of the tile in its registers (the ``reg`` slot is the default memory
+axis ``m``)::
 
     S[(8,2,4,2):(4@laneid,1@warpid,1@laneid,1)] + R[2:4@warpid] + 5@warpid
 
@@ -206,11 +231,12 @@ it to ``{9, 10}``. A few elements:
 Case study: Blackwell tensor memory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The same machinery places a tensor into Blackwell **tensor memory**, a 2D address
-space addressed by ``TLane`` × ``TCol`` (both *memory* axes). Where the register
-tile bound strides to thread axes, here every stride binds to a memory axis, so
-the layout is a pure placement — no threads, no replica, no offset, and ``L(x)``
-is a singleton::
+The previous example bound strides to thread axes; the point of named axes is that
+nothing changes when we bind them to something else instead. The same machinery
+places a tensor into Blackwell **tensor memory**, a 2D address space addressed by
+``TLane`` × ``TCol`` (both *memory* axes). Here every stride binds to a memory
+axis, so the layout is a pure placement — no threads, no replica, no offset, and
+``L(x)`` is a singleton::
 
     S[(2,128,112):(112@TCol,1@TLane,1@TCol)]
 
@@ -250,9 +276,11 @@ GEMM may use a 224-column tile because tensor memory cannot hold two accumulator
 stages plus the scale factors at 256. General-shape support is what lets the
 layout express this directly.
 
-**Scale factors (SFA / SFB).** A block-scaled MMA also keeps its per-block scale
-factors in tensor memory, and their layout is the first one here to use a
-**replica**. The atom is::
+**Scale factors (SFA / SFB).** The accumulator above used no replica; scale
+factors are where the replica finally earns its keep. A block-scaled MMA also
+keeps its per-block scale factors in tensor memory, and one physical group has to
+feed several warps at once — exactly the broadcast the replica was designed for.
+The atom is::
 
     S[(32, sf_per_mma):(1@TLane, 1@TCol)] + R[4:32@TLane]
 
@@ -270,31 +298,44 @@ routed placement) in the same tensor-memory address space.
 Beyond GPU registers
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The same layout describes more than register tiles. Binding strides to a device
-axis (``pid``) expresses **distributed sharding** across a GPU mesh; binding them
-to on-chip memory axes expresses native accelerator memories — a 2D-partitioned
-scratchpad (partition ``P`` and free ``F`` axes), or NVIDIA Blackwell tensor
-memory with native 2D addressing (``TLane`` × ``TCol``). The demo includes
-presets for each.
+Stepping back, the two case studies were not special cases but the same model
+pointed at different hardware, and that generality is the whole reason for naming
+axes. Binding strides to a device axis (``pid``) expresses **distributed
+sharding** across a GPU mesh; binding them to on-chip memory axes expresses native
+accelerator memories — a 2D-partitioned scratchpad (partition ``P`` and free
+``F`` axes), or NVIDIA Blackwell tensor memory with native 2D addressing
+(``TLane`` × ``TCol``). The demo includes presets for each, so you can swap the
+target hardware without leaving the layout language.
 
 SwizzleLayout, ComposeLayout
 ----------------------------
 
-Some layouts also need a *swizzle*: a non-linear, XOR-based permutation of the
-linear memory address. It is not expressible as a strided ``TileLayout`` (which
-is affine), so TIRx represents it as a separate ``SwizzleLayout`` composed with
-the tile layout: ``ComposeLayout(swizzle, tile)``. The tile layout produces a
-linear memory address; the swizzle then permutes that address.
+Everything so far has been affine: a logical index times some strides, plus an
+offset. That covers placement, but it cannot fix one of the most common
+performance problems in shared memory — bank conflicts — because the fix is a
+deliberately *non-linear* shuffle of addresses. So TIRx adds a second kind of
+layout for it.
+
+A *swizzle* is an XOR-based permutation of the linear memory address. It is not
+expressible as a strided ``TileLayout``, so rather than contort the affine model,
+TIRx keeps it separate: a ``SwizzleLayout`` composed with the tile layout,
+``ComposeLayout(swizzle, tile)``. The division of labor is clean — the tile
+layout produces a linear memory address, and the swizzle then permutes that
+address. The next sections explain why the permutation is needed and how it is
+defined.
 
 Why swizzle
 ~~~~~~~~~~~
 
-Shared memory is organized into **32 banks of 4 bytes**. Consecutive 4-byte
-words land in consecutive banks and wrap every ``32 × 4 = 128`` bytes (one
-*bank line*). A bank conflict occurs when the threads of an access touch
-different addresses in the **same** bank.
+To see why a permutation helps, recall how shared memory is wired. It is
+organized into **32 banks of 4 bytes**. Consecutive 4-byte words land in
+consecutive banks and wrap every ``32 × 4 = 128`` bytes (one *bank line*). The
+hardware can serve 32 lanes in one cycle only if they hit 32 different banks; a
+*bank conflict* occurs when the threads of an access touch different addresses in
+the **same** bank, and the access is then serialized.
 
-Store a tile row-major and the conflict is structural. Take an ``(8, 64)``
+The trouble is that a plain row-major tile makes that conflict structural, not
+accidental. Take an ``(8, 64)``
 ``float16`` tile (``S[(8,64):(64@m,1@m)]`` — element ``(i, j)`` at address
 ``m = 64i + j``). One row is ``64 × 2 = 128`` bytes = exactly one bank line, so
 walking *down a column* (fixed ``j``, increasing ``i``) jumps the address by a
@@ -304,10 +345,12 @@ conflict. Swizzle scatters those accesses across banks.
 The transform
 ~~~~~~~~~~~~~
 
-A ``SwizzleLayout`` has three integer parameters — ``per_element`` (M),
-``swizzle_len`` (B), and ``atom_len`` (S) — and maps a linear element address
-``m`` as follows (keeping the low ``M`` bits untouched and XOR-ing a higher bit
-group down into a lower one):
+The cure for that structural conflict is to make the column's addresses depend on
+the row, so they scatter across banks instead of stacking on one. An XOR does
+this cheaply. A ``SwizzleLayout`` has three integer parameters —
+``per_element`` (M), ``swizzle_len`` (B), and ``atom_len`` (S) — and maps a
+linear element address ``m`` as follows, keeping the low ``M`` bits untouched and
+XOR-ing a higher bit group down into a lower one:
 
 .. math::
 
@@ -321,8 +364,9 @@ So the bits at positions ``[S, S+B)`` of ``x = m >> M`` are XOR-ed into bits
 Choosing the parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In practice the parameters come from the **element dtype** and the **swizzle
-mode** (the 32B / 64B / 128B shared-memory swizzle widths):
+You rarely pick ``M``, ``B``, and ``S`` by hand. In practice they are determined
+by two things you already know — the **element dtype** and the **swizzle mode**
+(the 32B / 64B / 128B shared-memory swizzle widths):
 
 .. math::
 
@@ -339,8 +383,10 @@ contiguous run unswizzled, matching the minimum vector access.
 Bank and line of an element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Because a bank word is 4 bytes and an element is ``b = dtype_bytes`` bytes, the
-swizzled element address ``a = addr(m)`` lands in
+To tell whether the swizzle actually removed the conflict, we need to translate a
+swizzled address back into the bank it touches. Because a bank word is 4 bytes and
+an element is ``b = dtype_bytes`` bytes, the swizzled element address
+``a = addr(m)`` lands in
 
 .. math::
 
@@ -353,7 +399,8 @@ swizzled element address ``a = addr(m)`` lands in
 Worked example: 128B swizzle, ``float16``, ``(8, 64)`` tile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With ``Swizzle(3,3,3)`` over ``m = 64i + j`` the address simplifies to
+Now we can close the loop on the conflicting tile from above and watch the swizzle
+fix it. With ``Swizzle(3,3,3)`` over ``m = 64i + j`` the address simplifies to
 
 .. math::
 
@@ -377,6 +424,9 @@ bank (the conflict); with a swizzle the same column is scattered across banks.
 
 Design rationale
 ----------------
+
+Having seen the model work, it is worth asking why it was shaped this way rather
+than reusing a plainer scheme. Three choices drove the design.
 
 - **General shape support.** Non-power-of-two shapes are common — in global
   tensors, multi-stage shared-memory buffers, and capacity-limited on-chip

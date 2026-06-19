@@ -317,17 +317,27 @@
                   
   <section id="tensor-layout">
 <span id="chap-data-layouts"></span><h1>Tensor Layout<a class="headerlink" href="#tensor-layout" title="Link to this heading">#</a></h1>
-<p>A tensor layout describes how a logical tensor is stored in physical resources.
-TIRx generalizes the classical <em>shape–stride</em> model: strides are semantically
-<strong>named</strong> and bound to <strong>axes</strong> that represent hardware resources — memory,
-threads, and devices. A layout maps each logical index to a <em>set</em> of coordinates
-on these named axes, decomposed into shard (<code class="docutils literal notranslate"><span class="pre">D</span></code>), replica (<code class="docutils literal notranslate"><span class="pre">R</span></code>), and offset
-(<code class="docutils literal notranslate"><span class="pre">O</span></code>).</p>
+<p>Every tensor you compute on lives somewhere physical — in memory, spread across
+threads, or replicated over devices — and a <em>layout</em> is the bookkeeping that
+records where. The familiar tool for this is the shape–stride pair: a stride per
+axis tells you how far to step in memory for each logical step. That model is
+enough for a single linear address space, but a GPU tile is not one address
+space; the same logical element may live in a particular thread’s register, in a
+shared-memory bank, or on a specific device in a mesh.</p>
+<p>TIRx keeps the shape–stride intuition and extends it to cover those cases.
+Strides are semantically <strong>named</strong> and bound to <strong>axes</strong> that represent hardware
+resources — memory, threads, and devices — so a stride says not just <em>how far</em>
+but <em>along which resource</em>. Because one element can live in several places at
+once, a layout maps each logical index to a <em>set</em> of coordinates on these named
+axes, decomposed into shard (<code class="docutils literal notranslate"><span class="pre">D</span></code>), replica (<code class="docutils literal notranslate"><span class="pre">R</span></code>), and offset (<code class="docutils literal notranslate"><span class="pre">O</span></code>). The
+rest of this chapter builds that map up one piece at a time.</p>
 <section id="interactive-demo">
 <h2>Interactive demo<a class="headerlink" href="#interactive-demo" title="Link to this heading">#</a></h2>
-<p>Pick a preset, edit the logical shape and the <code class="docutils literal notranslate"><span class="pre">S/R/O</span></code> layout, choose a dtype +
+<p>Before the formalism, it helps to see a layout move. The demo below lets you pick
+a preset, edit the logical shape and the <code class="docutils literal notranslate"><span class="pre">S/R/O</span></code> layout, choose a dtype +
 swizzle mode, then click an element to see exactly which physical thread(s) own
-it.</p>
+it. Come back to it as each piece of notation is introduced — the math in the
+next sections is just a precise description of what you can watch happen here.</p>
 <p>
   <a class="reference external" href="../_static/tirx-layout-demo/index.html"
      target="_blank" rel="noopener"
@@ -341,12 +351,16 @@ it.</p>
         title="TIRx interactive layout demo" loading="lazy"></iframe></section>
 <section id="tilelayout">
 <h2>TileLayout<a class="headerlink" href="#tilelayout" title="Link to this heading">#</a></h2>
-<p>A <strong>TileLayout</strong> is written <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code> — the <code class="docutils literal notranslate"><span class="pre">S</span></code> shard spec, read as “a tile of this
-<em>shape</em>, with each logical index mapped by these per-axis <em>strides</em>” — optionally extended with a
-replica set, <code class="docutils literal notranslate"><span class="pre">S[...]</span> <span class="pre">+</span> <span class="pre">R[...]</span></code>. It is built from three parts (shard <code class="docutils literal notranslate"><span class="pre">D</span></code>, replica <code class="docutils literal notranslate"><span class="pre">R</span></code>, offset
-<code class="docutils literal notranslate"><span class="pre">O</span></code>) described next.</p>
-<p>An <strong>iter</strong> is a triple <code class="docutils literal notranslate"><span class="pre">(extent,</span> <span class="pre">stride,</span> <span class="pre">axis)</span></code> that defines a linear,
-strided access on one axis.</p>
+<p>The workhorse layout is the <strong>TileLayout</strong>, written <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code> — the
+<code class="docutils literal notranslate"><span class="pre">S</span></code> shard spec, read as “a tile of this <em>shape</em>, with each logical index mapped
+by these per-axis <em>strides</em>” — optionally extended with a replica set,
+<code class="docutils literal notranslate"><span class="pre">S[...]</span> <span class="pre">+</span> <span class="pre">R[...]</span></code>. This is shape–stride with named axes, and nothing more until
+you add replication. It is built from three parts (shard <code class="docutils literal notranslate"><span class="pre">D</span></code>, replica <code class="docutils literal notranslate"><span class="pre">R</span></code>,
+offset <code class="docutils literal notranslate"><span class="pre">O</span></code>) that we take in turn.</p>
+<p>The atom every part is built from is the <strong>iter</strong>: a triple
+<code class="docutils literal notranslate"><span class="pre">(extent,</span> <span class="pre">stride,</span> <span class="pre">axis)</span></code> that defines a linear, strided access on one axis. An
+iter is the named-axis version of a single shape/stride entry — <em>extent</em> many
+steps, <em>stride</em> apart, along <em>axis</em>.</p>
 <ul class="simple">
 <li><p><strong>D (Shard).</strong> A list of one or more iters, each with an extent and a stride on
 some axis. <code class="docutils literal notranslate"><span class="pre">D</span></code> partitions the logical index across these iters and produces a
@@ -359,18 +373,24 @@ e.g. <code class="docutils literal notranslate"><span class="pre">R[2:4&#64;warp
 <li><p><strong>O (Offset).</strong> A fixed coordinate offset (one integer per axis) added to every
 result. This places data at a base position or reserves exclusive resources.</p></li>
 </ul>
-<p>Formally, for a logical index <code class="docutils literal notranslate"><span class="pre">x</span></code> the layout produces</p>
+<p>These three parts compose in the obvious way: shard to find the base coordinate,
+replica to fan it out, offset to shift the whole result. Formally, for a logical
+index <code class="docutils literal notranslate"><span class="pre">x</span></code> the layout produces</p>
 <div class="math notranslate nohighlight">
 \[L(x) = \{\, D(x) + r + O \mid r \in R \,\},\]</div>
 <p>where <code class="docutils literal notranslate"><span class="pre">D(x)</span></code> is the base coordinate from the sharded iters, <code class="docutils literal notranslate"><span class="pre">r</span></code> ranges over
 all combinations of the replica iters (a single zero offset when <code class="docutils literal notranslate"><span class="pre">R</span></code> is empty),
-and <code class="docutils literal notranslate"><span class="pre">O</span></code> is the constant offset. <code class="docutils literal notranslate"><span class="pre">L(x)</span></code> can be a singleton or contain multiple
-coordinates. A term is written <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&#64;</span> <span class="pre">axis</span></code>; if a stride is not paired with an
+and <code class="docutils literal notranslate"><span class="pre">O</span></code> is the constant offset. The set notation is what lets <code class="docutils literal notranslate"><span class="pre">L(x)</span></code> be a
+singleton in the common case yet hold several coordinates when <code class="docutils literal notranslate"><span class="pre">R</span></code> is
+non-empty. A term is written <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&#64;</span> <span class="pre">axis</span></code>; if a stride is not paired with an
 axis, the memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code> is used by default.</p>
 <section id="forward-mapping">
 <h3>Forward mapping<a class="headerlink" href="#forward-mapping" title="Link to this heading">#</a></h3>
-<p>Evaluating <code class="docutils literal notranslate"><span class="pre">L(x)</span></code> for a logical coordinate <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">(x_0,</span> <span class="pre">…,</span> <span class="pre">x_{r-1})</span></code> in a shape
-<code class="docutils literal notranslate"><span class="pre">(S_0,</span> <span class="pre">…,</span> <span class="pre">S_{r-1})</span></code> is four mechanical steps.</p>
+<p>So much for what a layout <em>is</em>; the next question is how to evaluate it. Given a
+logical coordinate, where does it land? Evaluating <code class="docutils literal notranslate"><span class="pre">L(x)</span></code> for a coordinate
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">(x_0,</span> <span class="pre">…,</span> <span class="pre">x_{r-1})</span></code> in a shape <code class="docutils literal notranslate"><span class="pre">(S_0,</span> <span class="pre">…,</span> <span class="pre">S_{r-1})</span></code> is four mechanical
+steps — flatten, split, accumulate, broadcast — and once you have done it by hand
+once, the rest of the chapter is just applying it.</p>
 <p><strong>1. Flatten</strong> the coordinate row-major to a single index:</p>
 <div class="math notranslate nohighlight">
 \[\mathrm{flat} = \sum_{d} x_d \prod_{e &gt; d} S_e .\]</div>
@@ -390,15 +410,19 @@ coordinate, then <strong>add the offset</strong>:</p>
 axis <code class="docutils literal notranslate"><span class="pre">a_t</span></code> — yielding the set <code class="docutils literal notranslate"><span class="pre">L(x)</span></code>:</p>
 <div class="math notranslate nohighlight">
 \[L(x)[a] = D(x)[a] + O[a] + \sum_{t\,:\,a_t = a} r_t\, s_t .\]</div>
-<p>A shape is <em>admitted</em> by a layout when its total size equals
-<code class="docutils literal notranslate"><span class="pre">∏_k</span> <span class="pre">e_k</span></code>; the same layout then works for any such shape (the flatten/split
-re-derives the per-iter components).</p>
+<p>One consequence of flatten-then-split is worth noting: the layout never hard-codes
+the input shape. A shape is <em>admitted</em> by a layout when its total size equals
+<code class="docutils literal notranslate"><span class="pre">∏_k</span> <span class="pre">e_k</span></code>, and the same layout then works for any such shape, because the
+flatten/split step re-derives the per-iter components from whatever shape it is
+handed.</p>
 </section>
 <section id="case-study-nvidia-tensor-core-tile">
 <h3>Case study: NVIDIA tensor-core tile<a class="headerlink" href="#case-study-nvidia-tensor-core-tile" title="Link to this heading">#</a></h3>
-<p>Consider a logical <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">16)</span></code> tile distributed across 2 warps of 32 lanes each,
-with each lane holding part of the tile in its registers (the <code class="docutils literal notranslate"><span class="pre">reg</span></code> slot is the
-default memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code>):</p>
+<p>The four steps are easier to trust once you have watched them produce a real
+hardware mapping, so we run them on a tensor-core tile. Consider a logical
+<code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">16)</span></code> tile distributed across 2 warps of 32 lanes each, with each lane
+holding part of the tile in its registers (the <code class="docutils literal notranslate"><span class="pre">reg</span></code> slot is the default memory
+axis <code class="docutils literal notranslate"><span class="pre">m</span></code>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">):(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span><span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span><span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="nd">@warpid</span>
 </pre></div>
 </div>
@@ -489,11 +513,12 @@ it to <code class="docutils literal notranslate"><span class="pre">{9,</span> <s
 </section>
 <section id="case-study-blackwell-tensor-memory">
 <h3>Case study: Blackwell tensor memory<a class="headerlink" href="#case-study-blackwell-tensor-memory" title="Link to this heading">#</a></h3>
-<p>The same machinery places a tensor into Blackwell <strong>tensor memory</strong>, a 2D address
-space addressed by <code class="docutils literal notranslate"><span class="pre">TLane</span></code> × <code class="docutils literal notranslate"><span class="pre">TCol</span></code> (both <em>memory</em> axes). Where the register
-tile bound strides to thread axes, here every stride binds to a memory axis, so
-the layout is a pure placement — no threads, no replica, no offset, and <code class="docutils literal notranslate"><span class="pre">L(x)</span></code>
-is a singleton:</p>
+<p>The previous example bound strides to thread axes; the point of named axes is that
+nothing changes when we bind them to something else instead. The same machinery
+places a tensor into Blackwell <strong>tensor memory</strong>, a 2D address space addressed by
+<code class="docutils literal notranslate"><span class="pre">TLane</span></code> × <code class="docutils literal notranslate"><span class="pre">TCol</span></code> (both <em>memory</em> axes). Here every stride binds to a memory
+axis, so the layout is a pure placement — no threads, no replica, no offset, and
+<code class="docutils literal notranslate"><span class="pre">L(x)</span></code> is a singleton:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">2</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">112</span><span class="p">):(</span><span class="mi">112</span><span class="nd">@TCol</span><span class="p">,</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span><span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
 </pre></div>
 </div>
@@ -540,9 +565,11 @@ extent-2 iter (<code class="docutils literal notranslate"><span class="pre">112&
 GEMM may use a 224-column tile because tensor memory cannot hold two accumulator
 stages plus the scale factors at 256. General-shape support is what lets the
 layout express this directly.</p>
-<p><strong>Scale factors (SFA / SFB).</strong> A block-scaled MMA also keeps its per-block scale
-factors in tensor memory, and their layout is the first one here to use a
-<strong>replica</strong>. The atom is:</p>
+<p><strong>Scale factors (SFA / SFB).</strong> The accumulator above used no replica; scale
+factors are where the replica finally earns its keep. A block-scaled MMA also
+keeps its per-block scale factors in tensor memory, and one physical group has to
+feed several warps at once — exactly the broadcast the replica was designed for.
+The atom is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">32</span><span class="p">,</span> <span class="n">sf_per_mma</span><span class="p">):(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">32</span><span class="nd">@TLane</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -559,28 +586,40 @@ routed placement) in the same tensor-memory address space.</p>
 </section>
 <section id="beyond-gpu-registers">
 <h3>Beyond GPU registers<a class="headerlink" href="#beyond-gpu-registers" title="Link to this heading">#</a></h3>
-<p>The same layout describes more than register tiles. Binding strides to a device
-axis (<code class="docutils literal notranslate"><span class="pre">pid</span></code>) expresses <strong>distributed sharding</strong> across a GPU mesh; binding them
-to on-chip memory axes expresses native accelerator memories — a 2D-partitioned
-scratchpad (partition <code class="docutils literal notranslate"><span class="pre">P</span></code> and free <code class="docutils literal notranslate"><span class="pre">F</span></code> axes), or NVIDIA Blackwell tensor
-memory with native 2D addressing (<code class="docutils literal notranslate"><span class="pre">TLane</span></code> × <code class="docutils literal notranslate"><span class="pre">TCol</span></code>). The demo includes
-presets for each.</p>
+<p>Stepping back, the two case studies were not special cases but the same model
+pointed at different hardware, and that generality is the whole reason for naming
+axes. Binding strides to a device axis (<code class="docutils literal notranslate"><span class="pre">pid</span></code>) expresses <strong>distributed
+sharding</strong> across a GPU mesh; binding them to on-chip memory axes expresses native
+accelerator memories — a 2D-partitioned scratchpad (partition <code class="docutils literal notranslate"><span class="pre">P</span></code> and free
+<code class="docutils literal notranslate"><span class="pre">F</span></code> axes), or NVIDIA Blackwell tensor memory with native 2D addressing
+(<code class="docutils literal notranslate"><span class="pre">TLane</span></code> × <code class="docutils literal notranslate"><span class="pre">TCol</span></code>). The demo includes presets for each, so you can swap the
+target hardware without leaving the layout language.</p>
 </section>
 </section>
 <section id="swizzlelayout-composelayout">
 <h2>SwizzleLayout, ComposeLayout<a class="headerlink" href="#swizzlelayout-composelayout" title="Link to this heading">#</a></h2>
-<p>Some layouts also need a <em>swizzle</em>: a non-linear, XOR-based permutation of the
-linear memory address. It is not expressible as a strided <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> (which
-is affine), so TIRx represents it as a separate <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> composed with
-the tile layout: <code class="docutils literal notranslate"><span class="pre">ComposeLayout(swizzle,</span> <span class="pre">tile)</span></code>. The tile layout produces a
-linear memory address; the swizzle then permutes that address.</p>
+<p>Everything so far has been affine: a logical index times some strides, plus an
+offset. That covers placement, but it cannot fix one of the most common
+performance problems in shared memory — bank conflicts — because the fix is a
+deliberately <em>non-linear</em> shuffle of addresses. So TIRx adds a second kind of
+layout for it.</p>
+<p>A <em>swizzle</em> is an XOR-based permutation of the linear memory address. It is not
+expressible as a strided <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code>, so rather than contort the affine model,
+TIRx keeps it separate: a <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> composed with the tile layout,
+<code class="docutils literal notranslate"><span class="pre">ComposeLayout(swizzle,</span> <span class="pre">tile)</span></code>. The division of labor is clean — the tile
+layout produces a linear memory address, and the swizzle then permutes that
+address. The next sections explain why the permutation is needed and how it is
+defined.</p>
 <section id="why-swizzle">
 <h3>Why swizzle<a class="headerlink" href="#why-swizzle" title="Link to this heading">#</a></h3>
-<p>Shared memory is organized into <strong>32 banks of 4 bytes</strong>. Consecutive 4-byte
-words land in consecutive banks and wrap every <code class="docutils literal notranslate"><span class="pre">32</span> <span class="pre">×</span> <span class="pre">4</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes (one
-<em>bank line</em>). A bank conflict occurs when the threads of an access touch
-different addresses in the <strong>same</strong> bank.</p>
-<p>Store a tile row-major and the conflict is structural. Take an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code>
+<p>To see why a permutation helps, recall how shared memory is wired. It is
+organized into <strong>32 banks of 4 bytes</strong>. Consecutive 4-byte words land in
+consecutive banks and wrap every <code class="docutils literal notranslate"><span class="pre">32</span> <span class="pre">×</span> <span class="pre">4</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes (one <em>bank line</em>). The
+hardware can serve 32 lanes in one cycle only if they hit 32 different banks; a
+<em>bank conflict</em> occurs when the threads of an access touch different addresses in
+the <strong>same</strong> bank, and the access is then serialized.</p>
+<p>The trouble is that a plain row-major tile makes that conflict structural, not
+accidental. Take an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code>
 <code class="docutils literal notranslate"><span class="pre">float16</span></code> tile (<code class="docutils literal notranslate"><span class="pre">S[(8,64):(64&#64;m,1&#64;m)]</span></code> — element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> at address
 <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code>). One row is <code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">×</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes = exactly one bank line, so
 walking <em>down a column</em> (fixed <code class="docutils literal notranslate"><span class="pre">j</span></code>, increasing <code class="docutils literal notranslate"><span class="pre">i</span></code>) jumps the address by a
@@ -589,10 +628,12 @@ conflict. Swizzle scatters those accesses across banks.</p>
 </section>
 <section id="the-transform">
 <h3>The transform<a class="headerlink" href="#the-transform" title="Link to this heading">#</a></h3>
-<p>A <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> has three integer parameters — <code class="docutils literal notranslate"><span class="pre">per_element</span></code> (M),
-<code class="docutils literal notranslate"><span class="pre">swizzle_len</span></code> (B), and <code class="docutils literal notranslate"><span class="pre">atom_len</span></code> (S) — and maps a linear element address
-<code class="docutils literal notranslate"><span class="pre">m</span></code> as follows (keeping the low <code class="docutils literal notranslate"><span class="pre">M</span></code> bits untouched and XOR-ing a higher bit
-group down into a lower one):</p>
+<p>The cure for that structural conflict is to make the column’s addresses depend on
+the row, so they scatter across banks instead of stacking on one. An XOR does
+this cheaply. A <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> has three integer parameters —
+<code class="docutils literal notranslate"><span class="pre">per_element</span></code> (M), <code class="docutils literal notranslate"><span class="pre">swizzle_len</span></code> (B), and <code class="docutils literal notranslate"><span class="pre">atom_len</span></code> (S) — and maps a
+linear element address <code class="docutils literal notranslate"><span class="pre">m</span></code> as follows, keeping the low <code class="docutils literal notranslate"><span class="pre">M</span></code> bits untouched and
+XOR-ing a higher bit group down into a lower one:</p>
 <div class="math notranslate nohighlight">
 \[\text{addr}(m) = \bigl(f(m \gg M)\bigr)\!\cdot\! 2^{M} + (m \bmod 2^{M}),
 \qquad
@@ -602,8 +643,9 @@ f(x) = x \oplus \bigl((x \mathbin{\&amp;} (\,(2^{B}-1)\ll S\,)) \gg S\bigr).\]</
 </section>
 <section id="choosing-the-parameters">
 <h3>Choosing the parameters<a class="headerlink" href="#choosing-the-parameters" title="Link to this heading">#</a></h3>
-<p>In practice the parameters come from the <strong>element dtype</strong> and the <strong>swizzle
-mode</strong> (the 32B / 64B / 128B shared-memory swizzle widths):</p>
+<p>You rarely pick <code class="docutils literal notranslate"><span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">B</span></code>, and <code class="docutils literal notranslate"><span class="pre">S</span></code> by hand. In practice they are determined
+by two things you already know — the <strong>element dtype</strong> and the <strong>swizzle mode</strong>
+(the 32B / 64B / 128B shared-memory swizzle widths):</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}M = \operatorname{bitlen}\!\left(\frac{128}{\text{dtype bits}}\right) - 1,
 \qquad
@@ -616,8 +658,10 @@ contiguous run unswizzled, matching the minimum vector access.</p>
 </section>
 <section id="bank-and-line-of-an-element">
 <h3>Bank and line of an element<a class="headerlink" href="#bank-and-line-of-an-element" title="Link to this heading">#</a></h3>
-<p>Because a bank word is 4 bytes and an element is <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">dtype_bytes</span></code> bytes, the
-swizzled element address <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">=</span> <span class="pre">addr(m)</span></code> lands in</p>
+<p>To tell whether the swizzle actually removed the conflict, we need to translate a
+swizzled address back into the bank it touches. Because a bank word is 4 bytes and
+an element is <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">dtype_bytes</span></code> bytes, the swizzled element address
+<code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">=</span> <span class="pre">addr(m)</span></code> lands in</p>
 <div class="math notranslate nohighlight">
 \[\text{bankword} = \left\lfloor \frac{a \cdot b}{4} \right\rfloor,
 \qquad
@@ -627,7 +671,8 @@ swizzled element address <code class="docutils literal notranslate"><span class=
 </section>
 <section id="worked-example-128b-swizzle-float16-8-64-tile">
 <h3>Worked example: 128B swizzle, <code class="docutils literal notranslate"><span class="pre">float16</span></code>, <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> tile<a class="headerlink" href="#worked-example-128b-swizzle-float16-8-64-tile" title="Link to this heading">#</a></h3>
-<p>With <code class="docutils literal notranslate"><span class="pre">Swizzle(3,3,3)</span></code> over <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code> the address simplifies to</p>
+<p>Now we can close the loop on the conflicting tile from above and watch the swizzle
+fix it. With <code class="docutils literal notranslate"><span class="pre">Swizzle(3,3,3)</span></code> over <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code> the address simplifies to</p>
 <div class="math notranslate nohighlight">
 \[\text{addr}(i, j) = 64\,i + 8\,(\lfloor j/8 \rfloor \oplus i) + (j \bmod 8),\]</div>
 <p>and (<code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">2</span></code>) <code class="docutils literal notranslate"><span class="pre">bank</span> <span class="pre">=</span> <span class="pre">⌊addr/2⌋</span> <span class="pre">mod</span> <span class="pre">32</span></code>. Reading column <code class="docutils literal notranslate"><span class="pre">j</span> <span class="pre">=</span> <span class="pre">0</span></code> down the
@@ -647,6 +692,8 @@ bank (the conflict); with a swizzle the same column is scattered across banks.</
 </section>
 <section id="design-rationale">
 <h2>Design rationale<a class="headerlink" href="#design-rationale" title="Link to this heading">#</a></h2>
+<p>Having seen the model work, it is worth asking why it was shaped this way rather
+than reusing a plainer scheme. Three choices drove the design.</p>
 <ul class="simple">
 <li><p><strong>General shape support.</strong> Non-power-of-two shapes are common — in global
 tensors, multi-stage shared-memory buffers, and capacity-limited on-chip
