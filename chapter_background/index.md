@@ -69,9 +69,8 @@ of math engine, and the split between them shapes how every kernel is written:
 - **Tensor Cores** — fixed-function units that execute a dense matrix multiply-accumulate at *tile*
   granularity in a single instruction: $D = AB + C$.
 
-It is worth stressing that Tensor Cores are **not new** — they have performed tile-level MMA since
-Volta (2017), and dense linear algebra (GEMM, convolution, attention) reaches peak throughput only
-on them. What changes from one GPU generation to the next is not their existence but *how* the
+Tensor Cores are **not new**: they have performed tile-level MMA since Volta (2017), and dense
+linear algebra (GEMM, convolution, attention) reaches peak throughput only on them. What changes from one GPU generation to the next is not their existence but *how* the
 Tensor Core is programmed and *where* its results live: the asynchronous warpgroup MMA model
 arrived with Hopper, and Blackwell's fifth-generation Tensor Core (`tcgen05`, with accumulators in
 Tensor Memory) is covered in {ref}`chap_tensor_cores`.
