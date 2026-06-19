@@ -1,5 +1,5 @@
 (chap_layout_generations)=
-# Data Layout Through GPU Generations
+# Data Layout Across GPU Generations
 
 Why organize a chapter by GPU generation at all? Because the thing that actually changed from
 **Ampere** to **Hopper** to **Blackwell** is not the math the tensor core does — it is *how operands
