@@ -1,39 +1,36 @@
 # Modern GPU Programming For MLSys
 
-This book teaches modern GPU kernel programming as a progression: **understand the GPU
-hardware → learn to program it → write state-of-the-art kernels.** It assumes you have seen
-CUDA basics (grid/block/thread, shared memory, a naive tiled GEMM), but it treats the modern,
-Blackwell-class GPU as the real subject — its memory hierarchy and Tensor Memory, its
-tensor-core and asynchronous data-movement engines, warpgroups and clusters — rather than as a
-quick review.
+Machine learning systems sit at the heart of modern AI workloads. In these systems, performance
+often comes down to the quality of a small number of GPU kernels. Attention kernels, LLM prefill
+and decode kernels, low-precision block-scaled GEMMs, fused MoE layers, and other large fused
+kernels all directly shape end-to-end speed in both training and serving.
 
-The vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at the IR
-level. TIRx sits between high-level kernel DSLs and raw CUDA/PTX: the kernel still names
-hardware concepts directly, while the compiler sees scope, layout, and dispatch as structured
-IR instead of scattered intrinsic arguments. Like the framework in *Dive into Deep Learning*,
-TIRx is the consistent medium through which every concept becomes runnable code.
+To make these kernels fast, however, we need more than a list of optimization tricks. Modern GPUs
+are no longer simple variations of the same old design. Recent architectures introduce richer
+memory spaces, new access patterns, and increasingly specialized execution units. To program them
+well, we need both a clear mental model of the hardware and a practical understanding of how
+high-performance kernels are built. This book is about developing both.
 
-A **tile primitive** is a structured operation on tile values, and its lowering is controlled
-by three knobs that recur throughout the book:
+The book follows a simple progression: first understand the GPU hardware, then learn the
+programming model we will use, and finally build state-of-the-art kernels step by step. Our main
+target is the Blackwell generation, and our main running examples are fast matrix multiplication
+(GEMM) and FlashAttention. Along the way, we will also study the core ingredients behind GPU
+optimization: data layout, asynchronous data movement, and asynchronous coordination.
 
-- **Scope** — which group of threads issues or cooperates on the operation.
-- **Layout** — how the operand tiles map to GMEM, SMEM, TMEM, or registers.
-- **Dispatch** — which hardware path is intended when there is a choice, such as TMA or `tcgen05`.
-
-Asynchronous primitives add one more concern — *coordination*: a barrier, commit, wait, or fence
-marks each handoff between tile operations.
+The material grows out of the [Machine Learning Systems](https://mlsyscourse.org/) course series
+at Carnegie Mellon University. To make the ideas easier to study and easier to run, this book uses
+the **TIRx** Python DSL to build real GPU kernel examples step by step. TIRx stays close to the
+hardware, which lets us reason about low-level control while still learning through runnable code.
 
 ## How This Book Is Organized
 
-- **Part I — Understanding the GPU.** What the hardware *is*: the execution and memory model and
-  the performance model (roofline, overlap) that defines "fast"; then a deep dive into data
-  layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
-  coordination model, and advanced scheduling (CLC). Everything later is programming *this* hardware.
-- **Part II — TIRx Overview.** An introduction to TIRx through one runnable
-  single-MMA GEMM — scope, layout, and dispatch in action, and how compilation works — and the
-  tensor layout model (`TileLayout`, named axes, swizzle). The full language-feature set lives in
-  the Reference.
-- **Part III — GEMM: Tiled to SOTA.** The optimization spine — a tiled GEMM built up through
+- **Part I — Understanding the GPU.** This part introduces the overall organization of the GPU,
+  general recipes for writing fast kernels, and key concepts such as data layout, asynchronous
+  memory operations, and coordination. It builds the hardware intuition that the rest of the book
+  relies on.
+- **Part II — TIRx Overview.** This part introduces the key elements of TIRx, which serve as the
+  foundation for the code examples throughout the book.
+- **Part III — GEMM: Tiled to SOTA.** A complete guide to optimizing a tiled GEMM, built up through
   TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Flash Attention 4.** A complete attention kernel built from the Part III techniques:
   two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
