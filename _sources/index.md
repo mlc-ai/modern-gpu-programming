@@ -86,12 +86,11 @@ chapter_ai_assisted/index
 ```
 
 ```{toctree}
-:caption: Appendix
-:maxdepth: 2
+:caption: Reference
+:maxdepth: 1
 
 appendix/index
 tirx_guide/arch/index
-tirx_guide/api/index
 chapter_api_reference/index
 chapter_fa4_source/index
 ```
