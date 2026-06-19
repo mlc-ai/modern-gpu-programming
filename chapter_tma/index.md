@@ -1,5 +1,5 @@
 (chap_tma)=
-# Asynchronous Data Movement: TMA
+# Async Data Movement: TMA
 
 GEMM and attention are compute-bound at scale ({ref}`chap_performance`), but only if the Tensor
 Cores stay fed. The moment the cores stall waiting for data, that compute advantage evaporates, so
