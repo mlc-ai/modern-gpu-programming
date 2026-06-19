@@ -3,9 +3,9 @@
 
 The previous chapter ({ref}`chap_gemm_async`) ended with a persistent, software-pipelined GEMM in which a single warpgroup still did load, MMA, and writeback in sequence. This chapter scales that kernel in three steps, each lifting one limit.
 
-Step 7 splits the single warpgroup into specialized roles — a TMA producer, an MMA consumer, and a writeback warpgroup — so loading and computing run at the same time instead of taking turns. Step 8 makes two CTAs cooperate as a cluster, so one `tcgen05` MMA produces a 256×256 tile across both CTAs and a single B load feeds twice the MMA work. Step 9 adds a second MMA consumer, growing the cluster output to 512×256 so each staged B tile is reused by both consumers — the densest variant in the tutorial.
+Step 7 splits the warpgroup into specialized roles — a warp issuing TMA loads (*producer*), a warp running the MMA (*consumer*), and a writeback warpgroup — so loading and computing run at the same time instead of taking turns. Step 8 makes two CTAs cooperate as a cluster, so one `tcgen05` MMA produces a 256×256 tile across both CTAs and a single B load feeds twice the MMA work. Step 9 adds a second MMA consumer, growing the cluster output to 512×256 so each staged B tile is reused by both consumers — the densest variant in the tutorial.
 
-The SMEM, TMEM, and register layouts still follow the contracts from the previous two chapters; the new focus is *who cooperates*. Step 8 is the first time that scope widens past a single CTA: its operand tiles are split across the two CTAs' shared memory, and one layout spans both CTAs along the `cbx` / `cby` cluster axes introduced in that step.
+The SMEM, TMEM, and register layouts still follow the contracts from the previous two chapters; the new focus is *who cooperates*. Step 8 is the first time that scope widens past a single CTA: its operand tiles are split across the two CTAs' shared memory, and one layout spans both CTAs along the `cbx` cluster axis introduced in that step.
 
 
 (chap_warp_specialization)=
@@ -90,7 +90,7 @@ The GPU hardware has 16 named barriers (ID 0-15). `cta_sync()` uses barrier #0 b
 
 **Implementation.**
 
-The Step 7 kernel uses `PIPE_DEPTH=2` for clarity. Higher-performance variants often increase the depth, subject to the SMEM budget. "Pipeline depth tuning" covers the trade-off.
+The Step 7 kernel uses `PIPE_DEPTH=2` for clarity. Higher-performance variants often increase the depth, subject to the SMEM budget. The *When Step 7 misbehaves* discussion below covers this trade-off.
 
 ```python
 import tvm
@@ -586,7 +586,7 @@ def hgemm_v8(M, N, K):
 
 - `cluster_sync()` replaces `cta_sync()` at the end (ensures all CTAs are done before TMEM dealloc)
 
-Step 8 brings us to **0.13 ms** at 4096³ (~538× over Step 1 in this benchmark). Step 9 adds a second MMA consumer so the pipeline can keep more Tensor Core work in flight.
+Step 8 brings us to **0.13 ms** at 4096³ (~538× over Step 1 in this benchmark) (vs. the 70 ms Step-1 algorithm at this same 4096³ size; see the End-to-End table). Step 9 adds a second MMA consumer so the pipeline can keep more Tensor Core work in flight.
 
 If Step 8 is slower than Step 7, check: (1) TMA arrive byte count should be `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`, (2) tile scheduler dimensions should be `num_m_tiles=M//256, num_n_tiles=N//256` for the 256x256 cluster tile, (3) writeback issues 2 TMA stores (one per 128-column chunk) — make sure each one completes before reusing Dsmem.
 
@@ -989,7 +989,7 @@ In this benchmark, the path moves from 70 ms to 0.12 ms, close to the cuBLAS ref
 
 The gains shrink down the list for a reason: the early steps remove *memory* bottlenecks — TMA replaces software copies, clusters raise arithmetic intensity — which is where most of the 70 ms lived. By Step 8 the kernel is already within ~18% of cuBLAS (0.13 vs 0.11 ms), close to *compute-bound*, so little memory stall is left to hide; Step 9's multi-consumer overlap recovers most of that remaining slack. The single-digit final gain is the expected shape near the compute ceiling, not a weak optimization.
 
-The same machinery — TMA loads, `tcgen05` MMA, TMEM readback, and warp-specialized barriers — carries into a harder kernel next: Flash Attention adds online softmax between two MMA phases.
+The same machinery — TMA loads, `tcgen05` MMA, TMEM readback, and warp-specialized barriers — carries into a harder kernel next: Flash Attention, which interleaves an extra softmax step between two MMA phases.
 
 
 ## Exercises

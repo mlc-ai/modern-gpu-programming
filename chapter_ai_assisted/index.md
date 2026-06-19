@@ -91,11 +91,11 @@ This pattern matters because it turns the agent into a learning tool. You are no
 
 When asking an agent about a TIRx kernel, do not start with only a code dump. Start with the kernel contract.
 
-Each field has a job. The tile path gives the data flow. Then come the same three pillars as the per-step cards in Chapters 3–5: **scope** (roles) says who executes each tile operation, **layout** says where its tiles live, and **dispatch** says which hardware path lowers it. **Barriers** say which producer-consumer edges make the async work safe to consume. The example below is the kind of prompt you can derive from the warp-specialized GEMM chapter.
+Each field has a job. The tile path gives the data flow. Then come the same three pillars as the per-step cards in the GEMM and Flash Attention chapters: **scope** (roles) says who executes each tile operation, **layout** says where its tiles live, and **dispatch** says which hardware path lowers it. **Barriers** say which producer-consumer edges make the async work safe to consume. The example below is the kind of prompt you can derive from the warp-specialized GEMM chapter.
 
 ```text
 Target: NVIDIA Blackwell SM100a.
-Kernel: multi-consumer warp-specialized GEMM (Chapter 5, Step 9).
+Kernel: multi-consumer warp-specialized GEMM (Step 9, {ref}`chap_gemm_advanced`).
 
 Tile path:
 GMEM -> SMEM by TMA.
@@ -116,7 +116,7 @@ Dispatch:
 TMA for GMEM<->SMEM loads and stores.
 tcgen05 for the MMA; tcgen05.ld for the TMEM->RF readback.
 
-Barriers (the Chapter 5 names):
+Barriers (the names from {ref}`chap_gemm_advanced`):
 tma2mma: TMA -> MMA (A/B SMEM stage loaded).
 mma2tma: MMA -> TMA (SMEM stage free to refill).
 mma2ld: MMA -> writeback (accumulator ready).
@@ -224,7 +224,7 @@ Agent review works best when the change has a small, checkable contract. Example
 Ask for invariant checks, not a broad review:
 
 ```text
-I changed a warp-specialized single-CTA GEMM into the clustered Chapter 5 form with CTA_GROUP=2.
+I changed a warp-specialized single-CTA GEMM into the clustered form from {ref}`chap_gemm_advanced` with CTA_GROUP=2.
 Check only the cluster invariants:
 - tcgen05.alloc / gemm_async / commit / dealloc cta_group values
 - scheduler tile shape
@@ -370,7 +370,7 @@ Keep entries short: symptom, cause, fix. These notes are more useful to an agent
 
 ## Exercises
 
-1. Take the warp-specialized GEMM from Chapter 5 and ask an agent to produce a tile-primitive table: primitive, scope, layout, dispatch, wait-before, signal-after. Which entries did it miss?
+1. Take the warp-specialized GEMM from {ref}`chap_gemm_advanced` and ask an agent to produce a tile-primitive table: primitive, scope, layout, dispatch, wait-before, signal-after. Which entries did it miss?
 2. Move `mma2tma.arrive()` outside the elected MMA issue scope in a local experiment. Ask the agent to diagnose the failure using only the symptom, then ask again with the `tcgen05.commit` hardware constraint. Compare the answers.
 3. Ask for a PyTorch reference for the Flash Attention kernel with GQA. Check whether the agent handles `repeat_interleave` for K/V heads correctly.
 4. Give the agent the generated CUDA for a warp-specialized kernel and ask it to identify the TMA, MMA, and writeback branches. Verify against the source.

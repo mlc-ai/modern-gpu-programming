@@ -89,5 +89,6 @@ generated indexing.
        exe(a, b)
        torch.testing.assert_close(b, a * 2)
 
-The following chapters expand each piece: :doc:`functions`, :doc:`buffers`,
-:doc:`control_flow`, :doc:`threads_sync`, and :doc:`compiling`.
+The following sections expand each piece: :doc:`functions`, :doc:`parser_utils`,
+:doc:`data_types`, :doc:`buffers`, :doc:`control_flow`, :doc:`threads_sync`, and
+:doc:`compiling`.

@@ -33,8 +33,9 @@ SMEM --ldmatrix--> registers --mma.sync--> registers --stmatrix--> SMEM
 
 ### What the Tensor Core expects: an m8n8 register fragment
 
-For `mma.m16n8k16` (fp16/bf16 in, fp32 accumulate), the 32 lanes are carved **8 along M × 4 along
-N**, and each lane owns a few registers:
+The register fragment is built from **8×8 ("m8n8") sub-tiles** — the unit `ldmatrix` moves and the
+tensor core reads. For `mma.m16n8k16` (fp16/bf16 in, fp32 accumulate), the 32 lanes are carved
+**8 along M × 4 along N**, and each lane owns a few registers:
 
 - **C/D accumulator (M×N = 16×8):** lane `l` holds rows `m ∈ {l/4, l/4 + 8}` and columns
   `n ∈ {2·(l%4), 2·(l%4)+1}` — four fp32 values per lane (two 8-row halves × two adjacent columns).

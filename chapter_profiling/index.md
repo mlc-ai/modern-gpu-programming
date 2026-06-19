@@ -2,6 +2,10 @@
 # Profiling and Debugging
 
 ```{note}
+This chapter is being drafted. It will cover profiling and debugging TIRx kernels; for the performance model it builds on, see {ref}`chap_performance`.
+```
+
+```{note}
 **Outline stub** — to be drafted (P2). See `OUTLINE.md`, Ch16.
 ```
 

@@ -121,7 +121,7 @@ The code fragments shown in this chapter are pulled from `flash_attention4.py`, 
 | `q_stage`, `i_q` | Q pipeline stage, 0 or 1 — which Q tile slot (`SMEM_PIPE_DEPTH_Q = 2`). Inside WG0/WG1 softmax the warpgroup's own `wg_id` (0 or 1) *is* this same stage index, so `S_region[q_stage]`, `P_region[wg_id]`, and `O_region[i_q]` all select the same Q stage |
 | `MMA_N` | score/output tile width in TMEM columns (128) |
 | `MMA_K` | MMA inner-K step in `P`/`V` columns (16); `K_SPLIT = 6 * MMA_K = 96` |
-| `K_SPLIT` | split point of the `96 + 32` value-MMA schedule (`6 * MMA_K = 96`); the first value MMA consumes `P`/`V` columns `0:K_SPLIT` |
+| `K_SPLIT` | split point of the value-MMA schedule (see *The Two MMA Phases*); the first value MMA covers columns `0:K_SPLIT` (`6 * MMA_K = 96`) |
 | `should_rescale` | WG2 per-row flag: whether the old `O` needs rescaling before the next value MMA (reduced across the warpgroup with `any_sync`) |
 | `rescale_threshold` | when the scaled row-max change is small enough, `acc_scale` is clamped to exactly 1.0 and the rescale is skipped (8.0) |
 | `scale_log2` | the softmax scale in log2 units, `log2(e)/√d`, so `P = exp2((S - m) · scale_log2)` |
@@ -227,9 +227,8 @@ Tx.warp.gemm_async(
     dispatch="tcgen05",
     cta_group=CTA_GROUP,
 )
-# Second sub-MMA over columns K_SPLIT:BLK_N (the last 32) elided for brevity;
-# it has the same form with accum=True and waits on p_ready_2 first. The two
-# sub-MMAs together cover all BLK_N columns of P — the last 32 are NOT dropped.
+# The second sub-MMA (same form, accum=True, gated on p_ready_2) covers the
+# remaining columns K_SPLIT:BLK_N.
 ```
 
 > **Tile-primitive readout — Value MMA**
