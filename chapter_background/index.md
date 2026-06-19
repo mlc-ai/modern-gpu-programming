@@ -134,8 +134,8 @@ delivers the same GMEM tile to several CTAs and so cuts redundant global traffic
 ```
 *Interactive: the load → MMA → epilogue pipeline on Blackwell, and how the stages overlap.*
 
-We now have all the pieces — threads, engines, memories, clusters — so we can trace how they work
-together on the workload this book cares about most. A GEMM tile flows across the hardware in three
+We now have all the pieces — the thread hierarchy, the compute and data-movement engines, and the
+memory spaces — so we can trace how they work together on the workload this book cares about most. A GEMM tile flows across the hardware in three
 stages:
 
 1. **Load.** A TMA copy ({ref}`chap_tma`) streams an A/B operand tile from GMEM into SMEM. One
