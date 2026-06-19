@@ -55,7 +55,7 @@ html_js_files = ["demo-embed.js"]
 html_theme_options = {
     "show_navbar_depth": 1,
     "show_toc_level": 2,
-    "home_page_in_toc": True,
+    "home_page_in_toc": False,
     "use_download_button": False,
     "use_fullscreen_button": False,
 }
