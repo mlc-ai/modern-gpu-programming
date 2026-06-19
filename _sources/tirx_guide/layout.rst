@@ -21,20 +21,33 @@ Tensor Layout
 =============
 
 :ref:`chap_data_layout` introduced the layout *notation* — the shape–stride pair
-``S[shape : strides]``, strides tagged with named **axes** (``@laneid``,
-``@warpid``, ``@reg``, ``@TLane``, ``@TCol``), and the replication term
-``R[n : stride]`` for data the hardware copies rather than partitions. This
-chapter is the *formal* counterpart. It defines the **TileLayout** that TIRx
-actually evaluates, gives the exact rule for turning a logical index into a set of
-physical coordinates, and runs that rule through two real hardware tiles. If the
-notation below looks unfamiliar, read that chapter first; here we assume it and
-build on it.
+``S[shape : strides]``, strides tagged with named **axes**, and the replication
+term ``R[n : stride]`` for data the hardware copies rather than partitions. This
+chapter is the TIRx **layout API**: the ``TileLayout``, ``SwizzleLayout``, and
+``ComposeLayout`` classes you import from ``tvm.tirx.layout``, the axis vocabulary
+they are written in, the ready-made constructors TIRx ships for the common
+hardware tiles, and the exact rule a layout evaluates to — run through two real
+hardware tiles. If the notation below looks unfamiliar, read that chapter first;
+here we assume it and build on it.
 
-The one idea to carry over is that a layout maps each logical index not to a
-single address but to a *set* of coordinates on the named axes — because one
-element can live in several places at once — and that the map decomposes into
-three parts: shard (``D``), replica (``R``), and offset (``O``). The rest of the
-chapter builds that map up one piece at a time.
+The API has one job: you build a layout once and attach it to a buffer —
+``pool.alloc(shape, dtype, layout=...)`` or
+``T.decl_buffer(shape, dtype, scope=..., layout=...)`` — and every tile op on that
+buffer then reads its placement from the layout. The objects you attach all come
+from one module::
+
+    from tvm.tirx.layout import (
+        TileLayout, SwizzleLayout, ComposeLayout,    # the three layout classes
+        S, R,                                        # shard / replica spec builders
+        laneid, warpid, tid_in_wg, TLane, TCol, m,   # named axes (a few of many)
+        tcgen05_atom_layout, tmem_datapath_layout,   # ready-made layout constructors
+    )
+
+The one idea to carry over from :ref:`chap_data_layout` is that a layout maps each
+logical index not to a single address but to a *set* of coordinates on the named
+axes — because one element can live in several places at once — and that the map
+decomposes into three parts: shard (``D``), replica (``R``), and offset (``O``).
+The rest of the chapter builds that map up one piece at a time.
 
 Interactive demo
 ----------------
@@ -100,14 +113,34 @@ singleton in the common case yet hold several coordinates when ``R`` is
 non-empty. A term is written ``n @ axis``; if a stride is not paired with an
 axis, the memory axis ``m`` is used by default.
 
+Spelled as TIRx, a shard with a replica and an offset reads::
+
+    TileLayout(S[(8,2,4,2) : (4@laneid, 1@warpid, 1@laneid, 1)] + R[2:4@warpid] + 5@warpid)
+
+``S[...]`` and ``R[...]`` build the spec, ``+`` glues the shard, the replica, and a
+bare ``n @ axis`` offset together, and ``TileLayout(...)`` wraps the result into
+the object you attach to a buffer. (Pre-built ``Iter(extent, stride, axis)`` objects
+go through ``TileLayout.from_iters(shard, replica, offset)`` instead.)
+
+The axes name hardware resources, and the name is part of the layout rather than
+inferred from context: blocks ``bx`` / ``by`` / ``bz`` and cluster blocks
+``cbx`` / ``cby`` / ``cbz`` place a tile across the grid; threads ``tx``
+(block-wide), ``warpid``, ``laneid``, ``wgid``, ``tid_in_wg``, ``wid_in_wg`` spread
+it across a CTA or warpgroup; ``m`` is linear memory; ``P`` / ``F`` are a 2D
+scratchpad's partition and free axes; ``Bank`` is a shared-memory bank; and
+``TLane`` / ``TCol`` address Blackwell tensor memory.
+
 Forward mapping
 ~~~~~~~~~~~~~~~
 
 So much for what a layout *is*; the next question is how to evaluate it. Given a
-logical coordinate, where does it land? Evaluating ``L(x)`` for a coordinate
-``x = (x_0, …, x_{r-1})`` in a shape ``(S_0, …, S_{r-1})`` is four mechanical
-steps — flatten, split, accumulate, broadcast — and once you have done it by hand
-once, the rest of the chapter is just applying it.
+logical coordinate, where does it land? This is exactly what
+``layout.apply(*coord)`` answers — it returns a dict from axis name to coordinate,
+e.g. ``{"laneid": …, "warpid": …, "m": …}`` — and the four steps below are what it
+runs inside. Evaluating ``L(x)`` for a coordinate ``x = (x_0, …, x_{r-1})`` in a
+shape ``(S_0, …, S_{r-1})`` is four mechanical steps — flatten, split, accumulate,
+broadcast — and once you have done it by hand once, the rest of the chapter is
+just applying it.
 
 **1. Flatten** the coordinate row-major to a single index:
 
@@ -155,7 +188,7 @@ hardware mapping, so we run them on a tensor-core tile. Consider a logical
 holding part of the tile in its registers (the ``reg`` slot is the default memory
 axis ``m``)::
 
-    S[(8,2,4,2):(4@laneid,1@warpid,1@laneid,1)] + R[2:4@warpid] + 5@warpid
+    TileLayout(S[(8,2,4,2):(4@laneid,1@warpid,1@laneid,1)] + R[2:4@warpid] + 5@warpid)
 
 The shard factors the logical indices into four iters of extent ``8, 2, 4, 2``
 over axes ``laneid, warpid, laneid, m``. Running the four steps on element
@@ -238,7 +271,7 @@ places a tensor into Blackwell **tensor memory**, a 2D address space addressed b
 axis, so the layout is a pure placement — no threads, no replica, no offset, and
 ``L(x)`` is a singleton::
 
-    S[(2,128,112):(112@TCol,1@TLane,1@TCol)]
+    TileLayout(S[(2,128,112):(112@TCol,1@TLane,1@TCol)])
 
 Take the logical tile shape equal to the shard extents, ``(2, 128, 112)`` — then
 the split step is the identity (``c_k = x_k``), and element ``(a, l, c)`` maps to:
@@ -282,7 +315,7 @@ keeps its per-block scale factors in tensor memory, and one physical group has t
 feed several warps at once — exactly the broadcast the replica was designed for.
 The atom is::
 
-    S[(32, sf_per_mma):(1@TLane, 1@TCol)] + R[4:32@TLane]
+    TileLayout(S[(32, sf_per_mma):(1@TLane, 1@TCol)] + R[4:32@TLane])
 
 — 32 rows on ``TLane`` and ``sf_per_mma`` scale factors on ``TCol``, with the
 replica ``R[4:32@TLane]`` routing that 32-row group across the **four warps** of a
@@ -300,12 +333,34 @@ Beyond GPU registers
 
 Stepping back, the two case studies were not special cases but the same model
 pointed at different hardware, and that generality is the whole reason for naming
-axes. Binding strides to a device axis (``pid``) expresses **distributed
-sharding** across a GPU mesh; binding them to on-chip memory axes expresses native
-accelerator memories — a 2D-partitioned scratchpad (partition ``P`` and free
-``F`` axes), or NVIDIA Blackwell tensor memory with native 2D addressing
-(``TLane`` × ``TCol``). The demo includes presets for each, so you can swap the
-target hardware without leaving the layout language.
+axes. Bind strides to the block and cluster axes (``bx`` … ``cbz``) and the layout
+**shards a tile across the grid**; bind them to on-chip memory axes and it
+expresses native accelerator memories — a 2D-partitioned scratchpad (partition
+``P`` and free ``F`` axes), shared-memory banks (``Bank``), or NVIDIA Blackwell
+tensor memory with native 2D addressing (``TLane`` × ``TCol``). The demo includes
+presets for each, so you can swap the target hardware without leaving the layout
+language.
+
+Ready-made layouts
+~~~~~~~~~~~~~~~~~~~
+
+You rarely hand-write the hardware tiles above. The placements that recur — a
+``tcgen05`` accumulator, the register fragment a ``tcgen05.ld`` produces, a
+warpgroup-local register tile — ship as constructors in ``tvm.tirx.layout`` that
+return a ready ``TileLayout``:
+
+- ``tmem_datapath_layout(datapath, rows, cols)`` — the logical-row → physical
+  TMEM-lane placement an MMA writes, for datapath ``"D"`` (M=128, identity
+  row→lane) or ``"F"`` (M=64, warp-scattered).
+- ``tcgen05_atom_layout(instr_shape, tensor_shape, dtype)`` — the per-warpgroup
+  register tile a ``tcgen05.ld`` / ``tcgen05.st`` atom (``.32x32b``, ``.16x64b``,
+  …) moves to and from registers.
+- ``wg_local_layout(cols, rows=128)`` — a warpgroup-local register tile, one row
+  per thread on ``tid_in_wg``.
+
+Each returns an ordinary ``TileLayout`` built from the same ``S`` / ``R`` spec, so
+you can inspect what it produced, compose it, or drop down to writing the spec by
+hand when a shape is unusual — as the accumulator case study above does.
 
 SwizzleLayout, ComposeLayout
 ----------------------------
@@ -373,8 +428,10 @@ by two things you already know — the **element dtype** and the **swizzle mode*
    S = 3 .
 
 For example ``float16`` (16-bit) gives ``M = bitlen(8) - 1 = 3``; with 128B
-swizzle that is ``Swizzle(M=3, B=3, S=3)``. ``M`` keeps a 16-byte (128-bit)
-contiguous run unswizzled, matching the minimum vector access.
+swizzle that is ``SwizzleLayout(per_element=3, swizzle_len=3, atom_len=3)``. ``M`` keeps a 16-byte (128-bit)
+contiguous run unswizzled, matching the minimum vector access. You attach it to a
+buffer by composing the two layers — ``ComposeLayout(SwizzleLayout(3, 3, 3), tile)``
+is what goes in the ``layout=`` of a swizzled SMEM allocation.
 
 Bank and line of an element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -396,7 +453,7 @@ Worked example: 128B swizzle, ``float16``, ``(8, 64)`` tile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now we can close the loop on the conflicting tile from above and watch the swizzle
-fix it. With ``Swizzle(3,3,3)`` over ``m = 64i + j`` the address simplifies to
+fix it. With ``SwizzleLayout(3, 3, 3)`` over ``m = 64i + j`` the address simplifies to
 
 .. math::
 
@@ -434,7 +491,7 @@ than reusing a plainer scheme. Three choices drove the design.
   formulation cannot always represent for strided patterns.
 - **Explicit hardware axes.** Axes carry their hardware meaning in the layout
   itself, so an expression is unambiguous without external context. For instance
-  ``1@tid`` (block-wide thread id) and ``1@tid_in_wg`` (thread id within a
+  ``1@tx`` (block-wide thread id) and ``1@tid_in_wg`` (thread id within a
   warpgroup) are distinct rather than a generic ``t`` whose meaning depends on the
   definition site. Legality and feasibility checks are left to the higher-level
   tile-primitive layer (Parts III–IV), not the layout itself.
