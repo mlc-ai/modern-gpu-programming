@@ -40,15 +40,17 @@ marks each handoff between tile operations.
 
 ```{toctree}
 :caption: Part I — Understanding the GPU
-:maxdepth: 2
+:maxdepth: 1
 
 chapter_background/index
 chapter_performance/index
-part_data_layout/index
-part_memory/index
-part_compute/index
+chapter_data_layout/index
+chapter_layout_generations/index
+chapter_tma/index
+chapter_tensor_cores/index
+chapter_tmem/index
 chapter_async_barriers/index
-part_advanced/index
+chapter_clc/index
 ```
 
 ```{toctree}

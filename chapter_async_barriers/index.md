@@ -1,5 +1,5 @@
 (chap_async_barriers)=
-# Async Coordination: mbarriers and Phases
+# Async Coordination: mbarriers
 
 The Tensor Core ({ref}`chap_tensor_cores`) and TMA ({ref}`chap_tma`) are both *asynchronous*:
 issuing work is not the same as finishing it. To build a correct kernel, every time one engine

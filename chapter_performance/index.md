@@ -26,12 +26,12 @@ from memory:
 
 $$\text{AI} = \frac{\text{FLOPs}}{\text{bytes moved}} \quad [\text{FLOP/byte}]$$
 
-Plotting attainable performance against AI gives two ceilings — a sloped *memory roof*
-(bandwidth × AI) and a flat *compute roof* (peak FLOP/s) — meeting at the **ridge point**:
+Plotting attainable performance against arithmetic intensity gives two ceilings — a sloped *memory roof*
+(bandwidth × arithmetic intensity) and a flat *compute roof* (peak FLOP/s) — meeting at the **ridge point**:
 
 ![Roofline for the B200, with example workloads](../img/roofline.png)
 
-For the B200 the ridge sits at roughly `2000 / 8 ≈ 250` FLOP/byte. A kernel whose AI is **below** the
+For the B200 the ridge sits at roughly `2000 / 8 ≈ 250` FLOP/byte. A kernel whose arithmetic intensity is **below** the
 ridge can never reach peak compute no matter how good the code is — it is *memory-bound*, and
 the only lever is moving fewer bytes (or moving them faster). A kernel **above** the ridge is
 *compute-bound* — the bytes are essentially free, and the job is to keep the tensor cores busy.
@@ -41,11 +41,11 @@ the only lever is moving fewer bytes (or moving them faster). A kernel **above**
 Where a kernel lands on the roofline is mostly decided by the algorithm, not the code.
 
 - **Elementwise and reductions** (GELU, RMSNorm) read and write large tensors but do only a few FLOPs per element. Their
-  AI is well below 1 — deep in the memory-bound region. The best such a kernel can do is
+  arithmetic intensity is well below 1 — deep in the memory-bound region. The best such a kernel can do is
   saturate HBM bandwidth, so the design goals are coalesced/TMA loads and fusion (do more math
   per byte loaded).
 
-- **GEMM** has AI that grows with size. For a square `M=N=K` fp16 matmul, the ideal is
+- **GEMM** has arithmetic intensity that grows with size. For a square `M=N=K` fp16 matmul, the ideal is
 
   $$\text{AI} = \frac{2N^3}{(3N^2)\cdot 2\,\text{bytes}} = \frac{N}{3}\ \text{FLOP/byte}.$$
 
@@ -56,7 +56,7 @@ Where a kernel lands on the roofline is mostly decided by the algorithm, not the
   the tensor cores idle, sitting orders of magnitude below the roof.
 
 - **Attention** sits in between and depends on sequence length and head dimension; Flash
-  Attention ({ref}`chap_flash_attention`) is largely an exercise in *raising* AI by keeping
+  Attention ({ref}`chap_flash_attention`) is largely an exercise in *raising* arithmetic intensity by keeping
   intermediate tiles in TMEM/SMEM instead of streaming them through HBM.
 
 ## When Arithmetic Intensity Is Low
@@ -64,21 +64,21 @@ Where a kernel lands on the roofline is mostly decided by the algorithm, not the
 If a kernel sits left of the ridge, it is memory-bound: the Tensor Cores will idle no matter how
 good the compute code is, because the bottleneck is bytes, not FLOPs. There are two responses.
 
-**First, try to raise AI — do more work per byte.** This is the higher-leverage move because it
+**First, try to raise arithmetic intensity — do more work per byte.** This is the higher-leverage move because it
 can turn a memory-bound kernel into a compute-bound one.
 
-- *Fuse.* The biggest source of low AI is writing an intermediate to global memory and reading it
+- *Fuse.* The biggest source of low arithmetic intensity is writing an intermediate to global memory and reading it
   straight back. Fusing the producer and consumer keeps that intermediate in registers or SMEM, so
   the bytes never hit HBM. Fusing an elementwise epilogue into a GEMM, or a normalization into the
   op that feeds it, removes whole HBM round trips. Flash Attention is the extreme case: it fuses
   $QK^\top$, softmax, and the $PV$ product so the large score matrix `S` is never written to HBM —
   that fusion is what moves attention rightward on the roofline.
 - *Block for reuse.* Load a tile into SMEM or registers and use it for many operations before
-  evicting it. Reuse is exactly what gives GEMM its high AI; any op with reuse benefits the same way.
-- *Use a smaller dtype.* fp16/fp8/fp4 move fewer bytes per element, which directly raises AI (FLOPs
+  evicting it. Reuse is exactly what gives GEMM its high arithmetic intensity; any op with reuse benefits the same way.
+- *Use a smaller dtype.* fp16/fp8/fp4 move fewer bytes per element, which directly raises arithmetic intensity (FLOPs
   per byte) and cuts the bandwidth the kernel needs.
 
-**Second, if the AI is irreducible — accept the memory roof and saturate it.** A pure copy, or a
+**Second, if the arithmetic intensity is irreducible — accept the memory roof and saturate it.** A pure copy, or a
 single-pass elementwise or reduction over a large tensor, has no reuse to exploit; its best possible
 performance *is* the memory roof, so the job is to actually reach it:
 
@@ -156,8 +156,8 @@ it":
 - Memory-bound kernels → coalesced/TMA loads and fusion.
 - Compute-bound GEMM (Part III) → tensor cores to raise the ceiling, then TMA + pipelining +
   specialization to reach it.
-- Flash Attention (Part IV) → raise AI by keeping tiles on-chip, then apply the same overlap
+- Flash Attention (Part IV) → raise arithmetic intensity by keeping tiles on-chip, then apply the same overlap
   toolkit.
 
-When a kernel underperforms, return to this chapter's question first: compute the AI, find the
+When a kernel underperforms, return to this chapter's question first: compute the arithmetic intensity, find the
 roof, and optimize the resource that is actually binding.

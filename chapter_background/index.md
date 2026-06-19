@@ -1,5 +1,5 @@
 (chap_background)=
-# The GPU Execution and Memory Model
+# GPU Execution Model
 
 A GPU runs a kernel across a hierarchy of threads, a set of distinct memory spaces, and a few
 compute and data-movement engines. This chapter covers those — the thread hierarchy, the compute

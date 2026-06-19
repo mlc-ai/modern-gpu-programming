@@ -1,5 +1,5 @@
 (chap_clc)=
-# Cluster Launch Control (CLC)
+# Advanced Topics: Cluster Launch Control
 
 A *persistent* kernel keeps one CTA resident per SM and has it loop over many output tiles —
 instead of launching a fresh CTA per tile — taking each next tile from a scheduler (the pattern

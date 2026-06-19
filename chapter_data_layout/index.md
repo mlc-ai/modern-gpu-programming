@@ -1,5 +1,5 @@
 (chap_data_layout)=
-# What Is Data Layout?
+# Introduction to Data Layout
 
 A *data layout* is the map from a tensor's logical indices `(i, j, …)` to a physical location —
 which byte of memory, which thread's register, which SMEM bank. The data and its logical shape are
