@@ -29,10 +29,9 @@ Tensor Core and TMA engines.*
 
 ## The Execution Hierarchy
 
-Why does a GPU need so many levels of grouping rather than a flat pool of threads? Because
-cooperation happens at different scales: the lanes of a warp execute in lockstep, the threads of a
-CTA share that CTA's shared memory, and the CTAs of a cluster synchronize across SMs. A GPU
-organizes its threads into a nested hierarchy, and on Blackwell the levels are these:
+A GPU groups threads at several levels because cooperation happens at different scales: the lanes
+of a warp execute in lockstep, the threads of a CTA share that CTA's shared memory, and the CTAs of
+a cluster synchronize across SMs. On Blackwell the levels are these:
 
 ```{raw} html
 <iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"
@@ -52,8 +51,8 @@ organizes its threads into a nested hierarchy, and on Blackwell the levels are t
 - **Cluster** — a group of cooperating CTAs (across SMs) that can synchronize and access each
   other's shared memory (distributed shared memory).
 
-These levels are not just an organizational convenience; they matter because Blackwell operations
-are **not all issued by the same group of threads**. A TMA copy is issued by one thread and
+These levels matter because Blackwell operations are **not all issued by the same group of
+threads**. A TMA copy is issued by one thread and
 finished by hardware; a TMEM→register load is warpgroup-cooperative; a `tcgen05` MMA is committed
 by one elected thread; a clustered MMA spans two CTAs. Each operation, in other words, has a
 natural granularity, and which threads run it is the operation's **scope** — the first of the
@@ -61,8 +60,7 @@ book's three recurring knobs (scope, layout, dispatch).
 
 ## Compute: CUDA Cores and Tensor Cores
 
-Once threads are organized, the question is what they actually compute on. An SM offers two kinds
-of math engine, and the split between them shapes how every kernel is written:
+An SM has two kinds of math engine, and the split between them shapes how every kernel is written:
 
 - **CUDA cores** — general-purpose SIMT ALUs that execute scalar/vector instructions for indexing,
   elementwise math, reductions, and control flow.
@@ -87,27 +85,26 @@ through them, each with its own capacity, latency, and access rules:
 | **Tensor Memory (TMEM)** | Per-SM | MMA accumulator storage | New on Blackwell; used by `tcgen05` |
 | **Register File (RF)** | Per-thread | Scalars and per-thread tile fragments | Fast; holds epilogue/temp values |
 
-These spaces are not used independently; they form a path. The data path of almost every kernel in
-this book is **GMEM → SMEM → (compute) → registers → GMEM**, with TMEM holding accumulators in the
-middle for tensor-core kernels.
+These spaces form a path. The data path of almost every kernel in this book is **GMEM → SMEM →
+(compute) → registers → GMEM**, with TMEM holding accumulators in the middle for tensor-core
+kernels.
 
 ![Memory dataflow across the hierarchy](../img/memory_dataflow.png)
 
-Of these spaces, **Tensor Memory (TMEM)** is the one without a pre-Blackwell analog, so it is
-worth naming here even though its details belong to {ref}`chap_tensor_cores`. Earlier GPUs kept
-large MMA accumulators in registers; Blackwell instead writes `tcgen05` accumulator output to
-TMEM, a per-SM 2D scratchpad (128 rows × up to 512 32-bit columns), and the kernel then explicitly
-reads TMEM into registers for the epilogue. That extra step is not free, and two consequences of it
+**Tensor Memory (TMEM)** is the one memory here without a pre-Blackwell analog; its details are in
+{ref}`chap_tensor_cores`. Earlier GPUs kept large MMA accumulators in registers; Blackwell instead
+writes `tcgen05` accumulator output to TMEM, a per-SM 2D scratchpad (128 rows × up to 512 32-bit
+columns), and the kernel then explicitly reads TMEM into registers for the epilogue. That extra step is not free, and two consequences of it
 show up everywhere later: TMEM reads are **explicit and warpgroup-cooperative**, and TMEM must be
 **explicitly allocated and freed**.
 
 ## CTA Clusters
 
-So far CTAs have been independent — each on its own SM, each owning its own shared memory. But a
-single CTA's SMEM budget is finite, and large tiles often need more operand storage or more reuse
-than one block can supply. Hopper's answer was the **thread block cluster**: a group of CTAs that
-cooperate more tightly than independent blocks, able to synchronize together and access each
-other's shared memory (distributed shared memory, DSMEM). Blackwell builds on clusters with dynamic
+A CTA runs on one SM with its own shared memory, but a single CTA's SMEM budget is finite, and
+large tiles often need more operand storage or reuse than one block can supply. Hopper's answer was
+the **thread block cluster**: a group of CTAs that cooperate more tightly than independent blocks,
+able to synchronize together and access each other's shared memory (distributed shared memory,
+DSMEM). Blackwell builds on clusters with dynamic
 scheduling ({ref}`chap_clc`) and 2-CTA cooperative MMA.
 
 The key new capability is **distributed shared memory (DSMEM)** — the ability of cluster CTAs to
@@ -134,9 +131,8 @@ delivers the same GMEM tile to several CTAs and so cuts redundant global traffic
 ```
 *Interactive: the load → MMA → epilogue pipeline on Blackwell, and how the stages overlap.*
 
-We now have all the pieces — the thread hierarchy, the compute and data-movement engines, and the
-memory spaces — so we can trace how they work together on the workload this book cares about most. A GEMM tile flows across the hardware in three
-stages:
+With the thread hierarchy, the engines, and the memory spaces in place, we can trace how they work
+together on a GEMM. A GEMM tile flows across the hardware in three stages:
 
 1. **Load.** A TMA copy ({ref}`chap_tma`) streams an A/B operand tile from GMEM into SMEM. One
    thread issues it; the TMA engine does the transfer and signals an mbarrier when the bytes land.
@@ -154,9 +150,9 @@ barrier/phase model ({ref}`chap_async_barriers`), and Part III's GEMM ladder is 
 
 ## Numbers to Keep in Mind
 
-The shape of every design decision in this book comes down to a handful of capacities and speeds.
-The orders of magnitude below (B200, approximate) are what explain why kernels stage only a few
-operand tiles, budget TMEM carefully, and work hard to keep the Tensor Cores fed:
+Every design decision in this book comes down to a handful of capacities and speeds. The orders of
+magnitude below (B200, approximate) explain why kernels stage only a few operand tiles, budget TMEM
+carefully, and work hard to keep the Tensor Cores fed:
 
 | Quantity | Value (B200, approx.) | Where it shows up |
 |:--|:-:|:--|
