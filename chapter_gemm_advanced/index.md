@@ -9,17 +9,17 @@
 - Each step removes a serial bottleneck, ending near state-of-the-art throughput.
 :::
 
-The previous chapter ({ref}`chap_gemm_async`) ended with a persistent, software-pipelined GEMM, but it still left one warpgroup doing load, MMA, and writeback in sequence. That single warpgroup is the bottleneck this chapter attacks. We scale the kernel in three steps, and the unifying idea is simple to state: stop making one team of threads take turns at jobs that could run at once, and start making more hardware cooperate on each tile.
+The previous chapter ({ref}`chap_gemm_async`) ended with a persistent, software-pipelined GEMM, but it still left one warpgroup doing load, MMA, and writeback in sequence. That single warpgroup is the bottleneck this chapter attacks. We scale the kernel in three steps. Each step stops one team of threads from taking turns at jobs that could run at once, and makes more hardware cooperate on each tile.
 
 The three steps widen cooperation one level at a time. Step 7 splits the warpgroup into specialized roles — a warp issuing TMA loads (*producer*), a warp running the MMA (*consumer*), and a writeback warpgroup — so loading and computing overlap instead of alternating. Step 8 lets two CTAs cooperate as a cluster, so one `tcgen05` MMA produces a 256×256 tile spanning both CTAs and a single B load feeds twice the MMA work. Step 9 adds a second MMA consumer, growing the cluster output to 512×256 so each staged B tile is reused by both consumers — the densest variant in the tutorial.
 
-Throughout, the SMEM, TMEM, and register layouts still follow the contracts from the previous two chapters; what changes is *who cooperates*. Keep an eye on Step 8 in particular, because it is the first time the cooperating scope widens past a single CTA: its operand tiles are split across the two CTAs' shared memory, and one layout spans both CTAs along the `cbx` cluster axis introduced there.
+Throughout, the SMEM, TMEM, and register layouts still follow the contracts from the previous two chapters; what changes is *who cooperates*. Step 8 is the first time the cooperating scope widens past a single CTA: its operand tiles are split across the two CTAs' shared memory, and one layout spans both CTAs along the `cbx` cluster axis introduced there.
 
 
 (chap_warp_specialization)=
 ## Step 7: Warp Specialization + Pipeline
 
-Why is the single-warpgroup kernel leaving performance on the table? Because every thread walks the same path — load, then compute, then write — so while it loads, the Tensor Cores are idle, and while it computes, the TMA engine is idle. The fix is *warp specialization*: hand each job to a dedicated warp and let those warps run concurrently, glued together by a software pipeline. This is the biggest architectural change in the GEMM path, and the rest of the chapter builds on it. Benchmarks use M=N=K=4096.
+The single-warpgroup kernel leaves performance on the table because every thread walks the same path — load, then compute, then write — so while it loads, the Tensor Cores are idle, and while it computes, the TMA engine is idle. The fix is *warp specialization*: hand each job to a dedicated warp and let those warps run concurrently, connected by a software pipeline. This is the biggest architectural change in the GEMM path, and the rest of the chapter builds on it. Benchmarks use M=N=K=4096.
 
 > **What this step changes — Scope**
 > - Scope: one warpgroup walking load → MMA → writeback in order becomes three concurrent roles — TMA producer, MMA consumer, writeback — connected by full/empty barriers.
@@ -42,12 +42,12 @@ Why is the single-warpgroup kernel leaving performance on the table? Because eve
 
 ![Warp Specialization Timeline](../img/warp_specialization_timeline.png)
 
-Read the figure as a before-and-after contrast. On top, single-warpgroup Step 6: the one warp must finish the MMA before it can issue the next TMA load, so the TMA engine sits idle through the whole MMA and the Tensor Cores sit idle through the whole load — exactly the waste we want to remove. On the bottom, specialization breaks that turn-taking: the TMA producer prefetches data while the MMA consumer computes, and writeback runs independently. Producer warp 3 issues the next load while consumer warp 0 is still running the current MMA, so neither engine waits on the other. The price of overlap is coordination — the warps now need to tell each other when data is ready and when a buffer is free. Two barriers carry those messages:
+The figure is a before-and-after contrast. On top, single-warpgroup Step 6: the one warp must finish the MMA before it can issue the next TMA load, so the TMA engine sits idle through the whole MMA and the Tensor Cores sit idle through the whole load. On the bottom, specialization breaks that turn-taking: the TMA producer prefetches data while the MMA consumer computes, and writeback runs independently. Producer warp 3 issues the next load while consumer warp 0 is still running the current MMA, so neither engine waits on the other. The price of overlap is coordination — the warps now need to tell each other when data is ready and when a buffer is free. Two barriers carry those messages:
 
 - **`tma2mma`** (TMA → MMA): signals that the loaded SMEM data is ready for MMA to consume.
 - **`mma2tma`** (MMA → TMA): signals that MMA has finished reading a buffer, so TMA can reuse it for the next load.
 
-The `mma2tma` arrows in the figure look like they skip ahead, and it is worth seeing why. With `PIPE_DEPTH=2` there are two SMEM buffers (stage 0 and stage 1). TMA Load k=0 fills buffer 0, TMA Load k=1 fills buffer 1. When MMA Compute k=0 finishes reading buffer 0 it signals `mma2tma` — but the load that actually wants buffer 0 back is TMA Load k=2, not k=1 (which uses buffer 1). So the `mma2tma` arrow from MMA Compute k=0 points all the way to TMA Load k=2. The buffer release skips a stage because the ring buffer has two slots.
+The `mma2tma` arrows in the figure skip ahead by a stage. With `PIPE_DEPTH=2` there are two SMEM buffers (stage 0 and stage 1). TMA Load k=0 fills buffer 0, TMA Load k=1 fills buffer 1. When MMA Compute k=0 finishes reading buffer 0 it signals `mma2tma` — but the load that actually wants buffer 0 back is TMA Load k=2, not k=1 (which uses buffer 1). So the `mma2tma` arrow from MMA Compute k=0 points all the way to TMA Load k=2. The buffer release skips a stage because the ring buffer has two slots.
 
 ### Warp Roles
 
@@ -70,13 +70,13 @@ Three concurrent actors need four barriers, and the four fall into two opposite 
 | **mma2ld** | `TCGen05Bar` | MMA -> Writeback | "TMEM results are ready" |
 | **ld2mma** | `MBarrier` | Writeback -> MMA | "TMEM is free for next tile" |
 
-The barrier *type* is not arbitrary — it follows from how the producer announces completion. **TMA Loads** use `TMABar` (an mbarrier with byte counting): the TMA hardware arrives on the barrier itself once the transfer's bytes land, so consumers learn the data is ready without any thread polling. **TMA Stores** need none of this and use a completely different mechanism, `cp_async.bulk.commit_group()` + `wait_group(0)`, because a store has nobody to notify — the issuing thread simply waits for its own write to drain. **MMA operations** use `TCGen05Bar`, where the `tcgen05.commit()` instruction signals the barrier when the MMA finishes.
+The barrier *type* follows from how the producer announces completion. **TMA Loads** use `TMABar` (an mbarrier with byte counting): the TMA hardware arrives on the barrier itself once the transfer's bytes land, so consumers learn the data is ready without any thread polling. **TMA Stores** use a different mechanism, `cp_async.bulk.commit_group()` + `wait_group(0)`, because a store has nobody to notify — the issuing thread waits for its own write to drain. **MMA operations** use `TCGen05Bar`, where the `tcgen05.commit()` instruction signals the barrier when the MMA finishes.
 
-One detail here pays off in Step 8: the `arrive` calls pass `cta_mask=0`, since in a single-CTA kernel there is no other CTA to signal. When Step 8 forms a cluster, that same argument turns nonzero to wake the cooperating CTAs — so it is worth noticing where it appears now while there is nothing else going on.
+One detail here pays off in Step 8: the `arrive` calls pass `cta_mask=0`, since in a single-CTA kernel there is no other CTA to signal. When Step 8 forms a cluster, that same argument turns nonzero to wake the cooperating CTAs.
 
 ### PipelineState
 
-A ring buffer needs two pieces of bookkeeping: which slot we are on, and which "phase" of that slot's barrier we are waiting for. Tracking both by hand across a pipelined loop is exactly the kind of off-by-one error that deadlocks a kernel, so `PipelineState` keeps them together:
+A ring buffer needs two pieces of bookkeeping: which slot we are on, and which "phase" of that slot's barrier we are waiting for. Tracking both by hand across a pipelined loop invites off-by-one errors that deadlock a kernel, so `PipelineState` keeps them together:
 
 ```python
 tma_ps = PipelineState(PIPE_DEPTH, phase=1)   # Producer starts ready (phase=1)
@@ -85,20 +85,20 @@ tma_ps = PipelineState(PIPE_DEPTH, phase=1)   # Producer starts ready (phase=1)
 tma_ps.advance()                          # Advance to next stage
 ```
 
-The one argument that trips people up is the initial `phase`, because it decides whether the very first `wait` lets a role run or makes it block — and the right answer is opposite for the two ends of the pipe:
+The initial `phase` decides whether the first `wait` lets a role run or makes it block, and the right answer is opposite for the two ends of the pipe:
 - `phase=1` (producer) -> the first `wait(phase=1)` sees barrier phase 0 != 1, so it **passes immediately**. That is what we want: the buffers start empty, so the producer should be free to write at once.
 
 - `phase=0` (consumer) -> the first `wait(phase=0)` sees barrier phase 0 == 0, so it **blocks**. Also what we want: there is no data yet, so the consumer should wait.
 
-Give both ends the same starting phase and you get a deadlock or silent corruption, so this is one line to get right deliberately rather than by trial.
+Give both ends the same starting phase and you get a deadlock or silent corruption.
 
 ### `warpgroup_sync` Barrier IDs
 
-Specialization creates a subtle synchronization trap. Once each warpgroup runs a different code path, the familiar `cta_sync()` becomes a deadlock waiting to happen: it uses hardware barrier #0 and demands that *every* CTA thread arrive, but a warpgroup branch only ever holds some of them. We need a barrier scoped to a single warpgroup instead. The GPU has 16 named barriers (ID 0–15), so the kernels use `warpgroup_sync(10)`, which synchronizes only the threads inside one warpgroup. When several warpgroups must each sync independently — as in the multi-consumer Step 9 — they take distinct IDs with `warpgroup_sync(wg_id + 10)` so they do not collide on the same hardware barrier.
+Specialization creates a synchronization trap. Once each warpgroup runs a different code path, `cta_sync()` deadlocks: it uses hardware barrier #0 and demands that *every* CTA thread arrive, but a warpgroup branch only ever holds some of them. We need a barrier scoped to a single warpgroup instead. The GPU has 16 named barriers (ID 0–15), so the kernels use `warpgroup_sync(10)`, which synchronizes only the threads inside one warpgroup. When several warpgroups must each sync independently — as in the multi-consumer Step 9 — they take distinct IDs with `warpgroup_sync(wg_id + 10)` so they do not collide on the same hardware barrier.
 
 **Implementation.**
 
-We set `PIPE_DEPTH=2` here for clarity — it is the smallest depth that still overlaps load and compute. Higher-performance variants push it deeper to hide more memory latency, bounded by the SMEM budget; the *When Step 7 misbehaves* discussion below works through that trade-off. With the pieces in hand — roles, barriers, `PipelineState`, and warpgroup-scoped sync — here is the full kernel:
+We set `PIPE_DEPTH=2` here — the smallest depth that still overlaps load and compute. Deeper variants hide more memory latency, bounded by the SMEM budget; the *When Step 7 misbehaves* discussion below works through that trade-off. With the pieces in hand — roles, barriers, `PipelineState`, and warpgroup-scoped sync — here is the full kernel:
 
 ```python
 import tvm
@@ -293,7 +293,7 @@ Step 7 can afford a simple epilogue: with only `BLK_N=128` columns, the writebac
 5. Write registers -> Dsmem, then `fence.proxy_async("shared::cta") + warpgroup_sync(10)` to flush.
 6. TMA store Dsmem -> GMEM via `cp_async.bulk.commit_group() + wait_group(0)`.
 
-Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) cannot keep this one-pass form, and the reason is register pressure. Reading 256 fp32 per thread means 256 × 4 = 1024 bytes live in each thread's registers at once, which risks spilling to local memory, and it also forces a larger Dsmem buffer. So those steps split the writeback into `EPI_N`-column chunks (`EPI_N=64`): each iteration keeps only `EPI_N` fp32 registers live and issues a correspondingly smaller TMA store.
+Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) cannot keep this one-pass form because of register pressure. Reading 256 fp32 per thread means 256 × 4 = 1024 bytes live in each thread's registers at once, which risks spilling to local memory, and it also forces a larger Dsmem buffer. So those steps split the writeback into `EPI_N`-column chunks (`EPI_N=64`): each iteration keeps only `EPI_N` fp32 registers live and issues a correspondingly smaller TMA store.
 
 **Implementation notes.**
 
@@ -305,19 +305,19 @@ Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) cannot keep
 
 ### When Step 7 misbehaves
 
-Concurrency is what makes Step 7 fast, and also what makes it the first GEMM kernel that is genuinely easy to break. With TMA, MMA, and writeback all running at once, a single misplaced barrier can deadlock the kernel, crash the CUDA context, or quietly corrupt the output. The same failure modes return in Steps 8 and 9, so rather than repeat them three times we collect the whole debugging playbook in *Debugging Warp-Specialized Kernels* at the end of this chapter; reach for it when something goes wrong.
+Concurrency makes Step 7 fast, and also makes it the first GEMM kernel that is easy to break. With TMA, MMA, and writeback all running at once, a single misplaced barrier can deadlock the kernel, crash the CUDA context, or corrupt the output. The same failure modes return in Steps 8 and 9, so rather than repeat them three times we collect the debugging playbook in *Debugging Warp-Specialized Kernels* at the end of this chapter; reach for it when something goes wrong.
 
 **Pipeline depth tuning.** The Step 7 kernel uses `PIPE_DEPTH=2` (the minimum). Increasing it to 4 or 6 can let the TMA producer get further ahead of the MMA consumer, hiding more memory latency, but it consumes more SMEM. B200 has 228 KB SMEM per SM (see *Numbers to Keep in Mind* in {ref}`chap_background`). With `BLK_M=BLK_N=128, BLK_K=64, fp16`, each pipeline stage uses `(128*64 + 128*64) * 2 = 32 KB` for A+B, and the `Dsmem` writeback staging buffer consumes another 32 KB. `PIPE_DEPTH=4` uses about 160 KB; `PIPE_DEPTH=6` uses about 224 KB, close to the SMEM budget. Going deeper requires changing the writeback staging strategy.
 
 ---
 
-Warp specialization made the threads of one CTA cooperate. The next step asks a bigger question: can two CTAs cooperate on a single larger tile?
+Warp specialization made the threads of one CTA cooperate. The next step makes two CTAs cooperate on a single larger tile.
 
 
 (chap_cta_cluster)=
 ## Step 8: 2-CTA Cluster
 
-Step 7 overlapped the engines but each CTA still computed its own 128×128 tile in isolation, reloading operands no neighbor could share. Step 8 changes that: two CTAs join into a cluster and reach into each other's shared memory, so a single cooperative `tcgen05` MMA produces one 256×256 tile across both. The payoff, as we will see, is that each B load now feeds twice the MMA work. M=N=K=4096.
+Step 7 overlapped the engines but each CTA still computed its own 128×128 tile in isolation, reloading operands no neighbor could share. Step 8 changes that: two CTAs join into a cluster and reach into each other's shared memory, so a single cooperative `tcgen05` MMA produces one 256×256 tile across both. Each B load now feeds twice the MMA work. M=N=K=4096.
 
 > **What this step changes — Scope + Layout + Dispatch**
 > - Scope: the cooperating scope now spans two CTAs in a cluster, not one.
@@ -337,7 +337,7 @@ Step 7 overlapped the engines but each CTA still computed its own 128×128 tile 
 
 ### Cluster Tile Shape
 
-The whole optimization rests on one hardware capability: with `cta_group=2`, the MMA can read operand tiles staged by *both* CTAs, not just its own. Each CTA loads one 128-row slice of stored B — which becomes 128 logical output columns after the transpose — and the cooperative MMA stitches the two slices into one operand:
+This optimization rests on one hardware capability: with `cta_group=2`, the MMA can read operand tiles staged by *both* CTAs, not just its own. Each CTA loads one 128-row slice of stored B — which becomes 128 logical output columns after the transpose — and the cooperative MMA stitches the two slices into one operand:
 
 ![2-CTA Cluster](../img/cta_cluster.png)
 
@@ -348,7 +348,7 @@ The whole optimization rests on one hardware capability: with `cta_group=2`, the
 - With `cta_group=2`, the MMA hardware reads B from **both** CTAs' SMEM via cross-CTA shared memory access, so it sees the full logical output-column span.
 - Result: the two CTAs cooperate on one 256x256 output tile. Each CTA writes a 128x256 row stripe of that tile.
 
-Now we can see why this is a win and not just a reshuffle. Each CTA still loads 128×K of A and 128×K of B, so the cluster stages only about 2× a single CTA's operands — yet it produces a 256×256 tile, about 4× the output FLOPs of a 128×128 tile. The MMA therefore does roughly twice the work per staged-operand byte, because each CTA's B slice gets reused by the other CTA's A slice through the cooperative MMA. Arithmetic intensity roughly doubles, and that is exactly the lever that helps a still memory-leaning kernel: the ~1.8× speedup in the End-to-End table comes from feeding the same bytes to more math.
+This is a win, not just a reshuffle. Each CTA still loads 128×K of A and 128×K of B, so the cluster stages only about 2× a single CTA's operands — yet it produces a 256×256 tile, about 4× the output FLOPs of a 128×128 tile. The MMA therefore does roughly twice the work per staged-operand byte, because each CTA's B slice gets reused by the other CTA's A slice through the cooperative MMA. Arithmetic intensity roughly doubles, which is what helps a still memory-leaning kernel: the ~1.8× speedup in the End-to-End table comes from feeding the same bytes to more math.
 
 ### Tile Address Calculation
 
@@ -361,11 +361,11 @@ n_st = (n_idx * CTA_GROUP + cbx) * BLK_N
 
 The two CTAs work on the *same* 256×256 cluster tile, and the single coordinate `cbx` (the CTA's position in the cluster, 0 or 1) picks this CTA's contribution along both axes. `m_st` selects the output row stripe this CTA owns; `n_st` selects the stored-B slice it feeds into the cooperative MMA; the writeback later emits both 128-column halves of the 256-column output span. Note that `num_m_tiles = M // 256` and `num_n_tiles = N // 256` count cluster tiles, not individual CTA tiles.
 
-It looks suspicious that `cbx` shows up in both `m_st` and `n_st` — as if a row offset had leaked into the column — so it is worth pinning down why that is correct. On the writeback path `cbx` belongs to the M axis alone: each CTA owns a distinct 128-row stripe (`m_st = (m_idx * CTA_GROUP + cbx) * BLK_M`, so CTA-0 writes rows `m_idx*256 .. +128` and CTA-1 the next 128), yet both CTAs write the *full* 256 output columns of the cluster tile. That is precisely why the store derives its column from the cluster's `n_idx` — `n_st_epi = n_idx * 256 + no * 128`, independent of `cbx` — rather than from the per-CTA `n_st`. `n_st` carries `cbx` only because each CTA loads a different stored-B row slice into the MMA: it is a *load* offset, not the CTA's output-column offset.
+`cbx` shows up in both `m_st` and `n_st`, as if a row offset had leaked into the column, but both uses are correct. On the writeback path `cbx` belongs to the M axis alone: each CTA owns a distinct 128-row stripe (`m_st = (m_idx * CTA_GROUP + cbx) * BLK_M`, so CTA-0 writes rows `m_idx*256 .. +128` and CTA-1 the next 128), yet both CTAs write the *full* 256 output columns of the cluster tile. That is precisely why the store derives its column from the cluster's `n_idx` — `n_st_epi = n_idx * 256 + no * 128`, independent of `cbx` — rather than from the per-CTA `n_st`. `n_st` carries `cbx` only because each CTA loads a different stored-B row slice into the MMA: it is a *load* offset, not the CTA's output-column offset.
 
 ### Code Changes from Step 7
 
-Despite the conceptual jump, the diff against Step 7 is small — six edits — and each one encodes one piece of the cluster contract we just described:
+Despite the conceptual jump, the diff against Step 7 is six edits, each encoding one piece of the cluster contract described above:
 
 ```python
 # 1. Cluster launch
@@ -398,11 +398,11 @@ T.cuda.cluster_sync()
 
 - **Cluster CTA ID**: `cbx` tells each CTA its position in the cluster (0 or 1). CTA-0 handles A rows 0-127, CTA-1 handles rows 128-255.
 
-- **Remote barrier view**: In a cluster each CTA has its own SMEM and its own barriers, which raises an obvious problem — if CTA-1 must wait on something CTA-0 produces, whose barrier does it touch? The answer is to designate CTA-0's barriers as the single coordination point and let any CTA reach them. `map_shared_rank(tma2mma.ptr_to([0]), 0)` returns a cluster-wide pointer to CTA-0's barrier; the TIRx wrapper is `tma2mma.remote_view(0)`. Every arrive and wait targets CTA-0's copy.
+- **Remote barrier view**: In a cluster each CTA has its own SMEM and its own barriers. If CTA-1 must wait on something CTA-0 produces, whose barrier does it touch? Designate CTA-0's barriers as the single coordination point and let any CTA reach them. `map_shared_rank(tma2mma.ptr_to([0]), 0)` returns a cluster-wide pointer to CTA-0's barrier; the TIRx wrapper is `tma2mma.remote_view(0)`. Every arrive and wait targets CTA-0's copy.
 
-- **MMA dispatch from CTA-0 only**: It is tempting to picture two engines firing in parallel, but that is not what `cta_group=2` does. CTA-0 issues exactly one `tcgen05.mma`, and the hardware drives a *single cooperative* MMA spanning both CTAs — reading operands from both SMs' SMEM and writing the accumulator across both SMs' TMEM. CTA-1 issues no MMA at all. (Each SM has only one `tcgen05` engine; `cta_group=2` is one cross-SM MMA, not two engines in parallel.) That is why the code guards the MMA with `if cbx == 0:`.
+- **MMA dispatch from CTA-0 only**: `cta_group=2` does not fire two engines in parallel. CTA-0 issues exactly one `tcgen05.mma`, and the hardware drives a *single cooperative* MMA spanning both CTAs — reading operands from both SMs' SMEM and writing the accumulator across both SMs' TMEM. CTA-1 issues no MMA at all. (Each SM has only one `tcgen05` engine; `cta_group=2` is one cross-SM MMA, not two engines in parallel.) That is why the code guards the MMA with `if cbx == 0:`.
 
-- **Multicast arrive**: Similarly, `tcgen05.commit(..., cta_group=2, cta_mask=3)` is issued only by CTA-0 but signals both CTAs' barriers. `cta_mask=3` (binary `11`) means both CTA-0 and CTA-1 are targeted.
+- **Multicast arrive**: `tcgen05.commit(..., cta_group=2, cta_mask=3)` is issued only by CTA-0 but signals both CTAs' barriers. `cta_mask=3` (binary `11`) means both CTA-0 and CTA-1 are targeted.
 
 - **ld2mma init count**: `init(128 * CTA_GROUP)` --- both CTAs' writeback warpgroups (128 threads each) arrive.
 
@@ -594,19 +594,19 @@ def hgemm_v8(M, N, K):
 
 - `cluster_sync()` replaces `cta_sync()` at the end (ensures all CTAs are done before TMEM dealloc)
 
-The extra arithmetic intensity shows up directly in the wall clock: Step 8 reaches **0.13 ms** at 4096³, about 538× over the 70 ms Step-1 algorithm at the same size (see the End-to-End table). The kernel is now leaning toward compute-bound, which is what sets up Step 9 — adding a second MMA consumer to keep still more Tensor Core work in flight.
+The extra arithmetic intensity shows up in the wall clock: Step 8 reaches **0.13 ms** at 4096³, about 538× over the 70 ms Step-1 algorithm at the same size (see the End-to-End table). The kernel is now leaning toward compute-bound, which sets up Step 9 — adding a second MMA consumer to keep more Tensor Core work in flight.
 
 If Step 8 turns out *slower* than Step 7, it is almost always one of the new cluster contracts entered wrong. Check three things: (1) the TMA arrive byte count is `CTA_GROUP * (BLK_M*BLK_K + BLK_N*BLK_K) * F16_SIZE`; (2) the scheduler dimensions are `num_m_tiles=M//256, num_n_tiles=N//256` for the 256×256 cluster tile; (3) writeback issues two TMA stores, one per 128-column chunk, and each drains before Dsmem is reused.
 
 ---
 
-Clusters raised reuse *across* CTAs. The last step raises compute density *within* each CTA, by giving the producer a second MMA consumer to feed.
+Clusters raised reuse *across* CTAs. The last step raises compute density *within* each CTA by giving the producer a second MMA consumer to feed.
 
 
 (chap_multi_consumer)=
 ## Step 9: Multi-Consumer Warp Specialization
 
-By Step 8 the MMA is busy, but one consumer warp can only chew through a staged B tile so fast — and that B tile sits in SMEM the whole time, available to anyone. The final optimization exploits exactly that: a second MMA consumer multiplies a *different* A block against the *same* B tile, doubling the compute density per CTA and growing the cluster output from 256×256 to 512×256. M=N=K=4096.
+By Step 8 the MMA is busy, but one consumer warp can only work through a staged B tile so fast, and that B tile sits in SMEM the whole time, available to anyone. The final optimization adds a second MMA consumer that multiplies a *different* A block against the *same* B tile, doubling the compute density per CTA and growing the cluster output from 256×256 to 512×256. M=N=K=4096.
 
 > **What this step changes — Scope + Layout**
 > - Scope: one MMA consumer becomes two, selected by `warp_id`.
@@ -634,7 +634,7 @@ With `NUM_CONSUMER=2` and `WG_NUMBER=3`, there are three warpgroups (abbreviated
 | **WG 0** | all | Writeback for consumer 0: reads TMEM `[0:256]` |
 | **WG 1** | all | Writeback for consumer 1: reads TMEM `[256:512]` |
 
-The arrangement turns on one asymmetry. Each consumer multiplies its own A block against the *same* staged B tile, so one B load feeds 2× the MMA work and B's load cost per useful FLOP is halved. We share B and not A because the two consumers cover different M-row stripes — their A blocks are genuinely different data, while B is identical for both. Exercise 3 asks you to confirm this is the only sharing that works.
+The arrangement turns on one asymmetry. Each consumer multiplies its own A block against the *same* staged B tile, so one B load feeds 2× the MMA work and B's load cost per useful FLOP is halved. We share B and not A because the two consumers cover different M-row stripes — their A blocks are different data, while B is identical for both. Exercise 3 asks you to confirm this is the only sharing that works.
 
 ### Changes from Step 8
 
@@ -853,11 +853,11 @@ def hgemm_v9(M, N, K):
 (chap_warp_spec_debug)=
 ## Debugging Warp-Specialized Kernels
 
-Steps 7, 8, and 9 fail in the same handful of ways, for the same reason: TMA, MMA, and writeback run concurrently, so one wrong barrier can deadlock the kernel, crash the CUDA context, or corrupt the output. The good news is that the failures are stereotyped — once you can recognize the *shape* of a bug, the fix is usually a one-liner. Keep this checklist close; these bugs repeat.
+Steps 7, 8, and 9 fail in the same handful of ways, for the same reason: TMA, MMA, and writeback run concurrently, so one wrong barrier can deadlock the kernel, crash the CUDA context, or corrupt the output. The failures are stereotyped — once you can recognize the *shape* of a bug, the fix is usually a one-liner. Keep this checklist close; these bugs repeat.
 
 ### Inspecting Generated Code
 
-When a warp-specialized kernel misbehaves, the first thing to look at is what the compiler actually emitted — the role guards and barrier inits either landed where you expect or they didn't. For any compiled kernel:
+When a warp-specialized kernel misbehaves, look first at what the compiler emitted — whether the role guards and barrier inits landed where you expect. For any compiled kernel:
 
 ```python
 cuda_source = ex.mod.imports[0].inspect_source("cuda")
@@ -913,7 +913,7 @@ Things to verify in your generated code:
 
 ### Symptom Map
 
-Before reaching for any tool, let the failure tell you which class it belongs to — the symptom narrows the search to one section below:
+The symptom narrows the search to one section below before you reach for any tool:
 
 | Symptom | Failure class | Where to look |
 |---|---|---|
@@ -984,7 +984,7 @@ All times in this table — including the 70 ms Step 1 baseline — are measured
 
 Treat these as one B200 reference run under controlled conditions, not a leaderboard entry. The `{.python .input}` benchmark cells embedded in each step are smoke benchmarks meant for checking trends, not for claiming peak performance.
 
-Stepping back from the table, four techniques account for almost all of the gain:
+Four techniques account for almost all of the gain:
 
 1. **TMA Async Data Movement** — hardware copy engine replaces software copy (~140× from Step 1 → Step 4).
 2. **Software Pipelining + Warp Specialization** — overlap load and compute with dedicated roles (~2.2× from Step 4 → Step 7).
@@ -995,7 +995,7 @@ Stepping back from the table, four techniques account for almost all of the gain
 
 In this benchmark the path moves from 70 ms to 0.12 ms, close to the cuBLAS reference above.
 
-It is worth reading *why* the gains shrink down the list, because the shape is the whole story. The early steps attack *memory* bottlenecks — TMA replaces software copies, clusters raise arithmetic intensity — and that is where most of the 70 ms lived, so they pay off enormously. By Step 8 the kernel is already within ~18% of cuBLAS (0.13 vs 0.11 ms), close to *compute-bound*, which means there is little memory stall left to hide; Step 9's multi-consumer overlap recovers most of what remains. A single-digit final gain is exactly what you should expect near the compute ceiling — it is the diminishing returns of a problem nearly solved, not a weak optimization.
+The gains shrink down the list for a structural reason. The early steps attack *memory* bottlenecks — TMA replaces software copies, clusters raise arithmetic intensity — and that is where most of the 70 ms lived, so they pay off the most. By Step 8 the kernel is already within ~18% of cuBLAS (0.13 vs 0.11 ms), close to *compute-bound*, so there is little memory stall left to hide; Step 9's multi-consumer overlap recovers most of what remains. A single-digit final gain is what to expect near the compute ceiling, the diminishing returns of a problem nearly solved rather than a weak optimization.
 
 Everything we built here — TMA loads, `tcgen05` MMA, TMEM readback, and warp-specialized barriers — carries straight into the next chapter. Flash Attention reuses all of it, but raises the difficulty by wedging an online-softmax step between two MMA phases instead of repeating a single one.
 
