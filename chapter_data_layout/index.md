@@ -113,10 +113,14 @@ the tensor-core register fragment you will meet in {ref}`chap_layout_generations
 
 ## Distributed layout
 
-If a tag can name a lane or a register, nothing stops it from naming a whole GPU. The same idea
-therefore extends across devices: axes like `@gpuid_x` / `@gpuid_y` place data on a GPU mesh. One
-genuinely new thing appears at this scale, though — data that is *copied* rather than partitioned —
-and we express it with a **replication** dimension `R[n : stride]` (stride 0 = broadcast):
+Named axes are useful because they let us describe placement in a uniform way across many levels
+of the system. Earlier, we used them for lanes and registers within a single GPU. The same idea
+also extends across devices: axes such as `@gpuid_x` and `@gpuid_y` can describe where data lives
+in a GPU mesh. In this way, the notation can represent sharding patterns that appear in
+distributed training and inference. To represent data replication, we introduce the notation
+`R[n : stride]`, where `R` indicates replication. For example, `R[2 : 1@gpuid_x]` describes
+replication along the `@gpuid_x` axis. The following interactive demo shows different ways to
+express sharding and replication on a 2×2 GPU mesh:
 
 ```text
 S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
