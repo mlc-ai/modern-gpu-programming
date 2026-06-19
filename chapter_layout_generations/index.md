@@ -4,13 +4,14 @@
 :::{admonition} Overview
 :class: overview
 
-- Across Ampere → Hopper → Blackwell the MMA math is unchanged; what changes is how operands must be laid out to reach the Tensor Core.
+- Across Ampere → Hopper → Blackwell the MMA stays the same operation in form (`D = AB + C`); what changes is the shapes, dtypes, and accumulator it supports and how operands must be laid out to reach the Tensor Core.
 - Ampere uses a per-lane register fragment, Hopper a SMEM matrix descriptor with swizzle formats, Blackwell SMEM operands plus a TMEM accumulator.
 - Two constraints hold every generation: global-memory coalescing and shared-memory bank conflicts.
 :::
 
-What changed from **Ampere** to **Hopper** to **Blackwell** is not the math the tensor core does — it
-is *how operands reach the tensor core*. Each generation's memory and compute engines demand a
+What changed from **Ampere** to **Hopper** to **Blackwell** is not the basic operation the tensor
+core performs (still `D = AB + C`) — it is *how operands reach the tensor core*, plus the shapes,
+dtypes, and accumulator each generation supports. Each generation's memory and compute engines demand a
 *specific* operand layout, and getting it wrong is silently slow, or silently wrong. This chapter
 traces that one moving part across the three generations, building on the layout notation from
 {ref}`chap_data_layout` (`S[...]`, named axes, swizzle). The Blackwell TMEM specifics are in
@@ -38,7 +39,7 @@ Ampere follows from this constraint, because the data has to be shuffled into an
 around the instruction:
 
 ```text
-SMEM --ldmatrix--> registers --mma.sync--> registers --stmatrix--> SMEM
+SMEM --ldmatrix--> registers --mma.sync--> registers --st.shared--> SMEM
 ```
 
 ### What the Tensor Core expects: an m8n8 register fragment
@@ -62,7 +63,7 @@ and four consecutive lanes cover one row.
 
 ### `ldmatrix`: SMEM → the fragment
 
-![ldmatrix loads an 8x8 SMEM tile into the warp register fragment; stmatrix is the reverse](../img/ldstmatrix.svg)
+![ldmatrix loads an 8x8 SMEM tile into the warp register fragment; stmatrix, the reverse, is a Hopper (sm_90+) instruction](../img/ldstmatrix.svg)
 
 `ldmatrix` gets the tile from SMEM into that fragment.
 `ldmatrix.sync.aligned.m8n8.x{1,2,4}[.trans].shared.b16` loads one, two, or four 8×8 16-bit matrices
@@ -79,13 +80,14 @@ from SMEM into the fragment in a single warp-collective instruction. Three detai
 A plain per-lane `ld.shared` loop cannot cheaply produce the MMA's scattered fragment, but a single
 `ldmatrix` performs the whole SMEM→register shuffle the tensor core demands.
 
-### `stmatrix`: the fragment → SMEM
+### Writing the fragment back
 
-`stmatrix` is the reverse — register→SMEM, with the same lane/address mapping. After the MMA, the
-accumulator is scattered across lanes in the C/D layout above, and `stmatrix` gathers it back into a
-SMEM tile, from which a coalesced `st.global` (or, later, a TMA store) can reach GMEM. The Ampere
-data path is this same shuffle running in both directions: the register fragment is fixed by
-hardware, and ldmatrix / stmatrix are the two bridges between it and SMEM.
+After the MMA the accumulator is scattered across lanes in the C/D layout above. On Ampere it is
+written back with ordinary per-thread `st.shared` stores (a warp shuffle can regather it first) into
+a SMEM tile, from which a coalesced `st.global` reaches GMEM. The dedicated reverse of `ldmatrix` —
+`stmatrix` — does not exist on Ampere (`sm_80`); it arrives with Hopper (`sm_90+`), where it gathers
+the register fragment straight back into SMEM. So on Ampere the register fragment is fixed by
+hardware, `ldmatrix` bridges SMEM into it, and plain stores bridge it back out.
 
 ### Swizzle: the same conflict, already on Ampere
 
@@ -108,10 +110,12 @@ index math.
 ### What the Tensor Core expects: a SMEM matrix descriptor
 
 The Ampere data path spends instructions shuffling operands through registers; Hopper (`sm_90`)
-removes that cost on the *input* side: `wgmma` reads its A and B operands **directly from SMEM**,
-with no `ldmatrix` in between. The Tensor Core does not read arbitrary SMEM, though. It reads through
-a 64-bit **matrix descriptor** that fixes the one format the operand may be stored in. The descriptor
-turns an index `(m, k)` into a SMEM address, and it has four parts:
+removes that cost on the *input* side: `wgmma` reads its operands **straight from SMEM** with no
+`ldmatrix` in between — the **B** operand always from a SMEM matrix descriptor, the **A** operand from
+either a SMEM descriptor or a register fragment (the `.ss` and `.rs` instruction forms). For a
+SMEM-sourced operand the Tensor Core does not read arbitrary SMEM: it reads through a 64-bit **matrix
+descriptor** that fixes the one format the operand may be stored in. The descriptor turns an index
+`(m, k)` into a SMEM address, and it has five fields:
 
 | Field | Meaning |
 |---|---|
@@ -119,8 +123,9 @@ turns an index `(m, k)` into a SMEM address, and it has four parts:
 | **swizzle** | the swizzle format — sets the **atom shape** (8 × 128/64/32/16 B) and the XOR pattern inside it |
 | **ldo** — leading byte offset | stride to the next atom along the **major** dim |
 | **sdo** — stride byte offset | stride to the next atom along the **other** dim |
+| **matrix base offset** | small offset (often 0) applied before swizzling, to align the tile's start within a swizzle atom |
 
-With those four fields in hand, A(M×K) is laid out as a 2-D grid of **atoms**, and each field plays a
+With these fields in hand, A(M×K) is laid out as a 2-D grid of **atoms**, and each field plays a
 distinct role in resolving `(m, k)`. The swizzle format sets each atom's shape — 8 × 128 B for
 `SWIZZLE_128B` (8 × 64 / 32 / 16 B for the smaller modes) — and how its bytes are XOR-permuted inside
 (the Ampere section's swizzle), which is what keeps the `wgmma` read bank-conflict-free. **ldo** and
@@ -130,7 +135,7 @@ K-major tile (A stored K-contiguous) that puts `ldo` along K and `sdo` down M; a
 them. To resolve `A[m, k]`, the hardware combines the two strides to find the right atom and then the
 swizzle to find the byte inside it:
 
-![A SMEM matrix descriptor (start_address, ldo, sdo, swizzle) tiles A(M×K) into 8×N B swizzle atoms, with ldo/sdo the strides between atoms](../img/smem_descriptor.svg)
+![A SMEM matrix descriptor (start_address, ldo, sdo, swizzle, base offset) tiles A(M×K) into 8×N B swizzle atoms, with ldo/sdo the strides between atoms](../img/smem_descriptor.svg)
 
 This relocates the kernel's job rather than removing it. The kernel must write A into SMEM in exactly
 this atom-tiled, swizzled format — the TMA load does that — and hand `wgmma` a descriptor whose `ldo`
@@ -144,9 +149,10 @@ The element arrangement inside one atom for each format (`SWIZZLE_128B` = 8 × 1
 `SWIZZLE_32B`) is the swizzle-atom demo in {ref}`chap_data_layout`.
 
 The **output** side has not moved. `wgmma`'s accumulator `D` is still a per-thread **register**
-fragment in the same m8n8 layout as Ampere (above). A Hopper GEMM reads its operands the new way but
-writes its accumulator and runs its epilogue as before. Moving the accumulator out of registers waits
-for Blackwell's TMEM.
+fragment, built from the same 8×8 sub-tiles as Ampere — though its register count and exact lane
+mapping scale with the instruction's **N** (an `m64nNk16` wgmma), so it is not a single fixed m8n8
+tile. A Hopper GEMM reads its operands the new way but keeps the accumulator in registers and runs a
+register epilogue, as on Ampere. Moving the accumulator out of registers waits for Blackwell's TMEM.
 
 ## Blackwell — `tcgen05` and TMEM
 
@@ -194,7 +200,7 @@ descriptors, instead of being open-coded with shuffle instructions:
 
 | Generation | Operands read from | Layout described by |
 |---|---|---|
-| Ampere (`sm_80`) | registers | `ldmatrix`/`stmatrix` + hand-staged (swizzled) SMEM |
+| Ampere (`sm_80`) | registers | `ldmatrix` + hand-staged (swizzled) SMEM stores |
 | Hopper (`sm_90`) | SMEM | `wgmma` matrix descriptor + TMA box & swizzle |
 | Blackwell (`sm_100`) | SMEM / TMEM | `tcgen05` matrix descriptor + TMEM accumulator & scale-factor layouts |
 

@@ -214,7 +214,7 @@ For example, a good explanation of a GEMM writeback should look like:
 
 This is a better question than "explain this code" because it forces the answer to use the tutorial's mental model. If the agent cannot identify the scope, layout, dispatch, or handoff, that is a sign the explanation is incomplete.
 
-For a line like `Tx.copy_async(Dreg_wg, tmem)`, a weak explanation is "this copies data." A useful explanation says: this runs under warpgroup scope, reads a TMEM accumulator tile, writes a warpgroup-distributed register view, lowers to a `tcgen05.ld`-style readback, and needs `wait.ld()` before the registers are consumed.
+For a line like `Tx.copy_async(Dreg_wg, tmem)`, a weak explanation is "this copies data." A useful explanation says: this runs under warpgroup scope, reads a TMEM accumulator tile, writes a warpgroup-distributed register view, lowers to four warp-collective `tcgen05.ld` instructions (each warp moves its own 32 TMEM lanes, covering all 128 lanes), and needs `wait.ld()` before the registers are consumed.
 
 ## Use Case 2: Review a Kernel Change
 

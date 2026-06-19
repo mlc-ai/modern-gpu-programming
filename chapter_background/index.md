@@ -47,13 +47,15 @@ a cluster synchronize across SMs. On Blackwell the levels are these:
   warpgroup-level MMA (`wgmma`), it is also the cooperation unit for Blackwell Tensor Memory
   access, where the 128 threads cooperatively move a TMEM tile to or from registers.
 - **CTA** (*Cooperative Thread Array*, a.k.a. a CUDA thread block) — the basic scheduling unit.
-  A CTA runs on a single SM and owns that SM's shared memory.
+  A CTA runs on a single SM and owns a private shared-memory allocation within it; multiple
+  resident CTAs share the SM's shared-memory capacity.
 - **Cluster** — a group of cooperating CTAs (across SMs) that can synchronize and access each
   other's shared memory (distributed shared memory).
 
 These levels matter because Blackwell operations are **not all issued by the same group of
 threads**. A TMA copy is issued by one thread and
-finished by hardware; a TMEM→register load is warpgroup-cooperative; a `tcgen05` MMA is committed
+finished by hardware; a TMEM→register load is warpgroup-distributed (four warp-collective
+`tcgen05.ld` instructions, one per warp's 32 TMEM lanes); a `tcgen05` MMA is committed
 by one elected thread; a clustered MMA spans two CTAs. Each operation, in other words, has a
 natural granularity, and which threads run it is the operation's **scope** — the first of the
 book's three recurring knobs (scope, layout, dispatch).
@@ -82,7 +84,7 @@ through them, each with its own capacity, latency, and access rules:
 |--------|-----------|------|-------|
 | **Global (GMEM)** | Device-wide | Persistent tensor storage | Large HBM, shared by all SMs |
 | **Shared (SMEM)** | Per-CTA (one SM) | Tile staging | Low-latency scratchpad; up to 228 KB/SM on B200 |
-| **Tensor Memory (TMEM)** | Per-SM | MMA accumulator storage | New on Blackwell; used by `tcgen05` |
+| **Tensor Memory (TMEM)** | Per-CTA | MMA accumulator storage | New on Blackwell; used by `tcgen05` |
 | **Register File (RF)** | Per-thread | Scalars and per-thread tile fragments | Fast; holds epilogue/temp values |
 
 These spaces form a path. The data path of almost every kernel in this book is **GMEM → SMEM →
@@ -93,9 +95,11 @@ kernels.
 
 **Tensor Memory (TMEM)** is the one memory here without a pre-Blackwell analog; its details are in
 {ref}`chap_tensor_cores`. Earlier GPUs kept large MMA accumulators in registers; Blackwell instead
-writes `tcgen05` accumulator output to TMEM, a per-SM 2D scratchpad (128 rows × up to 512 32-bit
-columns), and the kernel then explicitly reads TMEM into registers for the epilogue. That extra step is not free, and two consequences of it
-show up everywhere later: TMEM reads are **explicit and warpgroup-cooperative**, and TMEM must be
+writes `tcgen05` accumulator output to TMEM, a CTA-scoped 2D scratchpad — 128 lanes × up to 512
+32-bit columns per CTA (the array physically lives on the SM) — and the kernel then explicitly reads
+TMEM into registers for the epilogue. That extra step is not free, and two consequences of it
+show up everywhere later: TMEM reads are **explicit and warpgroup-distributed** (four warp-collective
+`tcgen05.ld` instructions, one per warp's 32 TMEM lanes), and TMEM must be
 **explicitly allocated and freed**.
 
 ## CTA Clusters
@@ -135,7 +139,9 @@ With the thread hierarchy, the engines, and the memory spaces in place, we can t
 together on a GEMM. A GEMM tile flows across the hardware in three stages:
 
 1. **Load.** A TMA copy ({ref}`chap_tma`) streams an A/B operand tile from GMEM into SMEM. One
-   thread issues it; the TMA engine does the transfer and signals an mbarrier when the bytes land.
+   thread issues it after `mbarrier.arrive.expect_tx(bytes)` records the expected byte (tx) count;
+   the TMA engine issues `complete-tx` as bytes land, and the barrier's phase flips only once both
+   the arrival count and the tx-count are satisfied.
 2. **Compute.** A `tcgen05` MMA ({ref}`chap_tensor_cores`) reads the SMEM operands and
    accumulates into a TMEM tile. It is issued by one elected thread and signals a barrier when done.
 3. **Epilogue.** The warpgroup reads the TMEM accumulator into registers, casts it to the output

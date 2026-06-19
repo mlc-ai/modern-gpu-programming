@@ -34,9 +34,14 @@ three operations a kernel performs on it:
 
 1. **Init** — set the expected number of arrivals; the barrier starts at phase 0.
 2. **Arrive** — each arrival decrements the counter. There are three ways to arrive:
-   - **TMA auto-arrive** — the hardware arrives once the expected byte count has landed (this is
-     the `arrive.expect_tx` mechanism from {ref}`chap_tma`).
-   - **`tcgen05` auto-arrive** — the hardware arrives once committed MMAs complete.
+   - **TMA tx-count arrival** — `mbarrier.arrive.expect_tx(bytes)` records the expected byte (tx)
+     count (and counts as the issuing thread's arrival); the TMA engine then issues `complete-tx`
+     as bytes land, and the barrier's phase flips only once BOTH the pending arrival count and the
+     tx (byte) count are satisfied. It is not a second ordinary "arrival"
+     (see {ref}`chap_tma`).
+   - **`tcgen05` commit arrival** — the arrival requires an explicit
+     `tcgen05.commit.mbarrier::arrive`; the commit group's completion drives the barrier arrival.
+     It is not automatic without the commit.
    - **Thread arrive** — a thread arrives explicitly, e.g. to signal that a shared buffer is free
      to reuse.
 3. **Wait** — a consumer blocks until the barrier reaches the expected phase for this iteration,
@@ -83,8 +88,8 @@ such handoffs:
 - **MMA → epilogue.** If `tcgen05.mma` writes TMEM, the epilogue must wait for the MMA's completion
   barrier before reading the result.
 
-The **TMA → MMA** handoff in motion — the TMA engine arrives on the barrier when its bytes land,
-and the consumer's `try_wait` releases:
+The **TMA → MMA** handoff in motion — the TMA engine satisfies the barrier's tx (byte) count via
+`complete-tx` as its bytes land, and the consumer's `try_wait` releases:
 
 ```{raw} html
 <div style="overflow-x:auto;">

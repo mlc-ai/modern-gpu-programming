@@ -337,9 +337,10 @@ The atom is::
     TileLayout(S[(32, sf_per_mma):(1@TLane, 1@TCol)] + R[4:32@TLane])
 
 — 32 rows on ``TLane`` and ``sf_per_mma`` scale factors on ``TCol``, with the
-replica ``R[4:32@TLane]`` routing that 32-row group across the **four warps** of a
-warpgroup (stride 32 covers lanes 0–127) — the "warpx4" router, so one physical
-scale-factor group feeds all four warps. The atom is then direct-summed with an
+replica ``R[4:32@TLane]`` replicating that 32-row group along the TMEM ``TLane``
+axis (32 → 128 TMEM lanes, stride 32 covering ``TLane`` 0–127) — the "warpx4"
+router, so each of the four warps' 32-lane TMEM window sees the same scale-factor
+group; the actual reads are then done by those warps' threads. The atom is then direct-summed with an
 outer over ``(M rows, K scale-factor groups)``, packing ``epc = 32 / SF_bits``
 scale factors into each 32-bit ``TCol`` cell (e.g. four fp8 ``e8m0`` SFs per cell);
 optional stride-0 ``reuse`` and outer ``pipe_depth`` iters express SF reuse across
@@ -373,7 +374,10 @@ return a ready ``TileLayout``:
   row→lane) or ``"F"`` (M=64, warp-scattered).
 - ``tcgen05_atom_layout(instr_shape, tensor_shape, dtype)`` — the per-warpgroup
   register tile a ``tcgen05.ld`` / ``tcgen05.st`` atom (``.32x32b``, ``.16x64b``,
-  …) moves to and from registers.
+  …) moves to and from registers. The tile is warpgroup-distributed at the DSL
+  level but lowered to four warp-collective ``tcgen05.ld`` / ``tcgen05.st``
+  instructions — each PTX instruction is issued by one warp, which moves its own
+  32 TMEM lanes.
 - ``wg_local_layout(cols, rows=128)`` — a warpgroup-local register tile, one row
   per thread on ``tid_in_wg``.
 
@@ -408,7 +412,7 @@ that conflict *structural*, not accidental. Take the ``(8, 64)`` ``float16`` til
 ``S[(8,64):(64@m,1@m)]`` — element ``(i, j)`` at address ``m = 64i + j``. One row
 is ``64 × 2 = 128`` bytes = exactly one bank line, so walking *down a column*
 (fixed ``j``, increasing ``i``) jumps a whole bank line each step and lands on the
-**same bank** every time — a 32-way column conflict. The transform below scatters
+**same bank** every time — an 8-way column conflict (8 rows → one bank). The transform below scatters
 those accesses across banks; we close the loop on this exact tile in the worked
 example.
 
@@ -485,8 +489,10 @@ distinct banks, no conflict**. Without the swizzle the same column is
 
 The 128B/``float16`` case above is one instance — with swizzle, a
 read of any **8×16B column is conflict-free, under any format** (32B / 64B / 128B).
-The ``B`` parameter is chosen per swizzle width precisely so the eight 16-byte rows
-of a column always scatter across distinct banks.
+This holds when the element width, swizzle mode, and access pattern match the
+swizzle (the TMA/MMA descriptor mode the parameters were chosen for), not for an
+arbitrary access. The ``B`` parameter is chosen per swizzle width precisely so the
+eight 16-byte rows of a column always scatter across distinct banks.
 
 In the interactive demo, pick a dtype and a swizzle mode (``none`` / ``32B`` /
 ``64B`` / ``128B``) in the *Swizzle (SMEM)* control. The physical panel switches

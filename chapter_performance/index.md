@@ -31,8 +31,9 @@ the ACM*, 2009) — bounds attainable performance by the slower of the two:
 
 $$\text{attainable FLOP/s} = \min\big(\underbrace{\text{peak FLOP/s}}_{\text{compute roof}},\ \underbrace{\text{bandwidth} \times \text{AI}}_{\text{memory roof}}\big)$$
 
-where **arithmetic intensity (AI)** is the ratio of useful floating-point work to bytes moved
-from memory:
+where **arithmetic intensity (AI)** is the ratio of useful floating-point work to bytes moved at
+the memory level whose bandwidth sets the roof (HBM bytes for the HBM roofline; an L2 or SMEM
+roofline counts traffic at that level instead):
 
 $$\text{AI} = \frac{\text{FLOPs}}{\text{bytes moved}} \quad [\text{FLOP/byte}]$$
 
@@ -44,8 +45,8 @@ Plotting attainable performance against arithmetic intensity gives two ceilings 
 The ridge point splits all kernels into two regimes. For the B200 it sits at roughly
 `2000 / 8 ≈ 250` FLOP/byte. A kernel whose arithmetic intensity is **below** the ridge can never
 reach peak compute no matter how good the code is — it is *memory-bound*, and the only lever is
-moving fewer bytes (or moving them faster). A kernel **above** the ridge is *compute-bound* — the
-bytes are essentially free, and the job is to keep the tensor cores busy. Knowing which side a
+moving fewer bytes (or moving them faster). A kernel **above** the ridge is *compute-bound* — moving the
+bytes is no longer the bottleneck (not literally free), and the job is to keep the tensor cores busy. Knowing which side a
 kernel falls on tells you, before you write a line of code, which resource you are fighting.
 
 ## Arithmetic Intensity of Real Workloads
@@ -55,7 +56,7 @@ can often read it off the math before implementing anything. Here is where the w
 book fall:
 
 - **Elementwise and reductions** (GELU, RMSNorm) read and write large tensors but do only a few FLOPs per element. Their
-  arithmetic intensity is well below 1 — deep in the memory-bound region. The best such a kernel can do is
+  arithmetic intensity is far below the ridge point — deep in the memory-bound region. The best such a kernel can do is
   saturate HBM bandwidth, so the design goals are coalesced/TMA loads and fusion (do more math
   per byte loaded).
 
@@ -63,7 +64,9 @@ book fall:
 
   $$\text{AI} = \frac{2N^3}{(3N^2)\cdot 2\,\text{bytes}} = \frac{N}{3}\ \text{FLOP/byte}.$$
 
-  At `N = 4096` that is ≈ 1365 FLOP/byte — far to the right of the ridge. **GEMM at scale is
+  This is an *ideal* upper bound — it assumes A and B are read once, C is written once (β = 0),
+  on-chip reuse is perfect, and there is no metadata or padding traffic; a real kernel moves
+  somewhat more. Even so, at `N = 4096` it is ≈ 1365 FLOP/byte — far to the right of the ridge. **GEMM at scale is
   compute-bound.** The ceiling is the tensor-core peak, so the task is reaching that peak (use
   `tcgen05`, keep it fed, overlap everything). It is also why a naive GEMM underperforms — the
   problem allows peak, but a poor implementation leaves the tensor cores idle, sitting orders of
@@ -91,8 +94,9 @@ Three techniques do it:
   that fusion is what moves attention rightward on the roofline.
 - *Block for reuse.* Load a tile into SMEM or registers and use it for many operations before
   evicting it. Reuse is exactly what gives GEMM its high arithmetic intensity; any op with reuse benefits the same way.
-- *Use a smaller dtype.* fp16/fp8/fp4 move fewer bytes per element, which directly raises arithmetic intensity (FLOPs
-  per byte) and cuts the bandwidth the kernel needs.
+- *Use a smaller dtype.* fp16/fp8/fp4 move fewer bytes per element, which raises arithmetic intensity (FLOPs
+  per byte) and cuts the bandwidth the kernel needs — though for block-scaled fp8/fp4 the scale-factor
+  metadata and dequantization add some traffic back, so the gain is a little less than the raw byte ratio.
 
 **Second, if the arithmetic intensity is irreducible — accept the memory roof and saturate it.** Sometimes there is
 simply no work to add: a pure copy, or a single-pass elementwise or reduction over a large tensor,
@@ -132,15 +136,17 @@ From there, asynchrony and scheduling do the rest of the work. At `M=N=K=4096`:
 | 5 | Software pipeline (depth 2) | 639 | ~32% |
 | 6 | Persistent kernel + tile scheduler | 723 | ~36% |
 | 7 | Warp specialization | 603 | ~30% |
-| 8 | Deep pipeline | 1057 | ~53% |
-| 9 | 2-CTA cluster | 1319 | ~66% |
-| 10 | Multi-consumer | 1322 | ~66% |
+| 8 | 2-CTA cluster | 1057 | ~53% |
+| 9 | Multi-consumer | 1145 | ~57% |
+
+These 4096³ rates are the throughput form of the wall-clock times in the End-to-End table of
+{ref}`chap_gemm_advanced` (Steps 7–9 here), so the two tables describe the same runs.
 
 ![GEMM optimization journey](../img/gemm_perf.png)
 
 Two lessons set up the rest of the book. First, **the ceiling is real**: the optimized kernel
-reaches roughly two-thirds of the fp16 peak at 4096³ (and more at larger sizes), which is the
-neighborhood of vendor libraries — the remaining gap is hardware reality, not missing techniques.
+reaches roughly 57% of the fp16 peak at 4096³ (and more at larger sizes), close to the vendor
+library (cuBLAS is ~62% here) — the remaining gap is hardware reality, not missing techniques.
 Second, **the steps are not all monotone** (warp specialization at step 7 momentarily *trades*
 throughput for a structure that later steps exploit) — an optimization is justified by what it
 unlocks, not always by its immediate number.

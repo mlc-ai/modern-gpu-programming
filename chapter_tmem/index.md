@@ -11,7 +11,7 @@
 
 Through Hopper, the Tensor Core's accumulator lived in registers — which works until the tiles grow
 large enough that the accumulator crowds out everything else the threads need to hold. Blackwell's
-answer is a memory space earlier GPUs do not have: **Tensor Memory (TMEM)**, a per-SM 2D scratchpad
+answer is a memory space earlier GPUs do not have: **Tensor Memory (TMEM)**, a CTA-scoped 2D scratchpad — 128 lanes × up to 512 32-bit columns per CTA (physically resident on the SM) —
 where the `tcgen05` Tensor Core ({ref}`chap_tensor_cores`) keeps its accumulator and, for
 block-scaled MMAs, its scale factors. This
 chapter covers what TMEM is, how it is addressed and allocated, and how data moves in and out of it.
@@ -20,7 +20,7 @@ chapter covers what TMEM is, how it is addressed and allocated, and how data mov
 
 Earlier generations kept large MMA accumulators in registers throughout the compute phase; on
 Blackwell `tcgen05.mma` instead writes them to TMEM — **128 rows × up to 512 32-bit columns** per
-SM. The shape hints at how TMEM is addressed: not as a flat byte array, but as a genuine grid. Rows
+CTA (resident on the SM). The shape hints at how TMEM is addressed: not as a flat byte array, but as a genuine grid. Rows
 are indexed by a hardware axis called `TLane` (128 lanes) and columns by `TCol` (up to 512), and a
 TMEM buffer is declared with a layout over those two axes. An accumulator, for instance, is
 `S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_layout`.
@@ -30,10 +30,10 @@ TMEM buffer is declared with a layout over those two axes. An accumulator, for i
 ## Allocation
 
 Unlike registers, which the compiler hands out automatically, TMEM must be explicitly **allocated
-and freed** by the kernel. A single warp does the allocation, in units of 32 columns, with the
-column count rounded up to a power of two. TMEM is a budgeted per-SM resource,
+and freed** by the kernel. Allocation is per-CTA: a single warp in the CTA does the allocation, in units of 32 columns, with the
+column count rounded up to a power of two. TMEM is a budgeted per-CTA resource (resident on the SM),
 much like SMEM: a kernel sizes its TMEM the same way it sizes its SMEM ring buffers, and has to live
-within the per-SM limit.
+within the per-CTA limit (resident on the SM).
 
 ## Reading and writing TMEM
 
@@ -41,10 +41,14 @@ Because TMEM is its own address space, the ordinary `ld.shared` / `st.shared` in
 reach it. Data moves in and out through three dedicated `tcgen05` instructions, one for each path the
 accumulator and its scale factors need to travel.
 
-The first, **`tcgen05.ld`**, moves **TMEM → registers**. It is a warpgroup-cooperative load with a
-*fixed fragment layout* (the `.32x32b` / `.16x*b` datapath atoms) that distributes the TMEM tile
-into registers as the **m8n8 register fragment** ({ref}`chap_layout_generations`) — lane `l` gets row
-`l/4` and two columns. That fixed layout gives continuity: the epilogue pulls the
+The first, **`tcgen05.ld`**, moves **TMEM → registers**. The DSL copy is warpgroup-distributed and
+lowers to four warp-collective `tcgen05.ld` instructions (one per warp, each moving its own 32 TMEM
+lanes, together covering all 128). The instruction itself comes from a *family* of datapath atoms —
+shapes `.16x64b`, `.16x128b`, `.16x256b`, `.32x32b`, `.16x32bx2`, each with a repeat factor `.x1`
+through `.x128` — and this path uses one of them; the register count per thread follows the chosen
+shape × repeat. The atom distributes the TMEM tile
+into registers ({ref}`chap_layout_generations`) — lane `l` gets row
+`l/4` and two columns. That layout gives continuity: the epilogue pulls the
 accumulator out of TMEM into the *same* per-lane fragment an Ampere `mma` or Hopper `wgmma` produces,
 so it can cast and store the result with code that already exists. The second, **`tcgen05.st`**, is
 the reverse — **registers → TMEM**, in that same fragment — used to stage data a thread already holds
@@ -54,9 +58,12 @@ factors.
 
 ![tcgen05.ld / st move the TMEM accumulator to and from registers in the m8n8 fragment (lane l → row l/4, two columns)](../img/tcgen05_ldst.svg)
 
-All three share TMA's defining trait: they are **asynchronous**. Like TMA and the MMA itself, they
-return before the data has actually moved, so a `tcgen05.wait` / commit must gate any consumer that
-depends on the result ({ref}`chap_async_barriers`).
+All three share TMA's defining trait: they are **asynchronous** — they return before the data has
+actually moved, so something must gate any consumer that depends on the result
+({ref}`chap_async_barriers`). The completion mechanisms differ by instruction: `tcgen05.ld` and
+`tcgen05.st` complete via `tcgen05.wait::ld` / `tcgen05.wait::st`, while `tcgen05.mma` and
+`tcgen05.cp` complete via a commit group plus an mbarrier. Cross-thread handoffs additionally require
+fences.
 
 These three instructions, together with TMA, carry a tile through its full life on Blackwell, the
 path you will write directly in {ref}`chap_gemm_basics`: TMA stages the operands into

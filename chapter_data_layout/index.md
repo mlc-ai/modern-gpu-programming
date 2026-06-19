@@ -63,6 +63,10 @@ storage. (NumPy is identical; its `.strides` are just counted in bytes rather th
 This is exactly how layouts work on a GPU, and the rest of the chapter generalizes one idea:
 a tile's mapping — to memory, or via named axes to lanes and registers — is a stride
 rule over a fixed buffer, so rearranging a tile is usually a change of *layout*, not a copy.
+This zero-copy reasoning holds cleanly for a logical view over one linear address space; on a GPU it
+applies only when the new view is compatible with the existing byte and ownership arrangement —
+changing which thread or register owns an element, or changing the SMEM swizzle, generally requires
+real data movement (loads, stores, shuffles, `ldmatrix`, transposes).
 
 ## Tile layout
 
@@ -131,24 +135,25 @@ S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
 The same dimension also describes something that
 happens inside a single kernel: data the hardware *broadcasts across lanes*. Blackwell's
 block-scaled MMA ({ref}`chap_layout_generations`) is one example. Its scale factors live in TMEM, and a 128-row scale
-vector is stored in only **32 TMEM lanes** (logical row `r` → lane `r % 32`, with `r // 32` running
-along columns). Those 32 stored lanes are then **replicated along the lane axis** so that all 128
-lanes of the reading warpgroup get a copy — a `warpx4` broadcast, written with a replication
-dimension:
+vector is stored in only **32 TMEM lanes** (logical row `r` → TMEM lane `r % 32`, with `r // 32` running
+along columns). Those 32 stored TMEM lanes are then **replicated along the TMEM `TLane` axis**
+(32 → 128 TMEM lanes) so that each of the reading warpgroup's four warps gets a copy in its own
+32-lane TMEM window — a `warpx4` broadcast, written with a replication dimension. The reads
+themselves are then performed by those warps' threads:
 
 ```text
 S[(32, …) : (1@TLane, …)] + R[4 : 32@TLane]
 ```
 
-Four replicas at a stride of 32 lanes: lanes `l`, `l+32`, `l+64`, `l+96` all hold the same scale.
-The replication dimension carries no new data — it says "the same value, in four lane positions,"
-exactly as `@gpuid_x` broadcast a row across the GPU mesh above.
+Four replicas at a stride of 32 TMEM lanes: TMEM lanes `l`, `l+32`, `l+64`, `l+96` all hold the same
+scale. The replication dimension carries no new data — it says "the same value, in four TMEM-lane
+positions," exactly as `@gpuid_x` broadcast a row across the GPU mesh above.
 
 ```{raw} html
 <iframe src="../demo/sf_tmem.html" title="Scale factors in TMEM: packing and warpx4 replication" loading="lazy"
         style="width:100%; min-width:1040px; height:560px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 ```
-*Interactive: hover a TMEM lane — it stores 4 logical M-rows (`m // 32` → column) and is broadcast `warpx4` to 4 of the warpgroup's 128 reading lanes.*
+*Interactive: hover a TMEM lane — it stores 4 logical M-rows (`m // 32` → column) and is broadcast `warpx4` across the `TLane` axis to all 128 TMEM lanes, one copy per warp's 32-lane window.*
 
 The byte packing inside each column (the `scale_vec` 1X/2X/4X modes) and the `cta_group::2` split
 are in {ref}`chap_layout_generations`.
@@ -164,7 +169,9 @@ funnels every element into one bank, so the column access runs many times slower
 access over identical data.
 
 **Swizzle** fixes this. It permutes the address mapping — typically by XOR-ing the column index with
-the row — so that *both* row and column accesses spread across banks:
+the row — so that *both* row and column accesses spread across banks. This conflict-free guarantee
+holds for the matching element width, swizzle mode, and access pattern (the one an engine's
+descriptor expects), not for arbitrary element widths or alignments:
 
 ```{raw} html
 <iframe src="../demo/swizzle_8x8.html" title="8x8 XOR swizzle" loading="lazy"

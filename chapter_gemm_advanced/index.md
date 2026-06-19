@@ -949,7 +949,7 @@ Most deadlocks are *one* of these — work through the list:
 These corrupt the CUDA context, so the giveaway is that a *later* innocent `torch.randn` fails too. All three causes are allocation- or warp-shape mistakes:
 
 - **`pool.alloc` after `pool.commit()`.** Barrier wrappers call `alloc` internally. Correct order: `tmem_addr → barrier wrappers → move_base_to(1024) → Asmem / Bsmem / Dsmem → commit()`.
-- **`tcgen05.alloc` / `dealloc` with a lane guard.** They require all 32 lanes of the warp to participate; `if lane_id == 0:` runs one thread and the hardware traps.
+- **`tcgen05.alloc` / `dealloc` with a lane guard.** They require all 32 lanes of the warp to participate; `if lane_id == 0:` runs one thread, which is undefined behavior — often observed as an illegal-instruction or context error, a hang, or (worst) silently wrong results.
 - **Missing `cta_sync()` before `tcgen05.dealloc`** — TMEM is freed while writeback is still reading.
 
 ### Wrong results
@@ -980,13 +980,13 @@ Reference numbers on NVIDIA B200, M=N=K=4096, fp16, locked clocks, 1000-iteratio
 | 9 | Multi-consumer | 0.12 ms | ~583× |
 | --- | cuBLAS (reference) | 0.11 ms | ~636× |
 
-All times in this table — including the 70 ms Step 1 baseline — are measured at the same M=N=K=4096 size, so the speedup chain is comparable. Steps 1–3 are introduced in {ref}`chap_gemm_basics` at small sizes (128×128 and 256³) to keep the first walkthroughs simple, but the 70 ms entry here is Step 1's sequential single-tile *algorithm* applied to the full 4096³ problem; the dashes (Steps 2, 3, 5, 6) mark steps shown for structure but not separately timed.
+All times in this table — including the 70 ms Step 1 baseline — are measured at the same M=N=K=4096 size, so the speedup chain is comparable. To be precise about what the 70 ms is: it is *not* the single-tile Step-1 kernel shown in {ref}`chap_gemm_basics` run at 4096³. That shown kernel computes one 128×128 tile and runs at small sizes only. The 70 ms is a naive full-size baseline that implements the same sequential, single-tile approach scaled to the full 4096³ problem. Steps 1–3 are introduced in {ref}`chap_gemm_basics` at small sizes (128×128 and 256³) to keep the first walkthroughs simple; the dashes (Steps 2, 3, 5, 6) mark steps shown for structure but not separately timed.
 
 Treat these as one B200 reference run under controlled conditions, not a leaderboard entry. The `{.python .input}` benchmark cells embedded in each step are smoke benchmarks meant for checking trends, not for claiming peak performance.
 
 Four techniques account for almost all of the gain:
 
-1. **TMA Async Data Movement** — hardware copy engine replaces software copy (~140× from Step 1 → Step 4).
+1. **TMA Async Data Movement** — hardware copy engine replaces software copy (~140× from Step 1 → Step 4). This 140× reflects going from a single 128×128-tile kernel (grid 1×1) to a full tiled-and-parallel kernel with a K-loop, spatial tiling, and many CTAs *together with* TMA, not TMA's isolated contribution; isolating TMA would require comparing two full-size kernels that differ only in the copy mechanism.
 2. **Software Pipelining + Warp Specialization** — overlap load and compute with dedicated roles (~2.2× from Step 4 → Step 7).
 3. **CTA Clusters** — 2-SM cooperative MMA improves B-tile reuse across CTAs (~1.8× from Step 7 → Step 8 in this benchmark).
 4. **Multi-Consumer** — two MMA warps for higher compute density (~8% from Step 8 → Step 9).

@@ -546,7 +546,7 @@ torch.testing.assert_close(O, ref, rtol=1e-2, atol=1e-2)
 print(f"FA4: B={B} S={S} Hq={Hq} Hkv={Hkv} D={D}, non-causal -> PASS")
 ```
 
-**Expected output**: `... -> PASS`. Because the kernel accumulates the online softmax in fp32 and only casts `O` to fp16 on writeback, it should match the torch reference to within fp16 rounding — the same `rtol`/`atol` the source kernel's own test uses. Treat a genuine failure here, not a borderline near-miss, as a signpost to the softmax path: a dropped `s_ready` / `p_o_rescale` / `p_ready_2` wait, or a `row_max` / `row_sum` update the rescale step failed to apply. Those are exactly the handoffs this chapter spent its barriers on.
+**Expected output**: `... -> PASS`. The kernel accumulates the online softmax in fp32, but several approximations still separate its result from a high-precision reference: fp16 storage and rounding of the inputs and operands, the `exp2`-based softmax reformulation (the `scale_log2 = log2(e)/√d` reframing of every exponential), the online-softmax reordering and per-row rescaling that sums the blocks in a running scale rather than all at once, and the final fp16 cast of `O` on writeback. The `rtol`/`atol` here — the same tolerance the source kernel's own test uses — is sized to cover all of these against the torch reference, not fp16 rounding alone. Treat a genuine failure here, not a borderline near-miss, as a signpost to the softmax path: a dropped `s_ready` / `p_o_rescale` / `p_ready_2` wait, or a `row_max` / `row_sum` update the rescale step failed to apply. Those are exactly the handoffs this chapter spent its barriers on.
 
 ## Differences from GEMM
 

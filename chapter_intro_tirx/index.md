@@ -15,7 +15,7 @@ This chapter starts from one complete kernel — a minimal single-MMA GEMM — g
 
 ## A First Kernel: Single-MMA GEMM
 
-The example computes one 128 x 128 output tile of `D = A B^T` with K = 64: a single Blackwell `tcgen05` MMA, end to end. It allocates SMEM and TMEM, copies A and B from global to shared memory, issues one MMA into a TMEM accumulator, reads that accumulator back through registers, and stores the result. This is Step 1 of the GEMM ladder built up in {ref}`chap_gemm_basics`; it reappears there with the full walkthrough.
+The example computes one 128 x 128 output tile of `D = A B^T` with K = 64: a single `Tx.gemm_async` tile operation, end to end (the K=64 tile lowers to a short sequence of `tcgen05.mma` instructions along K, since the hardware MMA K-atom is 16). It allocates SMEM and TMEM, copies A and B from global to shared memory, issues the tile MMA into a TMEM accumulator, reads that accumulator back through registers, and stores the result. This is Step 1 of the GEMM ladder built up in {ref}`chap_gemm_basics`; it reappears there with the full walkthrough.
 
 All TIRx kernels start from the same imports:
 

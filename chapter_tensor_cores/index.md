@@ -63,9 +63,10 @@ A single instruction needs several modes because the useful tile shapes do not a
 fit the same way into TMEM, and one CTA is sometimes too small to hold a worthwhile tile. A
 `tcgen05` MMA runs over one CTA (`cta_group::1`) or a pair of CTAs in a cluster
 (`cta_group::2`). The mode and the tile's **M** together decide how the (M, N) accumulator is laid
-out in TMEM — which lane and column each logical element `C[m, n]` lands on. The column axis is
-constant across every mode: TMEM is 128 lanes × up to 512 columns, and **N always maps to
-columns**, so what changes from case to case is only the *lane* mapping of the M rows.
+out in TMEM — which lane and column each logical element `C[m, n]` lands on (TMEM is 128 lanes ×
+up to 512 columns). In the single-CTA modes N maps to TMEM columns and only the *lane* mapping of
+the M rows changes from case to case; the 2-CTA mode additionally splits N across lanes, as the
+table shows.
 Not every M is legal in every mode; the combinations are these:
 
 | `cta_group` | M | CTAs | accumulator layout in TMEM |
@@ -112,7 +113,7 @@ leaving the upper lanes empty.
 
 What does *not* change across the four modes: in every case B (N, K) lives in
 SMEM, and for `cta_group::2` each CTA supplies operands from its own SMEM (with A split by M as
-above). The accumulator C (M, N) is always f32 in TMEM.
+above). The accumulator C (M, N) is f32 in TMEM for the kernels here; the `.kind::f16` path can also accumulate in f16.
 
 ## Block-Scaled MMA (mxfp8 / nvfp4)
 

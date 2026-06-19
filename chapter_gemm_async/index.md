@@ -5,7 +5,7 @@
 :class: overview
 
 - The basic GEMM wastes time taking turns — copy a tile, compute, copy the next — when the two could run at once.
-- Step 4 switches to TMA async loads, Step 5 builds a software pipeline (PIPE_DEPTH=2) that overlaps load with compute, Step 6 makes the kernel persistent with a tile scheduler.
+- Step 4 switches to TMA async loads, Step 5 double-buffers SMEM and prefetches (PIPE_DEPTH=2); full load/compute overlap arrives with warp specialization in Step 7, Step 6 makes the kernel persistent with a tile scheduler.
 - The goal is to load the next tile while the Tensor Cores chew through the current one.
 :::
 
@@ -471,7 +471,7 @@ Up to now we have optimized inside a tile; Step 6 optimizes across tiles. Step 5
 
 ### Persistent Scheduling
 
-A persistent kernel sizes its grid to the hardware, not to the problem: it launches `SM_COUNT` CTAs, one per SM, regardless of how many output tiles there are. On the B200 here, `SM_COUNT=148`, and each of those 148 CTAs loops over the tiles handed to it by `ClusterPersistentScheduler2D`. Amortization is the first effect — TMEM allocation, barrier initialization, and scheduling now happen once per CTA and are reused across the roughly 7 tiles it handles, instead of 1024 times across throwaway CTAs. The second effect comes from the order the scheduler picks: `l2_group_size=8` groups nearby tiles so that tiles sharing a row band reuse the same A row-tiles (and tiles sharing a column band, the same B tiles), and running them back-to-back keeps those operands hot in L2 rather than re-fetching them from HBM. This is the reuse Step 3 left on the table.
+A persistent kernel sizes its grid to the hardware, not to the problem: it launches `SM_COUNT` CTAs — about one per SM — regardless of how many output tiles there are, aiming for persistent occupancy. Exact 1:1 residency is not guaranteed; it depends on occupancy and how the hardware schedules CTAs. On the B200 here, `SM_COUNT=148`, and each of those 148 CTAs loops over the tiles handed to it by `ClusterPersistentScheduler2D`. Amortization is the first effect — TMEM allocation, barrier initialization, and scheduling now happen once per CTA and are reused across the roughly 7 tiles it handles, instead of 1024 times across throwaway CTAs. The second effect comes from the order the scheduler picks: `l2_group_size=8` groups nearby tiles so that tiles sharing a row band reuse the same A row-tiles (and tiles sharing a column band, the same B tiles), and running them back-to-back keeps those operands hot in L2 rather than re-fetching them from HBM. This is the reuse Step 3 left on the table.
 
 ```python
 bx = T.cta_id([SM_COUNT])  # 1D grid, one CTA per SM
