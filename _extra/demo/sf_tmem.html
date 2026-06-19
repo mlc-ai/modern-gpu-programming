@@ -6,60 +6,70 @@
 <link rel="stylesheet" href="../viz-base.css">
 <script src="../viz-base.js"></script>
 <style>
-  body { max-width:820px; margin:0 auto; }
-  .panels { max-width:820px; align-items:start; position:relative; }
+  body { max-width:860px; margin:0 auto; }
+  .panels { max-width:860px; align-items:start; position:relative; }
   .panel { padding:14px 12px; }
   .panel h2 { margin-bottom:2px; }
   .sfgrid { display:grid; gap:1px; justify-content:center; margin-top:4px; }
-  .gA { grid-template-columns:30px repeat(4, 26px); }
-  .gB { grid-template-columns:34px repeat(4, 22px); }
-  .colhdr { font-size:9px; color:var(--dim); font-weight:700; text-align:center; padding-bottom:2px; }
+  .gA { grid-template-columns:34px repeat(4, 26px); }
+  .gB { grid-template-columns:36px repeat(16, 11px); }
+  .colhdr { font-size:8px; color:var(--dim); font-weight:700; text-align:center; padding-bottom:2px; }
   .rowlab { font-size:8.5px; color:var(--dim); font-weight:600; text-align:right; padding-right:4px;
             height:8px; line-height:8px; }
-  .sfcell { height:8px; border-radius:2px; cursor:pointer; opacity:.92; transition:opacity .08s; }
-  #panels.focus .sfcell { opacity:.16; }
+  .sfcell { height:8px; border-radius:2px; cursor:pointer; opacity:.9; transition:opacity .08s; }
+  .sfcell.we { margin-right:3px; }                 /* word-edge gap (every 4 bytes) */
+  #panels.focus .sfcell { opacity:.13; }
   #panels.focus .sfcell.src, #panels.focus .sfcell.hl { opacity:1; }
   .sfcell.src { outline:2px solid #111; outline-offset:-1px; }
   .sfcell.hl  { outline:2px solid #111; outline-offset:-1px; box-shadow:0 0 6px rgba(59,130,246,.7); }
   .arrow-svg path.ar { fill:none; stroke:#1f2937; stroke-width:1.4; }
   .arrow-svg .ah { fill:#1f2937; stroke:none; }
-  .formula-bar { max-width:820px; }
-  #stc { min-height:20px; }
+  .formula-bar { max-width:860px; }
+  .frow { font-family:'SF Mono','Fira Code',monospace; font-size:12px; color:var(--text); line-height:1.7; }
+  .frow .k { color:var(--accent); font-weight:700; }
+  #calc { margin-top:8px; color:var(--accent); }
 </style>
 </head>
 <body>
 <h1>Scale Factors in TMEM (nvfp4)</h1>
-<div class="sub">warpx4: one logical scale → 4 lanes &nbsp;·&nbsp; R[4 : 32@TLane]</div>
+<div class="sub">M = 128, K = 64 → SF_K = 4 &nbsp;·&nbsp; warpx4 broadcast R[4 : 32@TLane]</div>
 
 <div class="panels" id="panels">
   <svg class="arrow-svg" id="arrows"></svg>
   <div class="panel">
     <h2>Logical SFA &nbsp;(M × SF_K)</h2>
-    <div class="nota">M = 128, SF_K = 4 &nbsp;·&nbsp; cell = SFA[m, sfk]</div>
+    <div class="nota">cell = SFA[m, sfk] &nbsp;·&nbsp; row = m (0–127), col = sfk (0–3)</div>
     <div id="gridA" class="sfgrid gA"></div>
   </div>
   <div class="panel">
-    <h2>TMEM &nbsp;(128 lanes × words)</h2>
-    <div class="nota">lane = m%32 (+32/+64/+96) · col = m//32 · byte = sfk</div>
+    <h2>TMEM &nbsp;(128 lanes × 16 bytes)</h2>
+    <div class="nota">row = lane (0–127) · 16 bytes = 4 words × 4 bytes (byte = sfk)</div>
     <div id="gridB" class="sfgrid gB"></div>
   </div>
 </div>
 
 <div class="formula-bar">
-  <div class="ftitle" id="stt">Hover a scale factor on the left</div>
-  <div class="fcontent" id="stc">Each logical SFA[m, sfk] is stored once (TLane = m%32, word column = m//32, byte = sfk) and broadcast warpx4 to lanes { m%32, +32, +64, +96 }.</div>
+  <div class="ftitle">Layout &nbsp;SFA[m, sfk] → TMEM</div>
+  <div class="frow">
+    <span class="k">TLane</span> = m mod 32 &nbsp;·&nbsp;
+    <span class="k">word</span> = m div 32 &nbsp;·&nbsp;
+    <span class="k">byte</span> = sfk &nbsp;·&nbsp;
+    <span class="k">TCol</span> = word·4 + byte &nbsp;·&nbsp;
+    <span class="k">warpx4</span> → lanes { TLane, +32, +64, +96 }
+  </div>
+  <div class="frow" id="calc">hover a cell on the left…</div>
 </div>
 
 <script>
 (function () {
-  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];
-  var M = 128, SFK = 4;
+  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];   // color by sfk / byte
+  var M = 128, SFK = 4, BYTES = 16;
   var panels = document.getElementById('panels');
   var gridA = document.getElementById('gridA'), gridB = document.getElementById('gridB');
   var svg = document.getElementById('arrows');
-  var stt = document.getElementById('stt'), stc = document.getElementById('stc');
+  var calc = document.getElementById('calc');
 
-  // ---- build left (logical SFA: rows m, cols sfk) ----
+  // left: logical SFA (rows m, cols sfk), colored by sfk
   var a = '<div></div>';
   for (var s = 0; s < SFK; s++) a += '<div class="colhdr">sf' + s + '</div>';
   for (var m = 0; m < M; m++) {
@@ -69,20 +79,21 @@
   }
   gridA.innerHTML = a;
 
-  // ---- build right (TMEM: rows lane 0..127, cols word = m//32) ----
+  // right: TMEM, rows lane 0..127, cols = 16 bytes (TCol); byte = TCol%4, word = TCol//4
   var b = '<div></div>';
-  for (var c = 0; c < 4; c++) b += '<div class="colhdr">w' + c + '</div>';
+  for (var t = 0; t < BYTES; t++) b += '<div class="colhdr">' + (t % 4) + '</div>';
   for (var lane = 0; lane < 128; lane++) {
     b += '<div class="rowlab">' + (lane % 32 === 0 ? ('L' + lane) : '') + '</div>';
-    for (var c2 = 0; c2 < 4; c2++)
-      b += '<div class="sfcell" data-lane="' + lane + '" data-wcol="' + c2 + '" style="background:' + G[c2] + '"></div>';
+    for (var t2 = 0; t2 < BYTES; t2++) {
+      var edge = (t2 % 4 === 3 && t2 !== BYTES - 1) ? ' we' : '';
+      b += '<div class="sfcell' + edge + '" data-lane="' + lane + '" data-tcol="' + t2 +
+           '" style="background:' + G[t2 % 4] + '"></div>';
+    }
   }
   gridB.innerHTML = b;
 
-  var rightCells = {};   // key "lane,wcol" -> cell
-  gridB.querySelectorAll('.sfcell').forEach(function (el) {
-    rightCells[el.dataset.lane + ',' + el.dataset.wcol] = el;
-  });
+  var rc = {};
+  gridB.querySelectorAll('.sfcell').forEach(function (el) { rc[el.dataset.lane + ',' + el.dataset.tcol] = el; });
 
   function ctr(el) {
     var r = el.getBoundingClientRect(), p = panels.getBoundingClientRect();
@@ -107,36 +118,32 @@
   }
   function show(cell) {
     var m = +cell.dataset.m, sfk = +cell.dataset.sfk;
-    var k = m % 32, wcol = (m / 32) | 0;
+    var lane = m % 32, word = (m / 32) | 0, tcol = word * 4 + sfk;
     clearAll();
     panels.classList.add('focus');
     cell.classList.add('src');
-    var targets = [];
-    for (var j = 0; j < 4; j++) {
-      var t = rightCells[(k + 32 * j) + ',' + wcol];
-      if (t) { t.classList.add('hl'); targets.push(t); }
-    }
+    var lanes = [lane, lane + 32, lane + 64, lane + 96], targets = [];
+    lanes.forEach(function (L) { var t = rc[L + ',' + tcol]; if (t) { t.classList.add('hl'); targets.push(t); } });
     arrows(cell, targets);
-    stt.textContent = 'SFA[m=' + m + ', sf' + sfk + ']';
-    stc.textContent = '→ TMEM word column ' + wcol + ' (= m//32), byte ' + sfk +
-      ' (= sfk); stored in TLane ' + k + ' and broadcast warpx4 to lanes { ' +
-      [k, k + 32, k + 64, k + 96].join(', ') + ' }.';
+    calc.innerHTML =
+      'SFA[m=' + m + ', sf' + sfk + ']: &nbsp;' +
+      'TLane = ' + m + ' mod 32 = <b>' + lane + '</b> &nbsp;·&nbsp; ' +
+      'word = ' + m + ' div 32 = <b>' + word + '</b> &nbsp;·&nbsp; ' +
+      'byte = <b>' + sfk + '</b> &nbsp;·&nbsp; ' +
+      'TCol = ' + word + '·4 + ' + sfk + ' = <b>' + tcol + '</b> &nbsp;→&nbsp; ' +
+      'lanes { <b>' + lanes.join(', ') + '</b> }';
   }
   function reset() {
     clearAll();
-    stt.textContent = 'Hover a scale factor on the left';
-    stc.textContent = 'Each logical SFA[m, sfk] is stored once (TLane = m%32, word column = m//32, byte = sfk) and broadcast warpx4 to lanes { m%32, +32, +64, +96 }.';
+    calc.textContent = 'hover a cell on the left…';
   }
   gridA.addEventListener('mouseover', function (e) {
     var c = e.target.closest && e.target.closest('.sfcell');
     if (c) show(c);
   });
   panels.addEventListener('mouseleave', reset);
-  window.addEventListener('resize', function () {
-    var src = gridA.querySelector('.src');
-    if (src) show(src);                 // re-place arrows after a resize
-  });
-  show(gridA.querySelector('[data-m="33"][data-sfk="1"]'));   // default example: m=33 -> lane 1, word col 1
+  window.addEventListener('resize', function () { var s = gridA.querySelector('.src'); if (s) show(s); });
+  show(gridA.querySelector('[data-m="33"][data-sfk="1"]'));   // default: m=33,sf1 → lane 1, word 1, byte 1, TCol 5
 })();
 </script>
 </body>
