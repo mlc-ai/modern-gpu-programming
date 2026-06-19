@@ -10,7 +10,7 @@
 :::
 
 Two kernels can compute the same result over the same numbers and yet differ in speed by an order
-of magnitude, purely because of where those numbers sit in the machine. That "where" is the *data
+of magnitude, purely because of where those numbers sit in the hardware. That "where" is the *data
 layout*: the map from a tensor's logical indices `(i, j, …)` to a physical location — which byte of
 memory, which thread's register, which SMEM bank. The data and its logical shape do not change; the
 layout is what decides whether an access coalesces, hits distinct banks, or matches the format an

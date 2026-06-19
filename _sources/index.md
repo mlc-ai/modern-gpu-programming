@@ -1,7 +1,7 @@
 # Modern GPU Programming For MLSys
 
-This book teaches modern GPU kernel programming as a progression: **understand the GPU as a
-machine → learn to program it → write state-of-the-art kernels.** It assumes you have seen
+This book teaches modern GPU kernel programming as a progression: **understand the GPU
+hardware → learn to program it → write state-of-the-art kernels.** It assumes you have seen
 CUDA basics (grid/block/thread, shared memory, a naive tiled GEMM), but it treats the modern,
 Blackwell-class GPU as the real subject — its memory hierarchy and Tensor Memory, its
 tensor-core and asynchronous data-movement engines, warpgroups and clusters — rather than as a
@@ -28,7 +28,7 @@ marks each handoff between tile operations.
 - **Part I — Understanding the GPU.** What the hardware *is*: the execution and memory model and
   the performance model (roofline, overlap) that defines "fast"; then a deep dive into data
   layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
-  coordination model, and advanced scheduling (CLC). Everything later is programming *this* machine.
+  coordination model, and advanced scheduling (CLC). Everything later is programming *this* hardware.
 - **Part II — TIRx Overview.** An introduction to TIRx through one runnable
   single-MMA GEMM — scope, layout, and dispatch in action, and how compilation works — and the
   tensor layout model (`TileLayout`, named axes, swizzle). The full language-feature set lives in

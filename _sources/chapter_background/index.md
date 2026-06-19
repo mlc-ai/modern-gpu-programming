@@ -10,7 +10,7 @@
 :::
 
 Before we can reason about why one kernel is fast and another is slow, we need a picture of the
-machine it runs on. A GPU runs a kernel across a hierarchy of threads, a set of distinct memory
+hardware it runs on. A GPU runs a kernel across a hierarchy of threads, a set of distinct memory
 spaces, and a few compute and data-movement engines, and every optimization later in this book is
 ultimately a way of arranging work across those three things. This chapter assembles the picture:
 the thread hierarchy, the compute units, the memory spaces, and how a GEMM flows across them. The
@@ -71,14 +71,14 @@ of math engine, and the split between them shapes how every kernel is written:
 
 Dense linear algebra (GEMM, convolution, attention) reaches peak throughput only on the Tensor
 Cores, and what changes from one GPU generation to the next is *how* they are programmed and
-*where* their results live: the asynchronous warpgroup MMA model arrived with Hopper, and
+*where* their results live: the asynchronous warpgroup MMA (`wgmma.mma_async`) arrived with Hopper, and
 Blackwell's fifth-generation Tensor Core (`tcgen05`, with accumulators in Tensor Memory) is covered
 in {ref}`chap_tensor_cores`.
 
 ## Memory Spaces
 
-Feeding those engines is the other half of the story, and it is a hierarchy too. No single memory
-can be both large and fast, so a GPU offers several, and a kernel moves data through them, each
+Memory is a hierarchy too. No single memory is both large and fast, so a GPU provides several
+levels, and a kernel moves data through them, each
 with its own capacity, latency, and access rules:
 
 | Memory | Ownership | Role | Notes |
