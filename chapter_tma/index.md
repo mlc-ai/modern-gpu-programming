@@ -1,6 +1,14 @@
 (chap_tma)=
 # Async Data Movement: TMA
 
+:::{admonition} Overview
+:class: overview
+
+- TMA is a hardware engine that asynchronously copies rectangular tiles between global and shared memory: one thread issues the copy, the engine moves the bytes.
+- It can swizzle a tile as it writes SMEM so the layout matches what the Tensor Core expects.
+- Loads complete through an mbarrier (byte-count tracked); stores through a commit/wait group.
+:::
+
 GEMM and attention are compute-bound at scale ({ref}`chap_performance`), but only if the Tensor
 Cores stay fed. The moment the cores stall waiting for data, that compute advantage evaporates, so
 the real question is how to move tiles fast enough to keep them busy. The classic answer — have the

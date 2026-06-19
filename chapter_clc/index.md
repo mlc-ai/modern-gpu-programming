@@ -1,6 +1,14 @@
 (chap_clc)=
 # Advanced Topics: Cluster Launch Control
 
+:::{admonition} Overview
+:class: overview
+
+- A persistent kernel keeps one CTA resident per SM and loops over output tiles instead of relaunching a CTA per tile.
+- Cluster Launch Control is the hardware mechanism that hands each persistent CTA its next tile — a work-stealing loop driven by two instructions.
+- The payoff is even SM utilization from launch to finish.
+:::
+
 Suppose we want to keep every SM busy from launch to finish. A *persistent* kernel takes a step
 toward that: it keeps one CTA resident per SM and has it loop over many output tiles — rather than
 launching a fresh CTA per tile — pulling each next tile from a scheduler (the pattern Part III

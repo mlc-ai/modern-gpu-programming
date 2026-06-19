@@ -24,3 +24,17 @@ span.math {
     border-radius: 6px;
     box-sizing: border-box;
 }
+
+/* Chapter-opening "Overview" summary box: the {admonition} Overview blocks that
+   give the key takeaways before the narrative intro. Recolor the accent to the
+   theme primary so it reads as a roadmap, not a warning; bg/text inherit the
+   theme so it adapts to dark mode. */
+div.admonition.overview {
+    border-color: var(--pst-color-primary);
+}
+div.admonition.overview > .admonition-title {
+    color: var(--pst-color-primary);
+}
+div.admonition.overview > .admonition-title::after {
+    color: var(--pst-color-primary);
+}

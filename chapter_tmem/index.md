@@ -1,6 +1,14 @@
 (chap_tmem)=
 # Special Memory: TMEM
 
+:::{admonition} Overview
+:class: overview
+
+- TMEM is a Blackwell-only per-SM 2D scratchpad (128 lanes × up to 512 columns) that holds the `tcgen05` accumulator and its scale factors.
+- It is addressed by `TLane` × `TCol` and must be explicitly allocated and freed by the kernel, in 32-column units.
+- Ordinary shared-memory ld/st cannot reach it; three asynchronous `tcgen05` instructions move data in and out.
+:::
+
 Through Hopper, the Tensor Core's accumulator lived in registers — which works until the tiles grow
 large enough that the accumulator crowds out everything else the threads need to hold. Blackwell's
 answer is a memory space earlier GPUs do not have: **Tensor Memory (TMEM)**, a per-SM 2D scratchpad

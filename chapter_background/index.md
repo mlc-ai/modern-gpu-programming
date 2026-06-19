@@ -1,6 +1,14 @@
 (chap_background)=
 # GPU Execution Model
 
+:::{admonition} Overview
+:class: overview
+
+- A kernel runs over a thread hierarchy (thread → warp → warpgroup → CTA → cluster → grid) across distinct memory spaces (registers, SMEM, GMEM, TMEM).
+- Compute splits into CUDA cores and Tensor Cores; dedicated engines like TMA move the data that feeds them.
+- Every later optimization serves one pipeline — GMEM → SMEM → Tensor Core → back — whose goal is to keep the cores fed.
+:::
+
 Before we can reason about why one kernel is fast and another is slow, we need a picture of the
 machine it runs on. A GPU runs a kernel across a hierarchy of threads, a set of distinct memory
 spaces, and a few compute and data-movement engines, and every optimization later in this book is

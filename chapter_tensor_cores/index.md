@@ -1,6 +1,14 @@
 (chap_tensor_cores)=
 # Tensor Cores: `tcgen05`
 
+:::{admonition} Overview
+:class: overview
+
+- The `tcgen05` MMA is Blackwell's tile matrix-multiply-accumulate: a single cooperative instruction issued by one elected thread.
+- Its accumulator lives in TMEM, not registers, and `cta_group::1` vs `::2` sets whether one or two CTAs cooperate (and the M dimension).
+- Block-scaled MMAs (mxfp8 / nvfp4) add per-block scale factors, also staged through TMEM.
+:::
+
 Tensor Cores are not new. They have executed tile-level matrix multiply-accumulate
 ($D = AB + C$) since Volta (2017), and every generation since has carried them — see
 {ref}`chap_background` for what a Tensor Core is and how it differs from a CUDA core. So if the

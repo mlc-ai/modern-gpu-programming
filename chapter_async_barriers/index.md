@@ -1,6 +1,14 @@
 (chap_async_barriers)=
 # Async Coordination: mbarriers
 
+:::{admonition} Overview
+:class: overview
+
+- TMA and the Tensor Core are asynchronous, so issuing work is not the same as finishing it — consumers need an explicit completion signal.
+- An mbarrier is that signal: producers arrive, consumers wait, and it tracks arrival counts and (for TMA) byte counts.
+- Each barrier carries a *phase* that flips every round; waiting on the correct phase is what gates a consumer safely.
+:::
+
 By now a theme has emerged from the last two chapters: the Tensor Core
 ({ref}`chap_tensor_cores`) and TMA ({ref}`chap_tma`) are both *asynchronous*, and on both of them
 issuing work is not the same as finishing it. That asynchrony is what buys overlap, but it also

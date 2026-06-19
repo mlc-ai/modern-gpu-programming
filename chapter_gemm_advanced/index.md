@@ -1,6 +1,14 @@
 (chap_gemm_advanced)=
 # Scaling GEMM with Warp Specialization and Clusters
 
+:::{admonition} Overview
+:class: overview
+
+- The pipelined GEMM still has one warpgroup doing load, MMA, and writeback in sequence — the bottleneck this chapter removes.
+- Step 7 specializes warps into roles, Step 8 adds a 2-CTA cluster, Step 9 adds multiple consumers.
+- Each step removes a serial bottleneck, ending near state-of-the-art throughput.
+:::
+
 The previous chapter ({ref}`chap_gemm_async`) ended with a persistent, software-pipelined GEMM, but it still left one warpgroup doing load, MMA, and writeback in sequence. That single warpgroup is the bottleneck this chapter attacks. We scale the kernel in three steps, and the unifying idea is simple to state: stop making one team of threads take turns at jobs that could run at once, and start making more hardware cooperate on each tile.
 
 The three steps widen cooperation one level at a time. Step 7 splits the warpgroup into specialized roles — a warp issuing TMA loads (*producer*), a warp running the MMA (*consumer*), and a writeback warpgroup — so loading and computing overlap instead of alternating. Step 8 lets two CTAs cooperate as a cluster, so one `tcgen05` MMA produces a 256×256 tile spanning both CTAs and a single B load feeds twice the MMA work. Step 9 adds a second MMA consumer, growing the cluster output to 512×256 so each staged B tile is reused by both consumers — the densest variant in the tutorial.

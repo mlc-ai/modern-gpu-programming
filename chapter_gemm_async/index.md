@@ -1,6 +1,14 @@
 (chap_gemm_async)=
 # Pipelining GEMM with TMA
 
+:::{admonition} Overview
+:class: overview
+
+- The basic GEMM wastes time taking turns — copy a tile, compute, copy the next — when the two could run at once.
+- Step 4 switches to TMA async loads, Step 5 builds a software pipeline (PIPE_DEPTH=2) that overlaps load with compute, Step 6 makes the kernel persistent with a tile scheduler.
+- The goal is to load the next tile while the Tensor Cores chew through the current one.
+:::
+
 The previous chapter got us a correct tiled GEMM, but it spends most of its time waiting — threads copy a tile, then sit idle while the Tensor Cores work, then copy the next tile. The compute and the data movement take turns when they could be running at once. This chapter keeps the tile data path exactly as it was and goes after that idleness, by changing *when* and *by whom* the work is scheduled.
 
 We do it in three incremental steps. Step 4 hands the bulk GMEM <-> SMEM transfers to TMA, so dedicated hardware moves tiles instead of threads. Step 5 adds a two-stage software pipeline so the load for the next K tile can overlap the MMA on the current one. Step 6 reshapes the launch into a persistent kernel driven by a tile scheduler, amortizing setup and improving locality. Throughout, the SMEM, TMEM, and register layouts stay on the contracts from before; what is new is the asynchronous handoff between hardware units.

@@ -1,6 +1,14 @@
 (chap_tirx_primer)=
 # Introduction to TIRx
 
+:::{admonition} Overview
+:class: overview
+
+- TIRx is a Python DSL for writing GPU kernels at the IR level: you name hardware directly, but through structured IR.
+- Every tile operation is controlled by three knobs — *scope* (which threads), *layout* (where tiles live), and *dispatch* (which hardware path).
+- One runnable single-MMA GEMM shows all three; the rest of the book is these knobs at scale.
+:::
+
 TIRx (Tensor IR neXt) is a Python DSL for writing GPU kernels at the IR level. A TIRx kernel names hardware concepts directly — threads, shared and tensor memory, barriers, `tcgen05` MMA — but instead of scattering that intent across raw CUDA/PTX intrinsic arguments, it exposes the three things the compiler needs as structured IR: **scope** (which threads run an operation), **layout** (where the operand tiles live), and **dispatch** (which hardware path executes it). The compiler sees those knobs explicitly, so it can lower, check, and schedule the kernel instead of treating it as opaque intrinsic calls. Like the framework in *Dive into Deep Learning*, TIRx is the consistent medium through which every concept in this book becomes runnable code.
 
 Rather than catalogue the language feature by feature, we start from one complete kernel — a minimal single-MMA GEMM — get it running, and then read it back to unpack scope / layout / dispatch and to see how compilation works. Once those three knobs are concrete, the rest of the language falls into place. The tensor layout model is covered in {ref}`chap_data_layouts`, and the full language-feature set in {ref}`chap_language_reference`.
