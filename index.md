@@ -29,14 +29,16 @@ marks each handoff between tile operations.
   the performance model (roofline, overlap) that defines "fast"; then a deep dive into data
   layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
   coordination model, and advanced scheduling (CLC). Everything later is programming *this* machine.
-- **Part II — Programming a GPU with TIRx.** The TIRx native level — writing device kernels
-  directly (kernels, buffers, control flow, synchronization, compiling) — and the tensor layout
-  model (`TileLayout`, named axes, swizzle).
+- **Part II — Programming a GPU with TIRx.** An introduction to TIRx through one runnable
+  single-MMA GEMM — scope, layout, and dispatch in action, and how compilation works — and the
+  tensor layout model (`TileLayout`, named axes, swizzle). The full language-feature set lives in
+  the Reference.
 - **Part III — GEMM: Tiled to SOTA.** The optimization spine — a tiled GEMM built up through
   TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Capstone: Flash Attention.** Composing the whole machine into a real kernel.
 - **Part V — Workflow & Practice.** Profiling/debugging and writing kernels with agents.
-- **Appendix.** API reference and full source listings.
+- **Reference.** TIRx language reference, the API cheat sheet, compiler internals, and the full
+  Flash Attention 4 source.
 
 ```{toctree}
 :caption: Part I — Understanding the GPU
@@ -55,9 +57,9 @@ chapter_clc/index
 
 ```{toctree}
 :caption: Part II — Programming a GPU with TIRx
-:maxdepth: 2
+:maxdepth: 1
 
-tirx_guide/native_basics
+chapter_intro_tirx/index
 tirx_guide/layout
 ```
 
@@ -91,6 +93,7 @@ chapter_ai_assisted/index
 
 appendix/index
 tirx_guide/arch/index
+tirx_guide/language_reference/index
 chapter_api_reference/index
 chapter_fa4_source/index
 ```

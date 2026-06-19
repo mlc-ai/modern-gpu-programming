@@ -15,34 +15,21 @@
     specific language governing permissions and limitations
     under the License.
 
-CUDA C++/PTX
-============
+.. _chap_language_reference:
 
-.. note::
+TIRx Language Reference
+=======================
 
-   Native-level kernel authoring for the **CUDA backend** (the ``"cuda"``
-   target) — the thread hierarchy, memory scopes, the ``T.cuda.*`` / ``T.ptx.*``
-   intrinsics, and the compile / run / inspect loop. For what "native level"
-   means in general, see :doc:`../native_basics`. The complete kernels in these
-   chapters (``scale``, ``add``, ``smem_demo``, ``block_sum``, and the warp
-   all-reduce) are tested end-to-end on a CUDA GPU.
-
-All native authoring uses these imports. The ``__future__`` import lets ``@T.jit``
-kernels reference compile-time parameters inside type annotations (see
-:doc:`cuda/functions`); it is harmless for ordinary kernels::
-
-    from __future__ import annotations
-    import tvm
-    from tvm.script import tirx as T
+The full language-feature set for writing TIRx device kernels, factored out of the
+:ref:`chap_tirx_primer` walkthrough: parser utilities, data types and expressions,
+buffers and memory, control flow, and thread synchronization. Reach for these pages
+when you need the precise spelling or semantics of a feature.
 
 .. toctree::
    :maxdepth: 1
 
-   cuda/first_kernel
-   cuda/functions
    cuda/parser_utils
    cuda/data_types
    cuda/buffers
    cuda/control_flow
    cuda/threads_sync
-   cuda/compiling
