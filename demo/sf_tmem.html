@@ -6,119 +6,137 @@
 <link rel="stylesheet" href="../viz-base.css">
 <script src="../viz-base.js"></script>
 <style>
-  body { max-width:1040px; margin:0 auto; }
-  .panels { max-width:1000px; align-items:start; }
+  body { max-width:820px; margin:0 auto; }
+  .panels { max-width:820px; align-items:start; position:relative; }
+  .panel { padding:14px 12px; }
   .panel h2 { margin-bottom:2px; }
-  .sfgrid { display:grid; grid-template-columns:54px repeat(4,1fr); gap:3px; align-items:stretch; }
-  .colhdr { font-size:9.5px; color:var(--dim); font-weight:700; text-align:center; padding:2px 0 4px; }
-  .rowlab { font-size:9.5px; color:var(--dim); font-weight:600; text-align:right;
-            display:flex; align-items:center; justify-content:flex-end; padding-right:5px; }
-  .sfcell { height:19px; border-radius:4px; display:flex; align-items:center; justify-content:center;
-            font-size:9px; font-weight:700; color:#fff; cursor:pointer; border:2px solid transparent;
-            transition:opacity .1s, border-color .1s, box-shadow .1s; text-shadow:0 1px 1px rgba(0,0,0,.2); }
-  .sfcell.dm { opacity:.13; }
-  .sfcell.hl { border-color:#111; box-shadow:0 0 8px rgba(59,130,246,.6); z-index:2; }
-  .sfcell.src { border-color:#111; box-shadow:0 0 10px rgba(17,17,17,.6); outline:2px solid #111; }
-  .ell { text-align:center; color:var(--dim); font-size:13px; grid-column:1 / -1; line-height:1; padding:1px 0; }
-  .formula-bar { max-width:1000px; }
-  #stc { min-height:22px; }
+  .sfgrid { display:grid; gap:1px; justify-content:center; margin-top:4px; }
+  .gA { grid-template-columns:30px repeat(4, 26px); }
+  .gB { grid-template-columns:34px repeat(4, 22px); }
+  .colhdr { font-size:9px; color:var(--dim); font-weight:700; text-align:center; padding-bottom:2px; }
+  .rowlab { font-size:8.5px; color:var(--dim); font-weight:600; text-align:right; padding-right:4px;
+            height:8px; line-height:8px; }
+  .sfcell { height:8px; border-radius:2px; cursor:pointer; opacity:.92; transition:opacity .08s; }
+  #panels.focus .sfcell { opacity:.16; }
+  #panels.focus .sfcell.src, #panels.focus .sfcell.hl { opacity:1; }
+  .sfcell.src { outline:2px solid #111; outline-offset:-1px; }
+  .sfcell.hl  { outline:2px solid #111; outline-offset:-1px; box-shadow:0 0 6px rgba(59,130,246,.7); }
+  .arrow-svg path.ar { fill:none; stroke:#1f2937; stroke-width:1.4; }
+  .arrow-svg .ah { fill:#1f2937; stroke:none; }
+  .formula-bar { max-width:820px; }
+  #stc { min-height:20px; }
 </style>
 </head>
 <body>
-<h1>Scale Factors in TMEM</h1>
-<div class="sub">TLane = m % 32 · warpx4 broadcast R[4 : 32@TLane]</div>
+<h1>Scale Factors in TMEM (nvfp4)</h1>
+<div class="sub">warpx4: one logical scale → 4 lanes &nbsp;·&nbsp; R[4 : 32@TLane]</div>
 
-<div class="panels">
+<div class="panels" id="panels">
+  <svg class="arrow-svg" id="arrows"></svg>
   <div class="panel">
-    <h2>① Logical scale factors, packed in TMEM</h2>
-    <div class="nota">128 M-rows → 32 lanes (TLane = m%32; m//32 → column)</div>
-    <div id="gridA" class="sfgrid"></div>
+    <h2>Logical SFA &nbsp;(M × SF_K)</h2>
+    <div class="nota">M = 128, SF_K = 4 &nbsp;·&nbsp; cell = SFA[m, sfk]</div>
+    <div id="gridA" class="sfgrid gA"></div>
   </div>
   <div class="panel">
-    <h2>② Read by the 128-lane warpgroup</h2>
-    <div class="nota">one stored lane → 4 reading lanes (warpx4)</div>
-    <div id="gridB" class="sfgrid"></div>
+    <h2>TMEM &nbsp;(128 lanes × words)</h2>
+    <div class="nota">lane = m%32 (+32/+64/+96) · col = m//32 · byte = sfk</div>
+    <div id="gridB" class="sfgrid gB"></div>
   </div>
 </div>
 
 <div class="formula-bar">
-  <div class="ftitle" id="stt">Click a scale factor on the left</div>
-  <div class="fcontent" id="stc">Each logical M-row is stored in one TMEM lane (m % 32) and broadcast to 4 of the warpgroup’s 128 reading lanes.</div>
+  <div class="ftitle" id="stt">Hover a scale factor on the left</div>
+  <div class="fcontent" id="stc">Each logical SFA[m, sfk] is stored once (TLane = m%32, word column = m//32, byte = sfk) and broadcast warpx4 to lanes { m%32, +32, +64, +96 }.</div>
 </div>
 
 <script>
 (function () {
-  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];          // m//32 group / quadrant colors
-  var LANES = [0, 1, 2, 3, 4, 5, 6, 7, null, 30, 31];            // representative window; pattern is uniform
-  var HDRA = ['m//32=0', '1', '2', '3'];
-  var HDRB = ['lanes 0–31', '32–63', '64–95', '96–127'];
-
-  function build(el, headers, side, valueFn) {
-    el.innerHTML = '';
-    el.appendChild(document.createElement('div'));               // corner
-    headers.forEach(function (h) {
-      var c = document.createElement('div'); c.className = 'colhdr'; c.textContent = h; el.appendChild(c);
-    });
-    LANES.forEach(function (k) {
-      if (k === null) {
-        var e = document.createElement('div'); e.className = 'ell'; e.textContent = '⋮'; el.appendChild(e); return;
-      }
-      var lab = document.createElement('div'); lab.className = 'rowlab';
-      lab.textContent = side === 'L' ? ('TLane ' + k) : ('TLane ' + k);
-      el.appendChild(lab);
-      for (var g = 0; g < 4; g++) {
-        var cell = document.createElement('div'); cell.className = 'sfcell';
-        cell.style.background = G[g];
-        cell.dataset.k = k; cell.dataset.side = side; cell.dataset.g = g;
-        cell.textContent = valueFn(g, k);
-        el.appendChild(cell);
-      }
-    });
-  }
-
+  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];
+  var M = 128, SFK = 4;
+  var panels = document.getElementById('panels');
   var gridA = document.getElementById('gridA'), gridB = document.getElementById('gridB');
-  build(gridA, HDRA, 'L', function (g, k) { return 'r' + (g * 32 + k); });   // logical M-row
-  build(gridB, HDRB, 'R', function (g, k) { return 'L' + (g * 32 + k); });   // reading warpgroup lane
-
-  var cells = Array.prototype.slice.call(document.querySelectorAll('.sfcell'));
+  var svg = document.getElementById('arrows');
   var stt = document.getElementById('stt'), stc = document.getElementById('stc');
 
-  function show(srcCell) {
-    var k = +srcCell.dataset.k, side = srcCell.dataset.side, g = +srcCell.dataset.g;
-    var four = [k, k + 32, k + 64, k + 96];
-    cells.forEach(function (c) {
-      c.classList.remove('hl', 'src', 'dm');
-      c.classList.add('dm');
+  // ---- build left (logical SFA: rows m, cols sfk) ----
+  var a = '<div></div>';
+  for (var s = 0; s < SFK; s++) a += '<div class="colhdr">sf' + s + '</div>';
+  for (var m = 0; m < M; m++) {
+    a += '<div class="rowlab">' + (m % 32 === 0 ? ('m' + m) : '') + '</div>';
+    for (var s2 = 0; s2 < SFK; s2++)
+      a += '<div class="sfcell" data-m="' + m + '" data-sfk="' + s2 + '" style="background:' + G[s2] + '"></div>';
+  }
+  gridA.innerHTML = a;
+
+  // ---- build right (TMEM: rows lane 0..127, cols word = m//32) ----
+  var b = '<div></div>';
+  for (var c = 0; c < 4; c++) b += '<div class="colhdr">w' + c + '</div>';
+  for (var lane = 0; lane < 128; lane++) {
+    b += '<div class="rowlab">' + (lane % 32 === 0 ? ('L' + lane) : '') + '</div>';
+    for (var c2 = 0; c2 < 4; c2++)
+      b += '<div class="sfcell" data-lane="' + lane + '" data-wcol="' + c2 + '" style="background:' + G[c2] + '"></div>';
+  }
+  gridB.innerHTML = b;
+
+  var rightCells = {};   // key "lane,wcol" -> cell
+  gridB.querySelectorAll('.sfcell').forEach(function (el) {
+    rightCells[el.dataset.lane + ',' + el.dataset.wcol] = el;
+  });
+
+  function ctr(el) {
+    var r = el.getBoundingClientRect(), p = panels.getBoundingClientRect();
+    return { l: r.left - p.left, r: r.right - p.left, cy: (r.top + r.bottom) / 2 - p.top };
+  }
+  function arrows(src, targets) {
+    var s = ctr(src);
+    var out = '<defs><marker id="ah" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">' +
+              '<path class="ah" d="M0,0 L6,3 L0,6 Z"/></marker></defs>';
+    targets.forEach(function (t) {
+      var d = ctr(t), x1 = s.r + 2, y1 = s.cy, x2 = d.l - 4, y2 = d.cy, mx = (x1 + x2) / 2;
+      out += '<path class="ar" marker-end="url(#ah)" d="M' + x1 + ',' + y1 +
+             ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2 + '"/>';
     });
-    srcCell.classList.remove('dm'); srcCell.classList.add('src');
-    if (side === 'L') {
-      // one logical M-row -> the 4 reading lanes that get a copy
-      var r = g * 32 + k;
-      gridB.querySelectorAll('.sfcell').forEach(function (c) {
-        if (+c.dataset.k === k) { c.classList.remove('dm'); c.classList.add('hl'); }
-      });
-      stt.textContent = 'Logical M-row r' + r;
-      stc.textContent = '→ stored in TLane ' + k + ' (= ' + r + ' % 32) → broadcast to warpgroup lanes { ' +
-                        four.join(', ') + ' }';
-    } else {
-      // one reading lane -> the (up to 4) logical M-rows in the lane it reads
-      var L = g * 32 + k;
-      gridA.querySelectorAll('.sfcell').forEach(function (c) {
-        if (+c.dataset.k === k) { c.classList.remove('dm'); c.classList.add('hl'); }
-      });
-      stt.textContent = 'Warpgroup lane L' + L;
-      stc.textContent = '→ reads TLane ' + k + ' (= ' + L + ' % 32) → which holds logical M-rows { ' +
-                        four.join(', ') + ' }';
+    svg.innerHTML = out;
+  }
+  function clearAll() {
+    panels.classList.remove('focus');
+    gridA.querySelectorAll('.src').forEach(function (e) { e.classList.remove('src'); });
+    gridB.querySelectorAll('.hl').forEach(function (e) { e.classList.remove('hl'); });
+    svg.innerHTML = '';
+  }
+  function show(cell) {
+    var m = +cell.dataset.m, sfk = +cell.dataset.sfk;
+    var k = m % 32, wcol = (m / 32) | 0;
+    clearAll();
+    panels.classList.add('focus');
+    cell.classList.add('src');
+    var targets = [];
+    for (var j = 0; j < 4; j++) {
+      var t = rightCells[(k + 32 * j) + ',' + wcol];
+      if (t) { t.classList.add('hl'); targets.push(t); }
     }
+    arrows(cell, targets);
+    stt.textContent = 'SFA[m=' + m + ', sf' + sfk + ']';
+    stc.textContent = '→ TMEM word column ' + wcol + ' (= m//32), byte ' + sfk +
+      ' (= sfk); stored in TLane ' + k + ' and broadcast warpx4 to lanes { ' +
+      [k, k + 32, k + 64, k + 96].join(', ') + ' }.';
   }
-  function clear() {
-    cells.forEach(function (c) { c.classList.remove('hl', 'src', 'dm'); });
-    stt.textContent = 'Click a scale factor on the left';
-    stc.textContent = 'Each logical M-row is stored in one TMEM lane (m % 32) and broadcast to 4 of the warpgroup’s 128 reading lanes.';
+  function reset() {
+    clearAll();
+    stt.textContent = 'Hover a scale factor on the left';
+    stc.textContent = 'Each logical SFA[m, sfk] is stored once (TLane = m%32, word column = m//32, byte = sfk) and broadcast warpx4 to lanes { m%32, +32, +64, +96 }.';
   }
-  cells.forEach(function (c) { c.addEventListener('mouseenter', function () { show(c); }); });
-  document.querySelector('.panels').addEventListener('mouseleave', clear);
-  show(gridA.querySelector('.sfcell'));   // default: r0 -> its 4 reading lanes
+  gridA.addEventListener('mouseover', function (e) {
+    var c = e.target.closest && e.target.closest('.sfcell');
+    if (c) show(c);
+  });
+  panels.addEventListener('mouseleave', reset);
+  window.addEventListener('resize', function () {
+    var src = gridA.querySelector('.src');
+    if (src) show(src);                 // re-place arrows after a resize
+  });
+  show(gridA.querySelector('[data-m="33"][data-sfk="1"]'));   // default example: m=33 -> lane 1, word col 1
 })();
 </script>
 </body>
