@@ -68,10 +68,12 @@ rule over a fixed buffer, so rearranging a tile is usually a change of *layout*,
 
 ## Tile layout
 
-GPU kernels rarely work on a whole matrix at once; they work on tiles. Tiling needs no new
-machinery — it is just a layout with more dimensions. An 8×8 matrix cut
-into 2×4 tiles becomes a 4-D layout — `(tile_row, row_in_tile, tile_col, col_in_tile)` — with
-strides chosen so each tile is contiguous:
+So far, we have described layouts for whole tensors. GPU kernels, however, rarely operate on an
+entire matrix at once. Instead, they work on smaller tiles that are loaded, transformed, and
+computed on by different parts of the hardware. The good news is that tiling needs no new
+machinery — it is still just a layout, now written with more dimensions. An 8×8 matrix cut into
+2×4 tiles becomes a 4-D layout — `(tile_row, row_in_tile, tile_col, col_in_tile)` — with strides
+chosen so each tile is contiguous:
 
 ```text
 S[(4, 2, 2, 4) : (16, 4, 8, 1)]
@@ -80,6 +82,9 @@ S[(4, 2, 2, 4) : (16, 4, 8, 1)]
 A logical `(i, j)` maps through `(i//2, i%2, j//4, j%4)` and then the strides. Notice that the
 notation expresses tiling without any special "tile" concept at all — it is still the same
 shape–stride model, just with the index split into outer and inner coordinates.
+
+The following interactive visualization shows how a logical matrix index is decomposed into tile
+coordinates and then mapped to a physical address.
 
 ```{raw} html
 <iframe src="../demo/tiled_layout.html" title="Tile layout: interactive address computation" loading="lazy"
