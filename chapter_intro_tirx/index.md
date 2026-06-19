@@ -11,13 +11,13 @@
 
 **Motivation.** Part I explained what the hardware is; to make it compute anything, we need a way to program it. We could write raw CUDA or PTX, and many fast kernels are written exactly that way. But the decisions that actually determine a kernel's behavior — which threads run an operation, where each tile of data lives, which hardware path executes it — do not appear as such in that code. They are buried in intrinsic arguments, address arithmetic, and convention, scattered across the kernel where they are hard to see and harder to change. TIRx (Tensor IR neXt) is a Python DSL that lifts those three decisions into the open: **scope** (which threads run an operation), **layout** (where the operand tiles live), and **dispatch** (which hardware path executes it). It still names hardware concepts directly — threads, shared and tensor memory, barriers, `tcgen05` MMA — but as structured IR the compiler can see, so it can lower, check, and schedule the kernel rather than treat it as opaque intrinsic calls. Like the framework in *Dive into Deep Learning*, TIRx is the consistent medium through which every concept in this book becomes runnable code, and this chapter introduces it through one small end-to-end kernel.
 
-This chapter starts from one complete kernel — a minimal single-MMA GEMM — gets it running, and then reads it back to unpack scope / layout / dispatch and to see how compilation works. The tensor layout model is covered in {ref}`chap_data_layouts`, and the full language-feature set in {ref}`chap_language_reference`.
+Rather than introduce these ideas in the abstract, we will work from a single complete kernel: a minimal single-MMA GEMM. We get it running first, and only then read it back, line by line, to see how scope, layout, and dispatch each shape it and how the kernel is compiled. The tensor layout model that the kernel relies on is developed in its own right in {ref}`chap_data_layouts`, and the full language-feature set in {ref}`chap_language_reference`; here we keep the focus on the one kernel and the three knobs.
 
 ## A First Kernel: Single-MMA GEMM
 
-The example computes one 128 x 128 output tile of `D = A B^T` with K = 64: a single `Tx.gemm_async` tile operation, end to end (the K=64 tile lowers to a short sequence of `tcgen05.mma` instructions along K, since the hardware MMA K-atom is 16). It allocates SMEM and TMEM, copies A and B from global to shared memory, issues the tile MMA into a TMEM accumulator, reads that accumulator back through registers, and stores the result. This is Step 1 of the GEMM ladder built up in {ref}`chap_gemm_basics`; it reappears there with the full walkthrough.
+Our example computes a single 128 x 128 output tile of `D = A B^T` with K = 64. The whole computation is expressed as one `Tx.gemm_async` tile operation, from end to end. (That one tile operation does not map to a single hardware instruction: because the hardware MMA K-atom is 16, the K=64 tile lowers to a short sequence of `tcgen05.mma` instructions stepping along K. The point of the DSL is precisely that we write the tile, not the sequence.) Around that operation, the kernel does the usual chores: it allocates shared memory (SMEM) and tensor memory (TMEM), copies A and B from global to shared memory, issues the tile MMA into a TMEM accumulator, reads that accumulator back out through registers, and stores the result. Small as it is, this kernel is Step 1 of the GEMM ladder we climb in {ref}`chap_gemm_basics`, where it returns with a full walkthrough.
 
-All TIRx kernels start from the same imports:
+Every TIRx kernel begins from the same handful of imports, so it is worth seeing them once up front:
 
 ```python
 
@@ -28,7 +28,7 @@ from tvm.tirx.cuda.operator.tile_primitive.tma_utils import tma_shared_layout, S
 from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
 ```
 
-The kernel is wrapped in a `hgemm_v1(M, N, K)` builder. With `M=N=128, K=64` the launch contains exactly one output tile:
+We wrap the kernel in a small builder, `hgemm_v1(M, N, K)`, that takes the problem shape and returns a `PrimFunc`. For our chosen shape, `M=N=128, K=64`, the launch happens to contain exactly one output tile, which is what keeps this first version simple enough to read in one sitting:
 
 ```python
 def hgemm_v1(M, N, K):
@@ -127,7 +127,7 @@ def hgemm_v1(M, N, K):
     return kernel
 ```
 
-Compile the kernel and check the output against a torch reference. The arch (e.g. `sm_100a`) is auto-detected from the device, so the target `"cuda"` is enough; `tir_pipeline="tirx"` selects the TIRx lowering pipeline. `ex.mod(...)` takes torch tensors directly.
+Before we read the kernel, let us make sure it works. We compile it and check its output against a torch reference. We do not have to spell out the exact architecture: the arch (e.g. `sm_100a`) is auto-detected from the device, so the target `"cuda"` is enough, and `tir_pipeline="tirx"` is what selects the TIRx lowering pipeline. Once compiled, `ex.mod(...)` takes torch tensors directly, with no manual conversion in between.
 
 ```python
 import torch
@@ -158,7 +158,7 @@ print("PASS")
 
 ## Scope, Layout, Dispatch
 
-The kernel is a set of choices along three knobs. Every operation answers three questions — *who* runs it, *where* its data lives, and *how* it executes — and those answers are scope, layout, and dispatch.
+Now that the kernel runs, we can read it back and ask what its lines actually decide. Seen this way, the whole kernel is a set of choices along three knobs. Every operation in it answers the same three questions — *who* runs it, *where* its data lives, and *how* it executes — and those three answers are exactly scope, layout, and dispatch. The rest of this section takes the knobs one at a time; the interactive demo below lets you see which lines each knob controls.
 
 ```{raw} html
 <iframe src="../demo/tirx_dispatch.html" title="TIRx: scope, layout, dispatch" loading="lazy"
@@ -166,24 +166,24 @@ The kernel is a set of choices along three knobs. Every operation answers three 
 ```
 *Interactive: click Scope / Layout / Dispatch to spotlight the lines of the kernel each knob controls.*
 
-**Scope — which threads issue or cooperate.** Operations name the group of threads that runs them. `Tx.cta.copy(...)` is CTA-scoped: all 128 threads cooperate on the global-to-shared copy, each handling a slice. The MMA is the opposite extreme — `tcgen05.mma` is a *single-instruction* cooperative op, so the kernel narrows scope to one thread with `if warp_id == 0: if T.ptx.elect_sync():`, and that one elected thread issues `Tx.gemm_async` plus `tcgen05.commit`. The hardware still runs the whole tile's MMA; issuing it once avoids launching the same MMA 128 times. The readback `Tx.wg.copy_async(...)` is warpgroup-scoped: the 128 threads of the warpgroup split the 128 x 128 accumulator row-by-row, each thread pulling its own row out of TMEM.
+**Scope — which threads issue or cooperate.** Every operation names the group of threads that runs it, and different operations want different groups. The global-to-shared copy `Tx.cta.copy(...)` is CTA-scoped: all 128 threads pitch in, each carrying its own slice of the data. The MMA sits at the other extreme. A `tcgen05.mma` is a *single-instruction* cooperative op, so there is nothing to be gained by having every thread issue it — the kernel narrows the scope down to a single thread with `if warp_id == 0: if T.ptx.elect_sync():`, and that one elected thread issues both `Tx.gemm_async` and `tcgen05.commit`. The hardware still runs the MMA over the whole tile; issuing it once simply spares us from launching the same MMA 128 times. The readback `Tx.wg.copy_async(...)` lands in between, at warpgroup scope: the warpgroup's 128 threads split the 128 x 128 accumulator row by row, each thread pulling its own row out of TMEM.
 
-**Layout — where the operands and accumulator live.** Each tile carries an explicit placement. The A and B operands go into SMEM under a `tma_shared_layout` (`A_layout` / `B_layout`) — a swizzled shared-memory layout that `tcgen05.mma` requires. The accumulator lives in TMEM, declared with `T.decl_buffer(..., scope="tmem", ...)` and a `TileLayout` over `TLane`/`TCol`. The register readback view `Dreg_wg` uses `TileLayout(S[(128, BLK_N) : (1@tid_in_wg, 1)])`, which maps the first tile axis onto warpgroup threads — row *i* is owned by warpgroup thread *i*. Layout is part of the operation's contract: the MMA reads the SMEM layouts of its operands and the TMEM layout of its accumulator to know how the tile is physically arranged.
+**Layout — where the operands and accumulator live.** In TIRx no tile floats free of memory; each one carries an explicit placement, and the kernel above sets three of them. The A and B operands go into SMEM under a `tma_shared_layout` (`A_layout` and `B_layout`), a swizzled shared-memory layout that `tcgen05.mma` insists on. The accumulator lives in TMEM, declared with `T.decl_buffer(..., scope="tmem", ...)` and a `TileLayout` over `TLane`/`TCol`. And the register readback view `Dreg_wg` uses `TileLayout(S[(128, BLK_N) : (1@tid_in_wg, 1)])`, which maps the first tile axis onto warpgroup threads so that row *i* is owned by warpgroup thread *i*. These placements are not decoration: layout is part of an operation's contract. The MMA reads the SMEM layouts of its operands and the TMEM layout of its accumulator precisely so it knows how the tile is physically arranged.
 
-**Dispatch — which hardware path executes it.** When more than one lowering exists, dispatch picks. `Tx.gemm_async(..., dispatch="tcgen05", ...)` selects the Blackwell Tensor Core path, so the tile MMA lowers to `tcgen05.mma` writing TMEM. The synchronous `Tx.cta.copy` here lowers to thread copies; later GEMM steps swap that for TMA without changing the surrounding scope or layout. Naming the path explicitly lets one kernel shape target different engines.
+**Dispatch — which hardware path executes it.** A tile operation can often be lowered in more than one way, and dispatch is how we pick. Here `Tx.gemm_async(..., dispatch="tcgen05", ...)` selects the Blackwell Tensor Core path, so the tile MMA lowers to `tcgen05.mma` writing into TMEM. Dispatch reaches the copies too: the synchronous `Tx.cta.copy` in this kernel lowers to plain thread copies, and later GEMM steps will swap that for TMA without touching the surrounding scope or layout at all. Because the path is named rather than implied, the same kernel shape can be retargeted to different engines just by changing this one knob.
 
 ## How Compilation Works
 
-Wrap the `PrimFunc` in an `IRModule` and compile with `tvm.compile(mod, target=..., tir_pipeline="tirx")`; it runs the TIRx lowering pipeline and returns an `Executable` you call directly:
+We already compiled the kernel above to test it; now we look a little closer at what that step does. The recipe is short: wrap the `PrimFunc` in an `IRModule` and hand it to `tvm.compile(mod, target=..., tir_pipeline="tirx")`. This runs the TIRx lowering pipeline and hands back an `Executable` that you call directly.
 
 ```python
 target = tvm.target.Target("cuda")
 ex = tvm.compile(tvm.IRModule({"main": kernel}), target=target, tir_pipeline="tirx")
 ```
 
-`tir_pipeline="tirx"` selects the TIRx lowering pipeline: `LowerTIRx` resolves each tile primitive against its scope / layout / dispatch contract, then host/device split and finalize produce the launchable module. Compiling inside a `with target:` block also works and lets the kernel pick up the target context.
+It is worth knowing, at least in outline, what `tir_pipeline="tirx"` sets in motion. The pipeline's central pass, `LowerTIRx`, resolves each tile primitive against its scope / layout / dispatch contract — this is where the three knobs we just discussed are actually cashed out into instructions. After that, the usual host/device split and a finalize step produce the launchable module. If you prefer, you can also compile inside a `with target:` block, which lets the kernel pick up the surrounding target context.
 
-You can inspect the result at both levels. Read the IR with `.show()` / `.script()`, and read the generated CUDA from the compiled module:
+One nice property of this flow is that nothing is hidden from you: the result can be inspected at both levels. You can read the IR itself with `.show()` or `.script()`, and you can read the CUDA C that the compiler ultimately emitted straight off the compiled module.
 
 ```python
 kernel.show()                          # pretty-print the TIRx (TVMScript)
@@ -193,10 +193,10 @@ print(kernel.script())                 # ... the same, as a string
 print(ex.mod.imports[0].inspect_source())
 ```
 
-For the full lowering story — the passes, the tile-primitive dispatch, and the host/device split — see {ref}`chap_arch`.
+This is only a sketch. For the full lowering story — all of the passes, how tile-primitive dispatch is resolved, and how the host/device split is done — see {ref}`chap_arch`.
 
 ## Where to Go Next
 
-- {ref}`chap_data_layouts` — the tensor layout model (`TileLayout`, named axes, swizzle) that the operand and accumulator placements above are built from.
-- {ref}`chap_language_reference` — the full language-feature set: parser utilities, data types, buffers and memory, control flow, and thread synchronization.
-- {ref}`chap_gemm_basics` — this kernel as Step 1 of the GEMM optimization path, built up through K-loop accumulation, spatial tiling, TMA, and warp specialization.
+- {ref}`chap_data_layouts` — the tensor layout model (`TileLayout`, named axes, swizzle) that the operand and accumulator placements above are built from. Start here if the layout knob felt like the most mysterious of the three.
+- {ref}`chap_language_reference` — the full language-feature set, covering parser utilities, data types, buffers and memory, control flow, and thread synchronization, for when you want the complete vocabulary rather than the tour.
+- {ref}`chap_gemm_basics` — this kernel as Step 1 of the GEMM optimization path, built up through K-loop accumulation, spatial tiling, TMA, and warp specialization. This is the natural next stop if you want to see the same three knobs scale up to a real kernel.

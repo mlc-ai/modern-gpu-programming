@@ -23,54 +23,60 @@ work in {ref}`chap_gemm_basics`.
 
 ## A 2D address space
 
-Earlier generations kept large MMA accumulators in registers throughout the compute phase; on
-Blackwell `tcgen05.mma` instead writes them to TMEM — **128 rows × up to 512 32-bit columns** per
-CTA (resident on the SM). The shape hints at how TMEM is addressed: not as a flat byte array, but as a genuine grid. Rows
-are indexed by a hardware axis called `TLane` (128 lanes) and columns by `TCol` (up to 512), and a
-TMEM buffer is declared with a layout over those two axes. An accumulator, for instance, is
-`S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_layout`.
+On earlier generations a large MMA accumulator stayed in registers for the whole compute phase. On
+Blackwell `tcgen05.mma` writes it to TMEM instead, and the space it writes into is **128 rows × up to
+512 32-bit columns**, scoped to the CTA. That shape is worth pausing on, because it tells you how
+TMEM is addressed. It is not a flat byte array that you index with a single offset; it is a genuine
+two-dimensional grid. The rows are indexed by a hardware axis called `TLane`, of which there are 128,
+and the columns by `TCol`, of which there are up to 512. So when you declare a TMEM buffer, you give
+it a layout over those two axes, just as you would for any other tile. An accumulator, for example,
+is written `S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_layout`.
 
 ![TMEM 2D layout: TLane rows × TCol columns](../img/tmem_layout.png)
 
 ## Allocation
 
-Unlike registers, which the compiler hands out automatically, TMEM must be explicitly **allocated
-and freed** by the kernel. Allocation is per-CTA: a single warp in the CTA does the allocation, in units of 32 columns, with the
-column count rounded up to a power of two. TMEM is a budgeted per-CTA resource (resident on the SM),
-much like SMEM: a kernel sizes its TMEM the same way it sizes its SMEM ring buffers, and has to live
-within the per-CTA limit (resident on the SM).
+Registers come to you for free, in the sense that the compiler decides which ones to use and when to
+release them. TMEM does not work that way: the kernel has to **allocate and free** it explicitly.
+The allocation is a per-CTA affair. One warp in the CTA performs it, requesting columns in units of
+32, and the column count is rounded up to a power of two. From there you can think of TMEM the same
+way you think of shared memory. It is a budgeted resource that belongs to the CTA, so you size it
+much as you would size your SMEM ring buffers, and you have to stay within the per-CTA limit the
+hardware gives you.
 
 ## Reading and writing TMEM
 
-Because TMEM is its own address space, the ordinary `ld.shared` / `st.shared` instructions do not
-reach it. Data moves in and out through three dedicated `tcgen05` instructions, one for each path the
-accumulator and its scale factors need to travel.
+Since TMEM is an address space of its own, the ordinary `ld.shared` and `st.shared` instructions
+cannot reach into it. Data travels in and out through three dedicated `tcgen05` instructions, one for
+each path the accumulator and its scale factors need to take.
 
-The first, **`tcgen05.ld`**, moves **TMEM → registers**. The DSL copy is warpgroup-distributed and
-lowers to four warp-collective `tcgen05.ld` instructions (one per warp, each moving its own 32 TMEM
-lanes, together covering all 128). The instruction itself comes from a *family* of datapath atoms —
-shapes `.16x64b`, `.16x128b`, `.16x256b`, `.32x32b`, `.16x32bx2`, each with a repeat factor `.x1`
-through `.x128` — and this path uses one of them; the register count per thread follows the chosen
-shape × repeat. The atom distributes the TMEM tile
-into registers ({ref}`chap_layout_generations`) — lane `l` gets row
-`l/4` and two columns. That layout gives continuity: the epilogue pulls the
-accumulator out of TMEM into the *same* per-lane fragment an Ampere `mma` or Hopper `wgmma` produces,
-so it can cast and store the result with code that already exists. The second, **`tcgen05.st`**, is
-the reverse — **registers → TMEM**, in that same fragment — used to stage data a thread already holds
-in registers (an A operand, say) into TMEM. The third, **`tcgen05.cp`**, is a bulk **SMEM → TMEM**
-copy (the `32x128b.warpx4` form); this is the instruction that stages a block-scaled MMA's scale
-factors.
+The first of these, **`tcgen05.ld`**, moves data from **TMEM into registers**. At the DSL level a
+single copy is warpgroup-distributed, and it lowers to four warp-collective `tcgen05.ld` instructions
+— one per warp, each handling its own 32 TMEM lanes, so that the four warps together cover all 128.
+The instruction is not a single fixed shape but one drawn from a *family* of datapath atoms: the
+shapes `.16x64b`, `.16x128b`, `.16x256b`, `.32x32b`, and `.16x32bx2`, each carrying a repeat factor
+from `.x1` up to `.x128`. This path picks one of them, and the number of registers each thread ends
+up with follows from the shape and repeat that were chosen. Whichever atom is used, it distributes
+the TMEM tile across registers ({ref}`chap_layout_generations`) so that lane `l` receives row `l/4`
+and two columns. The reason this particular layout matters is continuity: the epilogue pulls the
+accumulator out of TMEM into the *same* per-lane fragment that an Ampere `mma` or a Hopper `wgmma`
+would produce, which means it can cast and store the result using code that already exists. The
+second instruction, **`tcgen05.st`**, simply runs that path in reverse — from **registers back into
+TMEM**, in the same fragment — and you reach for it when a thread already holds data in registers, an
+A operand for instance, and you want to stage it into TMEM. The third, **`tcgen05.cp`**, is a bulk
+copy from **SMEM into TMEM** (the `32x128b.warpx4` form); this is the one that stages the scale
+factors for a block-scaled MMA.
 
 ![tcgen05.ld / st move the TMEM accumulator to and from registers in the m8n8 fragment (lane l → row l/4, two columns)](../img/tcgen05_ldst.svg)
 
-All three share TMA's defining trait: they are **asynchronous** — they return before the data has
-actually moved, so something must gate any consumer that depends on the result
-({ref}`chap_async_barriers`). The completion mechanisms differ by instruction: `tcgen05.ld` and
-`tcgen05.st` complete via `tcgen05.wait::ld` / `tcgen05.wait::st`, while `tcgen05.mma` and
-`tcgen05.cp` complete via a commit group plus an mbarrier. Cross-thread handoffs additionally require
-fences.
+What all three have in common is the trait that also defines TMA: they are **asynchronous**. Each
+returns before the data has actually moved, so anything that depends on the result has to be gated by
+an explicit synchronization ({ref}`chap_async_barriers`). How you wait, though, depends on the
+instruction. A `tcgen05.ld` or `tcgen05.st` completes through `tcgen05.wait::ld` or
+`tcgen05.wait::st`, whereas a `tcgen05.mma` or `tcgen05.cp` completes through a commit group together
+with an mbarrier. And when the result is handed off between threads, you need fences on top of that.
 
-These three instructions, together with TMA, carry a tile through its full life on Blackwell, the
-path you will write directly in {ref}`chap_gemm_basics`: TMA stages the operands into
-SMEM, `tcgen05.mma` accumulates into TMEM, and the epilogue `tcgen05.ld`s TMEM back into registers to
-produce the output.
+Taken together with TMA, these three instructions carry a tile through its entire life on Blackwell —
+the very path you will write out by hand in {ref}`chap_gemm_basics`. TMA stages the operands into
+SMEM, `tcgen05.mma` accumulates into TMEM, and then the epilogue uses `tcgen05.ld` to bring TMEM back
+into registers and produce the output.

@@ -30,29 +30,33 @@ synchronization rules a tensor-core kernel must obey ({ref}`chap_gemm_async`).
 ```
 *Interactive: an mbarrier's counter + phase bit, and its init / arrive / wait APIs.*
 
-An mbarrier is a hardware synchronization object stored in shared memory: a counter that knows when
-it has reached zero. It combines an **arrival counter** with a **phase bit**. Its lifecycle is the
-three operations a kernel performs on it:
+An mbarrier is a hardware synchronization object that lives in shared memory. At heart it is just a
+counter that knows when it has reached zero, paired with a single **phase bit**; together the
+**arrival counter** and that phase bit are everything a kernel needs to coordinate a handoff. To see
+how, it helps to walk through the three operations a kernel performs on a barrier over its lifetime.
 
-1. **Init** — set the expected number of arrivals; the barrier starts at phase 0.
-2. **Arrive** — each arrival decrements the counter. There are three ways to arrive:
-   - **TMA tx-count arrival** — `mbarrier.arrive.expect_tx(bytes)` records the expected byte (tx)
-     count (and counts as the issuing thread's arrival); the TMA engine then issues `complete-tx`
-     as bytes land, and the barrier's phase flips only once BOTH the pending arrival count and the
-     tx (byte) count are satisfied. It is not a second ordinary "arrival"
-     (see {ref}`chap_tma`).
-   - **`tcgen05` commit arrival** — the arrival requires an explicit
-     `tcgen05.commit.mbarrier::arrive`; the commit group's completion drives the barrier arrival.
-     It is not automatic without the commit.
-   - **Thread arrive** — a thread arrives explicitly, e.g. to signal that a shared buffer is free
-     to reuse.
-3. **Wait** — a consumer blocks until the barrier reaches the expected phase for this iteration,
-   which means all required arrivals have happened.
+1. **Init.** We tell the barrier how many arrivals to expect. It starts life at phase 0, counter
+   loaded, waiting for the first round of work to report in.
+2. **Arrive.** Each arrival brings the counter one step closer to zero. A barrier can be arrived at
+   in three different ways, and the differences matter:
+   - **TMA tx-count arrival.** Here `mbarrier.arrive.expect_tx(bytes)` records the expected byte
+     (tx) count and also counts as the issuing thread's arrival. As the load runs, the TMA engine
+     issues `complete-tx` while bytes land, and the barrier flips its phase only once BOTH the
+     pending arrival count and the tx (byte) count have been satisfied. In other words, the
+     `expect_tx` call is not a second ordinary "arrival" — it sets up a byte budget that the
+     hardware drains on its own (see {ref}`chap_tma`).
+   - **`tcgen05` commit arrival.** This one is not automatic. The arrival only happens once you issue
+     an explicit `tcgen05.commit.mbarrier::arrive`, and it is the completion of that commit group
+     that drives the barrier arrival. Forget the commit and the barrier never advances.
+   - **Thread arrive.** A thread can also arrive directly, the plain way — for example to announce
+     that a shared buffer it was using is now free to reuse.
+3. **Wait.** Finally, a consumer blocks on the barrier until it reaches the phase expected for this
+   iteration, which is the same as saying every required arrival has happened.
 
-The first two arrival paths come from the asynchronous engines of the previous
-chapters: the same hardware that runs ahead also reports back through the mbarrier. This gives the
-producer/consumer pattern directly — the producer (say, TMA) arrives
-when its data is ready, and the consumer waits before touching it.
+The first two of these arrival paths come straight from the asynchronous engines we met in the
+previous chapters: the same hardware that runs ahead of the program also reports back through the
+mbarrier. That is what gives us the producer/consumer pattern for free. The producer — TMA, say —
+arrives once its data is ready, and the consumer simply waits before touching it.
 
 ## Phase Tracking
 
@@ -64,31 +68,31 @@ when its data is ready, and the consumer waits before touching it.
 ```
 *Interactive: the phase bit flipping as a barrier is reused across pipeline iterations.*
 
-The phase bit exists for reuse. A long
-K-loop runs the same handoff hundreds of times, and allocating a fresh barrier for each iteration
-would be wasteful and would not even fit in SMEM. The barrier is reused, and the phase bit
-keeps successive reuses from being confused for one another. When all arrivals complete, the
-barrier automatically **flips its phase** (0 → 1 → 0 → …), which lets a single barrier serve every
-iteration of a pipelined loop: iteration 0 waits on phase 0, iteration 1 on phase 1, iteration 2 on
-phase 0 again, and so on.
+Why does the barrier carry a phase bit at all? The answer is reuse. A long K-loop runs the very
+same handoff hundreds of times over, and allocating a fresh barrier for each iteration would be both
+wasteful and impossible — that many barriers would never fit in SMEM. So we reuse one barrier, and
+the phase bit is what keeps one round of reuse from being mistaken for the next. Each time all of its
+arrivals complete, the barrier automatically **flips its phase** (0 → 1 → 0 → …). A single barrier
+can therefore serve every iteration of a pipelined loop: iteration 0 waits on phase 0, iteration 1
+on phase 1, iteration 2 on phase 0 again, and so the pattern continues.
 
-The consequence is that a pipelined kernel never allocates a barrier per iteration. It keeps a small
-set of barriers and tracks, in a register, *which phase* the current stage expects. This
-**stage + phase** bookkeeping is precisely how a software pipeline reuses a fixed pool of SMEM
-buffers and barriers across a long K-loop ({ref}`chap_gemm_async`).
+What this buys us is that a pipelined kernel never has to allocate a barrier per iteration. Instead
+it keeps a small set of barriers around and remembers, in a register, *which phase* the current stage
+is expecting. This bit of **stage + phase** bookkeeping is exactly how a software pipeline manages
+to reuse a fixed pool of SMEM buffers and barriers across a long K-loop ({ref}`chap_gemm_async`).
 
 ## Synchronization Rules
 
-The whole model reduces to a single rule: **whenever one path produces data
-and another consumes it, make the handoff explicit.** A tensor-core kernel only ever exhibits three
-such handoffs:
+For all its moving parts, the model comes down to a single rule: **whenever one path produces data
+and another consumes it, make the handoff explicit.** The pleasant surprise is how few such handoffs
+a tensor-core kernel actually contains — only three ever show up:
 
-- **Thread code → engine.** If threads write SMEM and a later MMA or TMA store reads it, insert a
-  thread-level sync or fence first.
-- **TMA → MMA.** If TMA fills a SMEM tile, the MMA must wait on the load's mbarrier before reading
-  that tile.
-- **MMA → epilogue.** If `tcgen05.mma` writes TMEM, the epilogue must wait for the MMA's completion
-  barrier before reading the result.
+- **Thread code → engine.** When threads write SMEM and a later MMA or TMA store reads it, insert a
+  thread-level sync or fence first, so the writes are visible before the engine goes looking for them.
+- **TMA → MMA.** When TMA fills a SMEM tile, the MMA must wait on that load's mbarrier before it
+  reads the tile.
+- **MMA → epilogue.** When `tcgen05.mma` writes TMEM, the epilogue must wait on the MMA's completion
+  barrier before it reads the result.
 
 The **TMA → MMA** handoff in motion — the TMA engine satisfies the barrier's tx (byte) count via
 `complete-tx` as its bytes land, and the consumer's `try_wait` releases:
@@ -102,7 +106,9 @@ The **TMA → MMA** handoff in motion — the TMA engine satisfies the barrier's
 *Interactive: a TMA load signalling completion through an mbarrier. The `tcgen05` MMA → epilogue
 handoff works the same way, with the Tensor Core arriving on the barrier instead of TMA.*
 
-The same rule extends to resource reuse, which is a handoff running the other way:
-before TMEM or a SMEM buffer is freed or overwritten, every participant that might still read it
-must first have arrived. The GEMM chapters spell out the exact wait and fence at each of these
-handoffs; those kernels resolve into a sequence of producer/consumer pairs.
+The same rule reaches a little further than it first appears, because resource reuse is itself a
+handoff — just one running in the opposite direction. Before a stretch of TMEM or a SMEM buffer is
+freed or overwritten, every participant that might still be reading it must first have arrived. The
+GEMM chapters work out the exact wait and fence needed at each of these handoffs, and once you see
+them in that light, those kernels dissolve into nothing more than a sequence of producer/consumer
+pairs.

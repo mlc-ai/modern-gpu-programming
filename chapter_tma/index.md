@@ -30,41 +30,55 @@ through an mbarrier ({ref}`chap_async_barriers`), stores through a commit/wait g
 
 ## One Thread Issues, Hardware Moves the Tile
 
-TMA divides the labor: a **single thread issues** a tile copy, and the **hardware performs the
-transfer** in the background. There is no per-thread load/store loop. The issuing thread hands the
-engine a tensor-map descriptor — the global tensor's shape, strides, and tile/box and swizzle — and a
-destination SMEM address at the copy, and the engine streams the bytes on its own.
+The idea behind TMA is to split the work between the threads and the hardware. Instead of every
+thread running its own load/store loop, a single thread issues one tile copy, and the engine carries
+out the transfer in the background while the rest of the warp gets on with the math. To issue the
+copy, that thread hands the engine a tensor-map descriptor — a compact record of the global tensor's
+shape, strides, the tile (or box) to read, and the swizzle to apply — together with the destination
+SMEM address it should copy into. From there the engine streams the bytes on its own.
 
-The same logical "copy this tile" can be realized two ways. The threads can cooperate, each pulling
-its share of the data, or one thread can issue a TMA transfer and let the engine do the rest. The
-two paths differ in both performance and synchronization, and choosing between them is a *dispatch*
-decision — the scope / layout / dispatch lens from the book's introduction.
+It helps to notice that the same logical operation, "copy this tile," can be realized in two quite
+different ways. One option is for the threads to cooperate, each pulling its share of the data; the
+other is for a single thread to issue a TMA transfer and let the engine do the rest. The two paths
+behave differently in both performance and synchronization, so picking between them is a genuine
+*dispatch* decision — exactly the scope / layout / dispatch lens we introduced at the start of the
+book.
 
 ## Swizzled Layouts
 
-The tile also has to land in a form the Tensor Core can read efficiently. TMA can apply layout
-**swizzling** as it writes into shared memory, producing a SMEM layout that the Tensor Core reads
-without bank conflicts when the swizzle matches the layout/mode the MMA expects. The swizzle pattern travels in the TMA descriptor, and it must match the
-layout the MMA expects. This links {ref}`chap_data_layout` to the hardware: the TMA descriptor, the
-SMEM tile, and the MMA must all agree on the same swizzle, or the bytes the engine deposits will not
-be the bytes the core wants.
+Moving the tile is only half the job; it also has to land in a form the Tensor Core can read
+efficiently. This is where **swizzling** comes in. As TMA writes the tile into shared memory, it can
+permute the layout so that the Tensor Core later reads it without bank conflicts — provided the
+swizzle it applies matches the layout (and mode) the MMA expects. The swizzle pattern itself rides
+along in the TMA descriptor, which is what lets one thread set it once and have the engine apply it to
+the whole tile.
+
+This is the point where {ref}`chap_data_layout` meets the hardware. The TMA descriptor, the SMEM
+tile, and the MMA all have to agree on the same swizzle. If they disagree, the engine will still
+faithfully deposit bytes into shared memory — they simply will not be arranged the way the Tensor Core
+wants to read them, and the computation will be wrong.
 
 ## Completion: Loads vs. Stores
 
-Asynchrony buys the overlap, but it raises a question the synchronous loop never had to answer: since
-the issuing thread returns immediately, how does the kernel know the transfer finished before
-something reads the data? TMA needs an explicit completion signal, and loads and stores use different
-mechanisms.
+Asynchrony is what buys us the overlap, but it also raises a question the old synchronous loop never
+had to worry about. Because the issuing thread returns immediately — long before the bytes have
+actually arrived — how does the kernel know the transfer has finished before something tries to read
+the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
+differently, so it is worth looking at each in turn.
 
 ![TMA load synchronization flow](../img/tma_sync_flow.png)
 
-A **load (GMEM → SMEM)** integrates with an **mbarrier** ({ref}`chap_async_barriers`). The issuing
-thread records the expected byte (tx) count (`mbarrier.arrive.expect_tx(bytes)`); the engine issues
-`complete-tx` as bytes land, and the phase flips only once both the arrival count and the tx-count are
-satisfied; consumers wait on the barrier before touching the tile. A **store (SMEM → GMEM)** has no consumer waiting on the result, so it
-uses a lighter-weight **commit-group / wait-group** mechanism instead: the kernel commits the issued
-store group and later waits for it to drain before reusing the SMEM buffer.
+A **load (GMEM → SMEM)** ties into an **mbarrier** ({ref}`chap_async_barriers`). Before the transfer
+begins, the issuing thread tells the barrier how many bytes to expect with
+`mbarrier.arrive.expect_tx(bytes)`. As the data lands, the engine emits `complete-tx` signals that
+account for the bytes that have arrived, and the barrier's phase only flips once both the arrival
+count and the tx-count have been satisfied. Consumers wait on that barrier, so they never touch the
+tile until it is fully in place. A **store (SMEM → GMEM)** is simpler, because nothing downstream is
+waiting on the result the way a consumer waits on a freshly loaded tile. It uses a lighter-weight
+**commit-group / wait-group** mechanism instead: the kernel commits the store group it issued and
+later waits for that group to drain before it reuses the SMEM buffer.
 
-TMA turns tile movement from a per-thread loop into an asynchronous hardware operation with
-byte-count tracking and explicit completion. This is the structure a pipelined kernel needs: the
-load of the next tile can run in the background while the Tensor Cores process the current one.
+Put together, TMA turns tile movement from a per-thread loop into an asynchronous hardware operation
+with byte-count tracking and explicit completion. That is precisely the structure a pipelined kernel
+is built on: while the Tensor Cores work through the current tile, the load of the next one can run in
+the background, and by the time the cores are ready the data is already waiting for them.
