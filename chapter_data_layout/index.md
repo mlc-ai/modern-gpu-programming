@@ -181,15 +181,18 @@ of CuTe, extended with explicit hardware-named axes and a designated replication
 
 ## Swizzle layout
 
-The last layout in this chapter solves a specific hardware problem. Shared memory is split into
-**32 banks** that can be read in parallel, and a warp's
-accesses are served in a single cycle only if they hit *distinct* banks; when several lanes land in
-different addresses of the *same* bank, those accesses **serialize** into a bank conflict. This bites
-in a very common situation: a layout where reading a *row* is conflict-free but reading a *column*
-funnels every element into one bank, so the column access runs many times slower than the row
-access over identical data.
+The last layout in this chapter solves a specific hardware problem. GPU memory is usually
+organized into memory banks. Accesses are fastest when different lanes hit different banks. If
+several lanes access different addresses in the same bank, the hardware serializes those accesses
+into a **bank conflict**.
 
-**Swizzle** fixes this. It permutes the address mapping — typically by XOR-ing the column index with
+In tensor programs, however, memory is not accessed in a purely linear order. When working with
+tensors and matrices, we often need to read both row slices and column slices of a tile. This
+creates a central tension: a layout that is efficient for row-wise access may lead to bank
+conflicts for column-wise access, while a layout that favors columns may hurt rows. **Swizzling**
+is designed to address this problem.
+
+**Swizzle** fixes it by permuting the address mapping — typically by XOR-ing the column index with
 the row — so that *both* row and column accesses spread across banks. This conflict-free guarantee
 holds for the matching element width, swizzle mode, and access pattern (the one an engine's
 descriptor expects), not for arbitrary element widths or alignments:
@@ -200,8 +203,15 @@ descriptor expects), not for arbitrary element widths or alignments:
 ```
 *Interactive: an 8×8 tile, bank-conflicted by column in plain row-major, conflict-free after the XOR swizzle.*
 
-In practice you do not invent a permutation per kernel; the hardware offers a fixed menu, named by
-the granularity at which it shuffles — `SWIZZLE_NONE`, `SWIZZLE_32B`, `SWIZZLE_64B`, `SWIZZLE_128B`:
+The simple 8×8 example illustrates the core idea, but real GPU memories usually have more banks
+than this toy picture suggests. To make swizzling work in practice, we do not treat the whole tile
+as one monolithic object. Instead, we divide memory into small segments and apply the swizzle
+pattern within each segment. In this way, the same row/column-remapping idea scales to the full
+banked memory system.
+
+In practice, different hardware modes define different choices of this basic segment, or **atom**.
+Common examples are `SWIZZLE_NONE`, `SWIZZLE_32B`, `SWIZZLE_64B`, and `SWIZZLE_128B`, each of
+which applies the same general idea at a different granularity:
 
 ```{raw} html
 <iframe src="../demo/swizzle_128B.html" title="SWIZZLE_128B layout" loading="lazy"
