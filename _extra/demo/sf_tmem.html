@@ -6,25 +6,26 @@
 <link rel="stylesheet" href="../viz-base.css">
 <script src="../viz-base.js"></script>
 <style>
-  body { max-width:860px; margin:0 auto; }
-  .panels { max-width:860px; align-items:start; position:relative; }
+  body { max-width:760px; margin:0 auto; }
+  .panels { max-width:760px; align-items:start; position:relative; gap:24px; }
   .panel { padding:14px 12px; }
   .panel h2 { margin-bottom:2px; }
-  .sfgrid { display:grid; gap:1px; justify-content:center; margin-top:4px; }
-  .gA { grid-template-columns:34px repeat(4, 26px); }
-  .gB { grid-template-columns:36px repeat(16, 11px); }
+  .sfgrid { display:grid; gap:1px; margin-top:4px; }
+  .gA { grid-template-columns:36px repeat(4, 1fr); }
+  .gB { grid-template-columns:34px repeat(16, 1fr); }
   .colhdr { font-size:8px; color:var(--dim); font-weight:700; text-align:center; padding-bottom:2px; }
   .rowlab { font-size:8.5px; color:var(--dim); font-weight:600; text-align:right; padding-right:4px;
-            height:8px; line-height:8px; }
-  .sfcell { height:8px; border-radius:2px; cursor:pointer; opacity:.9; transition:opacity .08s; }
-  .sfcell.we { margin-right:3px; }                 /* word-edge gap (every 4 bytes) */
-  #panels.focus .sfcell { opacity:.13; }
+            height:9px; line-height:9px; }
+  .sfcell { height:9px; border-radius:2px; cursor:pointer; opacity:.9; transition:opacity .08s; }
+  .sfcell.ge { margin-bottom:2px; }          /* group edge every 32 rows (left) */
+  .sfcell.we { margin-right:3px; }           /* word edge every 4 bytes (right) */
+  #panels.focus .sfcell { opacity:.12; }
   #panels.focus .sfcell.src, #panels.focus .sfcell.hl { opacity:1; }
   .sfcell.src { outline:2px solid #111; outline-offset:-1px; }
   .sfcell.hl  { outline:2px solid #111; outline-offset:-1px; box-shadow:0 0 6px rgba(59,130,246,.7); }
   .arrow-svg path.ar { fill:none; stroke:#1f2937; stroke-width:1.4; }
   .arrow-svg .ah { fill:#1f2937; stroke:none; }
-  .formula-bar { max-width:860px; }
+  .formula-bar { max-width:760px; }
   .frow { font-family:'SF Mono','Fira Code',monospace; font-size:12px; color:var(--text); line-height:1.7; }
   .frow .k { color:var(--accent); font-weight:700; }
   #calc { margin-top:8px; color:var(--accent); }
@@ -32,18 +33,18 @@
 </head>
 <body>
 <h1>Scale Factors in TMEM (nvfp4)</h1>
-<div class="sub">M = 128, K = 64 → SF_K = 4 &nbsp;·&nbsp; warpx4 broadcast R[4 : 32@TLane]</div>
+<div class="sub">M = 128, one MMA-K block (SF_K = 4) &nbsp;·&nbsp; warpx4 broadcast R[4 : 32@TLane]</div>
 
 <div class="panels" id="panels">
   <svg class="arrow-svg" id="arrows"></svg>
   <div class="panel">
     <h2>Logical SFA &nbsp;(M × SF_K)</h2>
-    <div class="nota">cell = SFA[m, sfk] &nbsp;·&nbsp; row = m (0–127), col = sfk (0–3)</div>
+    <div class="nota">click a cell = SFA[m, sfk] &nbsp;·&nbsp; color = m // 32 group</div>
     <div id="gridA" class="sfgrid gA"></div>
   </div>
   <div class="panel">
     <h2>TMEM &nbsp;(128 lanes × 16 bytes)</h2>
-    <div class="nota">row = lane (0–127) · 16 bytes = 4 words × 4 bytes (byte = sfk)</div>
+    <div class="nota">w0: m 0–31 · w1: m 32–63 · w2: m 64–95 · w3: m 96–127 &nbsp;·&nbsp; byte = sfk</div>
     <div id="gridB" class="sfgrid gB"></div>
   </div>
 </div>
@@ -57,37 +58,39 @@
     <span class="k">TCol</span> = word·4 + byte &nbsp;·&nbsp;
     <span class="k">warpx4</span> → lanes { TLane, +32, +64, +96 }
   </div>
-  <div class="frow" id="calc">hover a cell on the left…</div>
+  <div class="frow" id="calc">click a cell on the left…</div>
 </div>
 
 <script>
 (function () {
-  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];   // color by sfk / byte
+  var G = ['#5b9bd5', '#ed9a3c', '#d95555', '#45b5a5'];   // color = m//32 group / word
   var M = 128, SFK = 4, BYTES = 16;
   var panels = document.getElementById('panels');
   var gridA = document.getElementById('gridA'), gridB = document.getElementById('gridB');
   var svg = document.getElementById('arrows');
   var calc = document.getElementById('calc');
 
-  // left: logical SFA (rows m, cols sfk), colored by sfk
+  // left: logical SFA (rows m, cols sfk); color by m//32 group, gap every 32 rows
   var a = '<div></div>';
   for (var s = 0; s < SFK; s++) a += '<div class="colhdr">sf' + s + '</div>';
   for (var m = 0; m < M; m++) {
+    var grp = (m / 32) | 0, ge = (m % 32 === 31 && m !== M - 1) ? ' ge' : '';
     a += '<div class="rowlab">' + (m % 32 === 0 ? ('m' + m) : '') + '</div>';
     for (var s2 = 0; s2 < SFK; s2++)
-      a += '<div class="sfcell" data-m="' + m + '" data-sfk="' + s2 + '" style="background:' + G[s2] + '"></div>';
+      a += '<div class="sfcell' + ge + '" data-m="' + m + '" data-sfk="' + s2 +
+           '" style="background:' + G[grp] + '"></div>';
   }
   gridA.innerHTML = a;
 
-  // right: TMEM, rows lane 0..127, cols = 16 bytes (TCol); byte = TCol%4, word = TCol//4
+  // right: TMEM, rows lane 0..127, cols = 16 bytes; color by word (=TCol//4), gap between words
   var b = '<div></div>';
   for (var t = 0; t < BYTES; t++) b += '<div class="colhdr">' + (t % 4) + '</div>';
   for (var lane = 0; lane < 128; lane++) {
     b += '<div class="rowlab">' + (lane % 32 === 0 ? ('L' + lane) : '') + '</div>';
     for (var t2 = 0; t2 < BYTES; t2++) {
-      var edge = (t2 % 4 === 3 && t2 !== BYTES - 1) ? ' we' : '';
-      b += '<div class="sfcell' + edge + '" data-lane="' + lane + '" data-tcol="' + t2 +
-           '" style="background:' + G[t2 % 4] + '"></div>';
+      var we = (t2 % 4 === 3 && t2 !== BYTES - 1) ? ' we' : '';
+      b += '<div class="sfcell' + we + '" data-lane="' + lane + '" data-tcol="' + t2 +
+           '" style="background:' + G[(t2 / 4) | 0] + '"></div>';
     }
   }
   gridB.innerHTML = b;
@@ -133,17 +136,12 @@
       'TCol = ' + word + '·4 + ' + sfk + ' = <b>' + tcol + '</b> &nbsp;→&nbsp; ' +
       'lanes { <b>' + lanes.join(', ') + '</b> }';
   }
-  function reset() {
-    clearAll();
-    calc.textContent = 'hover a cell on the left…';
-  }
-  gridA.addEventListener('mouseover', function (e) {
+  gridA.addEventListener('click', function (e) {
     var c = e.target.closest && e.target.closest('.sfcell');
-    if (c) show(c);
+    if (c) show(c);                       // click to select (pinned until the next click)
   });
-  panels.addEventListener('mouseleave', reset);
   window.addEventListener('resize', function () { var s = gridA.querySelector('.src'); if (s) show(s); });
-  show(gridA.querySelector('[data-m="33"][data-sfk="1"]'));   // default: m=33,sf1 → lane 1, word 1, byte 1, TCol 5
+  show(gridA.querySelector('[data-m="64"][data-sfk="2"]'));   // default: m=64,sf2 → lane 0, word 2, byte 2, TCol 10
 })();
 </script>
 </body>
