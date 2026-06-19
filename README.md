@@ -13,8 +13,8 @@ vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at th
 - **Part I — Understanding the GPU.** Execution and memory model, the performance model
   (roofline, overlap), a deep dive into data layout, the memory and compute engines (TMA,
   Tensor Memory, Tensor Cores), asynchronous coordination, and advanced scheduling (CLC).
-- **Part II — Programming a GPU with TIRx.** Setup, the TIRx language and compile pipeline,
-  the scope/layout/dispatch framework, tensor layouts and swizzle, and your first kernels.
+- **Part II — Programming a GPU with TIRx.** The TIRx native level — writing device kernels
+  directly — and the tensor layout model (`TileLayout`, named axes, swizzle).
 - **Part III — GEMM: Tiled to SOTA.** A tiled GEMM built up through TMA pipelining,
   persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Capstone: Flash Attention.** Composing the whole machine into a real kernel.
@@ -48,7 +48,6 @@ Remote SSH auto-forwards it.)
 
 > **Installation instructions are being updated.** The TIRx nightly wheel URL and pinned
 > package versions move quickly, so the exact `pip install` commands are pending a refresh.
-> See the **Installation** chapter for the current status.
 
 Once TIRx is installed, verify the import:
 

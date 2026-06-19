@@ -79,9 +79,8 @@ share the 128 lanes** (one at align 0, one at align 16). Columns are the full N.
 contiguously: CTA 0 takes rows 0–127, CTA 1 takes rows 128–255, **each into its own TMEM lanes
 0–127, full N columns**. So the (256, N) accumulator is two separate 128-row TMEM regions, one per
 CTA — not one buffer spanning both. Each CTA holds its own 128 A-rows in SMEM; the **even CTA**
-issues the instruction and commits the completion barrier for the pair (the `cta_mask=3` /
-`pair_mask` you see in the GEMM kernels). This is the mode the 2-CTA cluster GEMM in
-{ref}`chap_gemm_advanced` uses.
+issues the instruction and commits the completion barrier for the pair. This is the mode the 2-CTA
+cluster GEMM in {ref}`chap_gemm_advanced` uses.
 
 ![cta_group::2, M=256: M split contiguously, 128 rows per CTA across the pair](../img/mma_cg2_m256.svg)
 
@@ -130,8 +129,9 @@ The placement has one new twist: **the scale factors live in TMEM**, not SMEM (t
 | C (M, N) | f32 | TMEM |
 
 So the scale factors take a detour the data operands don't: they are TMA-loaded into SMEM, then
-copied SMEM → TMEM with `tcgen05.cp` before the MMA. In TMEM they are packed as `uint32` cells, with logical row `r` landing at
-TMEM lane `r % 128`, column `col0 + r / 128`.
+copied SMEM → TMEM with `tcgen05.cp` before the MMA. In TMEM a 128-row scale vector packs into
+just 32 lanes (`r % 32`, with `r // 32` running along columns) and is broadcast `warpx4` to all 128
+reading lanes — the full layout is in {ref}`chap_layout_generations`.
 
 Under **`cta_group::2`** the scale factors split exactly like the data they describe: **SFA follows
 A** — each CTA holds the M-half matching its A rows — while **SFB is multicast to both CTAs**, since

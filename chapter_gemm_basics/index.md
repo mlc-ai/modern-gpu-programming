@@ -3,9 +3,9 @@
 
 This chapter turns the tile-primitive model into working GEMM kernels. It starts with one 128 x 128 output tile, then adds the two pieces needed for larger matrices: accumulation over K and spatial tiling across CTAs.
 
-Chapters 3, 4, and 5 follow one optimization path for GEMM: build a correct tiled kernel, replace thread copies with TMA and pipelining, then add warp specialization and CTA clusters.
+This chapter and the next two ({ref}`chap_gemm_async`, {ref}`chap_gemm_advanced`) follow one optimization path for GEMM: build a correct tiled kernel, replace thread copies with TMA and pipelining, then add warp specialization and CTA clusters.
 
-Read each step as a change to the tile-primitive contract from Chapter 2 — which **scope** runs the operation, which **layout** the operand tiles use, which **dispatch** path executes it. A small card at the start of each step names the pillar that changes; the others stay fixed. Step 1 sets the baseline.
+Read each step as a change to the **scope / layout / dispatch** contract — which **scope** runs the operation, which **layout** the operand tiles use, which **dispatch** path executes it. A small card at the start of each step names the pillar that changes; the others stay fixed. Step 1 sets the baseline.
 
 ## GEMM
 
@@ -65,7 +65,7 @@ The first kernel follows the core GEMM data path once for a single 128 x 128 out
 
 ### Four Pieces of the First Kernel
 
-Before the full runnable source, read the kernel in four pieces: memory allocation, synchronous load, MMA dispatch, and writeback. The API names used here follow the vocabulary introduced at the end of the previous chapter.
+Before the full runnable source, read the kernel in four pieces: memory allocation, synchronous load, MMA dispatch, and writeback. The API names used here follow the TIRx tile-primitive vocabulary from Part II ({ref}`chap_tirx_primer`, {ref}`chap_data_layouts`).
 
 **Memory allocation.**
 
@@ -89,7 +89,7 @@ Tx.cta.copy(Bsmem[:, :], B[:, :])
 T.cuda.cta_sync()
 ```
 
-Step 1 only has one tile (M=N=128, K=64), so we copy the entire A and B. `Tx.cta.copy(...)` means the CTA cooperates on the copy, with each thread handling a portion of the data. `T.cuda.cta_sync()` waits for the CTA and makes the shared-memory writes visible before MMA reads `Asmem` and `Bsmem`. The asynchronous GEMM chapter replaces this thread-copy path with TMA.
+Step 1 only has one tile (M=N=128, K=64), so we copy the entire A and B. `Tx.cta.copy(...)` means the CTA cooperates on the copy, with each thread handling a portion of the data. `T.cuda.cta_sync()` waits for the CTA and makes the shared-memory writes visible before MMA reads `Asmem` and `Bsmem`. The next chapter ({ref}`chap_gemm_async`) replaces this thread-copy path with TMA.
 
 **MMA dispatch.**
 
@@ -108,6 +108,8 @@ The result is that one thread issues `Tx.gemm_async` and `tcgen05.commit`. The c
 **Writeback.**
 
 ```python
+Dreg = T.alloc_local((BLK_N,), acc_type)        # per-thread fp32 register row
+Dreg_f16 = T.alloc_local((BLK_N,), d_type)      # same row, cast to fp16
 Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1@tid_in_wg, 1)]))
 Tx.wg.copy_async(Dreg_wg[:, :], tmem[:, :BLK_N])
 T.ptx.tcgen05.wait.ld()
@@ -273,8 +275,8 @@ ex.mod(A_tensor, B_tensor, D_tensor)
 D_ref = (A_tensor.float() @ B_tensor.float().T).half()
 max_err = float((D_tensor - D_ref).abs().max())
 print(f"Max error vs torch reference: {max_err:.6f}")
-# Relative tolerance, like the Chapter 5 and Flash Attention cells: output
-# magnitude grows with K, so a fixed absolute bound would fail at larger K.
+# Relative tolerance, like the warp-specialization and Flash Attention cells:
+# output magnitude grows with K, so a fixed absolute bound would fail at larger K.
 torch.testing.assert_close(D_tensor, D_ref, rtol=2e-2, atol=1e-2)
 print("PASS")
 
@@ -294,6 +296,8 @@ ms = start.elapsed_time(end) / ITERS
 tflops = 2 * M * N * K / ms / 1e9
 print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
+
+Steps 1–3 run at small sizes (128×128 here, 256³ in Step 3) to keep the first walkthroughs simple. The cross-step *End-to-End Result* table at the end of {ref}`chap_gemm_advanced` instead measures every step — including this Step 1 algorithm — at a single M=N=K=4096 size, so its speedup ratios are comparable.
 
 ### Limits of the Single-Tile Kernel
 
@@ -467,7 +471,7 @@ B[by * BLK_N : (by + 1) * BLK_N, k : k + BLK_K]
 
 This matches the tutorial's `D = A @ B.T` convention: `bx` selects rows of A and D, while `by` selects rows of B and columns of D.
 
-One tile per CTA is simple but leaves reuse on the table: CTAs in the same row reload the same A tiles, and same-column CTAs reload the same B tiles, from GMEM. Persistent scheduling (next chapter) revisits this to keep those operands hot in L2.
+One tile per CTA is simple but leaves reuse on the table: CTAs in the same row reload the same A tiles, and same-column CTAs reload the same B tiles, from GMEM. Persistent scheduling (Step 6 in {ref}`chap_gemm_async`) revisits this to keep those operands hot in L2.
 
 **Try with your agent**: With `M=N=K=256`, `BLK_M=BLK_N=128`, and `BLK_K=64`, ask it to trace CTA `(1, 0)` and CTA `(0, 1)`. For each CTA, list `m_st`, `n_st`, the A and B slices loaded for each K iteration, and the D region written. Which B rows become D columns because the kernel computes `D = A @ B.T`?
 

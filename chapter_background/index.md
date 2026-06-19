@@ -26,10 +26,9 @@ A GPU organizes threads into a nested hierarchy. On Blackwell the levels are:
 - **Thread** — the scalar unit of execution, identified by a lane ID within its warp.
 - **Warp** — 32 threads executing in SIMT (*single instruction, multiple threads*): the lanes
   issue the same instruction together, but each keeps its own registers and data.
-- **Warpgroup** — 4 consecutive warps (128 threads). New on the Hopper/Blackwell generation,
-  the warpgroup is the cooperation unit for Tensor Memory reads: the 128 threads collectively
-  cover TMEM's 128 rows, each warp owning one 32-row slab (warp 0 → rows 0–31, warp 1 → 32–63,
-  and so on).
+- **Warpgroup** — 4 consecutive warps (128 threads). Introduced on Hopper as the unit for
+  warpgroup-level MMA (`wgmma`), it is also the cooperation unit for Blackwell Tensor Memory
+  access, where the 128 threads cooperatively move a TMEM tile to or from registers.
 - **CTA** (*Cooperative Thread Array*, a.k.a. a CUDA thread block) — the basic scheduling unit.
   A CTA runs on a single SM and owns that SM's shared memory.
 - **Cluster** — a group of cooperating CTAs (across SMs) that can share memory and synchronize.
@@ -90,9 +89,10 @@ trip through global memory.
 
 ## CTA Clusters
 
-Blackwell lets a group of CTAs form a **cluster** that cooperates more tightly than independent
-blocks: cluster CTAs can synchronize together and access each other's shared memory (distributed
-shared memory, DSMEM).
+Hopper introduced **thread block clusters**: a group of CTAs that cooperate more tightly than
+independent blocks — cluster CTAs can synchronize together and access each other's shared memory
+(distributed shared memory, DSMEM). Blackwell builds on clusters with dynamic scheduling
+({ref}`chap_clc`) and 2-CTA cooperative MMA.
 
 ![A CTA cluster sharing distributed shared memory](../img/cta_cluster.png)
 

@@ -45,7 +45,7 @@ Where a kernel lands on the roofline is mostly decided by the algorithm, not the
   saturate HBM bandwidth, so the design goals are coalesced/TMA loads and fusion (do more math
   per byte loaded).
 
-- **GEMM** has AI that grows with size. For a square `M=N=K=N` fp16 matmul, the ideal is
+- **GEMM** has AI that grows with size. For a square `M=N=K` fp16 matmul, the ideal is
 
   $$\text{AI} = \frac{2N^3}{(3N^2)\cdot 2\,\text{bytes}} = \frac{N}{3}\ \text{FLOP/byte}.$$
 
@@ -95,7 +95,7 @@ helps, and the only further gains come from changing the algorithm so it moves l
 ## The Optimization Ladder
 
 Theory says a 4096³ fp16 GEMM is compute-bound and could approach the ~2 PFLOP/s ceiling. Here
-is what the implementations in Part IV actually measure on a B200 — the same algorithm, climbing
+is what the implementations in Part III actually measure on a B200 — the same algorithm, climbing
 toward the roof one technique at a time.
 
 The single biggest jump is switching from CUDA-core tiling to the **tensor-core + TMA** path.
@@ -137,7 +137,7 @@ epilogue is draining tile `k-1`.
 This is why Blackwell exposes the load (TMA), compute (`tcgen05`), and store paths as
 *independent asynchronous engines*, coordinated by mbarriers ({ref}`chap_async_barriers`).
 Software pipelining (step 5) and warp specialization (step 7) are the two structural patterns
-for arranging that overlap; Part IV builds on both.
+for arranging that overlap; Part III builds on both.
 
 ## Occupancy and Resource Pressure
 
@@ -153,10 +153,10 @@ mind: classic occupancy-driven latency hiding, and the explicit pipelining this 
 Every later chapter is a concrete answer to "which roof am I under, and what moves me toward
 it":
 
-- Memory-bound kernels (Part II) → coalesced/TMA loads and fusion.
-- Compute-bound GEMM (Part IV) → tensor cores to raise the ceiling, then TMA + pipelining +
+- Memory-bound kernels → coalesced/TMA loads and fusion.
+- Compute-bound GEMM (Part III) → tensor cores to raise the ceiling, then TMA + pipelining +
   specialization to reach it.
-- Flash Attention (Part V) → raise AI by keeping tiles on-chip, then apply the same overlap
+- Flash Attention (Part IV) → raise AI by keeping tiles on-chip, then apply the same overlap
   toolkit.
 
 When a kernel underperforms, return to this chapter's question first: compute the AI, find the

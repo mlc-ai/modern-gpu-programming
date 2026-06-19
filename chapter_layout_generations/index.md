@@ -129,7 +129,7 @@ Hopper (`sm_90`) removes the per-lane register shuffle on the *input* side. `wgm
 B operands **directly from SMEM** — no `ldmatrix`. But the Tensor Core does not read arbitrary
 SMEM: it reads through a 64-bit **matrix descriptor** that fixes the one format the operand may be
 stored in. A GEMM logically has to find where `A[m, k]` lives; the descriptor is what turns
-`(m, k)` into a SMEM address. It has four parts (from `ptx_wgmma_encode_matrix_descriptor`):
+`(m, k)` into a SMEM address. It has four parts:
 
 | Field | Meaning |
 |---|---|
@@ -152,9 +152,9 @@ the atom:
 So the kernel's job is to write A into SMEM in exactly this atom-tiled, swizzled format — the TMA
 load does that — and hand `wgmma` a descriptor whose `ldo` / `sdo` / `swizzle` match (in the kernels
 these are literal constants, e.g. `ldo = 1`, `sdo = 64`, `swizzle = 64B`). The swizzle is itself a
-first-class format on Hopper — `SwizzleMode` (`SWIZZLE_NONE / 32B / 64B / 128B`) applied through a
-`SwizzleLayout` — and the *same* format is named in both the TMA descriptor that fills the tile and
-the `wgmma` descriptor that reads it, so the load and the MMA agree by construction. (On Ampere that
+first-class format on Hopper — `SWIZZLE_NONE / 32B / 64B / 128B` — and the *same* format is named in
+both the TMA descriptor that fills the tile and the `wgmma` descriptor that reads it, so the load and
+the MMA agree by construction. (On Ampere that
 same permutation lived in hand-written index math.)
 
 The demo below shows the element arrangement inside one atom for each format — `SWIZZLE_128B`
@@ -188,7 +188,7 @@ A block-scaled MMA (mxfp8, nvfp4) carries two operands beyond A and B — `SFA (
 `SFB (N, SFK)`, where `SFK = K / block` — and, unlike A and B, **the scale factors live in TMEM**,
 not SMEM. They take the SMEM→TMEM detour: a TMA load brings them into SMEM, then `tcgen05.cp` copies them into TMEM before the MMA.
 
-The TMEM layout itself (`sf_tmem_layout`, the PTX *tcgen05 MMA scale-factor A layout*) is the
+The TMEM layout itself (the PTX *tcgen05 MMA scale-factor A layout*) is the
 lane-replication example from {ref}`chap_data_layout`: a 128-row scale vector packs into 32 lanes
 (row → lane `r % 32`, `r // 32` along TMEM columns at stride `epc = 4`) and is broadcast `warpx4`
 to all 128 reading lanes (`R[4 : 32@TLane]`).

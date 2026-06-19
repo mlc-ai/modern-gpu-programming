@@ -29,9 +29,9 @@ tile operations.
   the performance model (roofline, overlap) that defines "fast"; then a deep dive into data
   layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
   coordination model, and advanced scheduling (CLC). Everything later is programming *this* machine.
-- **Part II — Programming a GPU with TIRx.** Setup, the TIRx language and compile pipeline,
-  the scope/layout/dispatch framework, data layouts and swizzle, and your first complete
-  kernels (elementwise and reductions).
+- **Part II — Programming a GPU with TIRx.** The TIRx native level — writing device kernels
+  directly (kernels, buffers, control flow, synchronization, compiling) — and the tensor layout
+  model (`TileLayout`, named axes, swizzle).
 - **Part III — GEMM: Tiled to SOTA.** The optimization spine — a tiled GEMM built up through
   TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Capstone: Flash Attention.** Composing the whole machine into a real kernel.

@@ -1,10 +1,10 @@
-# Sphinx configuration for the TIRx tutorial.
+# Sphinx configuration for the Modern GPU Programming book.
 # Migrated off d2lbook to plain Sphinx + MyST-Parser + sphinx-book-theme.
 # Build:  sphinx-build -b html . _build/html
 
 project = "Modern GPU Programming"
-author = "TIRx Developers"
-copyright = "TIRx Developers"
+author = "MLC Community"
+copyright = "2026, MLC Community"
 release = "0.0.1"
 
 extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.napoleon"]
@@ -54,14 +54,6 @@ exclude_patterns = [
     ".git",
     ".github",
     "static/build.yml",
-    # Part II replaced by the mirrored TIRx docs under tirx_guide/ (old migrated
-    # chapters retired from the build).
-    "chapter_setup",
-    "chapter_tirx_primer",
-    "chapter_layouts",
-    "chapter_data_layouts",
-    "chapter_fused_gelu",
-    "chapter_rmsnorm",
 ]
 
 # --- HTML / theme ---

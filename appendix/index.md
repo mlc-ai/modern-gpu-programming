@@ -1,7 +1,7 @@
 (chap_appendix)=
 # Appendix
 
-The main path runs through Parts I–VI. The appendix holds reference material you reach for
+The main path runs through Parts I–V. The appendix holds reference material you reach for
 while reading the chapters:
 
 | Need | Where |

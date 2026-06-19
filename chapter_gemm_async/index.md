@@ -8,7 +8,7 @@ The following steps are incremental. Step 4 moves the large GMEM <-> SMEM transf
 (chap_tma_async)=
 ## Step 4: TMA Async Load
 
-Step 4 replaces synchronous `Tx.copy` with TMA hardware. One thread issues the command, and the hardware performs the tile movement. These steps work at the full M=N=K=4096 size — not the single 128×128 tile of Chapters 1–3 — and their end-to-end timings appear in Chapter 5's *End-to-End Result* table.
+Step 4 replaces synchronous `Tx.copy` with TMA hardware. One thread issues the command, and the hardware performs the tile movement. These steps work at the full M=N=K=4096 size — not the single-tile / small sizes of Steps 1–3 — and their end-to-end timings appear in the *End-to-End Result* table at the end of {ref}`chap_gemm_advanced`.
 
 > **What this step changes — Dispatch**
 > - Scope: unchanged — one warpgroup.
@@ -249,7 +249,7 @@ With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages. The figure shows the 
 
 The first two TMA loads fill the two stages. After that, the stages alternate. While MMA computes on `k0`, TMA can load `k2` into the stage that will be reused next. While MMA computes on `k1`, TMA can load `k3`, and so on. The two hardware paths are different: TMA moves GMEM -> SMEM tiles, while `tcgen05.mma` consumes an already-loaded SMEM stage and writes the accumulator to TMEM.
 
-This simplified single-warpgroup pipeline only overlaps the *prefetched* stages: the main loop still waits for the current MMA to complete (`try_wait(mma_bar, phase_mma)`) before issuing the next TMA load, so it does not yet realize the fully concurrent schedule the figure suggests. True producer/consumer overlap — where a dedicated load warp keeps issuing TMA while a separate MMA warp computes — requires warp specialization, which Chapter 5 introduces as Step 7. So read Step 5 as building the multi-stage SMEM ring buffer and per-stage barriers that Step 7 turns into real overlap — plus prefetch that takes the first loads off the critical path.
+This simplified single-warpgroup pipeline only overlaps the *prefetched* stages: the main loop still waits for the current MMA to complete (`try_wait(mma_bar, phase_mma)`) before issuing the next TMA load, so it does not yet realize the fully concurrent schedule the figure suggests. True producer/consumer overlap — where a dedicated load warp keeps issuing TMA while a separate MMA warp computes — requires warp specialization, which the next chapter ({ref}`chap_gemm_advanced`) introduces as Step 7. So read Step 5 as building the multi-stage SMEM ring buffer and per-stage barriers that Step 7 turns into real overlap — plus prefetch that takes the first loads off the critical path.
 
 When reading the Step 5 code, look for four changes from Step 4:
 
@@ -278,7 +278,7 @@ phase_mma ^= 1
 tma_load(stage, next_k * BLK_K)
 ```
 
-**3. Phase management**: the MMA barrier is single-buffered, so `phase_mma` flips every iteration. The TMA barriers are double-buffered, so `phase_tma` flips when the stage wraps:
+**3. Phase management**: each barrier's phase tracks one barrier slot, so the flip rule follows how many slots that barrier has. The MMA accumulator is a single TMEM slot, so `mma_bar` is a single barrier (`mma_bar.ptr_to([0])`): every iteration reuses the same slot, so `phase_mma` flips every iteration. The TMA barriers are a `PIPE_DEPTH`-element array, one per SMEM stage; a given stage's barrier is only revisited once per wrap of the ring, so `phase_tma` flips only when the stage index wraps back to 0:
 ```python
 if stage == PIPE_DEPTH - 1:
     phase_tma ^= 1

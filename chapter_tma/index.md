@@ -27,8 +27,8 @@ rather than a cooperative thread copy, with very different performance and synch
 
 TMA can apply layout **swizzling** as it writes into shared memory, producing a SMEM layout that
 the Tensor Core can read without bank conflicts. The swizzle pattern is part of the TMA descriptor
-and must match the layout the MMA expects — this is the concrete link between {ref}`chap_data_layout`
-and the hardware, and why GEMM kernels build their SMEM tiles with helpers like `tma_shared_layout(...)`.
+and must match the layout the MMA expects — the concrete link between {ref}`chap_data_layout` and
+the hardware: the TMA descriptor, the SMEM tile, and the MMA must all agree on the same swizzle.
 
 ## Completion: Loads vs. Stores
 

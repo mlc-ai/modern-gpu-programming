@@ -41,8 +41,7 @@ Because step 2 is asynchronous and barrier-tracked, it overlaps with step 1's co
 tile's assignment is ready by the time the current tile finishes, so the SM never stalls waiting
 for work.
 
-In TIRx this is wrapped by the persistent tile scheduler (`ClusterPersistentScheduler2D`): the
-persistent-kernel step of the GEMM ladder ({ref}`chap_gemm_advanced`) can use CLC so the scheduler
-distributes M×N output tiles by hardware work-stealing rather than a static grid-stride loop. The
+The persistent-kernel step of the GEMM ladder ({ref}`chap_gemm_advanced`) uses CLC so output
+tiles are distributed by hardware work-stealing rather than a static grid-stride loop. The
 payoff is best when per-tile cost varies or the tile count does not divide evenly across SMs —
 exactly the cases where a static schedule leaves SMs idle in the tail.

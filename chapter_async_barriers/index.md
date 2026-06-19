@@ -49,8 +49,8 @@ on phase 0 again, and so on.
 
 So a pipelined kernel doesn't allocate a barrier per iteration — it keeps a small set of barriers
 and tracks, in a register, *which phase* the current stage expects. This **stage + phase**
-bookkeeping (a `PipelineState` in Part III does exactly this) is how a software pipeline reuses a
-fixed pool of SMEM buffers and barriers across a long K-loop.
+bookkeeping is how a software pipeline reuses a fixed pool of SMEM buffers and barriers across a
+long K-loop ({ref}`chap_gemm_async`).
 
 ## Synchronization Rules
 

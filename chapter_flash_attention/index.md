@@ -31,6 +31,8 @@ O = O * scale + P @ V_block
 row_max = m_new
 ```
 
+This pseudocode uses natural `exp` and an explicit `/sqrt(d)` for clarity; the actual kernel folds both `1/sqrt(d)` and `log2(e)` into a single constant `scale_log2 = log2(e)/sqrt(d)` and evaluates the exponentials with `exp2` on the raw scores (`exp(x/sqrt(d)) = exp2(x · scale_log2)`), since the hardware `exp2` is cheaper than a natural `exp`.
+
 Here `P` is not the final normalized attention matrix. It is the softmax numerator tile for the current K/V block. After all K/V blocks, the kernel writes `O / row_sum`.
 
 For TIRx, the key question is not only what the algorithm computes, but where each tile lives while the kernel runs. `S`, `P`, and `O` are tile values:
@@ -61,10 +63,10 @@ The full graph below expands that short path into producer-consumer edges:
 | Stage | Tile movement or compute | TIRx primitive | Hardware path |
 |-------|--------------------------|----------------|---------------|
 | Load Q/K/V | GMEM tiles -> SMEM tiles | `Tx.copy_async(..., dispatch="tma")` | TMA load |
-| Score MMA | Q in SMEM and K in SMEM -> score tile `S` in TMEM | `Tx.gemm_async(..., dispatch="tcgen05")` | `tcgen05.mma` |
+| Score MMA | Q in SMEM and K in SMEM -> score tile `S` in TMEM | `Tx.warp.gemm_async(..., dispatch="tcgen05")` | `tcgen05.mma` |
 | Softmax read | `S` in TMEM -> warpgroup register tile | `Tx.wg.copy_async(reg, tmem)` | `tcgen05.ld` |
 | Softmax write | numerator tile `P` in registers -> fp16 TMEM view | `Tx.copy_async(tmem_as_f16, reg)` | TMEM store, followed by `tcgen05.wait.st()` |
-| Value MMA | `P` in TMEM and V in SMEM -> output accumulator `O` in TMEM | `Tx.gemm_async(..., dispatch="tcgen05")` | `tcgen05.mma` with a TMEM operand |
+| Value MMA | `P` in TMEM and V in SMEM -> output accumulator `O` in TMEM | `Tx.warp.gemm_async(..., dispatch="tcgen05")` | `tcgen05.mma` with a TMEM operand |
 | Correction | `O` in TMEM -> registers -> `O` in TMEM | TMEM readback, register multiply, TMEM store | `tcgen05.ld` / TMEM store |
 | Epilogue | final `O` in TMEM -> registers -> SMEM -> GMEM | TMEM readback, `Tx.copy`, TMA store | `tcgen05.ld` + TMA store |
 
@@ -215,6 +217,7 @@ $$O = O + P_{\text{block}}V_{\text{block}}$$
 Here `O` has already been initialized or rescaled for this K/V block. The A operand is `P` in TMEM, the B operand is `V` in SMEM, and the output accumulator is `O` in TMEM:
 
 ```python
+# First sub-MMA: columns 0:K_SPLIT (the first 96 of P / rows of V).
 Tx.warp.gemm_async(
     O_region[i_q],
     P_region[i_q, 0:K_SPLIT],
@@ -224,6 +227,9 @@ Tx.warp.gemm_async(
     dispatch="tcgen05",
     cta_group=CTA_GROUP,
 )
+# Second sub-MMA over columns K_SPLIT:BLK_N (the last 32) elided for brevity;
+# it has the same form with accum=True and waits on p_ready_2 first. The two
+# sub-MMAs together cover all BLK_N columns of P — the last 32 are NOT dropped.
 ```
 
 > **Tile-primitive readout — Value MMA**
@@ -262,7 +268,7 @@ The figure is easiest to read as a set of tile slots:
 - Numerator slots hold the `P` tile after the softmax exponentiation step.
 - Output slots hold the fp32 `O` accumulator.
 
-These are not independent buffers in global memory. They are regions of the same TMEM allocation. Sharing is forced, not chosen: with Q-pipeline depth 2 the two `S` slots (2 × MMA_N = 128) and two `O` slots (2 × 128) already fill all 512 fp32 columns of the region, so `P` has no columns of its own — it must alias the same bytes through the fp16 view. The schedule is valid because each region is reused only after the previous consumer has finished. That is why barriers are part of the layout story: TMEM reuse is safe only when the producer-consumer handoff is complete.
+These are not independent buffers in global memory. They are regions of the same TMEM allocation. Sharing is forced, not chosen: with Q-pipeline depth 2 the two `S` slots (2 × MMA_N = 256 columns) and two `O` slots (2 × MMA_N = 256 columns) already fill all 512 fp32 columns of the region (256 + 256 = 512), so `P` has no columns of its own — it must alias the same bytes through the fp16 view. The schedule is valid because each region is reused only after the previous consumer has finished. That is why barriers are part of the layout story: TMEM reuse is safe only when the producer-consumer handoff is complete.
 
 The kernel allocates TMEM through a `T.TMEMPool`. It takes one fp32 view (`tmem`) for the score and output accumulators, then moves the pool base back to 0 and takes a second, fp16 view (`tmem_as_f16`) that aliases the *same* physical TMEM:
 
@@ -442,15 +448,9 @@ Causal attention changes which score elements are valid: a query position may on
 
 First, the K/V loop can stop early for each Q block. `get_n_block_max(...)` computes the last K/V block that this Q block may need, so the kernel does not load or compute K/V blocks that are entirely above the causal diagonal.
 
-Second, blocks that cross the diagonal still run score MMA, but the softmax stage masks invalid columns before exponentiation. For each row, the code computes a column limit and sets scores beyond that limit to `-inf` in registers:
+Second, blocks that cross the diagonal still run score MMA, but the softmax stage masks invalid columns before exponentiation. For each row, the code derives a per-row column limit from the row's query position and the current K/V block offset: key columns at or before that limit are kept, and every column past it is set to `-inf` in registers so it contributes nothing to the row max or to the `exp2` numerator.
 
-```python
-mask = (1 << col_limit) - 1
-in_bound = mask & (1 << i)
-s_chunk[c] = s_chunk[c] if in_bound else -inf
-```
-
-The real implementation applies this in chunks with `mask_r2p(...)`, which builds a bit mask instead of branching on every score element. Blocks fully below the diagonal do not need this register mask; blocks crossing the diagonal do.
+The real implementation applies this with `mask_r2p(...)`, which turns the per-row limit into a bit mask over the 32-wide score chunk and applies it to the whole chunk at once, instead of branching on every score element. Blocks fully below the diagonal keep all their columns and do not need this register mask; blocks crossing the diagonal do.
 
 From the tile-primitive point of view, causal mode does not replace the main data path. It changes the K/V trip count and inserts masking into the RF softmax step between score MMA and `P` writeback.
 
