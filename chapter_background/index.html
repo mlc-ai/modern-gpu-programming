@@ -344,8 +344,8 @@ other’s shared memory (distributed shared memory).</p></li>
 are <strong>not all issued by the same group of threads</strong>. A TMA copy is issued by one thread and
 finished by hardware; a TMEM→register load is warpgroup-cooperative; a <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA is committed
 by one elected thread; a clustered MMA spans two CTAs. Each operation, in other words, has a
-natural granularity, and matching it is the <strong>scope</strong> knob from the introduction: which threads
-run an operation.</p>
+natural granularity, and which threads run it is the operation’s <strong>scope</strong> — the first of the
+book’s three recurring knobs (scope, layout, dispatch).</p>
 </section>
 <section id="compute-cuda-cores-and-tensor-cores">
 <h2>Compute: CUDA Cores and Tensor Cores<a class="headerlink" href="#compute-cuda-cores-and-tensor-cores" title="Link to this heading">#</a></h2>

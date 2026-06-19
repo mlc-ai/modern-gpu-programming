@@ -56,8 +56,8 @@ These levels are not just an organizational convenience; they matter because Bla
 are **not all issued by the same group of threads**. A TMA copy is issued by one thread and
 finished by hardware; a TMEM→register load is warpgroup-cooperative; a `tcgen05` MMA is committed
 by one elected thread; a clustered MMA spans two CTAs. Each operation, in other words, has a
-natural granularity, and matching it is the **scope** knob from the introduction: which threads
-run an operation.
+natural granularity, and which threads run it is the operation's **scope** — the first of the
+book's three recurring knobs (scope, layout, dispatch).
 
 ## Compute: CUDA Cores and Tensor Cores
 
