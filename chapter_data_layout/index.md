@@ -9,16 +9,18 @@
 - Swizzle is an XOR remapping of addresses that removes shared-memory bank conflicts.
 :::
 
-Two kernels can compute the same result over the same numbers and yet differ in speed by an order
-of magnitude, purely because of where those numbers sit in the hardware. That "where" is the *data
-layout*: the map from a tensor's logical indices `(i, j, …)` to a physical location — which byte of
-memory, which thread's register, which SMEM bank. The data and its logical shape do not change; the
-layout is what decides whether an access coalesces, hits distinct banks, or matches the format an
-engine expects, and so it is where much of GPU performance is won or lost. To talk about it
-precisely we need a way to write layouts down. This chapter builds a compact **notation** for
-layouts that the rest of Part I uses; {ref}`chap_layout_generations` then applies it to each GPU
-generation's hardware requirements. Treat the notation here as plain mathematical notation — the
-goal is to get fluent at reading a layout.
+Modern GPUs have Tensor Cores that can carry out matrix computations extremely quickly. Yet the
+hardware can run only as fast as we can deliver data to those compute units. For this reason,
+performance depends not only on the amount of computation, but also on how data is organized
+throughout the computation and how that organization interacts with the memory system.
+
+In machine learning, we usually work with multi-dimensional tensors. A **data layout** specifies how
+a tensor element with logical indices `(i, j, …)` is mapped to a physical location in memory,
+registers, or other hardware storage. This chapter introduces the main data layouts that arise in
+modern GPU programming. To reason about them clearly, we will develop a compact **notation** for
+describing layouts across different machine learning system scenarios. We will also study
+**swizzling**, a key mechanism for enabling efficient row-wise and column-wise memory access on
+GPUs.
 
 ## The shape–stride model
 
@@ -152,6 +154,9 @@ exactly as `@gpuid_x` broadcast a row across the GPU mesh above.
 
 The byte packing inside each column (the `scale_vec` 1X/2X/4X modes) and the `cta_group::2` split
 are in {ref}`chap_layout_generations`.
+
+For readers familiar with CuTe, you can view the notation in this chapter as a row-major variant
+of CuTe, extended with explicit hardware-named axes and a designated replication structure.
 
 ## Swizzle layout
 
