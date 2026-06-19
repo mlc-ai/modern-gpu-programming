@@ -17,7 +17,7 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 
 
 # Font sizes (bumped up for legibility).
-FS_TITLE = 24
+FS_TITLE = 17
 FS_CTA = 20
 FS_BOX = 18
 FS_BOX_SUB = 16
