@@ -316,7 +316,7 @@
 <li><p>Two constraints hold every generation: global-memory coalescing and shared-memory bank conflicts.</p></li>
 </ul>
 </div>
-<p><strong>Motivation.</strong> The tensor core on every recent GPU performs the same kind of operation — the matrix
+<p>The tensor core on every recent GPU performs the same kind of operation — the matrix
 multiply-accumulate <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">AB</span> <span class="pre">+</span> <span class="pre">C</span></code>. So you might expect a kernel that hits peak throughput on one
 generation to carry over to the next. It often does not: the same kernel can run silently slow, or
 return silently wrong results, on the following chip. The reason is that the operation’s high-level

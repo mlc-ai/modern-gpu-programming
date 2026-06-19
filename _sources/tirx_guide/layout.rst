@@ -27,7 +27,7 @@ Tensor Layout
    - A layout maps each logical index to a *set* of physical coordinates; ``layout.apply()`` evaluates it.
    - Ready-made constructors (``tmem_datapath_layout``, ``tcgen05_atom_layout``, ``wg_local_layout``) cover the common hardware tiles.
 
-**Motivation.** Notation tells you what a layout *means*; it does not yet put a
+Notation tells you what a layout *means*; it does not yet put a
 single number anywhere on the chip. To write a kernel you need every element of a
 tile pinned to a precise physical place — which thread holds it, which register or
 TMEM lane it lands in — and you need that placement to be something the compiler

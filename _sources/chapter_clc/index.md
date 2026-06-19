@@ -9,7 +9,7 @@
 - The payoff is even SM utilization from launch to finish.
 :::
 
-**Motivation.** A persistent kernel keeps roughly one CTA resident per SM (residency is not a
+A persistent kernel keeps roughly one CTA resident per SM (residency is not a
 guaranteed 1:1 mapping) and loops over many output tiles instead of relaunching a fresh CTA per
 tile — the pattern Part III builds. The open question is how each CTA decides which tile to do next.
 The simplest answer is a *static* formula, tile = f(grid index), computed up front. That works only

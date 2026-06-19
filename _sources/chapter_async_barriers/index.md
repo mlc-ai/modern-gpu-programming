@@ -9,7 +9,7 @@
 - Each barrier carries a *phase* that flips every round; waiting on the correct phase is what gates a consumer safely.
 :::
 
-**Motivation.** TMA ({ref}`chap_tma`) and the Tensor Core ({ref}`chap_tensor_cores`) are
+TMA ({ref}`chap_tma`) and the Tensor Core ({ref}`chap_tensor_cores`) are
 *asynchronous*: issuing the work returns immediately, long before the work is done. That gap is the
 whole point — it is what lets a load overlap with compute instead of stalling behind it — but it is
 also where kernels go wrong. Read a tile before its load has landed and you get garbage; wait on the

@@ -9,7 +9,7 @@
 - Every later optimization serves one tile pipeline — load (GMEM → SMEM), compute (SMEM → TMEM), epilogue (TMEM → registers → GMEM) — and aims to keep the compute and data-movement engines busy at once.
 :::
 
-**Motivation.** Two kernels can compute the same result over the same numbers and
+Two kernels can compute the same result over the same numbers and
 still differ in speed by an order of magnitude — and the gap is almost never the arithmetic, it is
 how well the code fits the chip underneath. So before we write a single kernel, this chapter brings
 that chip into focus: the hierarchy of threads that run the work, the distinct memory spaces they

@@ -301,7 +301,7 @@
 <li><p>Each barrier carries a <em>phase</em> that flips every round; waiting on the correct phase is what gates a consumer safely.</p></li>
 </ul>
 </div>
-<p><strong>Motivation.</strong> TMA (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>) and the Tensor Core (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>) are
+<p>TMA (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>) and the Tensor Core (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>) are
 <em>asynchronous</em>: issuing the work returns immediately, long before the work is done. That gap is the
 whole point — it is what lets a load overlap with compute instead of stalling behind it — but it is
 also where kernels go wrong. Read a tile before its load has landed and you get garbage; wait on the

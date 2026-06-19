@@ -301,7 +301,7 @@
 <li><p>Loads complete through an mbarrier (byte-count tracked); stores through a commit/wait group.</p></li>
 </ul>
 </div>
-<p><strong>Motivation.</strong> A Tensor Core that can do 2 PFLOP/s is worthless the moment it sits idle waiting for
+<p>A Tensor Core that can do 2 PFLOP/s is worthless the moment it sits idle waiting for
 data, and at scale GEMM and attention are only compute-bound (<a class="reference internal" href="../chapter_performance/index.html#chap-performance"><span class="std std-ref">What Makes a Kernel Fast</span></a>) when the cores
 stay fed. The classic way to feed them is to have the threads loop over addresses and copy tiles in
 themselves, but that spends the warp’s instruction budget on bookkeeping — index arithmetic and

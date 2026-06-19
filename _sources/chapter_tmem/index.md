@@ -9,7 +9,7 @@
 - Ordinary shared-memory ld/st cannot reach it; three asynchronous `tcgen05` instructions move data in and out.
 :::
 
-**Motivation.** Through Hopper, the Tensor Core's accumulator lived in registers, and that works
+Through Hopper, the Tensor Core's accumulator lived in registers, and that works
 until the tiles grow large enough that the accumulator crowds out everything else a thread needs to
 hold. A bigger MMA tile is exactly what you want for throughput, but registers are a fixed,
 per-thread budget, so past some tile size the two goals collide. Blackwell's answer is a memory space

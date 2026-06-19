@@ -9,7 +9,7 @@
 - Block-scaled MMAs (mxfp8 / nvfp4) add per-block scale factors, also staged through TMEM.
 :::
 
-**Motivation.** Dense linear algebra is the bulk of the work in a modern model, and a GPU reaches
+Dense linear algebra is the bulk of the work in a modern model, and a GPU reaches
 its advertised peak on that work in exactly one place: the Tensor Core. A CUDA-core matrix multiply
 leaves most of the chip idle, so every fast GEMM or attention kernel lives or dies by how well it
 feeds and drives this one unit — see {ref}`chap_background` for what a Tensor Core is and how it

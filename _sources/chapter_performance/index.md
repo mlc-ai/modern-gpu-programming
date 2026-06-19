@@ -9,7 +9,7 @@
 - The main lever for speed is *overlap* — running data movement and compute at once — limited by occupancy and resource pressure.
 :::
 
-**Motivation.** You can pour weeks into a kernel and still not know whether it is any good, because
+You can pour weeks into a kernel and still not know whether it is any good, because
 "fast" means nothing without a ceiling: 330 TFLOP/s sounds impressive until you learn the same GPU
 can sustain on the order of 2 PFLOP/s, leaving that kernel at one-sixth of what the silicon allows.
 The roofline model gives you that ceiling *before you write a line of code* — it pins down the
