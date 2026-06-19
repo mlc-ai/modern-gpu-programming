@@ -155,13 +155,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_data_layout/index.html">Introduction to Data Layout</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tma/index.html">Async Data Movement: TMA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_tmem/index.html">Special Memory: TMEM</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_async_barriers/index.html">Async Coordination: mbarriers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_clc/index.html">Advanced Topics: Cluster Launch Control</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — TIRx Overview</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_intro_tirx/index.html">Introduction to TIRx</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tirx_guide/layout.html">Tensor Layout</a></li>
@@ -303,7 +303,7 @@ machine it runs on. A GPU runs a kernel across a hierarchy of threads, a set of 
 spaces, and a few compute and data-movement engines, and every optimization later in this book is
 ultimately a way of arranging work across those three things. This chapter assembles the picture:
 the thread hierarchy, the compute units, the memory spaces, and how a GEMM flows across them. The
-<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> compute path (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>), TMA data movement (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Asynchronous Data Movement: TMA</span></a>), and the
+<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> compute path (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>), TMA data movement (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>), and the
 mbarrier coordination model (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) each get their own chapter; here we
 establish the hierarchy and dataflow they build on.</p>
 <div style="overflow-x:auto;">
@@ -433,7 +433,7 @@ delivers the same GMEM tile to several CTAs and so cuts redundant global traffic
 together on the workload this book cares about most. A GEMM tile flows across the hardware in three
 stages:</p>
 <ol class="arabic simple">
-<li><p><strong>Load.</strong> A TMA copy (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Asynchronous Data Movement: TMA</span></a>) streams an A/B operand tile from GMEM into SMEM. One
+<li><p><strong>Load.</strong> A TMA copy (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>) streams an A/B operand tile from GMEM into SMEM. One
 thread issues it; the TMA engine does the transfer and signals an mbarrier when the bytes land.</p></li>
 <li><p><strong>Compute.</strong> A <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>) reads the SMEM operands and
 accumulates into a TMEM tile. It is issued by one elected thread and signals a barrier when done.</p></li>

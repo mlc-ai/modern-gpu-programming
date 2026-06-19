@@ -153,13 +153,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_data_layout/index.html">Introduction to Data Layout</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../chapter_tma/index.html">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../chapter_tma/index.html">Async Data Movement: TMA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_tmem/index.html">Special Memory: TMEM</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Async Coordination: mbarriers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_clc/index.html">Advanced Topics: Cluster Launch Control</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — TIRx Overview</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_intro_tirx/index.html">Introduction to TIRx</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tirx_guide/layout.html">Tensor Layout</a></li>
@@ -294,7 +294,7 @@
   <section class="tex2jax_ignore mathjax_ignore" id="async-coordination-mbarriers">
 <span id="chap-async-barriers"></span><h1>Async Coordination: mbarriers<a class="headerlink" href="#async-coordination-mbarriers" title="Link to this heading">#</a></h1>
 <p>By now a theme has emerged from the last two chapters: the Tensor Core
-(<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>) and TMA (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Asynchronous Data Movement: TMA</span></a>) are both <em>asynchronous</em>, and on both of them
+(<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>) and TMA (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>) are both <em>asynchronous</em>, and on both of them
 issuing work is not the same as finishing it. That asynchrony is what buys overlap, but it also
 creates a hazard. The moment one engine produces data that another will consume — TMA filling a
 tile that the Tensor Core will read, or the Tensor Core writing a result the epilogue will read —
@@ -316,7 +316,7 @@ the three operations a kernel performs on it:</p>
 <li><p><strong>Arrive</strong> — each arrival decrements the counter. There are three ways to arrive:</p>
 <ul class="simple">
 <li><p><strong>TMA auto-arrive</strong> — the hardware arrives once the expected byte count has landed (this is
-the <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx</span></code> mechanism from <a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Asynchronous Data Movement: TMA</span></a>).</p></li>
+the <code class="docutils literal notranslate"><span class="pre">arrive.expect_tx</span></code> mechanism from <a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>).</p></li>
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> auto-arrive</strong> — the hardware arrives once committed MMAs complete.</p></li>
 <li><p><strong>Thread arrive</strong> — a thread arrives explicitly, e.g. to signal that a shared buffer is free
 to reuse.</p></li>

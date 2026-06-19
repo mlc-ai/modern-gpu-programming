@@ -29,7 +29,7 @@ marks each handoff between tile operations.
   the performance model (roofline, overlap) that defines "fast"; then a deep dive into data
   layout, the memory engines (TMA and Tensor Memory), the Tensor Core, the barrier/phase
   coordination model, and advanced scheduling (CLC). Everything later is programming *this* machine.
-- **Part II — Programming a GPU with TIRx.** An introduction to TIRx through one runnable
+- **Part II — TIRx Overview.** An introduction to TIRx through one runnable
   single-MMA GEMM — scope, layout, and dispatch in action, and how compilation works — and the
   tensor layout model (`TileLayout`, named axes, swizzle). The full language-feature set lives in
   the Reference.
@@ -56,7 +56,7 @@ chapter_clc/index
 ```
 
 ```{toctree}
-:caption: Part II — Programming a GPU with TIRx
+:caption: Part II — TIRx Overview
 :maxdepth: 1
 
 chapter_intro_tirx/index

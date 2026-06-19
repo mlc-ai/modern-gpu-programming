@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Asynchronous Data Movement: TMA &#8212; Modern GPU Programming For MLSys</title>
+    <title>Async Data Movement: TMA &#8212; Modern GPU Programming For MLSys</title>
   
   
   
@@ -153,13 +153,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../chapter_performance/index.html">What Makes a Kernel Fast</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_data_layout/index.html">Introduction to Data Layout</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_layout_generations/index.html">Data Layout Through GPU Generations</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Asynchronous Data Movement: TMA</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Async Data Movement: TMA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_tensor_cores/index.html">Tensor Cores: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_tmem/index.html">Special Memory: TMEM</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_async_barriers/index.html">Async Coordination: mbarriers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../chapter_clc/index.html">Advanced Topics: Cluster Launch Control</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — Programming a GPU with TIRx</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II — TIRx Overview</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../chapter_intro_tirx/index.html">Introduction to TIRx</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tirx_guide/layout.html">Tensor Layout</a></li>
@@ -267,7 +267,7 @@
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Asynchronous Data Movement: TMA</h1>
+    <h1>Async Data Movement: TMA</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -291,8 +291,8 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="asynchronous-data-movement-tma">
-<span id="chap-tma"></span><h1>Asynchronous Data Movement: TMA<a class="headerlink" href="#asynchronous-data-movement-tma" title="Link to this heading">#</a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="async-data-movement-tma">
+<span id="chap-tma"></span><h1>Async Data Movement: TMA<a class="headerlink" href="#async-data-movement-tma" title="Link to this heading">#</a></h1>
 <p>GEMM and attention are compute-bound at scale (<a class="reference internal" href="../chapter_performance/index.html#chap-performance"><span class="std std-ref">What Makes a Kernel Fast</span></a>), but only if the Tensor
 Cores stay fed. The moment the cores stall waiting for data, that compute advantage evaporates, so
 the real question is how to move tiles fast enough to keep them busy. The classic answer — have the
