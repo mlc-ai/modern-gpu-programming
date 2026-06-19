@@ -34,8 +34,7 @@ hardware, which lets us reason about low-level control while still learning thro
   TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Flash Attention 4.** A complete attention kernel built from the Part III techniques:
   two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
-- **Reference.** TIRx language reference, the API cheat sheet, compiler internals, and the full
-  Flash Attention 4 source.
+- **Reference.** TIRx language reference and compiler internals.
 
 ```{toctree}
 :caption: Part I — Understanding the GPU
@@ -83,6 +82,4 @@ chapter_flash_attention/index
 appendix/index
 tirx_guide/arch/index
 tirx_guide/language_reference/index
-chapter_api_reference/index
-chapter_fa4_source/index
 ```
