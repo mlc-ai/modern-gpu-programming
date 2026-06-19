@@ -20,21 +20,21 @@
 Tensor Layout
 =============
 
-Every tensor you compute on lives somewhere physical — in memory, spread across
-threads, or replicated over devices — and a *layout* is the bookkeeping that
-records where. The familiar tool for this is the shape–stride pair: a stride per
-axis tells you how far to step in memory for each logical step. That model is
-enough for a single linear address space, but a GPU tile is not one address
-space; the same logical element may live in a particular thread's register, in a
-shared-memory bank, or on a specific device in a mesh.
+:ref:`chap_data_layout` introduced the layout *notation* — the shape–stride pair
+``S[shape : strides]``, strides tagged with named **axes** (``@laneid``,
+``@warpid``, ``@reg``, ``@TLane``, ``@TCol``), and the replication term
+``R[n : stride]`` for data the hardware copies rather than partitions. This
+chapter is the *formal* counterpart. It defines the **TileLayout** that TIRx
+actually evaluates, gives the exact rule for turning a logical index into a set of
+physical coordinates, and runs that rule through two real hardware tiles. If the
+notation below looks unfamiliar, read that chapter first; here we assume it and
+build on it.
 
-TIRx keeps the shape–stride intuition and extends it to cover those cases.
-Strides are semantically **named** and bound to **axes** that represent hardware
-resources — memory, threads, and devices — so a stride says not just *how far*
-but *along which resource*. Because one element can live in several places at
-once, a layout maps each logical index to a *set* of coordinates on these named
-axes, decomposed into shard (``D``), replica (``R``), and offset (``O``). The
-rest of this chapter builds that map up one piece at a time.
+The one idea to carry over is that a layout maps each logical index not to a
+single address but to a *set* of coordinates on the named axes — because one
+element can live in several places at once — and that the map decomposes into
+three parts: shard (``D``), replica (``R``), and offset (``O``). The rest of the
+chapter builds that map up one piece at a time.
 
 Interactive demo
 ----------------
@@ -327,20 +327,16 @@ defined.
 Why swizzle
 ~~~~~~~~~~~
 
-To see why a permutation helps, recall how shared memory is wired. It is
-organized into **32 banks of 4 bytes**. Consecutive 4-byte words land in
-consecutive banks and wrap every ``32 × 4 = 128`` bytes (one *bank line*). The
-hardware can serve 32 lanes in one cycle only if they hit 32 different banks; a
-*bank conflict* occurs when the threads of an access touch different addresses in
-the **same** bank, and the access is then serialized.
-
-The trouble is that a plain row-major tile makes that conflict structural, not
-accidental. Take an ``(8, 64)``
-``float16`` tile (``S[(8,64):(64@m,1@m)]`` — element ``(i, j)`` at address
-``m = 64i + j``). One row is ``64 × 2 = 128`` bytes = exactly one bank line, so
-walking *down a column* (fixed ``j``, increasing ``i``) jumps the address by a
-whole bank line and lands on the **same bank** every time — a 32-way column
-conflict. Swizzle scatters those accesses across banks.
+:ref:`chap_data_layout` covered the mechanism: shared memory is **32 banks of 4
+bytes**, and a *bank conflict* serializes an access whose lanes touch different
+addresses in the same bank. What matters here is that a plain row-major tile makes
+that conflict *structural*, not accidental. Take the ``(8, 64)`` ``float16`` tile
+``S[(8,64):(64@m,1@m)]`` — element ``(i, j)`` at address ``m = 64i + j``. One row
+is ``64 × 2 = 128`` bytes = exactly one bank line, so walking *down a column*
+(fixed ``j``, increasing ``i``) jumps a whole bank line each step and lands on the
+**same bank** every time — a 32-way column conflict. The transform below scatters
+those accesses across banks; we close the loop on this exact tile in the worked
+example.
 
 The transform
 ~~~~~~~~~~~~~

@@ -309,20 +309,20 @@
                   
   <section id="tensor-layout">
 <span id="chap-data-layouts"></span><h1>Tensor Layout<a class="headerlink" href="#tensor-layout" title="Link to this heading">#</a></h1>
-<p>Every tensor you compute on lives somewhere physical — in memory, spread across
-threads, or replicated over devices — and a <em>layout</em> is the bookkeeping that
-records where. The familiar tool for this is the shape–stride pair: a stride per
-axis tells you how far to step in memory for each logical step. That model is
-enough for a single linear address space, but a GPU tile is not one address
-space; the same logical element may live in a particular thread’s register, in a
-shared-memory bank, or on a specific device in a mesh.</p>
-<p>TIRx keeps the shape–stride intuition and extends it to cover those cases.
-Strides are semantically <strong>named</strong> and bound to <strong>axes</strong> that represent hardware
-resources — memory, threads, and devices — so a stride says not just <em>how far</em>
-but <em>along which resource</em>. Because one element can live in several places at
-once, a layout maps each logical index to a <em>set</em> of coordinates on these named
-axes, decomposed into shard (<code class="docutils literal notranslate"><span class="pre">D</span></code>), replica (<code class="docutils literal notranslate"><span class="pre">R</span></code>), and offset (<code class="docutils literal notranslate"><span class="pre">O</span></code>). The
-rest of this chapter builds that map up one piece at a time.</p>
+<p><a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Introduction to Data Layout</span></a> introduced the layout <em>notation</em> — the shape–stride pair
+<code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code>, strides tagged with named <strong>axes</strong> (<code class="docutils literal notranslate"><span class="pre">&#64;laneid</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&#64;warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;reg</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;TLane</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;TCol</span></code>), and the replication term
+<code class="docutils literal notranslate"><span class="pre">R[n</span> <span class="pre">:</span> <span class="pre">stride]</span></code> for data the hardware copies rather than partitions. This
+chapter is the <em>formal</em> counterpart. It defines the <strong>TileLayout</strong> that TIRx
+actually evaluates, gives the exact rule for turning a logical index into a set of
+physical coordinates, and runs that rule through two real hardware tiles. If the
+notation below looks unfamiliar, read that chapter first; here we assume it and
+build on it.</p>
+<p>The one idea to carry over is that a layout maps each logical index not to a
+single address but to a <em>set</em> of coordinates on the named axes — because one
+element can live in several places at once — and that the map decomposes into
+three parts: shard (<code class="docutils literal notranslate"><span class="pre">D</span></code>), replica (<code class="docutils literal notranslate"><span class="pre">R</span></code>), and offset (<code class="docutils literal notranslate"><span class="pre">O</span></code>). The rest of the
+chapter builds that map up one piece at a time.</p>
 <section id="interactive-demo">
 <h2>Interactive demo<a class="headerlink" href="#interactive-demo" title="Link to this heading">#</a></h2>
 <p>Before the formalism, it helps to see a layout move. The demo below lets you pick
@@ -604,19 +604,16 @@ address. The next sections explain why the permutation is needed and how it is
 defined.</p>
 <section id="why-swizzle">
 <h3>Why swizzle<a class="headerlink" href="#why-swizzle" title="Link to this heading">#</a></h3>
-<p>To see why a permutation helps, recall how shared memory is wired. It is
-organized into <strong>32 banks of 4 bytes</strong>. Consecutive 4-byte words land in
-consecutive banks and wrap every <code class="docutils literal notranslate"><span class="pre">32</span> <span class="pre">×</span> <span class="pre">4</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes (one <em>bank line</em>). The
-hardware can serve 32 lanes in one cycle only if they hit 32 different banks; a
-<em>bank conflict</em> occurs when the threads of an access touch different addresses in
-the <strong>same</strong> bank, and the access is then serialized.</p>
-<p>The trouble is that a plain row-major tile makes that conflict structural, not
-accidental. Take an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code>
-<code class="docutils literal notranslate"><span class="pre">float16</span></code> tile (<code class="docutils literal notranslate"><span class="pre">S[(8,64):(64&#64;m,1&#64;m)]</span></code> — element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> at address
-<code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code>). One row is <code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">×</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes = exactly one bank line, so
-walking <em>down a column</em> (fixed <code class="docutils literal notranslate"><span class="pre">j</span></code>, increasing <code class="docutils literal notranslate"><span class="pre">i</span></code>) jumps the address by a
-whole bank line and lands on the <strong>same bank</strong> every time — a 32-way column
-conflict. Swizzle scatters those accesses across banks.</p>
+<p><a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Introduction to Data Layout</span></a> covered the mechanism: shared memory is <strong>32 banks of 4
+bytes</strong>, and a <em>bank conflict</em> serializes an access whose lanes touch different
+addresses in the same bank. What matters here is that a plain row-major tile makes
+that conflict <em>structural</em>, not accidental. Take the <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> <code class="docutils literal notranslate"><span class="pre">float16</span></code> tile
+<code class="docutils literal notranslate"><span class="pre">S[(8,64):(64&#64;m,1&#64;m)]</span></code> — element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> at address <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code>. One row
+is <code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">×</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes = exactly one bank line, so walking <em>down a column</em>
+(fixed <code class="docutils literal notranslate"><span class="pre">j</span></code>, increasing <code class="docutils literal notranslate"><span class="pre">i</span></code>) jumps a whole bank line each step and lands on the
+<strong>same bank</strong> every time — a 32-way column conflict. The transform below scatters
+those accesses across banks; we close the loop on this exact tile in the worked
+example.</p>
 </section>
 <section id="the-transform">
 <h3>The transform<a class="headerlink" href="#the-transform" title="Link to this heading">#</a></h3>
