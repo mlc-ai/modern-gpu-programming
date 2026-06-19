@@ -21,7 +21,11 @@ Tensor Core and TMA engines.*
 
 A GPU organizes threads into a nested hierarchy. On Blackwell the levels are:
 
-![Blackwell thread hierarchy](../img/blackwell_thread_hierarchy.png)
+```{raw} html
+<iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"
+        style="width:100%; min-width:900px; height:520px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
+```
+*Interactive: click a level — thread → warp → warpgroup → CTA → cluster → grid.*
 
 - **Thread** — the scalar unit of execution, identified by a lane ID within its warp.
 - **Warp** — 32 threads executing in SIMT (*single instruction, multiple threads*): the lanes

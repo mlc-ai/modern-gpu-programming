@@ -333,7 +333,8 @@ Tensor Core and TMA engines.</em></p>
 <section id="the-execution-hierarchy">
 <h2>The Execution Hierarchy<a class="headerlink" href="#the-execution-hierarchy" title="Link to this heading">#</a></h2>
 <p>A GPU organizes threads into a nested hierarchy. On Blackwell the levels are:</p>
-<p><img alt="Blackwell thread hierarchy" src="../_images/blackwell_thread_hierarchy.png" /></p>
+<iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"
+        style="width:100%; min-width:900px; height:520px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe><p><em>Interactive: click a level — thread → warp → warpgroup → CTA → cluster → grid.</em></p>
 <ul class="simple">
 <li><p><strong>Thread</strong> — the scalar unit of execution, identified by a lane ID within its warp.</p></li>
 <li><p><strong>Warp</strong> — 32 threads executing in SIMT (<em>single instruction, multiple threads</em>): the lanes
