@@ -1,11 +1,13 @@
 (chap_performance)=
 # What Makes a Kernel Fast
 
-Before writing a single optimized kernel, you need a way to answer two questions: *how fast
-could this kernel possibly run on this GPU?* and *which resource is stopping it?* Almost every
-technique in this book — tiling, TMA, software pipelining, warp specialization — is an answer
-to the second question for some specific kernel. This chapter installs the vocabulary the rest
-of the book leans on: arithmetic intensity, the roofline, and overlap.
+Suppose you have written a kernel and it runs. Is it fast? The question is meaningless on its own:
+fast compared to what? Before optimizing anything, you need a way to answer two more precise
+questions — *how fast could this kernel possibly run on this GPU?* and *which resource is stopping
+it from getting there?* The first sets a ceiling worth aiming for; the second tells you what to
+fix. Almost every technique in this book — tiling, TMA, software pipelining, warp specialization —
+is an answer to the second question for some specific kernel. This chapter installs the vocabulary
+the rest of the book leans on to ask both: arithmetic intensity, the roofline, and overlap.
 
 The numbers here are for the NVIDIA B200. Following the convention of {ref}`chap_background`,
 we use order-of-magnitude ceilings: **on the order of 2 PFLOP/s** dense fp16/bf16 tensor-core
@@ -14,10 +16,11 @@ and clock, so treat them as round numbers for reasoning, not datasheet guarantee
 
 ## The Roofline Model
 
-A kernel does two things: it moves bytes and it does math. The *roofline* model — introduced by
-Williams, Waterman, and Patterson ("Roofline: An Insightful Visual Performance Model for
-Multicore Architectures," *Communications of the ACM*, 2009) — bounds its attainable
-performance by whichever of those two is the bottleneck:
+Strip a kernel down and it does only two things: it moves bytes and it does math. Whichever of
+those it cannot do fast enough is the bottleneck, and that simple observation is the whole idea
+behind the *roofline* model — introduced by Williams, Waterman, and Patterson ("Roofline: An
+Insightful Visual Performance Model for Multicore Architectures," *Communications of the ACM*,
+2009) — which bounds attainable performance by the slower of the two:
 
 $$\text{attainable FLOP/s} = \min\big(\underbrace{\text{peak FLOP/s}}_{\text{compute roof}},\ \underbrace{\text{bandwidth} \times \text{AI}}_{\text{memory roof}}\big)$$
 
@@ -31,14 +34,19 @@ Plotting attainable performance against arithmetic intensity gives two ceilings 
 
 ![Roofline for the B200, with example workloads](../img/roofline.png)
 
-For the B200 the ridge sits at roughly `2000 / 8 ≈ 250` FLOP/byte. A kernel whose arithmetic intensity is **below** the
-ridge can never reach peak compute no matter how good the code is — it is *memory-bound*, and
-the only lever is moving fewer bytes (or moving them faster). A kernel **above** the ridge is
-*compute-bound* — the bytes are essentially free, and the job is to keep the tensor cores busy.
+The ridge point is the number that matters most, because it splits all kernels into two regimes.
+For the B200 it sits at roughly `2000 / 8 ≈ 250` FLOP/byte. A kernel whose arithmetic intensity is
+**below** the ridge can never reach peak compute no matter how good the code is — it is
+*memory-bound*, and the only lever is moving fewer bytes (or moving them faster). A kernel
+**above** the ridge is *compute-bound* — the bytes are essentially free, and the job is simply to
+keep the tensor cores busy. Knowing which side a kernel falls on tells you, before you write a line
+of code, which battle you are actually fighting.
 
 ## Arithmetic Intensity of Real Workloads
 
-Where a kernel lands on the roofline is mostly decided by the algorithm, not the code.
+Which side of the ridge a kernel lands on is mostly decided by the algorithm, not the code — you
+can often read it off the math before implementing anything. It helps to see where the workloads in
+this book fall:
 
 - **Elementwise and reductions** (GELU, RMSNorm) read and write large tensors but do only a few FLOPs per element. Their
   arithmetic intensity is well below 1 — deep in the memory-bound region. The best such a kernel can do is
@@ -61,11 +69,13 @@ Where a kernel lands on the roofline is mostly decided by the algorithm, not the
 
 ## When Arithmetic Intensity Is Low
 
-If a kernel sits left of the ridge, it is memory-bound: the Tensor Cores will idle no matter how
-good the compute code is, because the bottleneck is bytes, not FLOPs. There are two responses.
+So suppose your kernel sits left of the ridge — it is memory-bound, and the Tensor Cores will idle
+no matter how good the compute code is, because the bottleneck is bytes, not FLOPs. What do you do?
+There are really only two responses, and they apply in order.
 
 **First, try to raise arithmetic intensity — do more work per byte.** This is the higher-leverage move because it
-can turn a memory-bound kernel into a compute-bound one.
+can move the kernel across the ridge, turning a memory-bound problem into a compute-bound one.
+Three techniques do it:
 
 - *Fuse.* The biggest source of low arithmetic intensity is writing an intermediate to global memory and reading it
   straight back. Fusing the producer and consumer keeps that intermediate in registers or SMEM, so
@@ -78,9 +88,10 @@ can turn a memory-bound kernel into a compute-bound one.
 - *Use a smaller dtype.* fp16/fp8/fp4 move fewer bytes per element, which directly raises arithmetic intensity (FLOPs
   per byte) and cuts the bandwidth the kernel needs.
 
-**Second, if the arithmetic intensity is irreducible — accept the memory roof and saturate it.** A pure copy, or a
-single-pass elementwise or reduction over a large tensor, has no reuse to exploit; its best possible
-performance *is* the memory roof, so the job is to actually reach it:
+**Second, if the arithmetic intensity is irreducible — accept the memory roof and saturate it.** Sometimes there is
+simply no work to add: a pure copy, or a single-pass elementwise or reduction over a large tensor,
+has no reuse to exploit, and its best possible performance *is* the memory roof. The job then is
+not to beat the roof but to actually reach it, which comes down to a few mechanical concerns:
 
 - Move each byte once — no redundant reads. Read shared inputs through L2, and when several CTAs need
   the same tile, multicast it once with a cluster/TMA load instead of each CTA re-reading it.
@@ -94,19 +105,22 @@ helps, and the only further gains come from changing the algorithm so it moves l
 
 ## The Optimization Ladder
 
-Theory says a 4096³ fp16 GEMM is compute-bound and could approach the ~2 PFLOP/s ceiling. Here
-is what the implementations in Part III actually measure on a B200 — the same algorithm, climbing
-toward the roof one technique at a time.
+The roofline tells us what is *possible*; it says nothing about how hard the gap is to close.
+Theory says a 4096³ fp16 GEMM is compute-bound and could approach the ~2 PFLOP/s ceiling, but
+saying so and reaching it are very different things. To make that gap concrete, here is what the
+implementations in Part III actually measure on a B200 — the same algorithm, climbing toward the
+roof one technique at a time.
 
-The single biggest jump is switching from CUDA-core tiling to the **tensor-core + TMA** path.
-At `M=N=K=2048`:
+The single biggest jump is the first one: switching from CUDA-core tiling to the **tensor-core +
+TMA** path. At `M=N=K=2048`:
 
 | Implementation | TFLOP/s | vs. naive |
 |---|---:|---:|
 | Naive tiled GEMM (no tensor core) | 2.9 | 1× |
 | TMA load + `tcgen05` MMA | 330 | **116×** |
 
-From there, asynchrony and scheduling close the gap to the roof. At `M=N=K=4096`:
+A single step buys two orders of magnitude — but it lands at 330 TFLOP/s, still far from the roof.
+From there, asynchrony and scheduling do the rest of the work. At `M=N=K=4096`:
 
 | Step | Technique | TFLOP/s | % of ~2 PFLOP/s peak |
 |---|---|---:|---:|
@@ -128,11 +142,12 @@ unlocks, not always by its immediate number.
 
 ## Overlap Is the Lever
 
-On the compute-bound side, raw FLOP/s is fixed by the tensor cores, so the only way to climb is
-to stop *waiting*. A kernel that loads a tile, then computes on it, then stores the result,
-spends most of its time idle while one hardware unit waits for another. The fix is **overlap**:
-while the tensor core works on tile `k`, the TMA engine is already fetching tile `k+1`, and the
-epilogue is draining tile `k-1`.
+What was that "rest of the work" the ladder relied on? On the compute-bound side, raw FLOP/s is
+fixed by the tensor cores — you cannot make them multiply faster — so the only way to climb is to
+stop *waiting*. A kernel that loads a tile, then computes on it, then stores the result spends most
+of its time idle while one hardware unit waits for another. The fix is **overlap**: while the
+tensor core works on tile `k`, the TMA engine is already fetching tile `k+1`, and the epilogue is
+draining tile `k-1`, so no unit sits idle waiting on its neighbor.
 
 This is why Blackwell exposes the load (TMA), compute (`tcgen05`), and store paths as
 *independent asynchronous engines*, coordinated by mbarriers ({ref}`chap_async_barriers`).
@@ -141,17 +156,21 @@ for arranging that overlap; Part III builds on both.
 
 ## Occupancy and Resource Pressure
 
-A secondary lever is **occupancy** — how many warps/warpgroups an SM keeps resident so it can
-hide latency by switching between them. Occupancy is capped by per-SM resources: registers and
-shared memory. The modern tensor-core kernels in this book deliberately spend a lot of SMEM (on
-multi-stage tile buffers) and registers, so they often run at *low* occupancy and hide latency
-through explicit async overlap instead of through many resident warps. Keep both mechanisms in
-mind: classic occupancy-driven latency hiding, and the explicit pipelining this book focuses on.
+Overlap is not the only way to hide latency, and it is worth knowing the classic alternative so you
+understand why this book mostly sets it aside. That alternative is **occupancy** — how many
+warps/warpgroups an SM keeps resident so it can hide latency by switching to a ready warp whenever
+one stalls. Occupancy is capped by per-SM resources, namely registers and shared memory, and here
+the modern kernels in this book make a deliberate trade: they spend a lot of SMEM (on multi-stage
+tile buffers) and registers, so they often run at *low* occupancy and hide latency through explicit
+async overlap instead of through many resident warps. Both mechanisms are worth keeping in mind —
+classic occupancy-driven latency hiding, and the explicit pipelining this book focuses on — because
+real kernels lean on whichever the resource budget allows.
 
 ## What This Buys You Later
 
-Every later chapter is a concrete answer to "which roof am I under, and what moves me toward
-it":
+With this vocabulary in hand, the rest of the book reads as a sequence of concrete answers to one
+recurring question — "which roof am I under, and what moves me toward it?" The pattern repeats per
+chapter:
 
 - Memory-bound kernels → coalesced/TMA loads and fusion.
 - Compute-bound GEMM (Part III) → tensor cores to raise the ceiling, then TMA + pipelining +
@@ -159,5 +178,6 @@ it":
 - Flash Attention (Part IV) → raise arithmetic intensity by keeping tiles on-chip, then apply the same overlap
   toolkit.
 
-When a kernel underperforms, return to this chapter's question first: compute the arithmetic intensity, find the
-roof, and optimize the resource that is actually binding.
+So whenever a kernel underperforms, the first move is not to guess at code changes but to return to
+this chapter's question: compute the arithmetic intensity, find the roof, and optimize the resource
+that is actually binding.

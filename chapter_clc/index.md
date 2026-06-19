@@ -1,24 +1,29 @@
 (chap_clc)=
 # Advanced Topics: Cluster Launch Control
 
-A *persistent* kernel keeps one CTA resident per SM and has it loop over many output tiles —
-instead of launching a fresh CTA per tile — taking each next tile from a scheduler (the pattern
-Part III builds). With a *static* assignment — tile = f(grid index) — the work can imbalance: if
-tiles cost different amounts, or the tile count doesn't divide evenly across the SMs, some SMs
-finish early and idle while others carry the tail.
+Suppose we want to keep every SM busy from launch to finish. A *persistent* kernel takes a step
+toward that: it keeps one CTA resident per SM and has it loop over many output tiles — rather than
+launching a fresh CTA per tile — pulling each next tile from a scheduler (the pattern Part III
+builds). But where does that next tile come from? The straightforward answer is a *static*
+assignment, tile = f(grid index), and it is exactly here that the trouble starts. If tiles cost
+different amounts, or the tile count doesn't divide evenly across the SMs, the work imbalances: some
+SMs run out of tiles and sit idle while the unlucky few grind through the tail.
 
-**Cluster Launch Control (CLC)** is the Blackwell (`sm_100`) hardware mechanism that addresses
-this. Instead of computing its next tile from a fixed formula, a persistent cluster asks the grid
-scheduler — in hardware — for the next not-yet-launched cluster's work and takes it over. Work is
-handed out dynamically, so an SM that finishes early immediately pulls more.
+The honest way to fix imbalance is to stop deciding the schedule in advance and hand work out only
+when an SM is ready for it. **Cluster Launch Control (CLC)** is the Blackwell (`sm_100`) hardware
+mechanism that does this. Instead of computing its next tile from a fixed formula, a persistent
+cluster asks the grid scheduler — in hardware — for the next not-yet-launched cluster's work and
+takes it over. Because work is handed out on demand, an SM that finishes early simply pulls more,
+and the tail flattens out.
 
-Thread block clusters *themselves* — launching CTAs in clusters with DSMEM and cluster barriers —
-are a Hopper feature ({ref}`chap_background`). CLC is the Blackwell addition that makes their
-**scheduling** dynamic.
+One clarification keeps the lineage straight. Thread block clusters *themselves* — launching CTAs
+in clusters with DSMEM and cluster barriers — are a Hopper feature ({ref}`chap_background`); CLC is
+not the clusters but the Blackwell addition that makes their **scheduling** dynamic.
 
 ## The Two Instructions
 
-CLC is two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6):
+The whole mechanism is exposed as just two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6),
+and they divide the work cleanly: one asks for the next tile, the other reads the answer.
 
 - **`try_cancel`** — `clusterlaunchcontrol.try_cancel.async`. A single asynchronous request that
   asks the scheduler to *cancel the launch* of the next pending cluster and hand this cluster its
@@ -29,20 +34,27 @@ CLC is two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6):
   cancelled (its work stolen), it returns the cancelled cluster's first `ctaid.x` — the tile to
   process; otherwise it returns a sentinel (`0xFFFFFFFF`) meaning *no work left*.
 
+The word "cancel" is the key to the trick: stealing a tile is implemented as cancelling some other
+cluster's pending launch and inheriting its coordinates, which is why the answer can be either a
+real tile or the sentinel that says the grid is exhausted.
+
 ## The Work-Stealing Loop
 
-A CLC persistent kernel is a loop:
+With those two instructions, the persistent kernel becomes a short loop that keeps asking for work
+until there is none left:
 
 1. Process the tile this cluster was launched with.
 2. `try_cancel` the next cluster; wait on its mbarrier.
 3. `query_cancel`: if it returns a valid `ctaid`, decode it into tile coordinates and process that
    tile; if it returns the sentinel, exit.
 
-Because step 2 is asynchronous and barrier-tracked, it overlaps with step 1's compute — the next
-tile's assignment is ready by the time the current tile finishes, so the SM never stalls waiting
-for work.
+The ordering of these steps is doing real work. Because step 2 is asynchronous and barrier-tracked,
+it does not block — it overlaps with step 1's compute, so the next tile's assignment is already in
+hand by the time the current tile finishes. The SM moves from one tile to the next without ever
+stalling to ask what to do.
 
-The persistent-kernel step of the GEMM ladder ({ref}`chap_gemm_advanced`) uses CLC so output
-tiles are distributed by hardware work-stealing rather than a static grid-stride loop. The
-payoff is best when per-tile cost varies or the tile count does not divide evenly across SMs —
-exactly the cases where a static schedule leaves SMs idle in the tail.
+This is exactly the step the GEMM ladder ({ref}`chap_gemm_advanced`) reaches for: its
+persistent-kernel stage uses CLC so output tiles are distributed by hardware work-stealing rather
+than a static grid-stride loop. As the opening argued, the payoff shows up precisely when per-tile
+cost varies or the tile count does not divide evenly across SMs — the cases where a static schedule
+would have left SMs idle in the tail.
