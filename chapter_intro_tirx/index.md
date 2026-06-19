@@ -3,11 +3,11 @@
 
 TIRx (Tensor IR neXt) is a Python DSL for writing GPU kernels at the IR level. A TIRx kernel names hardware concepts directly — threads, shared and tensor memory, barriers, `tcgen05` MMA — but instead of scattering that intent across raw CUDA/PTX intrinsic arguments, it exposes the three things the compiler needs as structured IR: **scope** (which threads run an operation), **layout** (where the operand tiles live), and **dispatch** (which hardware path executes it). The compiler sees those knobs explicitly, so it can lower, check, and schedule the kernel instead of treating it as opaque intrinsic calls. Like the framework in *Dive into Deep Learning*, TIRx is the consistent medium through which every concept in this book becomes runnable code.
 
-This chapter introduces TIRx through one complete kernel — a minimal single-MMA GEMM — then uses it to unpack scope / layout / dispatch and to show how compilation works. The tensor layout model is covered in {ref}`chap_data_layouts`, and the full language-feature set in {ref}`chap_language_reference`.
+Rather than catalogue the language feature by feature, we start from one complete kernel — a minimal single-MMA GEMM — get it running, and then read it back to unpack scope / layout / dispatch and to see how compilation works. Once those three knobs are concrete, the rest of the language falls into place. The tensor layout model is covered in {ref}`chap_data_layouts`, and the full language-feature set in {ref}`chap_language_reference`.
 
 ## A First Kernel: Single-MMA GEMM
 
-The example computes one 128 x 128 output tile of `D = A B^T` with K = 64: a single Blackwell `tcgen05` MMA, end to end. It allocates SMEM and TMEM, copies A and B from global to shared memory, issues one MMA into a TMEM accumulator, reads that accumulator back through registers, and stores the result. This is Step 1 of the GEMM ladder built up in {ref}`chap_gemm_basics`; it reappears there with the full walkthrough.
+The smallest interesting GEMM is a single MMA, so that is where we begin. The example computes one 128 x 128 output tile of `D = A B^T` with K = 64: a single Blackwell `tcgen05` MMA, end to end. Following the data, it allocates SMEM and TMEM, copies A and B from global to shared memory, issues one MMA into a TMEM accumulator, reads that accumulator back through registers, and stores the result. This is Step 1 of the GEMM ladder built up in {ref}`chap_gemm_basics`; it reappears there with the full walkthrough.
 
 All TIRx kernels start from the same imports:
 
@@ -119,7 +119,7 @@ def hgemm_v1(M, N, K):
     return kernel
 ```
 
-Compile, run, and check against a torch reference. The arch (e.g. `sm_100a`) is auto-detected from the device, so the target `"cuda"` is enough; `tir_pipeline="tirx"` selects the TIRx lowering pipeline. `ex.mod(...)` takes torch tensors directly.
+Now we run it. Compile the kernel and check the output against a torch reference. The arch (e.g. `sm_100a`) is auto-detected from the device, so the target `"cuda"` is enough; `tir_pipeline="tirx"` selects the TIRx lowering pipeline. `ex.mod(...)` takes torch tensors directly.
 
 ```python
 import torch
@@ -150,7 +150,7 @@ print("PASS")
 
 ## Scope, Layout, Dispatch
 
-The same kernel reads as a set of choices along the three knobs.
+With the kernel running, we can read it back as what it really is: a set of choices along three knobs. Every operation answers three questions — *who* runs it, *where* its data lives, and *how* it executes — and those answers are scope, layout, and dispatch.
 
 **Scope — which threads issue or cooperate.** Operations name the group of threads that runs them. `Tx.cta.copy(...)` is CTA-scoped: all 128 threads cooperate on the global-to-shared copy, each handling a slice. The MMA is the opposite extreme — `tcgen05.mma` is a *single-instruction* cooperative op, so the kernel narrows scope to one thread with `if warp_id == 0: if T.ptx.elect_sync():`, and that one elected thread issues `Tx.gemm_async` plus `tcgen05.commit`. The hardware still runs the whole tile's MMA; issuing it once avoids launching the same MMA 128 times. The readback `Tx.wg.copy_async(...)` is warpgroup-scoped: the 128 threads of the warpgroup split the 128 x 128 accumulator row-by-row, each thread pulling its own row out of TMEM.
 
