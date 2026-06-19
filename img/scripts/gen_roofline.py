@@ -15,7 +15,7 @@ PEAK_TFLOPS = 2000.0      # ~2 PFLOP/s dense fp16 tensor core (order of magnitud
 BW_TB_S = 8.0             # HBM3e, TB/s  (==> attainable = 8 * AI  TFLOP/s)
 RIDGE = PEAK_TFLOPS / BW_TB_S   # ~281 FLOP/byte
 
-ai = np.logspace(-1, 4, 500)              # arithmetic intensity, FLOP/byte
+ai = np.logspace(-1, 4.3, 500)            # arithmetic intensity, FLOP/byte
 roof = np.minimum(PEAK_TFLOPS, BW_TB_S * ai)
 
 fig, ax = plt.subplots(figsize=(8.8, 5.0), constrained_layout=True)
@@ -26,24 +26,25 @@ ax.text(RIDGE * 1.1, 3.5, f'ridge ≈ {RIDGE:.0f} FLOP/byte', color='#555', font
 ax.text(0.12, PEAK_TFLOPS * 1.07, f'compute roof ≈ {PEAK_TFLOPS/1000:.0f} PFLOP/s (fp16)', color='#555', fontsize=8.5)
 ax.text(0.13, 8 * 0.13 * 1.15, f'memory roof: {BW_TB_S:.0f} TB/s', color='#555', fontsize=8.5, rotation=34)
 
-# Example workloads: (label, arithmetic intensity, achieved TFLOP/s, color)
+# Example workloads: (label, arithmetic intensity, achieved TFLOP/s, color, offset, ha)
+# The naive-GEMM label goes to the *right* of its point so it clears the vertical
+# ridge label near x ~ 250; the SOTA label stays to the left.
 pts = [
-    ('Elementwise / RMSNorm\n(memory-bound)', 0.4, 8 * 0.4 * 0.7, '#ff6b6b'),
-    ('GEMM 4096³ — naive\n(leaves the SM idle)', 1365, 2.9, '#ffa502'),
-    ('GEMM 4096³ — SOTA\n(~⅔ of peak)', 1365, 1320, '#2ed573'),
+    ('Elementwise / RMSNorm\n(memory-bound)', 0.4, 8 * 0.4 * 0.7, '#ff6b6b', (14, 10), 'left'),
+    ('GEMM 4096³ — naive\n(leaves the SM idle)', 1365, 2.9, '#ffa502', (12, -2), 'left'),
+    ('GEMM 4096³ — SOTA\n(~⅔ of peak)', 1365, 1320, '#2ed573', (-8, 10), 'right'),
 ]
-for label, x, y, c in pts:
+for label, x, y, c, xytext, ha in pts:
     ax.scatter([x], [y], s=70, color=c, zorder=5, edgecolor='white', linewidth=0.8)
     ax.annotate(label, (x, y), textcoords='offset points',
-                xytext=(-8 if x > 100 else 14, 10), ha='right' if x > 100 else 'left',
-                fontsize=8.5, color='#333')
+                xytext=xytext, ha=ha, fontsize=8.5, color='#333')
 # the optimization gap arrow for GEMM
 ax.annotate('', xy=(1365, 1320), xytext=(1365, 2.9),
             arrowprops=dict(arrowstyle='->', color='#2ed573', lw=1.6, alpha=0.8))
 ax.text(1365 * 0.62, 70, 'optimization\nclimbs here', color='#2ed573', fontsize=8.5, ha='right')
 
 ax.set_xscale('log'); ax.set_yscale('log')
-ax.set_xlim(0.1, 1e4); ax.set_ylim(2, 4000)
+ax.set_xlim(0.1, 2e4); ax.set_ylim(2, 4000)
 ax.set_xlabel('Arithmetic intensity (FLOP / byte)')
 ax.set_ylabel('Attainable performance (TFLOP/s)')
 ax.set_title('Roofline (approx. B200) — where workloads live and what optimization buys')
