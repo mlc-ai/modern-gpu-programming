@@ -30,9 +30,10 @@ Tensor Core and TMA engines.*
 ## The Execution Hierarchy
 
 Why does a GPU need so many levels of grouping rather than a flat pool of threads? Because
-different operations cooperate at different granularities — some lanes share registers, some
-blocks share memory — and the hardware exposes a level for each kind of cooperation. A GPU
-organizes its threads into a nested hierarchy, and on Blackwell the levels are these:
+different operations cooperate at different granularities — the lanes of a warp execute in
+lockstep, the threads of a CTA share that CTA's shared memory, the CTAs of a cluster synchronize
+across SMs — and the hardware exposes a level for each kind of cooperation. A GPU organizes its
+threads into a nested hierarchy, and on Blackwell the levels are these:
 
 ```{raw} html
 <iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"

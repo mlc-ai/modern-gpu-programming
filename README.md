@@ -18,7 +18,8 @@ vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at th
   layout model (`TileLayout`, named axes, swizzle).
 - **Part III — GEMM: Tiled to SOTA.** A tiled GEMM built up through TMA pipelining,
   persistent scheduling, warp specialization, and 2-CTA clusters.
-- **Part IV — Capstone: Flash Attention.** Composing the whole machine into a real kernel.
+- **Part IV — Flash Attention 4.** A complete attention kernel built from the Part III techniques:
+  two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
 - **Part V — Workflow & Practice.** Profiling/debugging and writing kernels with agents.
 - **Reference.** TIRx language reference, the API cheat sheet, compiler internals, and the full
   Flash Attention 4 source.
