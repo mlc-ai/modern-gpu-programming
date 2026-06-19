@@ -37,5 +37,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_build/html
           # No custom domain: the site serves at the org default,
-          # https://mlc.ai/modern-gpu-programming/ . To use a custom domain, add a
+          # https://mlc.ai/modern-gpu-programming-for-mlsys/ . To use a custom domain, add a
           # `cname:` line here and the matching DNS record.

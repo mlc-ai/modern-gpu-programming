@@ -6,20 +6,22 @@ the Blackwell-class GPU — its memory hierarchy and Tensor Memory, its tensor-c
 asynchronous data-movement engines, warpgroups and clusters — as the real subject. The
 vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at the IR level.
 
-📖 **Read it online: <https://mlc.ai/modern-gpu-programming/>**
+📖 **Read it online: <https://mlc.ai/modern-gpu-programming-for-mlsys/>**
 
 ## What's inside
 
 - **Part I — Understanding the GPU.** Execution and memory model, the performance model
   (roofline, overlap), a deep dive into data layout, the memory and compute engines (TMA,
   Tensor Memory, Tensor Cores), asynchronous coordination, and advanced scheduling (CLC).
-- **Part II — Programming a GPU with TIRx.** The TIRx native level — writing device kernels
-  directly — and the tensor layout model (`TileLayout`, named axes, swizzle).
+- **Part II — Programming a GPU with TIRx.** An introduction to TIRx through one runnable
+  single-MMA GEMM — scope, layout, and dispatch, and how compilation works — plus the tensor
+  layout model (`TileLayout`, named axes, swizzle).
 - **Part III — GEMM: Tiled to SOTA.** A tiled GEMM built up through TMA pipelining,
   persistent scheduling, warp specialization, and 2-CTA clusters.
 - **Part IV — Capstone: Flash Attention.** Composing the whole machine into a real kernel.
 - **Part V — Workflow & Practice.** Profiling/debugging and writing kernels with agents.
-- **Appendix.** API reference and full source listings.
+- **Reference.** TIRx language reference, the API cheat sheet, compiler internals, and the full
+  Flash Attention 4 source.
 
 ## Build the book locally
 
@@ -61,4 +63,4 @@ or notebook cell rather than inside `python -c`.
 ## Deployment
 
 Every push to `main` is built and published automatically by GitHub Actions
-(`.github/workflows/build_deploy.yaml`) to <https://mlc.ai/modern-gpu-programming/>.
+(`.github/workflows/build_deploy.yaml`) to <https://mlc.ai/modern-gpu-programming-for-mlsys/>.
