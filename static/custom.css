@@ -24,3 +24,10 @@ span.math {
     border-radius: 6px;
     box-sizing: border-box;
 }
+
+/* Landing page: the big "Modern GPU Programming For MLSys" H1 duplicates the
+   site title in the top bar (and clicking the logo returns here), so hide it on
+   the home page only. The section id is the title slug, unique to this page. */
+section#modern-gpu-programming-for-mlsys > h1 {
+    display: none;
+}

@@ -1,5 +1,5 @@
 (chap_tmem)=
-# Tensor Memory (TMEM)
+# Special Memory: TMEM
 
 Blackwell adds a memory space that earlier GPUs do not have: **Tensor Memory (TMEM)**, a per-SM 2D
 scratchpad where the `tcgen05` Tensor Core ({ref}`chap_tensor_cores`) keeps its accumulator and, for
