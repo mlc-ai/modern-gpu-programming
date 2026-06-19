@@ -254,9 +254,7 @@
 <button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
 </button>
-<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="fa-solid fa-list"></span>
-</button>
+
 </div></div>
       
     </div>
@@ -272,16 +270,6 @@
     <div id="print-main-content">
         <div id="jb-print-toc">
             
-            <div>
-                <h2> Contents </h2>
-            </div>
-            <nav aria-label="Page">
-                <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reading-the-generated-code">Reading the Generated Code</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nsight-compute-basics">Nsight Compute Basics</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#debugging-barriers-and-correctness">Debugging Barriers and Correctness</a></li>
-</ul>
-            </nav>
         </div>
     </div>
 </div>
@@ -293,28 +281,12 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="profiling-and-debugging">
 <span id="chap-profiling"></span><h1>Profiling and Debugging<a class="headerlink" href="#profiling-and-debugging" title="Link to this heading">#</a></h1>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This chapter is being drafted. It will cover profiling and debugging TIRx kernels; for the performance model it builds on, see <a class="reference internal" href="../chapter_performance/index.html#chap-performance"><span class="std std-ref">What Makes a Kernel Fast</span></a>.</p>
+<div class="warning admonition">
+<p class="admonition-title">Under construction</p>
+<p>This chapter is still being written. It will cover profiling and debugging TIRx kernels — reading
+the generated CUDA/PTX, using Nsight Compute for occupancy and stall analysis, and working through a
+performance-debugging example — building on the performance model in <a class="reference internal" href="../chapter_performance/index.html#chap-performance"><span class="std std-ref">What Makes a Kernel Fast</span></a>.</p>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><strong>Outline stub</strong> — to be drafted (P2). See <code class="docutils literal notranslate"><span class="pre">OUTLINE.md</span></code>, Ch16.</p>
-</div>
-<p><strong>Goal:</strong> measure and fix kernels.</p>
-<section id="reading-the-generated-code">
-<h2>Reading the Generated Code<a class="headerlink" href="#reading-the-generated-code" title="Link to this heading">#</a></h2>
-<p>Inspecting generated CUDA / PTX / SASS.</p>
-</section>
-<section id="nsight-compute-basics">
-<h2>Nsight Compute Basics<a class="headerlink" href="#nsight-compute-basics" title="Link to this heading">#</a></h2>
-<p>Occupancy and stall analysis; the roofline in practice (ties back to <a class="reference internal" href="../chapter_performance/index.html#chap-performance"><span class="std std-ref">What Makes a Kernel Fast</span></a>).</p>
-</section>
-<section id="debugging-barriers-and-correctness">
-<h2>Debugging Barriers and Correctness<a class="headerlink" href="#debugging-barriers-and-correctness" title="Link to this heading">#</a></h2>
-<p>A worked perf-debug example; the elected-commit bug case study.</p>
-<p><em>Feeds from:</em> existing <code class="docutils literal notranslate"><span class="pre">setup</span></code> (Inspect Generated CUDA) and <code class="docutils literal notranslate"><span class="pre">ai_assisted</span></code> (Case Study). New: the profiling workflow and a worked example.</p>
-</section>
 </section>
 
 
@@ -352,25 +324,6 @@
             </div>
             
             
-              
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
-                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
-
-
-  <div class="sidebar-secondary-item"><div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> Contents
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reading-the-generated-code">Reading the Generated Code</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nsight-compute-basics">Nsight Compute Basics</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#debugging-barriers-and-correctness">Debugging Barriers and Correctness</a></li>
-</ul>
-  </nav></div>
-
-</div></div>
               
             
           </div>
