@@ -351,10 +351,23 @@ next sections is just a precise description of what you can watch happen here.</
      color:#fff !important; font-weight:700; border-radius:8px;
      text-decoration:none;">▶ Open the demo full screen ↗</a>
 </p>
-<iframe src="../_static/tirx-layout-demo/index.html?notitle"
+<iframe id="tirx-layout-demo-frame" src="../_static/tirx-layout-demo/index.html?notitle"
         style="width:100%; height:1040px; border:1px solid #dfe1e6;
-        border-radius:10px; margin:10px 0 6px;"
-        title="TIRx interactive layout demo" loading="lazy"></iframe></section>
+        border-radius:10px; margin:10px 0 6px; display:block;"
+        title="TIRx interactive layout demo" loading="lazy"></iframe>
+<script>
+// The demo (viz-base.js) posts its content height; size the iframe to fit so
+// there is no inner scrollbar. This demo is responsive (fills the width), so
+// only the height follows content.
+(function () {
+  var f = document.getElementById('tirx-layout-demo-frame');
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.type !== 'demoHeight' || !d.height) return;
+    if (f && e.source === f.contentWindow) f.style.height = d.height + 'px';
+  });
+})();
+</script></section>
 <section id="tilelayout">
 <h2>TileLayout<a class="headerlink" href="#tilelayout" title="Link to this heading">#</a></h2>
 <p>The workhorse layout is the <strong>TileLayout</strong>, written <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code> — the
