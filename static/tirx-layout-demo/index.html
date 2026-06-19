@@ -30,6 +30,12 @@
 <link rel="stylesheet" href="viz-base.css">
 <script src="viz-base.js"></script>
 <style>
+  /* embed mode (?notitle / ?lock) */
+  body.lock .preset-row, body.lock .main-controls, body.lock #status { display:none; }
+  body.notitle, body.lock { padding:10px; }
+  /* lock: lay panels at natural size; JS scales the whole block to fit the width */
+  body.lock #panels { display:flex; flex-direction:column; align-items:flex-start; gap:20px; grid-template-columns:none; width:max-content; max-width:none; margin:0; }
+
   /* Demo-specific overrides */
   .ti {
     padding:5px 9px; border:1px solid var(--border); border-radius:5px;

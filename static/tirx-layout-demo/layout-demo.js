@@ -385,8 +385,32 @@ function logicalGridDims() {
 }
 
 // ── Draw ────────────────────────────────────────────────────────────────────
+function resetFit() {
+  const p = document.getElementById('panels');
+  if (p) { p.style.transform = 'none'; p.style.marginBottom = ''; }
+}
+function fitEmbed() {
+  if (!document.body.classList.contains('lock')) return;
+  const p = document.getElementById('panels');
+  if (!p) return;
+  const natural = p.offsetWidth;
+  const pad = 2 * parseFloat(getComputedStyle(document.body).paddingLeft || '0');
+  const avail = document.documentElement.clientWidth - pad;
+  if (avail > 0 && natural > avail) {
+    const sc = avail / natural;
+    p.style.transformOrigin = 'top left';
+    p.style.transform = 'scale(' + sc + ')';
+    p.style.marginBottom = (-(p.offsetHeight * (1 - sc))) + 'px';
+  }
+}
+function postHeight() {
+  if (window.parent === window) return;
+  const h = Math.ceil(document.body.scrollHeight);
+  window.parent.postMessage({ tirxLayoutDemoHeight: h + 4 }, '*');
+}
 function draw() {
   drawing = true;
+  resetFit();
   const status = document.getElementById('status');
   const g0 = document.getElementById('g0');
   const phys = document.getElementById('phys');
@@ -430,6 +454,8 @@ function draw() {
   drawFormula();
   drawArrow();
   drawLegend();
+  fitEmbed();
+  postHeight();
   setTimeout(() => { drawing = false; }, 0);
 }
 
@@ -755,7 +781,26 @@ function init() {
   exprInput.addEventListener('input', refresh);
   dtypeSel.addEventListener('change', refresh);
   swmodeSel.addEventListener('change', refresh);
-  applyPreset(0);
+  window.addEventListener('resize', () => { resetFit(); fitEmbed(); postHeight(); });
+  window.addEventListener('load', () => { resetFit(); fitEmbed(); postHeight(); });
+  // Deep-linking for embeds: ?preset=<index|label-slug>&notitle
+  const params = new URLSearchParams(location.search);
+  let presetIdx = 0;
+  const want = params.get('preset');
+  if (want !== null) {
+    const slug = (x) => x.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (/^\d+$/.test(want)) {
+      presetIdx = Math.min(PRESETS.length - 1, Math.max(0, parseInt(want, 10)));
+    } else {
+      const w = slug(want);
+      const found = PRESETS.findIndex((p) => slug(p.label).includes(w));
+      if (found >= 0) presetIdx = found;
+    }
+  }
+  presetSel.value = presetIdx;
+  if (params.has('notitle')) document.body.classList.add('notitle');
+  if (params.has('lock')) document.body.classList.add('lock');
+  applyPreset(presetIdx);
 }
 
 init();
