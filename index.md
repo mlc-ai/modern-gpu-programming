@@ -1,26 +1,41 @@
 # Modern GPU Programming For MLSys
 
-This book teaches modern GPU kernel programming as a progression: **understand the GPU
-hardware → learn to program it → write state-of-the-art kernels.** It assumes you have seen
-CUDA basics (grid/block/thread, shared memory, a naive tiled GEMM), but it treats the modern,
-Blackwell-class GPU as the real subject — its memory hierarchy and Tensor Memory, its
-tensor-core and asynchronous data-movement engines, warpgroups and clusters — rather than as a
-quick review.
+Machine learning systems sit at the heart of modern AI workloads. In these systems, end-to-end
+performance often comes down to the quality of a small number of GPU kernels. Attention kernels,
+LLM prefill and decode kernels, low-precision block-scaled GEMMs, fused MoE layers, and other
+large fused kernels all directly shape speed in both training and serving.
 
-The vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at the IR
-level. TIRx sits between high-level kernel DSLs and raw CUDA/PTX: the kernel still names
-hardware concepts directly, while the compiler sees scope, layout, and dispatch as structured
-IR instead of scattered intrinsic arguments. Like the framework in *Dive into Deep Learning*,
-TIRx is the consistent medium through which every concept becomes runnable code.
+To make these kernels fast, however, we need more than a list of optimization tricks. Modern GPUs
+are no longer simple variations of the same old design. Recent architectures introduce richer
+memory spaces, new access patterns, and increasingly specialized execution units. To program them
+well, we need both a clear mental model of the hardware and a practical understanding of how
+high-performance kernels are built.
 
-A **tile primitive** is a structured operation on tile values, and its lowering is controlled
-by three knobs that recur throughout the book:
+This book teaches modern GPU kernel programming as a progression: **understand the GPU hardware
+→ learn to program it → write state-of-the-art kernels.** It assumes you have seen CUDA basics
+(grid/block/thread, shared memory, a naive tiled GEMM), but it treats the modern, Blackwell-class
+GPU as the real subject — its memory hierarchy and Tensor Memory, its tensor-core and asynchronous
+data-movement engines, warpgroups, and clusters — rather than as a quick review.
+
+The material grows out of the [Machine Learning Systems](https://mlsyscourse.org/) course series
+at Carnegie Mellon University. To make the ideas easier to study and easier to run, this book uses
+the **TIRx** Python DSL to build real GPU kernel examples step by step. TIRx stays close to the
+hardware, which lets us reason about low-level control while still learning through runnable code.
+
+The vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at the IR level.
+TIRx sits between high-level kernel DSLs and raw CUDA/PTX: the kernel still names hardware
+concepts directly, while the compiler sees scope, layout, and dispatch as structured IR instead of
+scattered intrinsic arguments. Like the framework in *Dive into Deep Learning*, TIRx is the
+consistent medium through which each concept becomes runnable code.
+
+A **tile primitive** is a structured operation on tile values, and its lowering is controlled by
+three knobs that recur throughout the book:
 
 - **Scope** — which group of threads issues or cooperates on the operation.
 - **Layout** — how the operand tiles map to GMEM, SMEM, TMEM, or registers.
 - **Dispatch** — which hardware path is intended when there is a choice, such as TMA or `tcgen05`.
 
-Asynchronous primitives add one more concern — *coordination*: a barrier, commit, wait, or fence
+Asynchronous primitives add one more concern: *coordination*. A barrier, commit, wait, or fence
 marks each handoff between tile operations.
 
 ## How This Book Is Organized
