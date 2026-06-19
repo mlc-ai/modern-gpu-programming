@@ -337,7 +337,8 @@ warpgroup-level MMA (<code class="docutils literal notranslate"><span class="pre
 access, where the 128 threads cooperatively move a TMEM tile to or from registers.</p></li>
 <li><p><strong>CTA</strong> (<em>Cooperative Thread Array</em>, a.k.a. a CUDA thread block) — the basic scheduling unit.
 A CTA runs on a single SM and owns that SM’s shared memory.</p></li>
-<li><p><strong>Cluster</strong> — a group of cooperating CTAs (across SMs) that can share memory and synchronize.</p></li>
+<li><p><strong>Cluster</strong> — a group of cooperating CTAs (across SMs) that can synchronize and access each
+other’s shared memory (distributed shared memory).</p></li>
 </ul>
 <p>These levels are not just an organizational convenience; they matter because Blackwell operations
 are <strong>not all issued by the same group of threads</strong>. A TMA copy is issued by one thread and
