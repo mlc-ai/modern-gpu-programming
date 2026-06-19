@@ -9,13 +9,15 @@
 - The main lever for speed is *overlap* — running data movement and compute at once — limited by occupancy and resource pressure.
 :::
 
-"Is this kernel fast?" needs a reference point: fast compared to what? Before optimizing anything,
-you need a way to answer two more precise questions — *how fast could this kernel possibly run on
-this GPU?* and *which resource is stopping it from getting there?* The first sets a ceiling worth
-aiming for; the second tells you what to fix. Almost every technique in this book — tiling, TMA,
-software pipelining, warp specialization — is an answer to the second question for some specific
-kernel. This chapter introduces the vocabulary the rest of the book uses to ask both: arithmetic
-intensity, the roofline, and overlap.
+**Motivation.** You can pour weeks into a kernel and still not know whether it is any good, because
+"fast" means nothing without a ceiling: 330 TFLOP/s sounds impressive until you learn the same GPU
+can sustain on the order of 2 PFLOP/s, leaving that kernel at one-sixth of what the silicon allows.
+The roofline model gives you that ceiling *before you write a line of code* — it pins down the
+speed-of-light for this specific kernel and tells you which resource, memory bandwidth or compute,
+is the one stopping it. With that in hand you optimize the resource that actually binds instead of
+guessing: a memory-bound kernel will not get faster from better math, and a compute-bound one will
+not get faster from fewer bytes. This chapter builds the three ideas the rest of the book leans on
+to ask "is this fast?" — arithmetic intensity, the roofline, and overlap.
 
 The numbers here are for the NVIDIA B200. Following the convention of {ref}`chap_background`,
 we use order-of-magnitude ceilings: **on the order of 2 PFLOP/s** dense fp16/bf16 tensor-core

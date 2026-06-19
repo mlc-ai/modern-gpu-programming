@@ -9,14 +9,16 @@
 - Each barrier carries a *phase* that flips every round; waiting on the correct phase is what gates a consumer safely.
 :::
 
-The Tensor Core
-({ref}`chap_tensor_cores`) and TMA ({ref}`chap_tma`) are both *asynchronous*, and on both of them
-issuing work is not the same as finishing it. That asynchrony is what buys overlap, but it also
-creates a hazard. The moment one engine produces data that another will consume — TMA filling a
-tile that the Tensor Core will read, or the Tensor Core writing a result the epilogue will read —
-the consumer has no built-in way to know the data has actually arrived. Every such handoff must be
-made explicit, or the kernel races. The primitive that makes those handoffs safe, and reusable
-across pipeline iterations, is the **mbarrier**.
+**Motivation.** TMA ({ref}`chap_tma`) and the Tensor Core ({ref}`chap_tensor_cores`) are
+*asynchronous*: issuing the work returns immediately, long before the work is done. That gap is the
+whole point — it is what lets a load overlap with compute instead of stalling behind it — but it is
+also where kernels go wrong. Read a tile before its load has landed and you get garbage; wait on the
+wrong signal and the kernel deadlocks. Whenever one engine produces data another will consume — TMA
+filling a tile the Tensor Core will read, or the Tensor Core writing a result the epilogue will read
+— the consumer needs an explicit, trustworthy way to know the data has arrived. The **mbarrier**,
+and the *phase* it carries, is how a kernel makes those handoffs safe and reuses them across pipeline
+iterations: this chapter introduces the barrier itself, then phase tracking, then the handful of
+synchronization rules a tensor-core kernel must obey ({ref}`chap_gemm_async`).
 
 ## The mbarrier
 

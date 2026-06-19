@@ -9,13 +9,16 @@
 - Loads complete through an mbarrier (byte-count tracked); stores through a commit/wait group.
 :::
 
-GEMM and attention are compute-bound at scale ({ref}`chap_performance`), but only if the Tensor
-Cores stay fed. When the cores stall waiting for data, that compute advantage disappears, so the
-problem is how to move tiles fast enough to keep them busy. Having the threads themselves loop over
-addresses and issue loads spends the warp's instruction budget on bookkeeping that has nothing to do
-with the math. The **Tensor Memory Accelerator (TMA)** removes that overhead: it is a hardware
-engine that copies rectangular tiles between global and shared memory asynchronously, leaving the
-threads free for compute.
+**Motivation.** A Tensor Core that can do 2 PFLOP/s is worthless the moment it sits idle waiting for
+data, and at scale GEMM and attention are only compute-bound ({ref}`chap_performance`) when the cores
+stay fed. The classic way to feed them is to have the threads loop over addresses and copy tiles in
+themselves, but that spends the warp's instruction budget on bookkeeping — index arithmetic and
+load/store issue — that has nothing to do with the math. The **Tensor Memory Accelerator (TMA)** is
+the hardware engine that fixes this: one thread issues a copy, and the engine moves the rectangular
+tile between global and shared memory on its own, leaving the threads free to compute. This chapter
+covers how a single thread issues that copy, how TMA swizzles the tile so the layout matches what the
+Tensor Core expects ({ref}`chap_data_layout`), and how loads and stores signal completion — loads
+through an mbarrier ({ref}`chap_async_barriers`), stores through a commit/wait group.
 
 ```{raw} html
 <div style="overflow-x:auto;">

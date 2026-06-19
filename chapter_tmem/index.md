@@ -9,12 +9,17 @@
 - Ordinary shared-memory ld/st cannot reach it; three asynchronous `tcgen05` instructions move data in and out.
 :::
 
-Through Hopper, the Tensor Core's accumulator lived in registers — which works until the tiles grow
-large enough that the accumulator crowds out everything else the threads need to hold. Blackwell's
-answer is a memory space earlier GPUs do not have: **Tensor Memory (TMEM)**, a CTA-scoped 2D scratchpad — 128 lanes × up to 512 32-bit columns per CTA (physically resident on the SM) —
-where the `tcgen05` Tensor Core ({ref}`chap_tensor_cores`) keeps its accumulator and, for
-block-scaled MMAs, its scale factors. This
-chapter covers what TMEM is, how it is addressed and allocated, and how data moves in and out of it.
+**Motivation.** Through Hopper, the Tensor Core's accumulator lived in registers, and that works
+until the tiles grow large enough that the accumulator crowds out everything else a thread needs to
+hold. A bigger MMA tile is exactly what you want for throughput, but registers are a fixed,
+per-thread budget, so past some tile size the two goals collide. Blackwell's answer is a memory space
+earlier GPUs simply do not have: **Tensor Memory (TMEM)**, a CTA-scoped 2D scratchpad — 128 lanes ×
+up to 512 32-bit columns per CTA — where the `tcgen05` Tensor Core ({ref}`chap_tensor_cores`) keeps
+its accumulator and, for block-scaled MMAs, its scale factors. Unlike registers, which the compiler
+hands out for you, TMEM is something the kernel must explicitly allocate, fill, and free, so you
+cannot write a Blackwell GEMM without understanding it. This chapter covers what TMEM is, how it is
+addressed and allocated, and how data moves in and out of it — the foundation you will then put to
+work in {ref}`chap_gemm_basics`.
 
 ## A 2D address space
 

@@ -9,11 +9,17 @@
 - Block-scaled MMAs (mxfp8 / nvfp4) add per-block scale factors, also staged through TMEM.
 :::
 
-Tensor Cores have executed tile-level matrix multiply-accumulate
-($D = AB + C$) since Volta (2017), and every generation since has carried them — see
-{ref}`chap_background` for what a Tensor Core is and how it differs from a CUDA core. The
-math has stayed constant while everything *around* it has moved: what changes from generation to
-generation is *how the Tensor Core is programmed* and *where its results live*.
+**Motivation.** Dense linear algebra is the bulk of the work in a modern model, and a GPU reaches
+its advertised peak on that work in exactly one place: the Tensor Core. A CUDA-core matrix multiply
+leaves most of the chip idle, so every fast GEMM or attention kernel lives or dies by how well it
+feeds and drives this one unit — see {ref}`chap_background` for what a Tensor Core is and how it
+differs from a CUDA core. The tile-level multiply-accumulate $D = AB + C$ has stayed constant since
+Volta (2017), but each generation changes *how* the Tensor Core is programmed and *where* its
+results live, and on Blackwell those two questions are the whole game: the **`tcgen05`** MMA moves
+the accumulator off-register and decides how each tile is issued, and getting both right is what
+separates a peak kernel from a slow one. This chapter is about driving that unit: the `tcgen05` MMA
+and its modes ({ref}`chap_tmem`), the accumulator's new home, and the operand layouts
+({ref}`chap_data_layout`) and async completion ({ref}`chap_async_barriers`) the MMA depends on.
 
 Blackwell's **fifth-generation** Tensor Core, exposed through the **`tcgen05`** instruction
 family, is the latest such shift, and the most consequential one for kernel authors: it changes

@@ -9,10 +9,16 @@
 - Swizzle is an XOR remapping of addresses that removes shared-memory bank conflicts.
 :::
 
-Modern GPUs have Tensor Cores that can carry out matrix computations extremely quickly. Yet the
-hardware can run only as fast as we can deliver data to those compute units. For this reason,
-performance depends not only on the amount of computation, but also on how data is organized
-throughout the computation and how that organization interacts with the memory system.
+**Motivation.** The same numbers, written into memory in a different physical arrangement, can run
+an order of magnitude apart on the same GPU. The reason is that a tensor's logical indices say
+nothing about where its bytes actually sit, and the hardware is exquisitely sensitive to that
+placement: it decides whether 32 lanes' loads coalesce into one transaction or scatter into 32,
+whether their addresses land in distinct memory banks or collide and serialize, and even whether a
+tile matches the byte arrangement a Tensor Core can read at all. The map from logical index to
+physical location is the *data layout*, and choosing it well is much of what separates a fast kernel
+from a slow one. This chapter builds the compact notation the rest of the book uses to talk about
+layout — the shape–stride model, named axes that place data in lanes and registers, and swizzling
+for conflict-free access.
 
 In machine learning, we usually work with multi-dimensional tensors. A **data layout** specifies how
 a tensor element with logical indices `(i, j, …)` is mapped to a physical location in memory,

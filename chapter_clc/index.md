@@ -9,13 +9,17 @@
 - The payoff is even SM utilization from launch to finish.
 :::
 
-To keep every SM busy from launch to finish, a *persistent* kernel keeps roughly one CTA resident
-per SM (residency is not a guaranteed 1:1 mapping) and has it loop over many output tiles — rather
-than launching a fresh CTA per tile — pulling each next tile from a scheduler (the pattern Part III
-builds). One way to supply the next tile is a
-*static* assignment, tile = f(grid index). If tiles cost different amounts, or the tile count
-doesn't divide evenly across the SMs, the work imbalances: some SMs run out of tiles and sit idle
-while the rest grind through the tail.
+**Motivation.** A persistent kernel keeps roughly one CTA resident per SM (residency is not a
+guaranteed 1:1 mapping) and loops over many output tiles instead of relaunching a fresh CTA per
+tile — the pattern Part III builds. The open question is how each CTA decides which tile to do next.
+The simplest answer is a *static* formula, tile = f(grid index), computed up front. That works only
+when every tile costs the same and the tile count divides evenly across the SMs; the moment it
+doesn't, the schedule is locked in before any work runs, so a few unlucky SMs grind through the tail
+while the rest finish their share and sit idle. What we want instead is to hand out the next tile
+only when an SM is actually ready for it, so an SM that finishes early just pulls more. That is what
+Cluster Launch Control provides, and the rest of this chapter follows it from the two PTX
+instructions ({ref}`chap_async_barriers` for the barrier model they reuse) to the work-stealing loop
+and back to the persistent GEMM of {ref}`chap_gemm_advanced`.
 
 To fix imbalance, stop deciding the schedule in advance and hand work out only when an SM is ready
 for it. **Cluster Launch Control (CLC)** is the Blackwell (`sm_100`) hardware mechanism that does

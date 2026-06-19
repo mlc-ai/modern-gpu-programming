@@ -27,15 +27,23 @@ Tensor Layout
    - A layout maps each logical index to a *set* of physical coordinates; ``layout.apply()`` evaluates it.
    - Ready-made constructors (``tmem_datapath_layout``, ``tcgen05_atom_layout``, ``wg_local_layout``) cover the common hardware tiles.
 
-:ref:`chap_data_layout` introduced the layout *notation* — the shape–stride pair
-``S[shape : strides]``, strides tagged with named **axes**, and the replication
-term ``R[n : stride]`` for data the hardware copies rather than partitions. This
-chapter is the TIRx **layout API**: the ``TileLayout``, ``SwizzleLayout``, and
-``ComposeLayout`` classes you import from ``tvm.tirx.layout``, the axis vocabulary
-they are written in, the ready-made constructors TIRx ships for the common
-hardware tiles, and the exact rule a layout evaluates to — run through two real
-hardware tiles. If the notation below looks unfamiliar, read that chapter first;
-here we assume it and build on it.
+**Motivation.** Notation tells you what a layout *means*; it does not yet put a
+single number anywhere on the chip. To write a kernel you need every element of a
+tile pinned to a precise physical place — which thread holds it, which register or
+TMEM lane it lands in — and you need that placement to be something the compiler
+can read, check, and feed to each tile op rather than a convention you carry in
+your head. That is what the TIRx layout API gives you: a ``TileLayout`` you
+construct once and attach to a buffer, written in a fixed vocabulary of named
+hardware axes and evaluated by a single rule. :ref:`chap_data_layout` introduced
+the layout *notation* — the shape–stride pair ``S[shape : strides]``, strides
+tagged with named **axes**, and the replication term ``R[n : stride]`` for data
+the hardware copies rather than partitions; this chapter turns that notation into
+the real objects you import from ``tvm.tirx.layout`` — ``TileLayout``,
+``SwizzleLayout``, and ``ComposeLayout`` — together with the axis vocabulary they
+are written in, the ready-made constructors TIRx ships for the common hardware
+tiles, and the exact rule a layout evaluates to, run through two real hardware
+tiles. If the notation below looks unfamiliar, read that chapter first; here we
+assume it and build on it.
 
 The API has one job: you build a layout once and attach it to a buffer —
 ``pool.alloc(shape, dtype, layout=...)`` or

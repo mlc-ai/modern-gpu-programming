@@ -9,13 +9,16 @@
 - Two constraints hold every generation: global-memory coalescing and shared-memory bank conflicts.
 :::
 
-What changed from **Ampere** to **Hopper** to **Blackwell** is not the basic operation the tensor
-core performs (still `D = AB + C`) — it is *how operands reach the tensor core*, plus the shapes,
-dtypes, and accumulator each generation supports. Each generation's memory and compute engines demand a
-*specific* operand layout, and getting it wrong is silently slow, or silently wrong. This chapter
-traces that one moving part across the three generations, building on the layout notation from
-{ref}`chap_data_layout` (`S[...]`, named axes, swizzle). The Blackwell TMEM specifics are in
-{ref}`chap_tmem`.
+**Motivation.** The tensor core on every recent GPU performs the same kind of operation — the matrix
+multiply-accumulate `D = AB + C`. So you might expect a kernel that hits peak throughput on one
+generation to carry over to the next. It often does not: the same kernel can run silently slow, or
+return silently wrong results, on the following chip. The reason is that the operation's high-level
+form stays fixed while *how its operands reach the tensor core* does not — and neither do the shapes,
+dtypes, and accumulator each generation supports. What each generation actually demands is a
+*specific* operand layout, and a layout the hardware merely tolerates as ordinary memory can still be
+the wrong one for the tensor core. This chapter follows that one moving part across **Ampere** →
+**Hopper** → **Blackwell**, building on the layout notation from {ref}`chap_data_layout` (`S[...]`,
+named axes, swizzle); the Blackwell TMEM specifics are in {ref}`chap_tmem`.
 
 ## Two Constraints That Never Went Away
 
