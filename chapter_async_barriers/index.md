@@ -9,14 +9,14 @@
 - Each barrier carries a *phase* that flips every round; waiting on the correct phase is what gates a consumer safely.
 :::
 
-By now a theme has emerged from the last two chapters: the Tensor Core
+The Tensor Core
 ({ref}`chap_tensor_cores`) and TMA ({ref}`chap_tma`) are both *asynchronous*, and on both of them
 issuing work is not the same as finishing it. That asynchrony is what buys overlap, but it also
 creates a hazard. The moment one engine produces data that another will consume — TMA filling a
 tile that the Tensor Core will read, or the Tensor Core writing a result the epilogue will read —
 the consumer has no built-in way to know the data has actually arrived. Every such handoff must be
-made explicit, or the kernel races. The primitive that makes those handoffs safe — and, crucially,
-reusable across pipeline iterations — is the **mbarrier**.
+made explicit, or the kernel races. The primitive that makes those handoffs safe, and reusable
+across pipeline iterations, is the **mbarrier**.
 
 ## The mbarrier
 
@@ -28,10 +28,9 @@ reusable across pipeline iterations — is the **mbarrier**.
 ```
 *Interactive: an mbarrier's counter + phase bit, and its init / arrive / wait APIs.*
 
-An mbarrier is a hardware synchronization object stored in shared memory, and at its core it is
-nothing more than a counter that knows when it has reached zero. Concretely it combines an
-**arrival counter** with a **phase bit**, and the way to understand it is to walk its lifecycle —
-the three operations a kernel performs on it:
+An mbarrier is a hardware synchronization object stored in shared memory: a counter that knows when
+it has reached zero. It combines an **arrival counter** with a **phase bit**. Its lifecycle is the
+three operations a kernel performs on it:
 
 1. **Init** — set the expected number of arrivals; the barrier starts at phase 0.
 2. **Arrive** — each arrival decrements the counter. There are three ways to arrive:
@@ -43,9 +42,9 @@ the three operations a kernel performs on it:
 3. **Wait** — a consumer blocks until the barrier reaches the expected phase for this iteration,
    which means all required arrivals have happened.
 
-Notice that the first two arrival paths come straight from the asynchronous engines of the previous
-chapters: the same hardware that runs ahead also reports back through the mbarrier. With those
-pieces in hand the producer/consumer pattern falls out directly — the producer (say, TMA) arrives
+The first two arrival paths come from the asynchronous engines of the previous
+chapters: the same hardware that runs ahead also reports back through the mbarrier. This gives the
+producer/consumer pattern directly — the producer (say, TMA) arrives
 when its data is ready, and the consumer waits before touching it.
 
 ## Phase Tracking
@@ -58,10 +57,10 @@ when its data is ready, and the consumer waits before touching it.
 ```
 *Interactive: the phase bit flipping as a barrier is reused across pipeline iterations.*
 
-We have mentioned the phase bit twice without yet saying why it exists; the reason is reuse. A long
+The phase bit exists for reuse. A long
 K-loop runs the same handoff hundreds of times, and allocating a fresh barrier for each iteration
-would be wasteful and would not even fit in SMEM. So the barrier is reused, and the phase bit is
-what keeps successive reuses from being confused for one another. When all arrivals complete, the
+would be wasteful and would not even fit in SMEM. The barrier is reused, and the phase bit
+keeps successive reuses from being confused for one another. When all arrivals complete, the
 barrier automatically **flips its phase** (0 → 1 → 0 → …), which lets a single barrier serve every
 iteration of a pipelined loop: iteration 0 waits on phase 0, iteration 1 on phase 1, iteration 2 on
 phase 0 again, and so on.
@@ -73,10 +72,9 @@ buffers and barriers across a long K-loop ({ref}`chap_gemm_async`).
 
 ## Synchronization Rules
 
-For all the machinery, the whole model reduces to a single rule: **whenever one path produces data
-and another consumes it, make the handoff explicit.** What makes this tractable in practice is that
-a tensor-core kernel only ever exhibits three such handoffs, and once you can name them the kernel
-stops looking like a wall of intrinsics. They are:
+The whole model reduces to a single rule: **whenever one path produces data
+and another consumes it, make the handoff explicit.** A tensor-core kernel only ever exhibits three
+such handoffs:
 
 - **Thread code → engine.** If threads write SMEM and a later MMA or TMA store reads it, insert a
   thread-level sync or fence first.
@@ -97,8 +95,7 @@ and the consumer's `try_wait` releases:
 *Interactive: a TMA load signalling completion through an mbarrier. The `tcgen05` MMA → epilogue
 handoff works the same way, with the Tensor Core arriving on the barrier instead of TMA.*
 
-The same rule extends naturally to resource reuse, which is just a handoff running the other way:
+The same rule extends to resource reuse, which is a handoff running the other way:
 before TMEM or a SMEM buffer is freed or overwritten, every participant that might still read it
 must first have arrived. The GEMM chapters spell out the exact wait and fence at each of these
-handoffs, but the reading is easy once the patterns are familiar — those kernels resolve into a
-sequence of producer/consumer pairs rather than the wall of intrinsics they first appear to be.
+handoffs; those kernels resolve into a sequence of producer/consumer pairs.
