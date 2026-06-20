@@ -119,7 +119,7 @@ write hits 8 distinct banks and is conflict-free, but the column read hits one b
 8-way conflict. Switching to a col-major tile does not save us; it merely flips which of the two
 accesses pays the price. No unpermuted layout can make both of them happy:
 
-The figure below makes that row-write / column-read conflict concrete.
+The figure below shows that row-write / column-read conflict directly.
 
 ![Row write hits 8 distinct banks (conflict-free); column read hits one bank 8 times (conflict)](../img/swizzle_conflict.svg)
 

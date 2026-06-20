@@ -411,7 +411,7 @@ along a <strong>row</strong>, and then read by <code class="docutils literal not
 write hits 8 distinct banks and is conflict-free, but the column read hits one bank 8 times — an
 8-way conflict. Switching to a col-major tile does not save us; it merely flips which of the two
 accesses pays the price. No unpermuted layout can make both of them happy:</p>
-<p>The figure below makes that row-write / column-read conflict concrete.</p>
+<p>The figure below shows that row-write / column-read conflict directly.</p>
 <p><img alt="Row write hits 8 distinct banks (conflict-free); column read hits one bank 8 times (conflict)" src="../_images/swizzle_conflict.svg" /></p>
 <p>The way out is the XOR <strong>swizzle</strong> from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>: we store element <code class="docutils literal notranslate"><span class="pre">(r,</span> <span class="pre">c)</span></code> at column
 <code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">⊕</span> <span class="pre">r</span></code>, and that single permutation makes the row write <em>and</em> the column read conflict-free at the
