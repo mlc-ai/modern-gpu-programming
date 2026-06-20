@@ -198,9 +198,6 @@ In the two-CTA case, the guiding principle is simple: a scale travels with whate
 **SFA follows A**, so each CTA holds the M-half that matches its own A rows. **SFB, by contrast, is
 multicast to both CTAs**, because each CTA's M-half has to multiply against the very same per-N column
 scales. In the kernels, this is what surfaces as the familiar "load SFA per-CTA (single-CTA mask),
-broadcast SFB (pair mask)" pattern.
-
-The figure below summarizes that placement, including the asymmetry between per-CTA `SFA` and
-multicast `SFB`.
+broadcast SFB (pair mask)" pattern, with per-CTA `SFA` and multicast `SFB`.
 
 ![Block-scaled MMA placement: A/B packed in SMEM; SFA, SFB, and C in TMEM, with SFA split by M and SFB multicast across the CTA pair](../img/mma_block_scaled.svg)

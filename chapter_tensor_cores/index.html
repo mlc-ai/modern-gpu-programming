@@ -533,9 +533,7 @@ lanes. The full layout is spelled out in <a class="reference internal" href="../
 <strong>SFA follows A</strong>, so each CTA holds the M-half that matches its own A rows. <strong>SFB, by contrast, is
 multicast to both CTAs</strong>, because each CTA’s M-half has to multiply against the very same per-N column
 scales. In the kernels, this is what surfaces as the familiar “load SFA per-CTA (single-CTA mask),
-broadcast SFB (pair mask)” pattern.</p>
-<p>The figure below summarizes that placement, including the asymmetry between per-CTA <code class="docutils literal notranslate"><span class="pre">SFA</span></code> and
-multicast <code class="docutils literal notranslate"><span class="pre">SFB</span></code>.</p>
+broadcast SFB (pair mask)” pattern, with per-CTA <code class="docutils literal notranslate"><span class="pre">SFA</span></code> and multicast <code class="docutils literal notranslate"><span class="pre">SFB</span></code>.</p>
 <p><img alt="Block-scaled MMA placement: A/B packed in SMEM; SFA, SFB, and C in TMEM, with SFA split by M and SFB multicast across the CTA pair" src="../_images/mma_block_scaled.svg" /></p>
 </section>
 </section>
