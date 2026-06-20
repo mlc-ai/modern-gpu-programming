@@ -471,12 +471,26 @@ swizzle modes choose different atom sizes. <code class="docutils literal notrans
 is in use. The demo shows the element arrangement inside one atom for each format:</p>
 <iframe src="../demo/swizzle_atom_general.html" title="Swizzle atom layout per format (128B/64B/32B)" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe><p><em>Interactive: pick a swizzle format to see its atom shape (8 × N B) and how elements are permuted inside it.</em></p>
-<p>One reassuring point is that swizzle is a remapping the hardware applies for you. Your job is not to
-compute permuted addresses by hand but to pick a single consistent mode — say <code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B</span></code> —
-across all the ops that touch a tile, and then let the hardware take care of the addressing.
-<code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B</span></code>, to make it concrete, gives conflict-free access to 8 rows and 8 columns at a time in
-fp16. <em>Which</em> swizzle each engine demands is generation-specific, and that is the subject of the next
-chapter.</p>
+<p>Which mode should you pick? The rule of thumb is to prefer the <em>largest</em> atom the tile can fill. An
+N-byte atom needs the tile’s contiguous dimension to be at least N bytes, and a multiple of it, so
+<code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B</span></code> applies only when a row spans at least 128 bytes — 64 <code class="docutils literal notranslate"><span class="pre">float16</span></code> elements. When it
+fits, it is the default choice, because its 8 × 128 B atom covers a full 128-byte bank line and so
+scatters a column across all 32 banks at once, giving conflict-free access to 8 rows and 8 columns at
+a time in fp16. When the problem’s shape forces the contiguous dimension to be small, though, the
+tile can no longer fill a 128 B atom, and you step down to <code class="docutils literal notranslate"><span class="pre">SWIZZLE_64B</span></code> or <code class="docutils literal notranslate"><span class="pre">SWIZZLE_32B</span></code> — the
+largest atom the row can still cover.</p>
+<p>You never work out these permuted addresses by hand, and it is worth being precise about how swizzle
+relates to the <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> notation: it is <em>not</em> part of that affine map. It is a separate, non-affine
+layer composed on top of it. The <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> layout places an element at a linear memory (<code class="docutils literal notranslate"><span class="pre">&#64;m</span></code>) address,
+and the swizzle then permutes that address — written, in the TIRx layout API, as
+<code class="docutils literal notranslate"><span class="pre">ComposeLayout(swizzle,</span> <span class="pre">tile)</span></code> (<a class="reference internal" href="../tirx_guide/layout.html#chap-data-layouts"><span class="std std-ref">Tensor Layout</span></a>). Your job is only to pick one consistent
+mode across every op that touches the tile and let the composed layout do the rest.</p>
+<p>That same composed layout is also what the hardware fills, and this is where swizzling and tiling
+come together. A TMA descriptor is multi-dimensional, so a single three-dimensional box can describe
+both the atom tiling of the tile and the swizzle within each atom; one TMA load then lays the tile
+out atom by atom and swizzles it as it writes shared memory (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>), with no separate
+swizzling pass. <em>Which</em> swizzle each engine demands is generation-specific, and that is the subject
+of the next chapter.</p>
 </section>
 </section>
 

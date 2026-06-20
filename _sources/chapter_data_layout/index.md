@@ -235,9 +235,25 @@ is in use. The demo shows the element arrangement inside one atom for each forma
 ```
 *Interactive: pick a swizzle format to see its atom shape (8 × N B) and how elements are permuted inside it.*
 
-One reassuring point is that swizzle is a remapping the hardware applies for you. Your job is not to
-compute permuted addresses by hand but to pick a single consistent mode — say `SWIZZLE_128B` —
-across all the ops that touch a tile, and then let the hardware take care of the addressing.
-`SWIZZLE_128B`, to make it concrete, gives conflict-free access to 8 rows and 8 columns at a time in
-fp16. *Which* swizzle each engine demands is generation-specific, and that is the subject of the next
-chapter.
+Which mode should you pick? The rule of thumb is to prefer the *largest* atom the tile can fill. An
+N-byte atom needs the tile's contiguous dimension to be at least N bytes, and a multiple of it, so
+`SWIZZLE_128B` applies only when a row spans at least 128 bytes — 64 `float16` elements. When it
+fits, it is the default choice, because its 8 × 128 B atom covers a full 128-byte bank line and so
+scatters a column across all 32 banks at once, giving conflict-free access to 8 rows and 8 columns at
+a time in fp16. When the problem's shape forces the contiguous dimension to be small, though, the
+tile can no longer fill a 128 B atom, and you step down to `SWIZZLE_64B` or `SWIZZLE_32B` — the
+largest atom the row can still cover.
+
+You never work out these permuted addresses by hand, and it is worth being precise about how swizzle
+relates to the `S[...]` notation: it is *not* part of that affine map. It is a separate, non-affine
+layer composed on top of it. The `S[...]` layout places an element at a linear memory (`@m`) address,
+and the swizzle then permutes that address — written, in the TIRx layout API, as
+`ComposeLayout(swizzle, tile)` ({ref}`chap_data_layouts`). Your job is only to pick one consistent
+mode across every op that touches the tile and let the composed layout do the rest.
+
+That same composed layout is also what the hardware fills, and this is where swizzling and tiling
+come together. A TMA descriptor is multi-dimensional, so a single three-dimensional box can describe
+both the atom tiling of the tile and the swizzle within each atom; one TMA load then lays the tile
+out atom by atom and swizzles it as it writes shared memory ({ref}`chap_tma`), with no separate
+swizzling pass. *Which* swizzle each engine demands is generation-specific, and that is the subject
+of the next chapter.
