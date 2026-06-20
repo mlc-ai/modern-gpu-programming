@@ -264,7 +264,7 @@ You never work out these permuted addresses by hand, and it is worth being preci
 relates to the `S[...]` notation: it is *not* part of that affine map. It is a separate, non-affine
 layer composed on top of it. The `S[...]` layout places an element at a linear memory (`@m`) address,
 and the swizzle then permutes that address — written, in the TIRx layout API, as
-`ComposeLayout(swizzle, tile)` ({ref}`chap_data_layouts`). Your job is only to pick one consistent
+`ComposeLayout(swizzle, tile)` ({ref}`chap_tirx_layout_api`). Your job is only to pick one consistent
 mode across every op that touches the tile and let the composed layout do the rest.
 
 That same composed layout is also what the hardware fills, and this is where swizzling and tiling

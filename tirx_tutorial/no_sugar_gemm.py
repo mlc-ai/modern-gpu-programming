@@ -15,7 +15,7 @@ Every bit of TIRx sugar is unfolded here:
         -> raw ``Tx.ptx.mbarrier.{init, arrive.expect_tx, try_wait}``
 
 Single tile (M = N = 128, K = 64), no pipelining, no cluster, single CTA,
-single warpgroup. Used by :numref:`chap_data_layouts` to motivate every TIRx
+single warpgroup. Used by :numref:`chap_tirx_layout_api` to motivate every TIRx
 abstraction introduced in the rest of the chapter.
 """
 import numpy as np
@@ -36,7 +36,7 @@ TMA_TOTAL_BYTES = A_BYTES + B_BYTES
 
 # SMEM layout: row-major 2D with a 128B swizzle wrapper (one "128B atom"
 # == 64 fp16 elements). Both TMA and tcgen05.mma understand this wrapper
-# directly; see :numref:`chap_data_layouts` for the derivation.
+# directly; see :numref:`chap_tirx_layout_api` for the derivation.
 A_layout = Tx.ComposeLayout(
     Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True),
     Tx.TileLayout(Tx.S[(M, 1, 64) : (64, M * 64, 1)]),
