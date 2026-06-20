@@ -15,7 +15,7 @@ Rather than introduce these ideas in the abstract, we will work from a single co
 
 ## A First Kernel: Single-MMA GEMM
 
-Our example computes a single 128 x 128 output tile of `D = A B^T` with K = 64. The whole computation is expressed as one `Tx.gemm_async` tile operation, from end to end. (That one tile operation does not map to a single hardware instruction: because the hardware MMA K-atom is 16, the K=64 tile lowers to a short sequence of `tcgen05.mma` instructions stepping along K. The point of the DSL is precisely that we write the tile, not the sequence.) Around that operation, the kernel does the usual chores: it allocates shared memory (SMEM) and tensor memory (TMEM), copies A and B from global to shared memory, issues the tile MMA into a TMEM accumulator, reads that accumulator back out through registers, and stores the result. Small as it is, this kernel is Step 1 of the GEMM ladder we climb in {ref}`chap_gemm_basics`, where it returns with a full walkthrough.
+The kernel we promised is a minimal GEMM, pared down to the smallest version that still exercises a Tensor Core. It computes a single 128 x 128 output tile of `D = A B^T` with K = 64. The whole computation is expressed as one `Tx.gemm_async` tile operation, from end to end. (That one tile operation does not map to a single hardware instruction: because the hardware MMA K-atom is 16, the K=64 tile lowers to a short sequence of `tcgen05.mma` instructions stepping along K. The point of the DSL is precisely that we write the tile, not the sequence.) Around that operation, the kernel does the usual chores: it allocates shared memory (SMEM) and tensor memory (TMEM), copies A and B from global to shared memory, issues the tile MMA into a TMEM accumulator, reads that accumulator back out through registers, and stores the result. Small as it is, this kernel is Step 1 of the GEMM ladder we climb in {ref}`chap_gemm_basics`, where it returns with a full walkthrough.
 
 Every TIRx kernel begins from the same handful of imports, so it is worth seeing them once up front:
 
@@ -196,6 +196,8 @@ print(ex.mod.imports[0].inspect_source())
 This is only a sketch. For the full lowering story — all of the passes, how tile-primitive dispatch is resolved, and how the host/device split is done — see {ref}`chap_arch`.
 
 ## Where to Go Next
+
+One kernel was enough to meet scope, layout, and dispatch and to see them compiled and run. Each of the three design elements, and the kernel itself, opens onto a chapter that takes it further:
 
 - {ref}`chap_tirx_layout_api` — the tensor layout model (`TileLayout`, named axes, swizzle) that the operand and accumulator placements above are built from. Start here if the layout design element felt like the most mysterious of the three.
 - {ref}`chap_language_reference` — the full language-feature set, covering parser utilities, data types, buffers and memory, control flow, and thread synchronization, for when you want the complete vocabulary rather than the tour.

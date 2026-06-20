@@ -30,14 +30,16 @@ TMEM is addressed. It is not a flat byte array that you index with a single offs
 two-dimensional grid. The rows are indexed by a hardware axis called `TLane`, of which there are 128,
 and the columns by `TCol`, of which there are up to 512. So when you declare a TMEM buffer, you give
 it a layout over those two axes, just as you would for any other tile. An accumulator, for example,
-is written `S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_layout`.
+is written `S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_layout`. The figure
+below shows this grid: `TLane` running down the 128 rows, `TCol` across the columns.
 
 ![TMEM 2D layout: TLane rows × TCol columns](../img/tmem_layout.png)
 
 ## Allocation
 
-Unlike registers, which do not require explicit allocation, TMEM has to be **allocated and freed**
-by the kernel itself. The allocation is a per-CTA affair. One warp in the CTA performs it,
+Knowing the shape of the address space is only half the story; before a kernel can write into it, that
+space has to be reserved. Unlike registers, which the compiler hands out without your asking, TMEM has
+to be **allocated and freed** by the kernel itself. The allocation is a per-CTA affair. One warp in the CTA performs it,
 requesting columns in units of 32, and the column count is rounded up to a power of two. From there
 you can think of TMEM much like shared memory. It is a budgeted resource that belongs to the CTA,
 so you size it much as you would size your SMEM ring buffers, and you have to stay within the
@@ -64,7 +66,8 @@ second instruction, **`tcgen05.st`**, simply runs that path in reverse — from 
 TMEM**, in the same fragment — and you reach for it when a thread already holds data in registers, an
 A operand for instance, and you want to stage it into TMEM. The third, **`tcgen05.cp`**, is a bulk
 copy from **SMEM into TMEM** (the `32x128b.warpx4` form); this is the one that stages the scale
-factors for a block-scaled MMA.
+factors for a block-scaled MMA. The figure below traces the two register paths, `tcgen05.ld` and
+`tcgen05.st`, and the m8n8 fragment they map onto — lane `l` landing on row `l/4` and two columns.
 
 ![tcgen05.ld / st move the TMEM accumulator to and from registers in the m8n8 fragment (lane l → row l/4, two columns)](../img/tcgen05_ldst.svg)
 

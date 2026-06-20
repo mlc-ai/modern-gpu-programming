@@ -35,7 +35,8 @@ completion is signaled.
 
 ## One Thread Issues, Hardware Moves the Tile
 
-The idea behind TMA is to split the work between the threads and the hardware. Instead of every
+Start with the first part of that picture, the copy itself. The idea behind TMA is to split the work
+between the threads and the hardware. Instead of every
 thread running its own load/store loop, a single thread issues one tile copy, and the engine carries
 out the transfer in the background while the rest of the warp gets on with the math. To issue the
 copy, that thread hands the engine a tensor-map descriptor — a compact record of the global tensor's
@@ -69,7 +70,9 @@ Asynchrony is what buys us the overlap, but it also raises a question the old sy
 had to worry about. Because the issuing thread returns immediately — long before the bytes have
 actually arrived — how does the kernel know the transfer has finished before something tries to read
 the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
-differently, so it is worth looking at each in turn.
+differently, so it is worth looking at each in turn. The figure below traces the load path end to
+end: watch how the expected byte count, the engine's arrivals, and the consumer's wait line up to
+flip the barrier's phase.
 
 ![TMA load synchronization flow](../img/tma_sync_flow.png)
 

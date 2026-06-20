@@ -60,10 +60,12 @@ code, which resource you are actually fighting.
 
 ## Arithmetic Intensity of Real Workloads
 
-The encouraging thing about arithmetic intensity is that it is mostly a property of the algorithm,
-not of the implementation. You can often work it out from the math of what a kernel computes long
-before you write the kernel itself, and that estimate already tells you which side of the ridge you
-will be fighting on. Let us walk through where the workloads in this book fall.
+We have seen that arithmetic intensity decides which side of the ridge a kernel lands on, so the
+natural next question is how to find a kernel's arithmetic intensity in the first place. The
+encouraging answer is that it is mostly a property of the algorithm, not of the implementation. You
+can often work it out from the math of what a kernel computes long before you write the kernel
+itself, and that estimate already tells you which side of the ridge you will be fighting on. Let us
+walk through where the workloads in this book fall.
 
 - **Elementwise and reductions** (GELU, RMSNorm) read and write large tensors but do only a handful
   of FLOPs per element. Their arithmetic intensity lands far below the ridge point, deep in the
@@ -180,8 +182,10 @@ that an optimization is justified by what it unlocks, not always by the number i
 
 ## Overlap Is the Lever
 
-For a compute-bound GEMM that already uses tensor cores, the remaining gap usually comes from idle
-time between load, compute, and store stages rather than from weak arithmetic throughput. The raw
+The ladder showed the gains piling up but not the single idea behind them; nearly every step past the
+tensor-core switch is a different way of arranging one thing, and that thing is overlap. To see why,
+return to a compute-bound GEMM that already uses tensor cores. There the remaining gap usually comes
+from idle time between load, compute, and store stages rather than from weak arithmetic throughput. The raw
 FLOP/s figure is fixed by the tensor cores — you cannot make them multiply any faster — so the only
 remaining way to go faster is to stop *waiting*. A kernel that loads a tile, then computes on it,
 then stores the result spends most of its life idle, with one hardware unit standing around while

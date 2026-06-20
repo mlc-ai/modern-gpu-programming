@@ -25,11 +25,11 @@ row-wise and column-wise access to a tile efficient at the same time.
 
 ## The Shape–Stride Model
 
-It is worth starting from the simplest possible layout, because everything else in the chapter is
-built on top of it. At its core, a layout is just two things: a **shape** and a matching set of
-**strides**. We write the pair as `S[(shape) : (strides)]`, and to find where a logical index lives
-we take the dot product of that index with the strides. A row-major 4×4 matrix, for instance, looks
-like this:
+Before we reach the GPU-specific layouts, it is worth starting from the simplest possible one, because
+everything else in the chapter is built on top of it. At its core, a layout is just two things: a
+**shape** and a matching set of **strides**. We write the pair as `S[(shape) : (strides)]`, and to
+find where a logical index lives we take the dot product of that index with the strides. A row-major
+4×4 matrix, for instance, looks like this:
 
 ```text
 S[(4, 4) : (4, 1)]        addr(i, j) = i·4 + j·1
@@ -103,10 +103,10 @@ coordinates and then mapped to a physical address.
 
 ## Named Axes
 
-Up to this point we have treated an address as a location in linear memory. On a GPU, though, data
-can live in more than one place: besides memory, a tile may be spread across warp lanes, across
-thread registers, or across TMEM lanes and columns. To describe all of these uniformly, we extend
-the notation with **named axes**. The idea is to let each stride coefficient carry an axis tag that
+Up to this point every stride in `S[...]` has named an offset into linear memory, and we have treated
+an address as a location there. On a GPU, though, data can live in more than one place: besides
+memory, a tile may be spread across warp lanes, across thread registers, or across TMEM lanes and
+columns. To describe all of these uniformly, we extend the notation with **named axes**. The idea is to let each stride coefficient carry an axis tag that
 says which space it moves through — `@m` for ordinary memory, `@laneid` for warp lanes, `@reg` for
 registers, `@warpid` for warps, and `@TLane` / `@TCol` for TMEM coordinates. With the tags in hand, a
 single layout can describe not only where data sits in memory but also how it is distributed across
@@ -135,19 +135,22 @@ lanes and per-lane registers, rather than placing them in linear memory.
 ## Distributed Layout
 
 What makes named axes so useful is that they let us describe placement uniformly across many levels
-of the system. We have just used them for lanes and registers inside a single GPU, but the very same
-idea reaches across devices: axes such as `@gpuid_x` and `@gpuid_y` can say where data lives in a GPU
-mesh, and with them the notation captures the sharding patterns that show up in distributed training
-and inference. One thing the axes do not yet capture is *replication* — data that is copied to more
-than one place — so we add the notation `R[n : stride]`, where `R` marks the replicated dimension.
-For example, `R[2 : 1@gpuid_x]` describes replication along the `@gpuid_x` axis. The interactive demo
-below shows several ways to express sharding and replication on a 2×2 GPU mesh:
+of the system, including placement *across whole devices*. We have just used them for lanes and
+registers inside a single GPU, but the very same idea reaches outward: axes such as `@gpuid_x` and
+`@gpuid_y` can say where data lives in a GPU mesh, and with them the notation captures the sharding
+patterns that show up in distributed training and inference. One thing the axes do not yet capture
+is *replication* — data that is copied to more than one place — so we add the notation `R[n : stride]`,
+where `R` marks the replicated dimension. For example, `R[2 : 1@gpuid_x]` describes replication along
+the `@gpuid_x` axis. Putting the two together, a single expression can both shard a tensor across a
+2×2 GPU mesh and replicate it along one axis:
 
 ```text
 S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
 ```
 
-The demo below shows that combined partition-and-replication pattern on a small GPU mesh.
+The demo below shows that combined partition-and-replication pattern on a small GPU mesh; trace one
+tensor element to see which device holds it, and watch how the `@gpuid_x` replication places an
+identical copy on the paired device.
 
 ```{raw} html
 <iframe src="../demo/tile_distributed.html" title="Distributed layout across a GPU mesh" loading="lazy"
@@ -157,7 +160,8 @@ The demo below shows that combined partition-and-replication pattern on a small 
 
 ### Intra-Kernel Replication Pattern: Scale Factors in TMEM
 
-The same replication dimension turns out to describe something that happens entirely inside a single
+The replication dimension `R[...]` we just introduced for the GPU mesh is not only about multiple
+devices. The same construct turns out to describe something that happens entirely inside a single
 kernel as well: data that the hardware *broadcasts across lanes*. Blackwell's block-scaled MMA
 ({ref}`chap_layout_generations`) is a good example. Its scale factors live in TMEM, where a 128-row
 scale vector is stored in only **32 TMEM lanes** — logical row `r` goes to TMEM lane `r % 32`, with
@@ -222,12 +226,11 @@ same column is spread across eight distinct banks and reads in a single cycle.
 The little 8×8 example captures the core idea, but real GPU memories have many more banks than that
 toy picture suggests. To make swizzling work at full scale, we do not treat the whole tile as one
 monolithic object. Instead, we cut memory into small segments and apply the swizzle pattern within
-each segment. The next figure shows the most common case in practice, `SWIZZLE_128B`, where the
-layout is organized around 128-byte segments so the same row/column-remapping trick fits naturally
-into a 32-bank memory system:
+each segment. The most common case in practice is `SWIZZLE_128B`, organized around 128-byte segments
+so the same row/column-remapping trick fits naturally into a 32-bank memory system.
 
-This interactive shows one concrete hardware swizzle, `SWIZZLE_128B`, so the repeating pattern is
-visible before we generalize across formats.
+The interactive below shows that one concrete hardware swizzle, `SWIZZLE_128B`, so the repeating
+segment-by-segment pattern is visible before we generalize across formats.
 
 ```{raw} html
 <iframe src="../demo/swizzle_128B.html" title="SWIZZLE_128B layout" loading="lazy"
@@ -240,10 +243,11 @@ single color block to refer to one segment, instead of drawing individual banks.
 hardware defines a small repeating **atom** on which the permutation is applied, and different
 swizzle modes choose different atom sizes. `SWIZZLE_128B` uses an 8 × 128 B atom, `SWIZZLE_64B` an
 8 × 64 B atom, and `SWIZZLE_32B` an 8 × 32 B atom; the whole tile is then tiled by whichever atom
-is in use. The demo shows the element arrangement inside one atom for each format:
+is in use.
 
-The final interactive lets you switch formats and inspect the atom directly, which is the right
-level of detail for reasoning about which swizzle a load/store instruction expects.
+The final interactive lets you switch between these formats and inspect the element arrangement
+inside one atom directly, which is the right level of detail for reasoning about which swizzle a
+load/store instruction expects.
 
 ```{raw} html
 <iframe src="../demo/swizzle_atom_general.html" title="Swizzle atom layout per format (128B/64B/32B)" loading="lazy"

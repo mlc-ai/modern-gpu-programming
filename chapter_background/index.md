@@ -14,7 +14,7 @@ itself and how code runs on that hardware. This chapter gives an overview of the
 model: the thread hierarchy that executes the work, the memory spaces that hold and move the data,
 and the compute and data-movement engines that do the heavy lifting. We first introduce these
 pieces one by one, then put them together in a GEMM pipeline so it is clear how data and execution
-flow through the machine. Nearly every optimization later in the book is some way of arranging
+flow through the hardware. Nearly every optimization later in the book is some way of arranging
 work across those same pieces.
 
 Modern GPUs also contain many specialized hardware units. To give a first taste, the interactive
@@ -32,7 +32,8 @@ Tensor Core and TMA engines.*
 
 ## The Execution Hierarchy
 
-A GPU does not present its thousands of threads as one flat pool. Instead it groups them into a
+We begin with the threads that do the work. A GPU does not present its thousands of threads as one
+flat pool. Instead it groups them into a
 nested hierarchy, and it does so because cooperation happens at several different scales at once. At
 the finest scale, the lanes of a warp march through the same instruction in lockstep. A step coarser,
 the threads of a CTA share a common pool of fast scratch memory. Coarser still, the CTAs of a
@@ -74,8 +75,9 @@ dispatch) that this book returns to again and again.
 
 ## Compute: CUDA Cores and Tensor Cores
 
-Inside each SM there are two distinct kinds of math engine rather than one, and the division of labor
-between them shapes how nearly every kernel is written. The two play complementary roles.
+The threads we just described have to run their arithmetic on something, and an SM offers them two
+distinct kinds of math engine rather than one. The division of labor between the two shapes how
+nearly every kernel is written, and they play complementary roles.
 
 - **CUDA cores** are general-purpose SIMT ALUs. They run the scalar and vector instructions that
   handle index arithmetic, elementwise math, reductions, and control flow — the glue logic that
@@ -92,7 +94,8 @@ Tensor Memory instead of registers, and we devote {ref}`chap_tensor_cores` to it
 
 ## Memory Spaces
 
-There is no single memory that is at once large and fast; physics forces a trade-off between
+Those math engines are only as fast as the data reaching them, so we turn next to where that data
+lives. There is no single memory that is at once large and fast; physics forces a trade-off between
 capacity and speed. A GPU therefore offers several memories rather than one, each striking that
 trade-off at a different point, and a kernel works by moving data through them. Each space has its
 own capacity, its own latency, and its own rules for who may access it.
@@ -125,7 +128,9 @@ instructions, one per warp's 32 TMEM lanes. The second is that TMEM, unlike regi
 
 ## CTA Clusters
 
-A CTA runs on one SM and works out of that SM's shared memory, but a single CTA's SMEM budget is
+The thread hierarchy ended at the cluster, the one level whose members can span several SMs, and it
+is worth a closer look because of what that reach buys us. A CTA runs on one SM and works out of that
+SM's shared memory, but a single CTA's SMEM budget is
 finite, and large tiles often demand more operand storage, or more reuse, than one block alone can
 supply. Hopper's answer to this was the **thread block cluster**: a group of CTAs that cooperate more
 tightly than independent blocks do, in that they can synchronize together and read and write each

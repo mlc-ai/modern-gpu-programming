@@ -23,6 +23,12 @@ tracking, and finally the small set of synchronization rules a tensor-core kerne
 
 ## The mbarrier
 
+Start with the object itself. An mbarrier ("memory barrier") is the small piece of shared-memory
+state that every handoff in this chapter is built on, so it is worth seeing exactly what it holds and
+what a kernel can do to it. The demo below lays out that state — the arrival counter and the phase
+bit — alongside the three APIs that touch it; watch how `init`, `arrive`, and `wait` each move the
+counter and the bit.
+
 ```{raw} html
 <div style="overflow-x:auto;">
 <iframe src="../demo/mbarrier_mechanism.html" title="mbarrier data structure and APIs" loading="lazy"
@@ -61,6 +67,12 @@ arrives once its data is ready, and the consumer simply waits before touching it
 
 ## Phase Tracking
 
+We have seen *that* a barrier carries a phase bit; now we turn to *why*. A single barrier has to serve
+a loop that repeats the same handoff over and over, and the phase bit is what keeps those repetitions
+apart. The demo below replays one barrier across several pipeline iterations; watch the phase bit flip
+from 0 to 1 and back each time its arrivals complete, and notice that each iteration waits on the
+opposite phase from the one before.
+
 ```{raw} html
 <div style="overflow-x:auto;">
 <iframe src="../demo/phase_tracking.html" title="mbarrier phase tracking" loading="lazy"
@@ -84,8 +96,9 @@ pool of SMEM buffers and barriers across a long K-loop ({ref}`chap_gemm_async`).
 
 ## Synchronization Rules
 
-Despite the hardware details, the synchronization model comes down to one rule: **whenever one path
-produces data and another consumes it, make the handoff explicit.** In practice, tensor-core kernels
+With the barrier and its phase in hand, we can step back and ask how a whole kernel is wired
+together. Despite the hardware details, the synchronization model comes down to one rule: **whenever
+one path produces data and another consumes it, make the handoff explicit.** In practice, tensor-core kernels
 mostly reuse the same three handoff patterns:
 
 - **Thread code → engine.** When threads write SMEM and a later MMA or TMA store reads it, insert a

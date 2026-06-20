@@ -25,7 +25,7 @@ Our first move is to get the copy itself off the critical path. Think about what
 
 ### TMA Issue Pattern
 
-The edit to the source is only a few lines, but the execution model behind those lines is different in kind. A synchronous `Tx.copy` is work that the CTA threads do themselves, with their own instructions; a TMA copy is a command that one thread issues, after which the TMA hardware does all the moving. It is worth seeing the two side by side.
+Step 4's one change is to replace the synchronous tile copy with a TMA load, so it pays to look closely at how that load is issued. The edit to the source is only a few lines, but the execution model behind those lines is different in kind. A synchronous `Tx.copy` is work that the CTA threads do themselves, with their own instructions; a TMA copy is a command that one thread issues, after which the TMA hardware does all the moving. It is worth seeing the two side by side.
 
 **Before (Step 3)** — all 128 threads participate in the copy, then `cta_sync` makes the shared-memory writes visible:
 ```python
@@ -55,9 +55,9 @@ So even though Step 4 still blocks on each load, it ends up faster anyway. TMA a
 
 ### TMA Load and Store Synchronization
 
-Switching to TMA changes two things at once: who starts a copy, and how the code knows when it finished. The first is obvious from the code; the second is easy to overlook, and getting it wrong gives you a silent correctness bug rather than a crash. With `Tx.cta.copy`, the CTA threads do the copy together and a following `cta_sync()` is enough to know it is done. With TMA, one selected thread issues `Tx.copy_async(..., dispatch="tma")`, the engine performs the transfer on its own schedule, and it signals completion through an mbarrier.
+We have seen how a TMA copy is issued; the other half of the story is knowing when it has finished. Switching to TMA changes two things at once: who starts a copy, and how the code knows when it finished. The first is obvious from the code; the second is easy to overlook, and getting it wrong gives you a silent correctness bug rather than a crash. With `Tx.cta.copy`, the CTA threads do the copy together and a following `cta_sync()` is enough to know it is done. With TMA, one selected thread issues `Tx.copy_async(..., dispatch="tma")`, the engine performs the transfer on its own schedule, and it signals completion through an mbarrier.
 
-This is exactly why `cta_sync()` is no longer sufficient. `cta_sync()` waits only for the CTA's own threads and orders only their shared-memory writes; it knows nothing about an in-flight TMA transfer, so it happily returns while the tile is still arriving. The fix is to make completion explicit: for a TMA load, the selected thread first tells the mbarrier how many bytes to expect, and the CTA then waits on *that* mbarrier before any MMA touches the SMEM tile.
+This is exactly why `cta_sync()` is no longer sufficient. `cta_sync()` waits only for the CTA's own threads and orders only their shared-memory writes; it knows nothing about an in-flight TMA transfer, so it happily returns while the tile is still arriving. The fix is to make completion explicit: for a TMA load, the selected thread first tells the mbarrier how many bytes to expect, and the CTA then waits on *that* mbarrier before any MMA touches the SMEM tile. The figure below traces that handshake end to end.
 
 ![TMA Async Load: Synchronization Flow](../img/tma_sync_flow.png)
 
@@ -256,7 +256,7 @@ Why couldn't Step 4 overlap the load with the compute, when the two engines are 
 
 ### Pipeline Walkthrough
 
-With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages, and the two hardware engines can finally work a tile apart from each other. The figure below shows the target schedule across the K tiles.
+Doubling the SMEM buffer is the whole idea of Step 5, so before reading the code it helps to see what schedule that extra stage is meant to unlock. With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages, and the two hardware engines can finally work a tile apart from each other. The figure below shows the target schedule across the K tiles.
 
 ![*Pipeline PIPE_DEPTH=2 — the target schedule; this single-warpgroup step only prefetches, full overlap arrives with warp specialization in Step 7*](../img/pipe_depth2.png)
 
@@ -273,7 +273,7 @@ Concretely, the code differs from Step 4 in four places:
 
 ### Pipeline Mechanics
 
-Those four changes really revolve around three concerns — priming the buffers, iterating in steady state, and tracking the barrier phases — and we will take them in that order.
+The four code changes that turn Step 4 into a two-stage pipeline really revolve around three concerns — priming the buffers, iterating in steady state, and tracking the barrier phases — and we will take them in that order.
 
 **1. Prefetch**: before the main loop ever runs, we load the first `PIPE_DEPTH` stages, so that the loop always finds data waiting for it on the very first iteration:
 ```python

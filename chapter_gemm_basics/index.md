@@ -32,7 +32,7 @@ $$\text{TFLOPS} = \frac{2 \times M \times N \times K}{t_{\text{seconds}} \times 
 
 ### GEMM Data Path
 
-Every optimization in this tutorial comes down to where the data lives and how it moves, so it is worth mapping that out before we write any code. At heart, a Blackwell GEMM kernel is organized around just two activities: moving tiles between memories, and computing on them.
+Every optimization in this tutorial comes down to where the data lives and how it moves, so it is worth mapping that out before we write any code. At heart, a Blackwell GEMM kernel is organized around just two activities: moving tiles between memories, and computing on them. The figure below traces a tile through every memory it touches on its way from input to output:
 
 ![*Memory Data Flow*](../img/memory_dataflow.png)
 
@@ -67,7 +67,7 @@ The simplest GEMM that still exercises the full hardware path is one that comput
 
 ### Single-Tile Dataflow
 
-This first kernel walks the core GEMM data path exactly once. It allocates its working memory, loads the operands, computes the product, writes the result back, and cleans up after itself:
+With the baseline contract fixed, the next thing to pin down is the order in which one tile travels through it. This first kernel walks the core GEMM data path exactly once — the same GMEM -> SMEM -> TMEM -> registers -> GMEM chain from the data-flow figure, with no loop wrapped around it. It allocates its working memory, loads the operands, computes the product, writes the result back, and cleans up after itself:
 
 1. **Allocate**: SMEM (pool allocator), TMEM (`tcgen05.alloc`), mbarrier
 2. **Load**: All 128 threads cooperatively copy A and B tiles from GMEM to SMEM (sync `Tx.copy`)
@@ -334,7 +334,7 @@ The first limit to remove is the smallest one. Step 1 handles only a single 64-w
 
 ### K-Loop Mechanics
 
-To cover a K larger than 64, we walk K in chunks of `BLK_K=64`. Each iteration loads the next A and B K-slice into SMEM and issues `Tx.gemm_async`. The `accum` flag is what stitches these chunks together into one dot product: on the first chunk, `accum=False` initializes the TMEM accumulator, and on every later chunk, `accum=True` adds that chunk's product into the running sum already sitting in TMEM.
+Step 1 contracted over a single 64-wide K tile; here we keep its single output tile but let K run as long as the matrices demand. To cover a K larger than 64, we walk K in chunks of `BLK_K=64`. Each iteration loads the next A and B K-slice into SMEM and issues `Tx.gemm_async`. The `accum` flag is what stitches these chunks together into one dot product: on the first chunk, `accum=False` initializes the TMEM accumulator, and on every later chunk, `accum=True` adds that chunk's product into the running sum already sitting in TMEM.
 
 Synchronization is where the care is needed. We reuse a single mbarrier for every MMA completion, and reusing it safely comes down to tracking which barrier phase we are waiting on. An mbarrier carries a 1-bit phase, either 0 or 1, and it flips to the other value each time the expected arrival lands. The subtle part is the wait condition itself: `try_wait(bar, phase)` blocks until the barrier's internal phase *differs* from the `phase` argument. So the argument we pass has to name the phase we expect to leave behind, not the one we are waiting to reach:
 

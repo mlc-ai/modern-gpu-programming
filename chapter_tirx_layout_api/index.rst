@@ -64,9 +64,9 @@ at a time.
 Layouts by example
 ------------------
 
-Before the formal rules, here is what the API looks like in use. Each call builds a ``TileLayout``
-from the same ``S[...]`` / ``R[...]`` notation as :ref:`chap_data_layout`, so the code reads almost
-exactly like the notation on the page:
+Before the formal rules, here is what the layout API looks like in use. Each call below builds a
+``TileLayout`` — the chapter's central object — from the same ``S[...]`` / ``R[...]`` notation as
+:ref:`chap_data_layout`, so the code reads almost exactly like the notation on the page:
 
 .. code-block:: python
 
@@ -128,7 +128,8 @@ description of what you can watch happen here.
 TileLayout
 ----------
 
-We write a **TileLayout** as ``S[shape : strides]``. The ``S`` marks a shard spec,
+The examples above all reduced to one object, so let us build it from the ground up.
+A **TileLayout** is written ``S[shape : strides]``. The ``S`` marks a shard spec,
 which you can read as "a tile of this *shape*, with each logical index mapped by
 these per-axis *strides*"; when an element needs to be replicated, you extend it
 with a replica set and write ``S[...] + R[...]``. Until replication enters the
@@ -193,7 +194,8 @@ free axes of a 2D scratchpad; ``Bank`` is a shared-memory bank; and ``TLane`` /
 Forward Mapping
 ~~~~~~~~~~~~~~~
 
-Evaluating a layout means taking a logical coordinate and working out where it
+We have built a ``TileLayout`` out of shard, replica, and offset; now we evaluate
+it. Evaluating a layout means taking a logical coordinate and working out where it
 lands. The method ``layout.apply(*coord)`` does exactly this: it hands you back a
 dict from axis name to coordinate, such as ``{"laneid": …, "warpid": …, "m": …}``,
 and the four steps below are precisely what it runs inside. Concretely, evaluating
@@ -241,8 +243,9 @@ it happens to be handed.
 Case Study: NVIDIA Tensor-Core Tile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The quickest way to see that these four steps do something real is to run them on
-an actual tensor-core tile and watch a hardware mapping fall out. Consider a logical
+With the four steps — flatten, split, accumulate, broadcast — in hand, the quickest
+way to see that they do something real is to run them on an actual tensor-core tile
+and watch a hardware mapping fall out. Consider a logical
 ``(8, 16)`` tile distributed across 2 warps of 32 lanes each, where each lane holds
 part of the tile in its own registers (the ``reg`` slot is just the default memory
 axis ``m``):
@@ -473,8 +476,8 @@ banks, and we will close the loop on this very tile in the worked example.
 The Transform
 ~~~~~~~~~~~~~
 
-The idea behind the cure is simple: make a column's addresses depend on the row, so
-that they scatter across banks instead of stacking on one. An XOR achieves this
+The idea behind the swizzle is simple: make a column's addresses depend on the row,
+so that they scatter across banks instead of stacking on one. An XOR achieves this
 cheaply, with no multiply and no table lookup. A ``SwizzleLayout`` is controlled by
 three integer parameters — ``per_element`` (M), ``swizzle_len`` (B), and
 ``atom_len`` (S) — and maps a linear element address ``m`` as follows, leaving the

@@ -36,8 +36,9 @@ addition that makes their **scheduling** dynamic.
 
 ## The Two Instructions
 
-The whole mechanism is exposed as just two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6):
-one asks for the next tile, and the other reads back the answer. Let us look at each in turn.
+We have said CLC hands tiles out on demand; now we can see exactly how a CTA asks for one. The whole
+mechanism is exposed as just two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6): one asks the
+grid scheduler for the next tile, and the other reads back the answer. Let us look at each in turn.
 
 - **`try_cancel`** — `clusterlaunchcontrol.try_cancel.async`. This is a single asynchronous request
   that asks the scheduler to *cancel the launch* of the next pending cluster and hand this cluster its
@@ -60,8 +61,9 @@ grid is exhausted.
 
 ## The Work-Stealing Loop
 
-Armed with those two instructions, the persistent kernel collapses into a short loop that keeps
-asking for work until there is none left. Each iteration does three things:
+With `try_cancel` to request a tile and `query_cancel` to read the answer in hand, we can see how a
+persistent kernel uses them. The two instructions collapse the kernel into a short loop that keeps
+asking the scheduler for work until there is none left. Each iteration does three things:
 
 1. It issues a `try_cancel` for the next cluster. This is an asynchronous request, so it returns
    immediately and leaves us free to do other work.

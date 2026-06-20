@@ -38,7 +38,9 @@ them: the specific layout the *tensor core* itself insists on for its operands.
 
 ## Ampere — Register Fragment over Warp/Lane
 
-On Ampere-class GPUs (`sm_80`) the tensor-core instruction is the warp-level
+With those two memory rules in place, we can turn to the third demand — the one the tensor core itself
+makes — starting with the earliest of our three generations. On Ampere-class GPUs (`sm_80`) the
+tensor-core instruction is the warp-level
 `mma.sync.aligned.m16n8k*`, and the defining fact about it is where it reads its operands from:
 **registers**. A, B, and the C/D accumulator are all per-thread register fragments, spread across the
 warp's 32 lanes. Almost everything else about the Ampere data path follows from this one constraint,
@@ -51,7 +53,8 @@ SMEM --ldmatrix--> registers --mma.sync--> registers --st.shared--> SMEM
 
 ### What the Tensor Core Expects: an m8n8 Register Fragment
 
-To use the instruction at all, we have to know precisely which value sits in which lane's register —
+Because the Ampere operands live in registers, the first thing to pin down is their register layout.
+To use the `mma.sync` instruction at all, we have to know precisely which value sits in which lane's register —
 the layout is not an implementation detail we can ignore, it is part of the instruction's contract.
 The register fragment is built from **8×8 ("m8n8") sub-tiles**, which are the unit that `ldmatrix`
 moves and the tensor core reads. Take `mma.m16n8k16` (fp16/bf16 in, fp32 accumulate) as the concrete
@@ -118,7 +121,8 @@ along a **row**, and then read by `ldmatrix` along a **column**. With a plain ro
 write hits 8 distinct banks and is conflict-free, but the column read hits one bank 8 times — an
 8-way conflict. Switching to a col-major tile does not save us; it merely flips which of the two
 accesses pays the price. Without a permutation, one side always loses: row-major favors the write,
-while col-major favors the read.
+while col-major favors the read. The figure below contrasts the two accesses on a plain row-major
+tile, showing the row write spread across distinct banks while the column read collides on one.
 
 ![Row write hits 8 distinct banks (conflict-free); column read hits one bank 8 times (conflict)](../img/swizzle_conflict.svg)
 
@@ -129,6 +133,9 @@ and MMA descriptors so that nobody has to spell it out by hand; on Ampere, thoug
 live in hand-written index math.
 
 ## Hopper — `wgmma`, SMEM Descriptors, and Swizzle Formats
+
+Ampere paid for its register fragment on every MMA. The next generation keeps the same `D = AB + C`
+but rethinks where the operands come from, and that one decision reshapes the whole input path.
 
 ### What the Tensor Core Expects: a SMEM Matrix Descriptor
 
@@ -184,6 +191,10 @@ Moving the accumulator out of registers altogether is the change that waits for 
 
 ## Blackwell — `tcgen05` and TMEM
 
+Hopper moved the operands into SMEM but left the accumulator in registers. The third generation
+finishes the move, relocating the accumulator out of the register file and introducing a new operand
+that has no place to live anywhere else.
+
 ### What the Tensor Core Expects: SMEM Operands and a TMEM Accumulator
 
 Blackwell (`sm_100`) inherits Hopper's SMEM matrix descriptor for the A/B operands — and an A operand
@@ -197,7 +208,8 @@ the one we will focus on here, is the **scale factors** of a block-scaled MMA.
 
 ### Scale-Factor Layout in TMEM
 
-A block-scaled MMA (mxfp8, nvfp4) carries two extra operands beyond A and B — `SFA (M, SFK)` and
+The new operand promised above is the per-block scale. A block-scaled MMA (mxfp8, nvfp4) carries two
+extra operands beyond A and B — `SFA (M, SFK)` and
 `SFB (N, SFK)`, where `SFK = K / block`. The thing that sets them apart is where they live: unlike A
 and B, **the scale factors reside in TMEM** rather than SMEM, so they cannot simply ride the ordinary
 operand path. Instead they take a small SMEM→TMEM detour: a TMA load first brings them into SMEM, and

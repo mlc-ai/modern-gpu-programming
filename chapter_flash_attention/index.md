@@ -16,7 +16,7 @@ The clearest way in is to follow a single tile as it flows through the kernel. `
 
 ## Algorithm Shape
 
-For one query block, Flash Attention computes:
+Before we can place tiles in memory, we need the algorithm those tiles serve. For one query block, Flash Attention computes:
 
 $$O = \text{softmax}(QK^{\top} / \sqrt{d})V$$
 
@@ -54,7 +54,7 @@ The rescale we flagged earlier is also a tile operation, not a piece of scalar b
 
 ## Tile-Primitive Graph
 
-For one K/V block, the kernel walks this tile path top to bottom:
+With the running states and their homes in hand, we can lay the algorithm out as a concrete sequence of tile moves. For one K/V block, the kernel walks this tile path top to bottom:
 
 ```text
 Q, K, V in GMEM
@@ -155,7 +155,7 @@ The compute code never speaks in raw TMEM column numbers. Instead the kernel car
 
 ### Score MMA
 
-The score MMA computes:
+The first of the two phases is the score MMA, the matmul that opens every K/V iteration. It computes:
 
 $$S = Q_{\text{block}}K_{\text{block}}^{\top}$$
 
@@ -184,6 +184,8 @@ We can ask the same four questions the GEMM chapters asked of every tile op — 
 The single elected thread arriving on `s_ready` is the entire handoff. It announces that this score tile is finished and that the softmax warpgroup is now free to read it.
 
 ### Softmax Between MMAs
+
+Between the two MMAs sits softmax, the stage that turns the score tile `S` into the numerator tile `P`. Its readout card is:
 
 > **Tile-primitive readout — Softmax**
 > - Scope: WG0 (Q stage 0) / WG1 (Q stage 1), full warpgroup.
@@ -219,7 +221,7 @@ Why write `P` back to TMEM at all, when we just finished computing it in registe
 
 ### Value MMA
 
-The value MMA computes:
+The second phase, and the one that closes each K/V iteration, is the value MMA. It computes:
 
 $$O = O + P_{\text{block}}V_{\text{block}}$$
 
@@ -561,6 +563,8 @@ print(f"FA4: B={B} S={S} Hq={Hq} Hkv={Hkv} D={D}, non-causal -> PASS")
 **Expected output**: `... -> PASS`. The kernel accumulates the online softmax in fp32, yet several distinct approximations still separate its result from a high-precision reference. There is the fp16 storage and rounding of the inputs and operands; the `exp2`-based softmax reformulation (the `scale_log2 = log2(e)/√d` reframing of every exponential); the online-softmax reordering and per-row rescaling, which sums the blocks in a running scale rather than all at once; and finally the fp16 cast of `O` on writeback. The `rtol`/`atol` chosen here — the same tolerance the source kernel's own test uses — is sized to cover all of these together against the torch reference, not fp16 rounding on its own. So if you ever see a genuine failure here, not just a borderline near-miss, read it as a signpost pointing back at the softmax path: a dropped `s_ready` / `p_o_rescale` / `p_ready_2` wait, or a `row_max` / `row_sum` update that the rescale step failed to apply. Those are exactly the handoffs this chapter spent its barriers on.
 
 ## Differences from GEMM
+
+Now that the whole kernel has run, it is worth setting it side by side with GEMM, the kernel it builds on, to see exactly which axes attention stretches. The table collects those axes:
 
 | Aspect | GEMM | Flash Attention 4 |
 |--------|------|-------------------|
