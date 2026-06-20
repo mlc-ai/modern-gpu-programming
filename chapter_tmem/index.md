@@ -33,7 +33,7 @@ it a layout over those two axes, just as you would for any other tile. An accumu
 is written `S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_layout`. The figure
 below shows this grid: `TLane` running down the 128 rows, `TCol` across the columns.
 
-![TMEM 2D layout: TLane rows × TCol columns](../img/tmem_layout.png)
+![TMEM 2D layout: TLane rows × TCol columns](../img/tmem_grid.png)
 
 ## Allocation
 
