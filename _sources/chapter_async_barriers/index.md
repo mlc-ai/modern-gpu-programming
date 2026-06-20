@@ -107,9 +107,9 @@ same pattern reappears later when the Tensor Core signals the epilogue.
 *Interactive: a TMA load signalling completion through an mbarrier. The `tcgen05` MMA → epilogue
 handoff works the same way, with the Tensor Core arriving on the barrier instead of TMA.*
 
-The same rule reaches a little further than it first appears, because resource reuse is itself a
-handoff — just one running in the opposite direction. Before a stretch of TMEM or a SMEM buffer is
-freed or overwritten, every participant that might still be reading it must first have arrived. The
-GEMM chapters work out the exact wait and fence needed at each of these handoffs, and once you see
-them in that light, those kernels dissolve into nothing more than a sequence of producer/consumer
-pairs.
+The same idea also explains **when a buffer is safe to reuse**. Reuse is just the producer/consumer
+relationship viewed from the buffer's side: before a SMEM or TMEM region can be overwritten or
+freed, every consumer that might still read from it must have finished. That is why the later GEMM
+chapters are full of waits, arrives, and fences around stage reuse. Once you read those sites as
+"this consumer is done, so this buffer can become the next producer's input," the kernels become far
+easier to follow.
