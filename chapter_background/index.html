@@ -299,17 +299,16 @@
 <li><p>Every later optimization serves one tile pipeline — load (GMEM → SMEM), compute (SMEM → TMEM), epilogue (TMEM → registers → GMEM) — and aims to keep the compute and data-movement engines busy at once.</p></li>
 </ul>
 </div>
-<p>Two kernels can compute the same result and still differ in speed by an
-order of magnitude. The difference is usually not the arithmetic itself, but how well the kernel
-matches the hardware it runs on. This chapter sets up that hardware view before we write any
-kernels: the thread hierarchy that executes the work, the memory spaces that hold and move the
-data, and the compute and data-movement engines that do the heavy lifting. Nearly every
-optimization later in the book is some way of arranging work across those pieces. The goal here is
-to build that baseline picture once, so the later chapters on <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> compute
-(<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>), TMA data movement (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>), and mbarrier-based coordination
-(<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) can focus on their specific mechanisms instead of reintroducing the
-machine each time.</p>
-<p>The interactive below gives that whole Blackwell SM picture in one place before we zoom in on each part.</p>
+<p>To write fast GPU programs, it is important to understand the hardware
+itself and how code runs on that hardware. This chapter gives an overview of the GPU execution
+model: the thread hierarchy that executes the work, the memory spaces that hold and move the data,
+and the compute and data-movement engines that do the heavy lifting. Nearly every optimization
+later in the book is some way of arranging work across those pieces. The later chapters on
+<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> compute (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>), TMA data movement (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>), and
+mbarrier-based coordination (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) all build on this baseline picture.</p>
+<p>Modern GPUs also contain many specialized hardware elements. To give a first taste, the interactive
+below shows the main elements inside a Blackwell streaming multiprocessor before we zoom in on each
+part.</p>
 <div style="overflow-x:auto;">
 <iframe src="../demo/sm_architecture.html" title="Blackwell SM architecture" loading="lazy"
         style="width:100%; min-width:1320px; height:680px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>

@@ -9,18 +9,17 @@
 - Every later optimization serves one tile pipeline — load (GMEM → SMEM), compute (SMEM → TMEM), epilogue (TMEM → registers → GMEM) — and aims to keep the compute and data-movement engines busy at once.
 :::
 
-Two kernels can compute the same result and still differ in speed by an
-order of magnitude. The difference is usually not the arithmetic itself, but how well the kernel
-matches the hardware it runs on. This chapter sets up that hardware view before we write any
-kernels: the thread hierarchy that executes the work, the memory spaces that hold and move the
-data, and the compute and data-movement engines that do the heavy lifting. Nearly every
-optimization later in the book is some way of arranging work across those pieces. The goal here is
-to build that baseline picture once, so the later chapters on `tcgen05` compute
-({ref}`chap_tensor_cores`), TMA data movement ({ref}`chap_tma`), and mbarrier-based coordination
-({ref}`chap_async_barriers`) can focus on their specific mechanisms instead of reintroducing the
-machine each time.
+To write fast GPU programs, it is important to understand the hardware
+itself and how code runs on that hardware. This chapter gives an overview of the GPU execution
+model: the thread hierarchy that executes the work, the memory spaces that hold and move the data,
+and the compute and data-movement engines that do the heavy lifting. Nearly every optimization
+later in the book is some way of arranging work across those pieces. The later chapters on
+`tcgen05` compute ({ref}`chap_tensor_cores`), TMA data movement ({ref}`chap_tma`), and
+mbarrier-based coordination ({ref}`chap_async_barriers`) all build on this baseline picture.
 
-The interactive below gives that whole Blackwell SM picture in one place before we zoom in on each part.
+Modern GPUs also contain many specialized hardware elements. To give a first taste, the interactive
+below shows the main elements inside a Blackwell streaming multiprocessor before we zoom in on each
+part.
 
 ```{raw} html
 <div style="overflow-x:auto;">
