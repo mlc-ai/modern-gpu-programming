@@ -341,7 +341,14 @@ Step 7 got the engines overlapping, but each CTA was still off computing its own
 
 The whole optimization rests on a single hardware capability: with `cta_group=2`, the MMA is allowed to read operand tiles staged by *both* CTAs, not just the one it lives on. Each CTA loads one 128-row slice of stored B — which, after the transpose, becomes 128 logical output columns — and the cooperative MMA stitches the two slices back together into one operand. The figure below traces how the two CTAs' A and B slices combine into the single 256×256 cluster tile:
 
-![2-CTA Cluster](../img/cta_cluster.png)
+```{raw} html
+<div style="overflow-x:auto;">
+<iframe src="../demo/cta_cluster.html" title="A 2-CTA cluster: cooperative MMA via cross-CTA SMEM read" loading="lazy"
+        style="width:100%; min-width:720px; height:580px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
+</div>
+```
+*Interactive: each CTA owns half of A and half of B, reads the other's B across the cluster (DSMEM),
+and the pair produces one 256×256 output tile.*
 
 **Why A and B are split across the cluster**: To see how the 256×256 tile gets partitioned, recall that the tutorial stores GEMM as `D = A @ B.T`, where stored B has shape `N x K`. With two CTAs in a cluster, the split falls out cleanly:
 
