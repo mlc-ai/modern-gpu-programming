@@ -71,9 +71,9 @@ actually arrived — how does the kernel know the transfer has finished before s
 the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
 differently, so it is worth looking at each in turn.
 
-The figure below summarizes the load-side completion path that later connects TMA to mbarriers.
-
 ![TMA load synchronization flow](../img/tma_sync_flow.png)
+
+The figure above summarizes the load-side completion path that later connects TMA to mbarriers.
 
 A **load (GMEM → SMEM)** ties into an **mbarrier** ({ref}`chap_async_barriers`). Before the transfer
 begins, the issuing thread tells the barrier how many bytes to expect with

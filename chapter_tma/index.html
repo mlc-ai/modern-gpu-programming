@@ -347,8 +347,8 @@ had to worry about. Because the issuing thread returns immediately — long befo
 actually arrived — how does the kernel know the transfer has finished before something tries to read
 the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
 differently, so it is worth looking at each in turn.</p>
-<p>The figure below summarizes the load-side completion path that later connects TMA to mbarriers.</p>
 <p><img alt="TMA load synchronization flow" src="../_images/tma_sync_flow.png" /></p>
+<p>The figure above summarizes the load-side completion path that later connects TMA to mbarriers.</p>
 <p>A <strong>load (GMEM → SMEM)</strong> ties into an <strong>mbarrier</strong> (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>). Before the transfer
 begins, the issuing thread tells the barrier how many bytes to expect with
 <code class="docutils literal notranslate"><span class="pre">mbarrier.arrive.expect_tx(bytes)</span></code>. As the data lands, the engine emits <code class="docutils literal notranslate"><span class="pre">complete-tx</span></code> signals that
