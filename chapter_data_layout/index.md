@@ -148,15 +148,16 @@ the `@gpuid_x` axis. Putting the two together, a single expression can both shar
 S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
 ```
 
-The demo below shows that combined partition-and-replication pattern on a small GPU mesh; trace one
-tensor element to see which device holds it, and watch how the `@gpuid_x` replication places an
-identical copy on the paired device.
+The demo below shows that combined partition-and-replication pattern on a small GPU mesh. Click any
+cell to see which device holds it, and watch how the `@gpuid_x` replication places an identical copy
+on the paired device; the buttons switch between the fully-sharded, shard + replica, and shard +
+offset layouts.
 
 ```{raw} html
 <iframe src="../demo/tile_distributed.html" title="Distributed layout across a GPU mesh" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 ```
-*Interactive: a layout distributed over a 2×2 GPU mesh.*
+*Interactive: a layout distributed over a 2×2 GPU mesh — click a cell to see which device(s) hold it.*
 
 ### Intra-Kernel Replication Pattern: Scale Factors in TMEM
 
@@ -179,14 +180,14 @@ hold the same scale. As before, the replication dimension carries no new data �
 same value, sitting in four TMEM-lane positions," in just the way `@gpuid_x` broadcast a row across
 the GPU mesh a moment ago.
 
-The interactive below shows both steps together: compact packing into 32 TMEM lanes, then the
+The interactive demo below shows both steps together: compact packing into 32 TMEM lanes, then the
 `warpx4` broadcast out to the 128 reading lanes.
 
 ```{raw} html
 <iframe src="../demo/sf_tmem.html" title="Scale factors in TMEM: packing and warpx4 replication" loading="lazy"
         style="width:100%; min-width:1040px; height:560px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 ```
-*Interactive: hover a TMEM lane — it stores 4 logical M-rows (`m // 32` → column) and is broadcast `warpx4` across the `TLane` axis to all 128 TMEM lanes, one copy per warp's 32-lane window.*
+*Interactive: click a scale factor `SFA[m, sf]` — it packs into TMEM at lane `m mod 32`, column `(m // 32)·4 + sf`, and is then broadcast `warpx4` across the `TLane` axis to the four lane copies (`l`, `l+32`, `l+64`, `l+96`), one per warp's 32-lane window.*
 
 The byte packing inside each column (the `scale_vec` 1X/2X/4X modes) and the `cta_group::2` split are
 covered in {ref}`chap_layout_generations`.
@@ -212,7 +213,7 @@ with the row — so that *both* row and column accesses end up spread across ban
 guarantee it provides is specific: it holds for the matching element width, swizzle mode, and access
 pattern (the one an engine's descriptor expects), and not for arbitrary element widths or alignments.
 
-The first interactive below makes this concrete. Click a column index and watch which bank each
+The first interactive demo below makes this concrete. Click a column index and watch which bank each
 element lands in: in the plain row-major tile on the left, a column funnels all eight elements into a
 single bank, so the read serializes into eight cycles; in the XOR-swizzled layout on the right, that
 same column is spread across eight distinct banks and reads in a single cycle.
@@ -229,14 +230,14 @@ monolithic object. Instead, we cut memory into small segments and apply the swiz
 each segment. The most common case in practice is `SWIZZLE_128B`, organized around 128-byte segments
 so the same row/column-remapping trick fits naturally into a 32-bank memory system.
 
-The interactive below shows that one concrete hardware swizzle, `SWIZZLE_128B`, so the repeating
+The interactive demo below shows that one concrete hardware swizzle, `SWIZZLE_128B`, so the repeating
 segment-by-segment pattern is visible before we generalize across formats.
 
 ```{raw} html
 <iframe src="../demo/swizzle_128B.html" title="SWIZZLE_128B layout" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 ```
-*Interactive: the `SWIZZLE_128B` pattern, applied within 128-byte segments.*
+*Interactive: the `SWIZZLE_128B` pattern within 128-byte segments — step through the read cycles to see `physical_sector = logical_sector XOR row` spread each column across distinct banks.*
 
 The same idea extends beyond this 128-byte case. To simplify the visualization, we will now use a
 single color block to refer to one segment, instead of drawing individual banks. In general,
@@ -245,15 +246,16 @@ swizzle modes choose different atom sizes. `SWIZZLE_128B` uses an 8 × 128 B ato
 8 × 64 B atom, and `SWIZZLE_32B` an 8 × 32 B atom; the whole tile is then tiled by whichever atom
 is in use.
 
-The final interactive lets you switch between these formats and inspect the element arrangement
-inside one atom directly, which is the right level of detail for reasoning about which swizzle a
-load/store instruction expects.
+The final interactive demo lets you switch between these formats — including a 16 B interleaved
+mode — pick a data type, and hover any cell to inspect the element arrangement inside one atom
+directly, which is the right level of detail for reasoning about which swizzle a load/store
+instruction expects.
 
 ```{raw} html
 <iframe src="../demo/swizzle_atom_general.html" title="Swizzle atom layout per format (128B/64B/32B)" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 ```
-*Interactive: pick a swizzle format to see its atom shape (8 × N B) and how elements are permuted inside it.*
+*Interactive: pick a swizzle format (and data type) to see its atom shape (8 × N B); hover a cell to see how its elements are permuted.*
 
 Which mode should you pick? The rule of thumb is to prefer the *largest* atom the tile can fill. An
 N-byte atom needs the tile's contiguous dimension to be at least N bytes, and a multiple of it, so

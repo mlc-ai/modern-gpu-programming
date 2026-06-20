@@ -28,8 +28,9 @@ moves out into a dedicated on-chip memory, **Tensor Memory (TMEM)** ({ref}`chap_
 relocation ripples through everything else about how a kernel is written, which is why the rest of
 this chapter is built around the `tcgen05` MMA itself.
 
-The interactive demo below gives a first look at `tcgen05` in a few different configurations. In
-each case, the MMA writes its partial sums into TMEM rather than registers.
+The interactive demo below gives a first look at `tcgen05`. Toggle the transpose of A or B, pick the
+output width `N`, and step through the `K iteration` bar to watch the MMA accumulate. In each
+configuration, it writes its partial sums into TMEM rather than registers.
 
 ```{raw} html
 <div style="overflow-x:auto;">
@@ -37,7 +38,7 @@ each case, the MMA writes its partial sums into TMEM rather than registers.
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div>
 ```
-*Interactive: a few `tcgen05` configurations and their TMEM accumulator behavior.*
+*Interactive: `tcgen05` accumulator behavior — toggle transpose and `N`, then step the `K iteration` to watch partial sums build up in TMEM.*
 
 ## The `tcgen05` MMA
 

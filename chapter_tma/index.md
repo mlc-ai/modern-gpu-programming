@@ -21,9 +21,11 @@ Tensor Core expects ({ref}`chap_data_layout`), and how loads and stores signal c
 through an mbarrier ({ref}`chap_async_barriers`), stores through a commit/wait group.
 
 The interactive demo below shows the whole picture at a glance: TMA moves a tile from global to
-shared memory, and can optionally swizzle it as it lands. The sections that follow then unpack the
-three parts of that picture: how the copy is issued, how the layout is transformed, and how
-completion is signaled.
+shared memory, and can optionally swizzle it as it lands. Toggle the swizzle mode (None or 128B) and
+hover a source cell to see where it lands in shared memory — under 128B swizzle, the `column XOR row`
+remapping you see is exactly what the *Swizzled Layouts* section below explains. The sections that
+follow then unpack the three parts of that picture: how the copy is issued, how the layout is
+transformed, and how completion is signaled.
 
 ```{raw} html
 <div style="overflow-x:auto;">
@@ -31,7 +33,7 @@ completion is signaled.
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div>
 ```
-*Interactive: the TMA engine copying a tile from global to shared memory.*
+*Interactive: the TMA engine copying a tile from global to shared memory — toggle the swizzle mode and hover a source cell to trace where it lands.*
 
 ## One Thread Issues, Hardware Moves the Tile
 
