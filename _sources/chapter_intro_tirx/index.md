@@ -160,9 +160,6 @@ print("PASS")
 
 Now that the kernel runs, we can read it back and ask what its lines actually decide. Seen this way, the whole kernel is a set of choices along three knobs. Every operation in it answers the same three questions — *who* runs it, *where* its data lives, and *how* it executes — and those three answers are exactly scope, layout, and dispatch. The rest of this section takes the knobs one at a time; the interactive demo below lets you see which lines each knob controls.
 
-The interactive below maps those three knobs back onto the same kernel so you can see which lines
-are controlled by scope, layout, and dispatch.
-
 ```{raw} html
 <iframe src="../demo/tirx_dispatch.html" title="TIRx: scope, layout, dispatch" loading="lazy"
         style="width:100%; min-width:960px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
