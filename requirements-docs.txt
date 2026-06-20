@@ -1,5 +1,5 @@
-# Docs build dependencies (GitHub Pages CI). tvm is intentionally absent — it is
-# mocked for autodoc via DOCS_MOCK_TVM=1 (see conf.py).
+# Docs build dependencies (GitHub Pages CI). The book has no autodoc, so tvm is
+# not needed to build it.
 sphinx>=7,<9
 myst-parser>=4,<5
 sphinx-book-theme>=1.1

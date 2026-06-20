@@ -31,10 +31,6 @@ pip install -r requirements-docs.txt
 sphinx-build -b html . _build/html
 ```
 
-The API reference uses autodoc over `tvm`. If `tvm` isn't importable (a docs-only
-machine), it is mocked automatically — the book still builds in full and the API pages
-degrade gracefully. Force the mock with `DOCS_MOCK_TVM=1`.
-
 ### Preview
 
 ```bash
@@ -47,14 +43,27 @@ Remote SSH auto-forwards it.)
 
 ## Running the kernels (requires a Blackwell GPU)
 
-> **Installation instructions are being updated.** The TIRx nightly wheel URL and pinned
-> package versions move quickly, so the exact `pip install` commands are pending a refresh.
+The kernels in this book target Blackwell (`sm_100a`), so running them needs a Blackwell GPU
+(such as a B200), the TIRx compiler, and a CUDA build of PyTorch.
 
-Once TIRx is installed, verify the import:
+**1. Install the TIRx compiler.** It ships as the `tvm.tirx` module of the Apache TVM wheel:
 
 ```bash
-python -c "from tvm.script import tirx as T; print('TIRx OK')"
+pip install apache-tvm==0.25.0
 ```
+
+Verify:
+
+```bash
+python -c "import tvm, tvm.tirx; print(tvm.__version__)"
+```
+
+**2. Install PyTorch** with a CUDA build matching your GPU (used for the example inputs and the
+reference checks) — see <https://pytorch.org>.
+
+**3. (Optional) the reference kernels.** The full GEMM and Flash Attention 4 kernels live in the
+companion `tirx-kernels` package (`pip install -e .` from a checkout); run them with, e.g.,
+`python -m tirx_kernels.test --kernel fp16_bf16_gemm`.
 
 TIRx parses kernel source via Python source inspection, so examples should live in a file
 or notebook cell rather than inside `python -c`.
