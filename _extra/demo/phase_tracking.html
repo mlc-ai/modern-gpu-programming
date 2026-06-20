@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase Tracking</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+
+  .phase-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 20px auto 24px;
+  }
+  .phase-block {
+    padding: 14px 20px; text-align: center;
+    font-weight: 700; font-size: 14px;
+    border: 2.5px solid; min-width: 110px;
+    cursor: pointer; transition: all .3s;
+    position: relative;
+  }
+  .phase-block:first-child { border-radius: 10px 0 0 10px; }
+  .phase-block:last-child  { border-radius: 0 10px 10px 0; }
+  .phase-block .iter-label {
+    font-size: 10px; font-weight: 600; opacity: .7;
+    font-family: 'SF Mono','Fira Code',monospace;
+  }
+
+  .phase-block.ph0 { border-color: #3b82f6; background: #dbeafe; color: #1e40af; }
+  .phase-block.ph1 { border-color: #059669; background: #d1fae5; color: #065f46; }
+  .phase-block.active { box-shadow: 0 0 0 3px rgba(0,0,0,.15); transform: scaleY(1.1); z-index: 2; }
+
+  .explain-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    margin-bottom: 18px;
+  }
+  .explain-card {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; background: var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .explain-card h3 {
+    font-size: 13px; font-weight: 700; margin-bottom: 8px;
+  }
+  .explain-card .ec-body {
+    font-size: 12.5px; line-height: 1.65; color: #475569;
+  }
+  .explain-card code {
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 11px;
+    background: #f1f5f9; padding: 1px 5px; border-radius: 3px;
+  }
+
+  .sequence {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 8px;
+  }
+  .seq-step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+  }
+  .seq-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .seq-num.blue  { background: #3b82f6; }
+  .seq-num.green { background: #059669; }
+  .seq-num.amber { background: #d97706; }
+
+  .anim-controls {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 16px;
+  }
+  .anim-btn {
+    padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all .15s;
+  }
+  .anim-btn:hover { background: #f1f5f9; }
+  .anim-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .anim-label {
+    font-size: 12px; font-weight: 600; color: var(--dim);
+    font-family: 'SF Mono','Fira Code',monospace;
+    min-width: 120px; text-align: center;
+  }
+
+  .bottom-note {
+    padding: 12px 16px; border-radius: 8px;
+    background: #fffbeb; border: 1px solid #fde68a;
+    font-size: 12.5px; line-height: 1.6; color: #78350f;
+  }
+  .bottom-note strong { color: #92400e; }
+
+  @media(max-width:800px) { .explain-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>Phase Tracking</h1>
+  <p class="sub">Barriers reuse across iterations by flipping phase 0 ↔ 1</p>
+
+  <div class="anim-controls">
+    <button class="anim-btn" id="btnPlay">▶ Animate</button>
+    <span class="anim-label" id="animLabel"></span>
+  </div>
+
+  <div class="phase-row" id="phaseRow">
+    <div class="phase-block ph0" data-iter="0"><div class="iter-label">phase = 0</div>Iter 0</div>
+    <div class="phase-block ph1" data-iter="1"><div class="iter-label">phase = 1</div>Iter 1</div>
+    <div class="phase-block ph0" data-iter="2"><div class="iter-label">phase = 0</div>Iter 2</div>
+    <div class="phase-block ph1" data-iter="3"><div class="iter-label">phase = 1</div>Iter 3</div>
+    <div class="phase-block ph0" data-iter="4"><div class="iter-label">phase = 0</div>Iter 4</div>
+    <div class="phase-block ph1" data-iter="5"><div class="iter-label">phase = 1</div>Iter 5</div>
+    <div class="phase-block ph0" data-iter="6"><div class="iter-label">phase = 0</div>Iter 6</div>
+    <div class="phase-block ph1" data-iter="7"><div class="iter-label">phase = 1</div>Iter 7</div>
+  </div>
+
+  <div class="explain-grid">
+    <div class="explain-card">
+      <h3 style="color:#3b82f6;">How It Works</h3>
+      <div class="ec-body">
+        Each barrier has a <strong>phase bit</strong> (0 or 1). After all expected arrivals, the barrier flips its phase and resets — ready for the next iteration. No reinitialization needed.
+        <div class="sequence">
+          <div class="seq-step"><div class="seq-num blue">1</div> Producer arrives at barrier (phase 0)</div>
+          <div class="seq-step"><div class="seq-num green">2</div> Consumer calls <code>try_wait(phase=0)</code> — unblocks</div>
+          <div class="seq-step"><div class="seq-num amber">3</div> Barrier flips to phase 1, <code>phase ^= 1</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="explain-card">
+      <h3 style="color:#d97706;">Why Phase Tracking?</h3>
+      <div class="ec-body">
+        In a pipelined kernel, barriers are reused every iteration of the K-loop. Phase tracking solves the problem of <strong>"did this barrier fire for iteration <em>i</em> or iteration <em>i-1</em>?"</strong>
+        <div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border-radius:6px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;line-height:1.6;">
+          phase_tma = 0<br>
+          for k in range(K):<br>
+          &nbsp;&nbsp;try_wait(tma_bar, <strong>phase_tma</strong>)<br>
+          &nbsp;&nbsp;phase_tma ^= 1 &nbsp;# flip
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+(function() {
+  var blocks = document.querySelectorAll('.phase-block');
+  var btn = document.getElementById('btnPlay');
+  var label = document.getElementById('animLabel');
+  var timer = null;
+  var step = -1;
+
+  function clearAll() {
+    blocks.forEach(function(b) { b.classList.remove('active'); });
+    label.textContent = '';
+  }
+
+  function highlight(s) {
+    clearAll();
+    if (s >= 0 && s < blocks.length) {
+      blocks[s].classList.add('active');
+      var ph = s % 2;
+      label.textContent = 'Iteration ' + s + '  |  phase = ' + ph;
+    }
+  }
+
+  function play() {
+    stop();
+    step = -1;
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('active');
+    timer = setInterval(function() {
+      step++;
+      if (step >= blocks.length) { stop(); return; }
+      highlight(step);
+    }, 800);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    btn.textContent = '▶ Animate';
+    btn.classList.remove('active');
+  }
+
+  btn.addEventListener('click', function() {
+    if (timer) { stop(); clearAll(); }
+    else play();
+  });
+
+  blocks.forEach(function(b) {
+    b.addEventListener('click', function() {
+      stop();
+      highlight(parseInt(b.dataset.iter));
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -57,58 +57,64 @@ def label(ax, x, y, text, fs=8.5, color="#374151"):
 
 
 def gen_main_handoff():
-    fig, ax = plt.subplots(figsize=(16.5, 5.8))
-    ax.set_xlim(0, 18.25)
-    ax.set_ylim(0, 5.8)
+    fig, ax = plt.subplots(figsize=(13.0, 7.0))
+    ax.set_xlim(0, 13.0)
+    ax.set_ylim(0, 7.0)
     ax.axis("off")
 
-    ax.text(9.1, 5.45, "Flash Attention 4 MMA Input Gates", ha="center", fontsize=17, weight="bold")
+    ax.text(6.5, 6.62, "Flash Attention 4: MMA Input Gates", ha="center", fontsize=17, weight="bold")
     ax.text(
-        9.1,
-        5.12,
-        "score MMA and value MMA have different input gates",
+        6.5,
+        6.26,
+        "inputs that must be ready before each MMA may fire",
         ha="center",
         fontsize=10,
         color="#4b5563",
     )
 
-    # Score path.
-    ax.text(0.45, 4.55, "Score path", fontsize=11, weight="bold", color="#1f2937")
-    box(ax, 0.45, 3.75, 1.75, 0.72, "TMA load\nQ -> SMEM", COLORS["tma"], fs=8.6)
-    box(ax, 0.45, 2.85, 1.75, 0.72, "TMA load\nK -> SMEM", COLORS["tma"], fs=8.6)
-    box(ax, 2.85, 3.22, 2.0, 0.72, "wait\nq_load.full\nkv_load.full", COLORS["bar"], fs=8.0)
-    box(ax, 5.45, 3.22, 1.75, 0.72, "score MMA\nQ,K -> S", COLORS["mma"], fs=8.6)
-    box(ax, 7.75, 3.22, 1.35, 0.72, "s_ready.full", COLORS["bar"], fs=8.2)
-    box(ax, 9.65, 3.22, 1.9, 0.72, "softmax\nS -> P", COLORS["softmax"], fs=8.6)
-    arrow(ax, 2.2, 4.11, 2.85, 3.58)
-    arrow(ax, 2.2, 3.21, 2.85, 3.58)
-    arrow(ax, 4.85, 3.58, 5.45, 3.58)
-    arrow(ax, 7.2, 3.58, 7.75, 3.58)
-    arrow(ax, 9.1, 3.58, 9.65, 3.58)
+    # ---- Score MMA gate (top): Q and K must be in SMEM. ----
+    ax.text(0.5, 5.95, "Score MMA gate", fontsize=11.5, weight="bold", color="#1f2937")
+    box(ax, 0.6, 5.12, 1.95, 0.62, "Q tile\nin SMEM", COLORS["tma"], fs=8.8)
+    box(ax, 0.6, 4.30, 1.95, 0.62, "K tile\nin SMEM", COLORS["tma"], fs=8.8)
+    box(ax, 6.45, 4.55, 2.3, 0.95, "score MMA\nQ,K -> S", COLORS["mma"], fs=10.5)
+    arrow(ax, 2.55, 5.43, 6.45, 5.18, rad=-0.04)
+    arrow(ax, 2.55, 4.61, 6.45, 4.88, rad=0.04)
+    label(ax, 4.45, 5.50, "q_load.full", fs=8.3)
+    label(ax, 4.45, 4.54, "kv_load.full", fs=8.3)
+    ax.text(7.6, 4.34, "fires when all inputs ready", ha="center", fontsize=7.8,
+            color="#6b7280", style="italic")
 
-    # Value path.
-    ax.text(0.45, 2.05, "Value path", fontsize=11, weight="bold", color="#1f2937")
-    box(ax, 0.45, 1.22, 1.75, 0.72, "TMA load\nV -> SMEM", COLORS["tma"], fs=8.6)
-    box(ax, 2.85, 1.22, 2.05, 0.72, "wait\nkv_load.full", COLORS["bar"], fs=8.2)
-    box(ax, 5.45, 1.22, 2.35, 0.72, "value gate\np_o_rescale.full\np_ready_2.full", COLORS["merge"], fs=7.7)
-    box(ax, 8.45, 1.22, 1.85, 0.72, "value MMA\nP,V -> O", COLORS["mma"], fs=8.6)
-    box(ax, 10.85, 1.22, 1.35, 0.72, "o_ready.full", COLORS["bar"], fs=8.2)
-    box(ax, 12.65, 1.22, 1.55, 0.72, "epilogue\nO -> O_smem", COLORS["wg2"], fs=8.0)
-    box(ax, 14.65, 1.22, 1.45, 0.72, "bar_corr\n_epi_full", COLORS["bar"], fs=8.0)
-    box(ax, 16.55, 1.22, 1.45, 0.72, "TMA store\nO_smem -> GMEM", COLORS["store"], fs=7.8)
-    arrow(ax, 2.2, 1.58, 2.85, 1.58)
-    arrow(ax, 4.9, 1.58, 5.45, 1.58)
-    arrow(ax, 7.8, 1.58, 8.45, 1.58)
-    arrow(ax, 10.3, 1.58, 10.85, 1.58)
-    arrow(ax, 12.2, 1.58, 12.65, 1.58)
-    arrow(ax, 14.2, 1.58, 14.65, 1.58)
-    arrow(ax, 16.1, 1.58, 16.55, 1.58)
+    # ---- Value MMA gate (bottom): V in SMEM, P in TMEM (split), O slot safe. ----
+    ax.text(0.5, 3.35, "Value MMA gate", fontsize=11.5, weight="bold", color="#1f2937")
+    box(ax, 0.6, 2.55, 1.95, 0.62, "V tile\nin SMEM", COLORS["tma"], fs=8.8)
+    box(ax, 0.6, 1.55, 3.15, 0.7, "P cols 0:96 in TMEM\n+ O-slot safe (WG2)", COLORS["softmax"], fs=8.2)
+    box(ax, 0.6, 0.55, 3.15, 0.62, "P cols 96:128\nin TMEM", COLORS["softmax"], fs=8.4)
+    box(ax, 6.45, 1.35, 2.3, 0.95, "value MMA\nP,V -> O", COLORS["mma"], fs=10.5)
+    arrow(ax, 2.55, 2.86, 6.45, 2.05, rad=-0.05)
+    arrow(ax, 3.75, 1.90, 6.45, 1.83, rad=0.0)
+    arrow(ax, 3.75, 0.86, 6.45, 1.52, rad=0.06)
+    label(ax, 4.95, 2.42, "kv_load.full", fs=8.3)
+    label(ax, 4.95, 1.93, "p_o_rescale.full", fs=8.3)
+    label(ax, 4.95, 1.08, "p_ready_2.full", fs=8.3)
+    ax.text(7.6, 1.14, "two-part MMA: starts on cols 0:96, then 96:128", ha="center", fontsize=7.8,
+            color="#6b7280", style="italic")
 
-    # Softmax and WG2 prerequisites for the value gate.
-    arrow(ax, 10.6, 3.22, 6.62, 1.94, color="#b45309", rad=-0.08, lw=1.1)
-    label(ax, 8.05, 2.38, "P ready:\nfirst 96 cols, then final 32", fs=7.8)
-    box(ax, 5.25, 0.22, 2.55, 0.55, "WG2 releases or rescales O", COLORS["wg2"], fs=8.0)
-    arrow(ax, 6.62, 0.77, 6.62, 1.22, color="#166534", lw=1.1)
+    # ---- Legend (right gap). ----
+    lx = 9.55
+    ax.text(lx, 5.95, "Legend", fontsize=11.5, weight="bold", color="#1f2937")
+
+    def swatch(y, color, text):
+        box(ax, lx, y, 0.42, 0.34, "", color)
+        ax.text(lx + 0.6, y + 0.17, text, ha="left", va="center", fontsize=8.7, color="#374151")
+
+    swatch(5.40, COLORS["tma"], "SMEM tile (TMA-loaded)")
+    swatch(4.86, COLORS["softmax"], "TMEM tile (softmax output)")
+    swatch(4.32, COLORS["mma"], "MMA operation")
+    label(ax, lx + 0.5, 3.66, "barrier", fs=8.0)
+    ax.text(lx + 1.05, 3.66, "gate that must signal\nbefore the MMA may fire",
+            ha="left", va="center", fontsize=8.7, color="#374151")
+    ax.text(lx, 2.55, "kv_load.full gates both the K and V loads,\nso it appears in both gates.",
+            ha="left", va="center", fontsize=8.5, color="#6b7280", style="italic")
 
     fig.savefig("../flash_attention_main_handoff.png", dpi=170, bbox_inches="tight", facecolor="white")
 

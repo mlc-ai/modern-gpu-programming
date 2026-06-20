@@ -1,0 +1,139 @@
+/* ── Syntax highlight — shared across all demo slides ──
+ *
+ * Usage:
+ *   <link rel="stylesheet" href="../code-highlight.css">
+ *   <pre class="code-dark">…</pre>   or   <pre class="code-light">…</pre>
+ *
+ * Token classes:
+ *   .kw  — keyword      (if, def, for, while, with, return, True, False)
+ *   .fn  — callable      (function/method calls — the prominent highlight)
+ *   .str — string literal
+ *   .num — number literal
+ *   .cmt — comment
+ *   .op  — operator      (+, -, ==, =, :)
+ *   .typ — type name
+ *   .dec — decorator     (@)
+ *
+ * Convention: only wrap the callable name in .fn, NOT the namespace prefix.
+ *   ✓  Tx.<span class="fn">copy_async</span>(...)
+ *   ✗  <span class="fn">Tx.copy_async</span>(...)
+ */
+
+/* ── Dark theme (dark bg, bright tokens) ────────────── */
+.code-dark {
+  background: #0f172a; color: #e2e8f0;
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 12px; line-height: 1.6;
+  border-radius: 8px; padding: 12px 16px;
+  overflow-x: auto;
+}
+.code-dark .kw  { color: #c084fc; }                /* purple — keywords */
+.code-dark .fn  { color: #60a5fa; }                /* blue — callables (prominent) */
+.code-dark .str { color: #34d399; }                /* green — strings */
+.code-dark .num { color: #fbbf24; }                /* yellow — numbers */
+.code-dark .cmt { color: #64748b; font-style: italic; }  /* gray — comments */
+.code-dark .op  { color: #94a3b8; }                /* slate — operators */
+.code-dark .typ { color: #7dd3fc; }                /* cyan — types */
+.code-dark .dec { color: #c084fc; }                /* purple — decorators */
+
+/* ── Light theme (white bg, muted tokens) ───────────── */
+.code-light {
+  background: #f8fafc; color: #1e293b;
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 12px; line-height: 1.6;
+  border-radius: 8px; padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+.code-light .kw  { color: #7c3aed; }              /* purple — keywords */
+.code-light .fn  { color: #2563eb; }              /* blue — callables (prominent) */
+.code-light .str { color: #059669; }              /* green — strings */
+.code-light .num { color: #d97706; }              /* amber — numbers */
+.code-light .cmt { color: #6b7280; font-style: italic; }  /* gray — comments */
+.code-light .op  { color: #64748b; }              /* slate — operators */
+.code-light .typ { color: #0369a1; }              /* cyan — types */
+.code-light .dec { color: #7c3aed; }              /* purple — decorators */
+
+/* ── Code block panel (used by createCodeBlock) ──────
+ *
+ * Structure:
+ *   <div class="cb-panel">            — wrapper with rounded corners
+ *     <div class="cb-header">Title</div>  — optional title bar
+ *     <pre class="code-dark">         — code container (scrollable)
+ *       (regions and lines rendered by createCodeBlock)
+ *     </pre>
+ *   </div>
+ *
+ * Or without panel wrapper, just <pre class="code-dark"> works too.
+ */
+
+.cb-panel {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cb-panel > .code-dark,
+.cb-panel > .code-light {
+  border-radius: 0;
+}
+
+/* Header bar */
+.cb-panel .cb-header {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.cb-panel.dark .cb-header {
+  background: #1e293b;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.cb-panel.light .cb-header {
+  background: #f1f5f9;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Dark scrollbar */
+.code-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.code-dark::-webkit-scrollbar { width: 6px; height: 6px; }
+.code-dark::-webkit-scrollbar-track { background: transparent; }
+.code-dark::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.code-dark::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* Light scrollbar */
+.code-light {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+.code-light::-webkit-scrollbar { width: 6px; height: 6px; }
+.code-light::-webkit-scrollbar-track { background: transparent; }
+.code-light::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+.code-light::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+/* Regions */
+.cb-region {
+  border-left: 3px solid transparent;
+  padding: 0.35rem 0 0.35rem 0.85rem;
+  margin: 0.15rem 0;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.code-dark .cb-region:hover  { background: rgba(255,255,255,0.05); }
+.code-dark .cb-region.active { background: rgba(255,255,255,0.07); }
+.code-light .cb-region:hover  { background: rgba(0,0,0,0.04); }
+.code-light .cb-region.active { background: rgba(0,0,0,0.06); }
+
+/* Lines */
+.cb-line {
+  display: block;
+  white-space: pre;
+}
+.cb-line.cb-focus {
+  margin-left: -0.85rem;
+  padding-left: 0.85rem;
+}

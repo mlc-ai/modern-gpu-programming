@@ -1,4 +1,4 @@
-"""Source code for the TIRX tutorial.
+"""Source code for the TIRx tutorial.
 
 """
 

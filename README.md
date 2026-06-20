@@ -1,61 +1,65 @@
-# TIRX: High-Performance GPU Kernel Programming
+# Modern GPU Programming For MLSys
 
-A hands-on tutorial for writing GPU kernels on NVIDIA Blackwell GPUs using TIRX.
+This book teaches modern GPU kernel programming as a progression: **understand the
+GPU hardware → learn to program it → write state-of-the-art kernels.** It treats
+the Blackwell-class GPU — its memory hierarchy and Tensor Memory, its tensor-core and
+asynchronous data-movement engines, warpgroups and clusters — as the real subject. The
+vehicle is **TIRx** (Tensor IR neXt), a Python DSL for writing GPU kernels at the IR level.
 
-## Quickstart
+📖 **Read it online: <https://mlc.ai/modern-gpu-programming-for-mlsys/>**
 
-**Preview locally**: build the site, then open the local server URL from the
-preview instructions below.
+## What's inside
 
-**Run locally** (requires Blackwell GPU):
+- **Part I — Understanding the GPU.** Execution and memory model, the performance model
+  (roofline, overlap), a deep dive into data layout, the memory and compute engines (TMA,
+  Tensor Memory, Tensor Cores), asynchronous coordination, and advanced scheduling (CLC).
+- **Part II — Programming a GPU with TIRx.** An introduction to TIRx through one runnable
+  single-MMA GEMM — scope, layout, and dispatch, and how compilation works — plus the tensor
+  layout model (`TileLayout`, named axes, swizzle).
+- **Part III — GEMM: Tiled to SOTA.** A tiled GEMM built up through TMA pipelining,
+  persistent scheduling, warp specialization, and 2-CTA clusters.
+- **Part IV — Flash Attention 4.** A complete attention kernel built from the Part III techniques:
+  two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
+- **Reference.** TIRx language reference and compiler internals.
+
+## Build the book locally
+
+The book is a [Sphinx](https://www.sphinx-doc.org/) site (Markdown/MyST + reStructuredText):
 
 ```bash
-pip install --pre -U "https://github.com/mlc-ai/package/releases/download/v0.9.dev0/mlc_ai_tirx_nightly_cu130-0.25.dev0-py3-none-manylinux_2_28_x86_64.whl"
-pip install -U apache-tvm-ffi
-pip install torch==2.9.1+cu130 --index-url https://download.pytorch.org/whl/cu130
-pip install numpy
-
-# Verify: this should print "TIRX OK"
-python -c "from tvm.script import tirx as Tx; print('TIRX OK')"
+pip install -r requirements-docs.txt
+sphinx-build -b html . _build/html
 ```
 
-For a runnable minimal kernel, see the **Environment Setup** chapter. TIRX parses
-kernel source with Python's source inspection, so examples should live in a file
+The API reference uses autodoc over `tvm`. If `tvm` isn't importable (a docs-only
+machine), it is mocked automatically — the book still builds in full and the API pages
+degrade gracefully. Force the mock with `DOCS_MOCK_TVM=1`.
+
+### Preview
+
+```bash
+python -m http.server -d _build/html 8000
+```
+
+Open <http://localhost:8000>. On a remote machine the server runs there, so forward the
+port — `ssh -L 8000:localhost:8000 user@your-server` — then open the URL locally. (VS Code
+Remote SSH auto-forwards it.)
+
+## Running the kernels (requires a Blackwell GPU)
+
+> **Installation instructions are being updated.** The TIRx nightly wheel URL and pinned
+> package versions move quickly, so the exact `pip install` commands are pending a refresh.
+
+Once TIRx is installed, verify the import:
+
+```bash
+python -c "from tvm.script import tirx as T; print('TIRx OK')"
+```
+
+TIRx parses kernel source via Python source inspection, so examples should live in a file
 or notebook cell rather than inside `python -c`.
 
-## Building the Tutorial Site
+## Deployment
 
-For contributors who want to build the HTML site locally:
-
-```bash
-pip install git+https://github.com/d2l-ai/d2l-book
-conda install pandoc
-
-# Build (without running GPU kernels)
-sed -i 's/eval_notebook = True/eval_notebook = False/' config.ini
-d2lbook build html
-
-# Build with GPU kernel execution (requires Blackwell GPU)
-sed -i 's/eval_notebook = False/eval_notebook = True/' config.ini
-CUDA_VISIBLE_DEVICES=0 d2lbook build html
-```
-
-### Previewing the Site
-
-After building, start a local HTTP server:
-
-```bash
-python -m http.server -d _build/html
-```
-
-**If you are on a remote server** (e.g., SSH into a GPU machine), the server runs
-on the remote machine so `localhost:8000` won't work in your local browser.
-Use SSH port forwarding — connect to your server with:
-
-```bash
-ssh -L 8000:localhost:8000 user@your-server
-```
-
-Then open `http://localhost:8000` in your local browser. Alternatively, if you
-use VS Code Remote SSH, it will auto-forward the port and show a notification
-to open in browser.
+Every push to `main` is built and published automatically by GitHub Actions
+(`.github/workflows/build_deploy.yaml`) to <https://mlc.ai/modern-gpu-programming-for-mlsys/>.

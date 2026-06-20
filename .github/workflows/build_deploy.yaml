@@ -1,45 +1,41 @@
-# GH actions.
-name: Build_Deploy
+# Build the Sphinx book and deploy it to GitHub Pages.
+name: Build and Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
-jobs:
-  Build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
+# peaceiris pushes the built site to the gh-pages branch with GITHUB_TOKEN.
+permissions:
+  contents: write
 
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: tirx
-        environment-file: static/build.yml
-    - name: Conda info
-      run: |
-        conda info
-        conda list
-    - name: Install dependencies
-      run: |
-        conda install pandoc
-        pip install git+https://github.com/d2l-ai/d2l-book
-    - name: Build
-      run: |
-        d2lbook build html
-    - name: Deploy
-      if: github.ref == 'refs/heads/main'
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./_build/html
-        cname: tirx-tutorial.mlc.ai
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install doc dependencies
+        run: pip install -r requirements-docs.txt
+
+      - name: Build (Sphinx)
+        run: sphinx-build -b html . _build/html
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_build/html
+          # No custom domain: the site serves at the org default,
+          # https://mlc.ai/modern-gpu-programming-for-mlsys/ . To use a custom domain, add a
+          # `cname:` line here and the matching DNS record.
