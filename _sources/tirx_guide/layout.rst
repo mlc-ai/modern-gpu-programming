@@ -27,18 +27,16 @@ Tensor Layout
    - A layout maps each logical index to a *set* of physical coordinates; ``layout.apply()`` evaluates it.
    - Ready-made constructors (``tmem_datapath_layout``, ``tcgen05_atom_layout``, ``wg_local_layout``) cover the common hardware tiles.
 
-:ref:`chap_data_layout` introduced the *notation* for layouts — the shape–stride pair
-``S[shape : strides]`` with each stride tagged by a named axis, and the replication term
-``R[n : stride]`` for data the hardware copies rather than partitions. That notation is enough to
-read a layout and reason about it on paper. A kernel needs one more thing: an actual layout *object*
-the compiler can use. It has to pin every element of a tile to an exact physical slot — which thread
-holds it, which register or TMEM lane it lands in — and it has to be something the compiler can
-read, check, and hand to each tile op, not a convention you keep in your head. That object is the
-**TileLayout**, built from the same ``S[...]`` notation and evaluated by a single rule. This chapter
-is that API: ``TileLayout``, ``SwizzleLayout``, and ``ComposeLayout`` from ``tvm.tirx.layout``, the
-axis vocabulary they are written in, the ready-made constructors TIRx ships for common hardware
-tiles, and the exact rule a layout evaluates to, run through two real hardware tiles. If the notation
-looks unfamiliar, read {ref}`chap_data_layout` first; here we build on it.
+:ref:`chap_data_layout` introduced the layout *notation* — the shape–stride pair
+``S[shape : strides]`` with strides on named axes, and the replication term ``R[n : stride]`` for
+data the hardware copies rather than partitions. This chapter turns that notation into a real
+compiler object: the same ``S[...]`` and ``R[...]`` you read on paper now *construct* a
+**TileLayout**, which you attach to a buffer and the compiler evaluates, checks, and hands to every
+tile op. The API mirrors the notation, so there is little new syntax to learn — just the objects
+(``TileLayout``, ``SwizzleLayout``, ``ComposeLayout`` from ``tvm.tirx.layout``), the named-axis
+vocabulary, the ready-made constructors for common hardware tiles, and the single rule a layout
+evaluates by, worked through two real hardware tiles. If the notation looks unfamiliar, read
+{ref}`chap_data_layout` first; here we build on it.
 
 The workflow is deliberately simple. You build a layout once and attach it to a
 buffer — either through ``pool.alloc(shape, dtype, layout=...)`` or through
