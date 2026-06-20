@@ -15,10 +15,10 @@
     specific language governing permissions and limitations
     under the License.
 
-.. _chap_data_layouts:
+.. _chap_tirx_layout_api:
 
-Tensor Layout
-=============
+TIRx Layout API
+===============
 
 .. admonition:: Overview
    :class: overview
@@ -43,7 +43,9 @@ buffer — either through ``pool.alloc(shape, dtype, layout=...)`` or through
 ``T.decl_buffer(shape, dtype, scope=..., layout=...)`` — and from then on every
 tile op that touches that buffer reads its placement straight from the layout, so
 you never repeat the placement at each use site. All of the objects you attach
-live in a single module::
+live in a single module:
+
+.. code-block:: python
 
     from tvm.tirx.layout import (
         TileLayout, SwizzleLayout, ComposeLayout,    # the three layout classes
@@ -58,6 +60,33 @@ coordinates on the named axes, because one element can genuinely live in several
 places at once. That map breaks cleanly into three parts — shard (``D``), replica
 (``R``), and offset (``O``) — and the rest of the chapter builds it up one piece
 at a time.
+
+Layouts by example
+------------------
+
+Before the formal rules, here is what the API looks like in use. Each call builds a ``TileLayout``
+from the same ``S[...]`` / ``R[...]`` notation as :ref:`chap_data_layout`, so the code reads almost
+exactly like the notation on the page:
+
+.. code-block:: python
+
+    # An accumulator in tensor memory: logical row -> TMEM lane, column -> TMEM column.
+    acc = TileLayout(S[(128, 256) : (1@TLane, 1@TCol)])
+
+    # A block-scaled MMA's scale factors: 32 rows replicated across the warpgroup's four
+    # warps (the "warpx4" broadcast), via a stride-32 replica.
+    scale_factor_layout = TileLayout(S[(32, sf_per_mma) : (1@TLane, 1@TCol)] + R[4:32@TLane])
+
+    # A tensor-core register fragment, distributed over the lanes of two warps.
+    frag = TileLayout(S[(8, 2, 4, 2) : (4@laneid, 1@warpid, 1@laneid, 1)])
+
+    # Ready-made constructors for the layouts that recur in real kernels:
+    acc = tmem_datapath_layout("D", 128, 256)                  # tcgen05 accumulator
+    ld  = tcgen05_atom_layout("32x32b", (128, 64), "float32")  # tcgen05.ld register tile
+
+The rest of the chapter explains these precisely — how a ``TileLayout`` decomposes into shard,
+replica, and offset, the rule it evaluates by, and how ``SwizzleLayout`` and ``ComposeLayout``
+extend it for swizzled memory.
 
 Interactive Demo
 ----------------
@@ -140,7 +169,9 @@ lets ``L(x)`` stay a singleton in the common case while still being able to hold
 several coordinates once ``R`` is non-empty. Each term is written ``n @ axis``, and
 if a stride is not paired with an axis, the memory axis ``m`` is assumed by default.
 
-Written out in TIRx, a shard together with a replica and an offset reads::
+Written out in TIRx, a shard together with a replica and an offset reads:
+
+.. code-block:: python
 
     TileLayout(S[(8,2,4,2) : (4@laneid, 1@warpid, 1@laneid, 1)] + R[2:4@warpid] + 5@warpid)
 
@@ -214,7 +245,9 @@ The quickest way to see that these four steps do something real is to run them o
 an actual tensor-core tile and watch a hardware mapping fall out. Consider a logical
 ``(8, 16)`` tile distributed across 2 warps of 32 lanes each, where each lane holds
 part of the tile in its own registers (the ``reg`` slot is just the default memory
-axis ``m``)::
+axis ``m``):
+
+.. code-block:: python
 
     TileLayout(S[(8,2,4,2):(4@laneid,1@warpid,1@laneid,1)] + R[2:4@warpid] + 5@warpid)
 
@@ -298,7 +331,9 @@ care what an axis means — bind the strides to different axes and everything wo
 the same way. To see that, we point the same model at Blackwell **tensor
 memory**, a 2D address space addressed by ``TLane`` × ``TCol`` (both of them
 *memory* axes). Now every stride binds to a memory axis, so the layout is a pure
-placement: no threads, no replica, no offset, and ``L(x)`` is a plain singleton::
+placement: no threads, no replica, no offset, and ``L(x)`` is a plain singleton:
+
+.. code-block:: python
 
     TileLayout(S[(2,128,112):(112@TCol,1@TLane,1@TCol)])
 
@@ -345,7 +380,9 @@ layout express directly, instead of forcing it through a power-of-two mold.
 factors are where the replica earns its keep. A block-scaled MMA keeps its per-block
 scale factors in tensor memory too, and there a single physical group has to feed
 several warps at the same time — exactly the broadcast that a replica provides. The
-atom looks like this::
+atom looks like this:
+
+.. code-block:: python
 
     TileLayout(S[(32, sf_per_mma):(1@TLane, 1@TCol)] + R[4:32@TLane])
 

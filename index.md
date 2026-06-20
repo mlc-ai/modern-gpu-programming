@@ -56,7 +56,7 @@ chapter_clc/index
 :maxdepth: 1
 
 chapter_intro_tirx/index
-tirx_guide/layout
+chapter_tirx_layout_api/index
 ```
 
 ```{toctree}
