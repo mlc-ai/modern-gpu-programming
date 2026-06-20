@@ -1,27 +1,15 @@
-# Appendix
-:label:`chap_appendix`
+(chap_appendix)=
+# Reference
 
-The main tutorial path ends with Writing TIRX Kernels with Agents. The appendix is for setup, API lookup, optional practice kernels, and source references.
+The main path runs through Parts I–IV. The Reference holds material you reach for while reading:
 
-**How to use this appendix.**
-
-| Need | Use |
+| Need | Where |
 |------|-----|
-| Install TVM/TIRX or run a tiny kernel | **Environment Setup** |
-| Look up the spelling of a TIRX API used in the tutorial | **TIRX API Reference** |
-| Understand parsing, buffers, scopes, generated CUDA, or the compile pipeline | **TIRX Language and Compile Pipeline** |
-| Practice basic thread indexing, elementwise code, and reductions | **Practice Kernel: Fused GELU Gate** and **Practice Kernel: RMSNorm Reduction** |
-| Locate the current Flash Attention 4 implementation | **Flash Attention 4 Source Map** |
+| Look up a TIRx language feature | **{ref}`chap_language_reference`** |
+| Compiler internals (the lowering pipeline) | **{ref}`chap_arch`** |
 
-Most readers only need **Environment Setup** and **TIRX API Reference** at first. The practice kernels are optional.
+For the complete `tvm.tirx` Python API, see the
+[upstream TVM documentation](https://tvm.apache.org/docs/).
 
-```toc
-:maxdepth: 1
-
-../chapter_setup/index
-../chapter_api_reference/index
-../chapter_tirx_primer/index
-../chapter_fused_gelu/index
-../chapter_rmsnorm/index
-../chapter_fa4_source/index
-```
+The TIRx native level ({ref}`chap_tirx_primer`) and the tensor layout model
+({ref}`chap_data_layouts`) are covered in Part II.

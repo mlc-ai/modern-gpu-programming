@@ -10,7 +10,7 @@ COLORS = {
     "score": "#c7dbf4",
     "softmax": "#ffe3a6",
     "value": "#d8c3ef",
-    "corr": "#dcc6ea",
+    "corr": "#9fd8d6",
     "store": "#c7ead2",
     "label": "#f8fafc",
 }

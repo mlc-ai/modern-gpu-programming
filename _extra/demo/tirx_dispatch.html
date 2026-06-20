@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIRx: Scope, Layout, Dispatch</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { max-width: 960px; margin: 0 auto; }
+  .knobs { display:flex; gap:10px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; }
+  .knob { padding:7px 16px; border:2px solid; border-radius:8px; background:#fff; cursor:pointer;
+          font-size:13px; font-weight:700; transition:all .12s; }
+  .knob[data-k="scope"]    { border-color:#5b9bd5; color:#2a6aa0; }
+  .knob[data-k="layout"]   { border-color:#ed9a3c; color:#b46a14; }
+  .knob[data-k="dispatch"] { border-color:#45b5a5; color:#2f8076; }
+  .knob.on[data-k="scope"]    { background:#5b9bd5; color:#fff; }
+  .knob.on[data-k="layout"]   { background:#ed9a3c; color:#fff; }
+  .knob.on[data-k="dispatch"] { background:#45b5a5; color:#fff; }
+
+  .code { background:#0f172a; border-radius:10px; padding:14px 16px; overflow-x:auto;
+          font-family:'SF Mono','Fira Code',monospace; font-size:12.5px; line-height:1.55; }
+  .ln { white-space:pre; color:#cbd5e1; border-radius:4px; padding:0 6px; margin:0 -6px;
+        transition:background .12s, opacity .12s; }
+  .ln .cm { color:#64748b; }
+  /* when a knob is active, spotlight its lines, dim the rest */
+  .code.k-scope    .ln:not([data-k="scope"]),
+  .code.k-layout   .ln:not([data-k="layout"]),
+  .code.k-dispatch .ln:not([data-k="dispatch"]) { opacity:.32; }
+  .code.k-scope    .ln[data-k="scope"]    { background:rgba(91,155,213,.30); }
+  .code.k-layout   .ln[data-k="layout"]   { background:rgba(237,154,60,.30); }
+  .code.k-dispatch .ln[data-k="dispatch"] { background:rgba(69,181,165,.32); }
+
+  .expl { max-width:900px; margin:14px auto 0; border:1px solid var(--border); border-radius:10px;
+          background:var(--surface); padding:12px 16px; min-height:74px; font-size:13px; line-height:1.6; }
+  .expl b { color:var(--text); }
+  .expl code { font-family:'SF Mono','Fira Code',monospace; font-size:11.5px; background:#f1f5f9;
+               padding:1px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+<h1>TIRx: Scope, Layout, Dispatch</h1>
+<div class="sub">click a knob to see the lines of the single-MMA GEMM it controls</div>
+
+<div class="knobs">
+  <button class="knob" data-k="scope">Scope</button>
+  <button class="knob" data-k="layout">Layout</button>
+  <button class="knob" data-k="dispatch">Dispatch</button>
+</div>
+
+<div class="code" id="code"></div>
+<div class="expl" id="expl"></div>
+
+<script>
+(function () {
+  // [text, knob|null]; a leading "##" in text marks the comment portion.
+  var LINES = [
+    ["@T.prim_func", null],
+    ["def kernel(A, B, D):", null],
+    ["    T.device_entry()", null],
+    ["    warp_id = T.warp_id_in_wg([4])      ## thread/lane id (not scope)", null],
+    ["    lane_id = T.lane_id([32])", null],
+    ["", null],
+    ["    Asmem = pool.alloc((BLK_M, BLK_K), a_type,   ## A in SMEM (swizzled)", "layout"],
+    ["                       layout=A_layout)", "layout"],
+    ["    Bsmem = pool.alloc((BLK_N, BLK_K), b_type,   ## B in SMEM (swizzled)", "layout"],
+    ["                       layout=B_layout)", "layout"],
+    ["    tmem = T.decl_buffer((128, 512), \"float32\",  ## accumulator in TMEM", "layout"],
+    ["                         scope=\"tmem\",", "layout"],
+    ["                         layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))", "layout"],
+    ["", null],
+    ["    Tx.cta.copy(Asmem[:, :], A[m0:m0+BLK_M, :])  ## all 128 threads cooperate", "scope"],
+    ["    Tx.cta.copy(Bsmem[:, :], B[n0:n0+BLK_N, :])", "scope"],
+    ["    T.cuda.cta_sync()", null],
+    ["", null],
+    ["    if warp_id == 0:                     ## one elected thread", "scope"],
+    ["        if T.ptx.elect_sync():           ## issues the MMA", "scope"],
+    ["            Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :],", null],
+    ["                          accum=False,", null],
+    ["                          dispatch=\"tcgen05\")  ## Blackwell Tensor Core path", "dispatch"],
+    ["    T.ptx.mbarrier.try_wait(mma_bar, phase)", null],
+    ["", null],
+    ["    Tx.wg.copy_async(Dreg_wg[:, :], tmem[:, :BLK_N])  ## warpgroup reads TMEM", "scope"],
+    ["    Tx.cast(Dreg_f16[:], Dreg[:])", null],
+    ["    Tx.copy(D[m_thr, n0:n0+BLK_N], Dreg_f16[:])", null]
+  ];
+  var EXPL = {
+    scope:    "<b>Scope — which threads run each operation.</b> Operations name the group of threads that runs them: <code>Tx.cta.copy</code> uses all 128 threads of the CTA, the MMA is narrowed to <em>one elected thread</em> (<code>elect_sync</code>) because <code>tcgen05.mma</code> is a single-instruction cooperative op, and <code>Tx.wg.copy_async</code> reads the accumulator back with the full 128-thread warpgroup.",
+    layout:   "<b>Layout — where each tile lives.</b> Every operand carries an explicit placement: A and B go into SMEM under a swizzled <code>tma_shared_layout</code> the Tensor Core requires, and the accumulator lives in TMEM, declared with a <code>TileLayout</code> over <code>TLane</code>/<code>TCol</code>. The MMA reads these layouts to know how the tiles are physically arranged.",
+    dispatch: "<b>Dispatch — which hardware path runs the op.</b> When more than one lowering exists, <code>dispatch=\"tcgen05\"</code> selects the Blackwell Tensor Core, so the tile MMA lowers to <code>tcgen05.mma</code> writing TMEM. Swap the path (or the copy to TMA) without touching scope or layout.",
+    none:     "Each line of this single-MMA GEMM is a choice along one of three knobs. Click <b>Scope</b>, <b>Layout</b>, or <b>Dispatch</b> to spotlight the lines it controls."
+  };
+
+  var code = document.getElementById('code'), expl = document.getElementById('expl');
+  LINES.forEach(function (L) {
+    var d = document.createElement('div'); d.className = 'ln';
+    if (L[1]) d.dataset.k = L[1];
+    var parts = L[0].split('##');
+    d.textContent = parts[0];
+    if (parts[1]) { var c = document.createElement('span'); c.className = 'cm'; c.textContent = '# ' + parts[1].trim(); d.appendChild(c); }
+    code.appendChild(d);
+  });
+  expl.innerHTML = EXPL.none;
+
+  var active = null;
+  document.querySelectorAll('.knob').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.dataset.k;
+      code.classList.remove('k-scope', 'k-layout', 'k-dispatch');
+      document.querySelectorAll('.knob').forEach(function (x) { x.classList.remove('on'); });
+      if (active === k) { active = null; expl.innerHTML = EXPL.none; return; }   // toggle off
+      active = k; b.classList.add('on'); code.classList.add('k-' + k); expl.innerHTML = EXPL[k];
+    });
+  });
+})();
+</script>
+</body>
+</html>

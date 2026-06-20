@@ -1,80 +1,84 @@
-# TIRX API Reference
-:label:`chap_api_reference`
+(chap_api_reference)=
+# TIRx API Reference
 
-This page is a lookup table for the APIs used in the tutorial. It follows the current TVM/TIRX style from the local `tvm` and `tirx-kernels` repositories.
+This page is a lookup table for the APIs used in the tutorial. It follows the current TVM/TIRx style from the local `tvm` and `tirx-kernels` repositories.
 
 ## Kernel Entry and Coordinates
 
 | API | Meaning |
 |-----|---------|
-| `@Tx.prim_func` | Define a TIRX primitive function. Use this when the function signature is already concrete. |
-| `@Tx.jit(...)` | Define a constexpr-specialized TIRX function. Current reference kernels use this for shape-specialized kernels such as Flash Attention 4. |
-| `Tx.device_entry()` | Mark the start of device code. Put thread coordinates and device allocations after this line. |
-| `Tx.cta_id([Gx, Gy, ...])` | CTA index in the launch grid. The list gives the grid extent. |
-| `Tx.cluster_id([...])` | Cluster index in the launch grid, when CTA clusters are used. |
-| `Tx.cta_id_in_cluster([Cx, Cy])` | CTA coordinate inside a cluster. |
-| `Tx.warpgroup_id([Nw])` | Warpgroup id inside a CTA. |
-| `Tx.warp_id([Nw])` | Warp id inside a CTA. |
-| `Tx.warp_id_in_wg([4])` | Warp id inside a warpgroup. A warpgroup has 4 warps. |
-| `Tx.thread_id([Nt])` | Thread id inside a CTA. |
-| `Tx.thread_id_in_wg([128])` | Thread id inside a warpgroup. |
-| `Tx.lane_id([32])` | Lane id inside a warp. |
+| `@T.prim_func` | Define a TIRx primitive function. Use this when the function signature is already concrete. |
+| `@T.jit(...)` | Define a constexpr-specialized TIRx function. Current reference kernels use this for shape-specialized kernels such as Flash Attention 4. |
+| `T.device_entry()` | Mark the start of device code. Put thread coordinates and device allocations after this line. |
+| `T.cta_id([Gx, Gy, ...])` | CTA index in the launch grid. The list gives the grid extent. |
+| `T.cluster_id([...])` | Cluster index in the launch grid, when CTA clusters are used. |
+| `T.cta_id_in_cluster([Cx, Cy])` | CTA coordinate inside a cluster. |
+| `T.warpgroup_id([Nw])` | Warpgroup id inside a CTA. |
+| `T.warp_id([Nw])` | Warp id inside a CTA. |
+| `T.warp_id_in_wg([4])` | Warp id inside a warpgroup. A warpgroup has 4 warps. |
+| `T.thread_id([Nt])` | Thread id inside a CTA. |
+| `T.thread_id_in_wg([128])` | Thread id inside a warpgroup. |
+| `T.lane_id([32])` | Lane id inside a warp. |
 
-Current coordinate APIs do not take `parent=...`. The parent level is encoded in the function name, for example `cta_id_in_cluster` and `warp_id_in_wg`.
+Coordinate APIs encode the parent level in the name, for example `cta_id_in_cluster` and `warp_id_in_wg`.
 
 ## Execution Scopes
 
+A tile op's execution scope is selected by prefixing it with the scope namespace; a
+bare op runs per-thread. Predication uses a plain `if`.
+
 | API | Meaning |
 |-----|---------|
-| `with Tx.cluster():` | Cluster-cooperative region. Used only by clustered kernels. |
-| `with Tx.cta():` | CTA-cooperative region. |
-| `with Tx.warpgroup():` | Warpgroup-cooperative region, 128 threads. |
-| `with Tx.warp():` | Warp-cooperative region, 32 threads. |
-| `with Tx.thread():` | Per-thread region. |
-| `with Tx.thread(cond):` | Per-thread region narrowed by a predicate. |
-| `Tx.filter(var, pred)` | Predicate helper when a scope needs to select active lanes from a symbolic variable. |
+| `Tx.cluster.<op>(...)` | Cluster-cooperative tile op. Used only by clustered kernels. |
+| `Tx.cta.<op>(...)` | CTA-cooperative tile op. |
+| `Tx.wg.<op>(...)` | Warpgroup-cooperative tile op, 128 threads. |
+| `Tx.warp.<op>(...)` | Warp-cooperative tile op, 32 threads. |
+| `Tx.<op>(...)` | Per-thread tile op (no scope prefix). |
+| `if cond:` | Narrow execution to specific threads, e.g. `if tid == 0:` or `if T.ptx.elect_sync():`. |
+| `T.filter(var, pred)` | Predicate helper to select active lanes from a symbolic variable. |
 
 Example:
 
 ```python
-tid = Tx.thread_id_in_wg([128])
-with Tx.thread(tid == 0):
+tid = T.thread_id_in_wg([128])
+if tid == 0:
     Tx.copy_async(Asmem[:, :], A_tile, dispatch="tma")
 ```
 
-`Tx.ptx.elect_sync()` elects one participating thread per warp. It is useful for warp-level issue paths, but it is not the same as `tid == 0`.
+`T.ptx.elect_sync()` elects one participating thread per warp. It is useful for warp-level issue paths, but it is not the same as `tid == 0`.
 
 ## Buffers and Storage
 
 | API | Meaning |
 |-----|---------|
-| `Tx.Buffer(shape, dtype)` | Typed kernel argument in a concrete signature. |
-| `Tx.match_buffer(ptr, shape, dtype)` | Bind an opaque pointer argument to a typed buffer view. |
-| `Tx.alloc_local(shape, dtype)` | Per-thread register/local storage. |
-| `Tx.SMEMPool()` | Shared-memory allocation pool. |
+| `T.Buffer(shape, dtype)` | Typed kernel argument in a concrete signature. |
+| `T.match_buffer(ptr, shape, dtype)` | Bind an opaque pointer argument to a typed buffer view. |
+| `T.alloc_local(shape, dtype)` | Per-thread register/local storage. |
+| `T.wg_reg_tile(elem_per_thread, dtype=...)` | Warpgroup-distributed `(128, elem_per_thread)` register tile for TMEM readback; equivalent to `T.alloc_local(...).view(..., S[(128, N) : (1@tid_in_wg, 1)])`. |
+| `T.SMEMPool()` | Shared-memory allocation pool. |
 | `pool.alloc(shape, dtype, layout=..., align=...)` | Allocate shared-memory storage from the pool. |
 | `pool.alloc_mma(shape, dtype)` | Allocate shared-memory storage using the MMA-friendly helper used by current kernels. |
 | `pool.move_base_to(offset)` | Advance the pool base before later allocations. |
 | `pool.commit()` | Close the shared-memory allocation plan. |
-| `Tx.decl_buffer(..., scope="tmem", allocated_addr=...)` | Create an indexable view over a TMEM allocation. It does not allocate TMEM by itself. |
-| `Tx.TMEMPool(pool, total_cols=..., cta_group=..., tmem_addr=...)` | Manage a TMEM allocation through a pool object. |
+| `T.decl_buffer(..., scope="tmem", allocated_addr=...)` | Create an indexable view over a TMEM allocation. It does not allocate TMEM by itself. |
+| `T.TMEMPool(pool, total_cols=..., cta_group=..., tmem_addr=...)` | Manage a TMEM allocation through a pool object. |
 | `tmem_pool.alloc(shape, dtype, layout=..., cols=..., datapath=...)` | Allocate a TMEM view from the pool. |
 | `tmem_pool.commit()` | Commit the TMEM allocation. |
 | `tmem_pool.dealloc()` | Release the TMEM allocation. |
-| `Tx.TMEMStages(tmem, col_start=..., width=..., stages=..., stride=...)` | Describe repeated TMEM stage regions inside one allocation. |
+| `T.TMEMStages(tmem, col_start=..., width=..., stages=..., stride=...)` | Describe repeated TMEM stage regions inside one allocation. |
 
 The common manual pattern is:
 
 ```python
 tmem_addr = pool.alloc([1], "uint32")
-Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
-tmem = Tx.decl_buffer(
+T.ptx.tcgen05.alloc(T.address_of(tmem_addr), n_cols=512, cta_group=1)
+tmem = T.decl_buffer(
     (128, 512), "float32", scope="tmem", allocated_addr=tmem_addr[0],
     layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)])
 )
 ```
 
-Current higher-level kernels usually use `Tx.TMEMPool(...)`, then call `commit()` and `dealloc()`.
+Current higher-level kernels usually use `T.TMEMPool(...)`, then call `commit()` and `dealloc()`.
 
 ## Layouts
 
@@ -103,8 +107,8 @@ TileLayout(S[(128, N) : (1@tid_in_wg, 1)])
 |-----|---------|
 | `Tx.copy(dst, src, ...)` | Synchronous copy/store. Lowering depends on scope and layouts. |
 | `Tx.copy_async(dst, src, dispatch="tma", ...)` | Request a TMA tile load or store. The SMEM side must use a compatible layout. |
-| `Tx.copy_async(reg_view, tmem_view)` | TMEM-to-register readback under warpgroup scope. Follow with `Tx.ptx.tcgen05.wait.ld()`. |
-| `Tx.copy_async(tmem_view, reg_view)` | Register-to-TMEM writeback used by Flash Attention softmax/correction paths. Follow with `Tx.ptx.tcgen05.wait.st()` before a later consumer depends on the store. |
+| `Tx.copy_async(reg_view, tmem_view)` | TMEM-to-register readback under warpgroup scope. Follow with `T.ptx.tcgen05.wait.ld()`. |
+| `Tx.copy_async(tmem_view, reg_view)` | Register-to-TMEM writeback used by Flash Attention softmax/correction paths. Follow with `T.ptx.tcgen05.wait.st()` before a later consumer depends on the store. |
 | `Tx.gemm_async(dst, a, b, dispatch="tcgen05", ...)` | Blackwell Tensor Core MMA tile operation. |
 | `Tx.cast(dst, src)` | Cast a register/local fragment, commonly fp32 accumulator values to fp16 output values. |
 
@@ -114,19 +118,19 @@ Read a primitive with its local context: source, destination, scope, layouts, di
 
 | API | Meaning |
 |-----|---------|
-| `Tx.cuda.cta_sync()` | CTA-wide barrier and shared-memory ordering point. |
-| `Tx.cuda.cluster_sync()` | Cluster-wide synchronization. |
-| `Tx.cuda.warpgroup_sync(id)` | Synchronize only the current warpgroup using a named barrier id. |
-| `Tx.ptx.mbarrier.init(ptr, count)` | Initialize an mbarrier. |
-| `Tx.ptx.mbarrier.arrive.expect_tx(ptr, bytes)` | Tell a TMA load barrier how many bytes to expect. |
-| `Tx.ptx.mbarrier.try_wait(ptr, phase)` | Wait until the barrier reaches the expected phase. |
-| `Tx.ptx.tcgen05.commit(bar, cta_group=...)` | Commit issued MMA work to a completion barrier. |
-| `Tx.ptx.tcgen05.wait.ld()` | Wait for TMEM-to-register readback. |
-| `Tx.ptx.tcgen05.wait.st()` | Wait for register-to-TMEM stores. |
-| `Tx.ptx.cp_async.bulk.commit_group()` | Commit a TMA store group. |
-| `Tx.ptx.cp_async.bulk.wait_group(n)` | Wait until enough TMA store groups have drained. |
-| `Tx.ptx.fence.proxy_async(...)` | Ordering fence across proxy boundaries, often before async engines read thread-written SMEM. |
-| `Tx.ptx.fence.mbarrier_init()` | Make initialized mbarriers visible before later use. |
+| `T.cuda.cta_sync()` | CTA-wide barrier and shared-memory ordering point. |
+| `T.cuda.cluster_sync()` | Cluster-wide synchronization. |
+| `T.cuda.warpgroup_sync(id)` | Synchronize only the current warpgroup using a named barrier id. |
+| `T.ptx.mbarrier.init(ptr, count)` | Initialize an mbarrier. |
+| `T.ptx.mbarrier.arrive.expect_tx(ptr, bytes)` | Tell a TMA load barrier how many bytes to expect. |
+| `T.ptx.mbarrier.try_wait(ptr, phase)` | Wait until the barrier reaches the expected phase. |
+| `T.ptx.tcgen05.commit(bar, cta_group=...)` | Commit issued MMA work to a completion barrier. |
+| `T.ptx.tcgen05.wait.ld()` | Wait for TMEM-to-register readback. |
+| `T.ptx.tcgen05.wait.st()` | Wait for register-to-TMEM stores. |
+| `T.ptx.cp_async.bulk.commit_group()` | Commit a TMA store group. |
+| `T.ptx.cp_async.bulk.wait_group(n)` | Wait until enough TMA store groups have drained. |
+| `T.ptx.fence.proxy_async(...)` | Ordering fence across proxy boundaries, often before async engines read thread-written SMEM. |
+| `T.ptx.fence.mbarrier_init()` | Make initialized mbarriers visible before later use. |
 
 ## Pipeline Helpers
 
@@ -142,7 +146,7 @@ Read a primitive with its local context: source, destination, scope, layouts, di
 | `TMABar(pool, depth)` | TMA byte-counting barrier wrapper. |
 | `TCGen05Bar(pool, depth)` | MMA completion barrier wrapper, signaled by `tcgen05.commit`. |
 
-These five helpers are *not* on the `Tx` namespace (unlike `Tx.SMEMPool`/`Tx.TMEMPool`). Import them explicitly from `tvm.tirx.lang.pipeline`:
+These five helpers are *not* on the `Tx` namespace (unlike `T.SMEMPool`/`T.TMEMPool`). Import them explicitly from `tvm.tirx.lang.pipeline`:
 
 ```python
 from tvm.tirx.lang.pipeline import PipelineState, Pipeline, MBarrier, TMABar, TCGen05Bar
@@ -166,14 +170,12 @@ print(cuda_source)
 
 Use generated CUDA to verify that scope guards and hardware instructions match the intended contract.
 
-## Common Footguns
+## Common Pitfalls
 
-- `@Tx.prim_func(tirx=True)` is the old spelling. Use `@Tx.prim_func`; use `@Tx.jit(...)` for constexpr-specialized kernels.
-- `with Tx.kernel():` is the old entry block. Use `Tx.device_entry()`.
-- Do not add `parent=...` to coordinate calls.
-- `Tx.filter` does not have a range form. Pass a variable and a predicate.
-- `Tx.ptx.elect_sync()` elects one thread per warp, not one thread per CTA or warpgroup.
-- `Tx.decl_buffer(..., scope="tmem")` creates a view. TMEM must already have been allocated by `tcgen05.alloc` or `Tx.TMEMPool`.
+- Use `@T.jit(...)` for constexpr-specialized kernels; plain `@T.prim_func` otherwise.
+- `T.filter` does not have a range form. Pass a variable and a predicate.
+- `T.ptx.elect_sync()` elects one thread per warp, not one thread per CTA or warpgroup.
+- `T.decl_buffer(..., scope="tmem")` creates a view. TMEM must already have been allocated by `tcgen05.alloc` or `T.TMEMPool`.
 - TMA stores use commit/wait-group completion, not the TMA-load mbarrier byte-counting protocol.
 - An async copy or MMA is not safe to consume until the matching wait or barrier has completed.
 - `tcgen05.commit` / `TCGen05Bar.arrive` must be guarded so only the intended MMA issuer calls it. Empty commit groups from non-issuer lanes can signal a barrier too early.

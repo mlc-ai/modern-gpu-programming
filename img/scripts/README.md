@@ -12,7 +12,7 @@ python gen_flash_attention_barrier_flow.py  # -> ../flash_attention_main_handoff
 python gen_flash_attention_pipeline.py      # -> ../flash_attention_pipeline_v2.png (Flash Attention pipeline)
 python gen_tmem_layout.py            # -> ../tmem_layout_v3.png (Flash Attention TMEM layout)
 python gen_gemm_perf.py               # -> ../gemm_perf.png (GEMM optimization result)
-python gen_ai_assisted_workflow.py    # -> ../ai_assisted_tirx_workflow.png (AI-assisted TIRX workflow)
+python gen_ai_assisted_workflow.py    # -> ../ai_assisted_tirx_workflow.png (AI-assisted TIRx workflow)
 ```
 
 Requires: `matplotlib`, `numpy`
