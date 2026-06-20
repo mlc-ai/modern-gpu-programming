@@ -208,8 +208,10 @@ with the row — so that *both* row and column accesses end up spread across ban
 guarantee it provides is specific: it holds for the matching element width, swizzle mode, and access
 pattern (the one an engine's descriptor expects), and not for arbitrary element widths or alignments.
 
-The first interactive in this section shows the problem-and-fix pair side by side: plain row-major
-on the left, XOR-swizzled addressing on the right.
+The first interactive below makes this concrete. Click a column index and watch which bank each
+element lands in: in the plain row-major tile on the left, a column funnels all eight elements into a
+single bank, so the read serializes into eight cycles; in the XOR-swizzled layout on the right, that
+same column is spread across eight distinct banks and reads in a single cycle.
 
 ```{raw} html
 <iframe src="../demo/swizzle_8x8.html" title="8x8 XOR swizzle" loading="lazy"
