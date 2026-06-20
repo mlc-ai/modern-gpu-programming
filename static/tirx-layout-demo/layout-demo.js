@@ -697,7 +697,6 @@ function drawLegend() {
 
   const r2 = mk('div', 'leg-row');
   const m = mk('div', 'li');
-  m.style.fontFamily = "'SF Mono','Fira Code',monospace";
   const owners = axesUsed(ST.layout).filter(isOwnerAxis);
   const mem = axesUsed(ST.layout).filter((a) => !isOwnerAxis(a));
   m.textContent = 'owner axes: ' + (owners.join(', ') || '(none — pure memory layout)') +
