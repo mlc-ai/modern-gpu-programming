@@ -26,8 +26,8 @@ tracking, and finally the small set of synchronization rules a tensor-core kerne
 Start with the object itself. An mbarrier ("memory barrier") is the small piece of shared-memory
 state that every handoff in this chapter is built on, so it is worth seeing exactly what it holds and
 what a kernel can do to it. The demo below lays out that state — the arrival counter and the phase
-bit — alongside the three APIs that touch it; watch how `init`, `arrive`, and `wait` each move the
-counter and the bit.
+bit — alongside the three APIs that touch it; click a field to focus it and read how `init`,
+`arrive`, and `wait` each act on the counter and the bit.
 
 ```{raw} html
 <div style="overflow-x:auto;">
@@ -35,7 +35,7 @@ counter and the bit.
         style="width:100%; min-width:1320px; height:620px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div>
 ```
-*Interactive: an mbarrier's counter + phase bit, and its init / arrive / wait APIs.*
+*Interactive: an mbarrier's counter + phase bit, and its init / arrive / wait APIs — click a field to focus it.*
 
 An mbarrier is a hardware synchronization object that lives in shared memory. At heart it is just a
 counter that knows when it has reached zero, paired with a single **phase bit**; together the

@@ -48,7 +48,7 @@ grid scheduler for the next tile, and the other reads back the answer. Let us lo
   for a TMA load ({ref}`chap_async_barriers`) — there is nothing new to learn about how to await it.
 - **`query_cancel`** — once that barrier fires, this reads the response, and it does so in two steps.
   First, `clusterlaunchcontrol.query_cancel.is_canceled` returns a **predicate**: did a cancellation
-  actually succeed? Only when it did do we go on to call
+  actually succeed? Only when it did succeed do we go on to call
   `clusterlaunchcontrol.query_cancel.get_first_ctaid`, which extracts the cancelled cluster's first
   CTA id — a coordinate vector (`x`, `y`, `z`) that names the tile to process. A false predicate
   simply means there is *no work left*. Note that we branch on the predicate itself; there is no

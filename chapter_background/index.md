@@ -18,8 +18,8 @@ flow through the hardware. Nearly every optimization later in the book is some w
 work across those same pieces.
 
 Modern GPUs also contain many specialized hardware units. To give a first taste, the interactive
-below shows the main elements inside a Blackwell streaming multiprocessor before we zoom in on each
-part.
+demo below shows the main elements inside a Blackwell streaming multiprocessor before we zoom in on each
+part. You can click into each part to see its details.
 
 ```{raw} html
 <div style="overflow-x:auto;">
@@ -33,13 +33,10 @@ Tensor Core and TMA engines.*
 ## The Execution Hierarchy
 
 We begin with the threads that do the work. A GPU does not present its thousands of threads as one
-flat pool. Instead it groups them into a
-nested hierarchy, and it does so because cooperation happens at several different scales at once. At
-the finest scale, the lanes of a warp march through the same instruction in lockstep. A step coarser,
-the threads of a CTA share a common pool of fast scratch memory. Coarser still, the CTAs of a
-cluster can reach across physically separate SMs to synchronize and to read each other's memory. Each
-level exists to make one of these forms of cooperation cheap. The following figure shows the
-hierarchy on Blackwell.
+flat pool. Instead it groups them into a nested hierarchy, and it does so because cooperation happens
+at several different scales at once. Each level exists to make cooperation cheap at one of those
+scales. The following figure shows the hierarchy on Blackwell; you can click into each level to
+highlight it.
 
 ```{raw} html
 <iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"
@@ -159,8 +156,8 @@ CTAs at once, eliminating the redundant global traffic that separate loads would
 
 So far we have introduced the hardware units individually. To see how they work together, we can
 use a typical general-purpose matrix multiplication (GEMM) pipeline as an example. The
-interactive demo below shows the units involved in a three-stage GEMM tile pipeline; click on
-stages such as `tma load` to see which hardware units participate.
+interactive demo below shows the units involved in a three-stage GEMM tile pipeline; click an action
+such as `tma load` to highlight the data path it takes across the hardware units.
 
 ```{raw} html
 <div style="overflow-x:auto;">
@@ -168,7 +165,7 @@ stages such as `tma load` to see which hardware units participate.
         style="width:100%; min-width:1320px; height:680px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div>
 ```
-*Interactive: the load → MMA → epilogue pipeline on Blackwell, and how the stages overlap.*
+*Interactive: the load → MMA → epilogue pipeline on Blackwell — click an action to trace its data path across the hardware units.*
 
 A single GEMM tile flows through three stages.
 
