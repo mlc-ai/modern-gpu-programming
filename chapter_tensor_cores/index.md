@@ -76,10 +76,10 @@ is issued, and how its operands split across the various modes.
 
 ## `cta_group::1` vs `cta_group::2`, and the M Dimension
 
-Why does a single instruction need several modes at all? Two reasons. The useful tile shapes do not
-all fit into TMEM the same way, and one CTA is sometimes simply too small to hold a tile worth
-computing. To accommodate both, a `tcgen05` MMA can run over one CTA (`cta_group::1`) or over a pair
-of CTAs in a cluster (`cta_group::2`). Together, the mode and the tile's **M** dimension decide how
+A `tcgen05` MMA runs in one of two modes: over a single CTA (`cta_group::1`), or over a pair of CTAs
+in a cluster (`cta_group::2`). Two things make that choice matter — the useful tile shapes do not all
+fit into TMEM the same way, and one CTA is sometimes simply too small to hold a tile worth computing.
+Together, the mode and the tile's **M** dimension decide how
 the (M, N) accumulator gets laid out in TMEM — that is, which lane and which column each logical
 element `C[m, n]` ends up on (recall that TMEM is 128 lanes × up to 512 columns). In the single-CTA
 modes, N maps onto TMEM columns and the only thing that varies from case to case is how the M rows
@@ -144,7 +144,7 @@ rather than a hard rule: the `.kind::f16` path can also accumulate in f16.
 
 ## Block-Scaled MMA (mxfp8 / nvfp4)
 
-The real trouble with very low precision is dynamic range. An fp8 or fp4 element simply cannot span
+Very low precision buys compute efficiency, but it comes with a real catch: a tiny **dynamic range**. An fp8 or fp4 element simply cannot span
 the spread of magnitudes that a real matrix contains, so if you try to cover everything with a single
 global scale, you are forced into a bad trade: either you clip the large values, or you flush the
 small ones to zero. The way out is to stop scaling globally and start scaling finely. That is exactly
