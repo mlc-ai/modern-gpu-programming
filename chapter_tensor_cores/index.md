@@ -44,7 +44,7 @@ each case, the MMA writes its partial sums into TMEM rather than registers.
 `tcgen05` is Blackwell's tensor-core instruction family, and it is worth being precise about what it
 does and does not cover. It is *only* the compute path — the unit that actually multiplies the
 tiles. Getting the operands into place beforehand is a separate job, and that job belongs to TMA
-({ref}`chap_tma`). So when you issue an MMA, what you are really configuring are the three knobs we
+({ref}`chap_tma`). So when you issue an MMA, what you are really configuring are the three design elements we
 introduced earlier, and each one answers a different question:
 
 1. **Scope — who cooperates.** An MMA is issued for a warpgroup. On Blackwell, some modes go a step
@@ -58,7 +58,7 @@ introduced earlier, and each one answers a different question:
    done*: it is asynchronous. To know when the result is actually ready, you track completion with a
    barrier ({ref}`chap_async_barriers`).
 
-That third knob deserves a moment on its own, because it is easy to gloss over. **Issuing an MMA is
+That third design element deserves a moment on its own, because it is easy to gloss over. **Issuing an MMA is
 not the same as finishing it.** The instruction hands control back immediately, and that is exactly
 what makes overlap possible: a fast kernel issues the loads for the next tile while the current MMA
 is still grinding away, and only waits on the barrier at the last moment, when it genuinely needs
