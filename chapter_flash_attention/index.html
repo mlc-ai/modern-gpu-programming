@@ -633,6 +633,8 @@ P, V -&gt; value MMA -&gt; O
 <section id="tmem-layout-and-reuse">
 <h2>TMEM Layout and Reuse<a class="headerlink" href="#tmem-layout-and-reuse" title="Link to this heading">#</a></h2>
 <p>All of <code class="docutils literal notranslate"><span class="pre">S</span></code>, <code class="docutils literal notranslate"><span class="pre">P</span></code>, and <code class="docutils literal notranslate"><span class="pre">O</span></code> have to share one <code class="docutils literal notranslate"><span class="pre">128</span> <span class="pre">x</span> <span class="pre">512</span></code> TMEM allocation, and the way they are packed into it is exactly why barriers and layout turn out to be inseparable in this kernel:</p>
+<p>The figure below shows that packing directly: score slots, numerator slots, and output slots all
+share one TMEM allocation, so the barrier protocol is what makes the reuse legal.</p>
 <p><img alt="TMEM Layout" src="../_images/tmem_layout_v3.png" /></p>
 <p>The figure reads as a set of tile slots:</p>
 <ul class="simple">
@@ -687,9 +689,13 @@ P, V -&gt; value MMA -&gt; O
 </table>
 </div>
 <p>Everything not in that list is pipeline bookkeeping: barriers that release an SMEM, TMEM, or staging buffer so that another role may reuse it. The useful thing is that every barrier, whether it carries data or only bookkeeping, reads the same way — as a tile handoff. You ask who produced data, who consumes it, and which buffer becomes free once they are both done.</p>
+<p>The next figure collapses those handoffs into the exact readiness gates for the two MMA phases:
+what the score MMA waits on, and what the value MMA must wait on before it can accumulate.</p>
 <p><img alt="Flash Attention 4 MMA Input Gates" src="../_images/flash_attention_main_handoff.png" /></p>
 <p>Read this diagram as a set of correctness gates rather than a schedule. It answers “what must be true before this MMA may fire,” and says nothing about timing. The score MMA waits for Q and K in SMEM, then produces <code class="docutils literal notranslate"><span class="pre">S</span></code>. The value MMA waits on three things at once: V in SMEM, the <code class="docutils literal notranslate"><span class="pre">P</span></code> tile from softmax, and an <code class="docutils literal notranslate"><span class="pre">O</span></code> slot that WG2 has either released or rescaled. The softmax-to-value gate is split for the reason we already met — the value MMA may begin once the first 96 columns of <code class="docutils literal notranslate"><span class="pre">P</span></code> are in place, and <code class="docutils literal notranslate"><span class="pre">p_ready_2</span></code> releases the final 32.</p>
 <p>There is one handoff that does not fit the tile-readiness mold: the softmax-to-correction edge. Rather than passing a tile, softmax passes a single scalar — <code class="docutils literal notranslate"><span class="pre">acc_scale</span></code> during the K/V loop, or the final <code class="docutils literal notranslate"><span class="pre">row_sum</span></code> in the epilogue — through a one-slot SMEM mailbox to WG2. Since that slot is reused on every iteration, a <code class="docutils literal notranslate"><span class="pre">full</span></code>/<code class="docutils literal notranslate"><span class="pre">empty</span></code> barrier pair has to guard it:</p>
+<p>The figure below zooms in on that mailbox handshake, which is why this one barrier pair should be
+read as a scalar producer-consumer channel rather than as a tile-ready gate.</p>
 <p><img alt="Flash Attention 4 Softmax Scale-Slot Handshake" src="../_images/flash_attention_softmax_correction.png" /></p>
 <p>Read <code class="docutils literal notranslate"><span class="pre">softmax_corr.full</span></code> and <code class="docutils literal notranslate"><span class="pre">softmax_corr.empty</span></code> as a producer-consumer pair:</p>
 <ol class="arabic simple">
@@ -780,6 +786,8 @@ P, V -&gt; value MMA -&gt; O
 <li><p>KV pipeline depth 3: K and V blocks stream through the inner loop while the same Q stages are reused.</p></li>
 <li><p>TMEM pipeline depth 2: each Q stage has its own S/P/O TMEM slots, and those slots are reused after the matching barriers fire.</p></li>
 </ul>
+<p>The figure below switches from correctness gates to a timeline view, showing which roles can be
+active at roughly the same time once those separate rings are in flight.</p>
 <p><img alt="Flash Attention 4 Pipeline Structure" src="../_images/flash_attention_pipeline_v2.png" /></p>
 <p>Read this as a timeline rather than a barrier graph. It shows which roles are active at roughly the same moment, whereas the earlier barrier-flow figure is where you go to check the exact producer-consumer waits. Between them, the two figures answer the two different questions we raised at the start of this section.</p>
 <p>Each row matches one of the code’s role branches:</p>

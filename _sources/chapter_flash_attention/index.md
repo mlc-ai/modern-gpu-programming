@@ -268,6 +268,9 @@ The reason for the split is to keep the Tensor Core busy. Run the value MMA as a
 
 All of `S`, `P`, and `O` have to share one `128 x 512` TMEM allocation, and the way they are packed into it is exactly why barriers and layout turn out to be inseparable in this kernel:
 
+The figure below shows that packing directly: score slots, numerator slots, and output slots all
+share one TMEM allocation, so the barrier protocol is what makes the reuse legal.
+
 ![TMEM Layout](../img/tmem_layout_v3.png)
 
 The figure reads as a set of tile slots:
@@ -314,11 +317,17 @@ This is the hardest part of the kernel, so it pays to come at it gradually. Star
 
 Everything not in that list is pipeline bookkeeping: barriers that release an SMEM, TMEM, or staging buffer so that another role may reuse it. The useful thing is that every barrier, whether it carries data or only bookkeeping, reads the same way — as a tile handoff. You ask who produced data, who consumes it, and which buffer becomes free once they are both done.
 
+The next figure collapses those handoffs into the exact readiness gates for the two MMA phases:
+what the score MMA waits on, and what the value MMA must wait on before it can accumulate.
+
 ![Flash Attention 4 MMA Input Gates](../img/flash_attention_main_handoff.png)
 
 Read this diagram as a set of correctness gates rather than a schedule. It answers "what must be true before this MMA may fire," and says nothing about timing. The score MMA waits for Q and K in SMEM, then produces `S`. The value MMA waits on three things at once: V in SMEM, the `P` tile from softmax, and an `O` slot that WG2 has either released or rescaled. The softmax-to-value gate is split for the reason we already met — the value MMA may begin once the first 96 columns of `P` are in place, and `p_ready_2` releases the final 32.
 
 There is one handoff that does not fit the tile-readiness mold: the softmax-to-correction edge. Rather than passing a tile, softmax passes a single scalar — `acc_scale` during the K/V loop, or the final `row_sum` in the epilogue — through a one-slot SMEM mailbox to WG2. Since that slot is reused on every iteration, a `full`/`empty` barrier pair has to guard it:
+
+The figure below zooms in on that mailbox handshake, which is why this one barrier pair should be
+read as a scalar producer-consumer channel rather than as a tile-ready gate.
 
 ![Flash Attention 4 Softmax Scale-Slot Handshake](../img/flash_attention_softmax_correction.png)
 
@@ -371,6 +380,9 @@ There is no single pipeline depth here, because different tile streams move at d
 - Q pipeline depth 2: one CTA works on two Q stages. WG0 handles one stage, and WG1 handles the other.
 - KV pipeline depth 3: K and V blocks stream through the inner loop while the same Q stages are reused.
 - TMEM pipeline depth 2: each Q stage has its own S/P/O TMEM slots, and those slots are reused after the matching barriers fire.
+
+The figure below switches from correctness gates to a timeline view, showing which roles can be
+active at roughly the same time once those separate rings are in flight.
 
 ![Flash Attention 4 Pipeline Structure](../img/flash_attention_pipeline_v2.png)
 

@@ -147,6 +147,8 @@ below shows several ways to express sharding and replication on a 2×2 GPU mesh:
 S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
 ```
 
+The demo below shows that combined partition-and-replication pattern on a small GPU mesh.
+
 ```{raw} html
 <iframe src="../demo/tile_distributed.html" title="Distributed layout across a GPU mesh" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
@@ -172,6 +174,9 @@ That gives four replicas at a stride of 32 TMEM lanes: TMEM lanes `l`, `l+32`, `
 hold the same scale. As before, the replication dimension carries no new data — it simply says "the
 same value, sitting in four TMEM-lane positions," in just the way `@gpuid_x` broadcast a row across
 the GPU mesh a moment ago.
+
+The interactive below shows both steps together: compact packing into 32 TMEM lanes, then the
+`warpx4` broadcast out to the 128 reading lanes.
 
 ```{raw} html
 <iframe src="../demo/sf_tmem.html" title="Scale factors in TMEM: packing and warpx4 replication" loading="lazy"
@@ -203,6 +208,9 @@ with the row — so that *both* row and column accesses end up spread across ban
 guarantee it provides is specific: it holds for the matching element width, swizzle mode, and access
 pattern (the one an engine's descriptor expects), and not for arbitrary element widths or alignments.
 
+The first interactive in this section shows the problem-and-fix pair side by side: plain row-major
+on the left, XOR-swizzled addressing on the right.
+
 ```{raw} html
 <iframe src="../demo/swizzle_8x8.html" title="8x8 XOR swizzle" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
@@ -216,6 +224,9 @@ each segment. The next figure shows the most common case in practice, `SWIZZLE_1
 layout is organized around 128-byte segments so the same row/column-remapping trick fits naturally
 into a 32-bank memory system:
 
+This interactive shows one concrete hardware swizzle, `SWIZZLE_128B`, so the repeating pattern is
+visible before we generalize across formats.
+
 ```{raw} html
 <iframe src="../demo/swizzle_128B.html" title="SWIZZLE_128B layout" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
@@ -228,6 +239,9 @@ hardware defines a small repeating **atom** on which the permutation is applied,
 swizzle modes choose different atom sizes. `SWIZZLE_128B` uses an 8 × 128 B atom, `SWIZZLE_64B` an
 8 × 64 B atom, and `SWIZZLE_32B` an 8 × 32 B atom; the whole tile is then tiled by whichever atom
 is in use. The demo shows the element arrangement inside one atom for each format:
+
+The final interactive lets you switch formats and inspect the atom directly, which is the right
+level of detail for reasoning about which swizzle a load/store instruction expects.
 
 ```{raw} html
 <iframe src="../demo/swizzle_atom_general.html" title="Swizzle atom layout per format (128B/64B/32B)" loading="lazy"

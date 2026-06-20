@@ -304,6 +304,7 @@ tile between global and shared memory on its own, leaving the threads free to co
 covers how a single thread issues that copy, how TMA swizzles the tile so the layout matches what the
 Tensor Core expects (<a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Introduction to Data Layout</span></a>), and how loads and stores signal completion — loads
 through an mbarrier (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>), stores through a commit/wait group.</p>
+<p>The interactive below shows that division of labor: one thread issues the copy, and the TMA engine moves the tile.</p>
 <div style="overflow-x:auto;">
 <iframe src="../demo/tma_intro.html" title="TMA: the Tensor Memory Accelerator" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
@@ -343,6 +344,7 @@ had to worry about. Because the issuing thread returns immediately — long befo
 actually arrived — how does the kernel know the transfer has finished before something tries to read
 the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
 differently, so it is worth looking at each in turn.</p>
+<p>The figure below summarizes the load-side completion path that later connects TMA to mbarriers.</p>
 <p><img alt="TMA load synchronization flow" src="../_images/tma_sync_flow.png" /></p>
 <p>A <strong>load (GMEM → SMEM)</strong> ties into an <strong>mbarrier</strong> (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>). Before the transfer
 begins, the issuing thread tells the barrier how many bytes to expect with

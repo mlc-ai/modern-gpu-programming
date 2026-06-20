@@ -73,6 +73,12 @@ adjacent columns per 8×8 and four consecutive lanes cover one row.
 
 ### `ldmatrix`: SMEM → the Fragment
 
+`ldmatrix` is the Ampere warp-collective instruction that moves an 8×8 shared-memory tile into the
+fixed register fragment the tensor core expects.
+
+The figure below shows that SMEM-to-fragment mapping. The reverse path on Ampere still uses ordinary
+stores; `stmatrix` only arrives later, on Hopper and beyond.
+
 ![ldmatrix loads an 8x8 SMEM tile into the warp register fragment; stmatrix, the reverse, is a Hopper (sm_90+) instruction](../img/ldstmatrix.svg)
 
 The job of `ldmatrix` is to get the tile out of SMEM and into that fragment. A single
@@ -112,6 +118,8 @@ along a **row**, and then read by `ldmatrix` along a **column**. With a plain ro
 write hits 8 distinct banks and is conflict-free, but the column read hits one bank 8 times — an
 8-way conflict. Switching to a col-major tile does not save us; it merely flips which of the two
 accesses pays the price. No unpermuted layout can make both of them happy:
+
+The figure below makes that row-write / column-read conflict concrete.
 
 ![Row write hits 8 distinct banks (conflict-free); column read hits one bank 8 times (conflict)](../img/swizzle_conflict.svg)
 

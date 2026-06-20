@@ -20,6 +20,8 @@ covers how a single thread issues that copy, how TMA swizzles the tile so the la
 Tensor Core expects ({ref}`chap_data_layout`), and how loads and stores signal completion — loads
 through an mbarrier ({ref}`chap_async_barriers`), stores through a commit/wait group.
 
+The interactive below shows that division of labor: one thread issues the copy, and the TMA engine moves the tile.
+
 ```{raw} html
 <div style="overflow-x:auto;">
 <iframe src="../demo/tma_intro.html" title="TMA: the Tensor Memory Accelerator" loading="lazy"
@@ -65,6 +67,8 @@ had to worry about. Because the issuing thread returns immediately — long befo
 actually arrived — how does the kernel know the transfer has finished before something tries to read
 the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
 differently, so it is worth looking at each in turn.
+
+The figure below summarizes the load-side completion path that later connects TMA to mbarriers.
 
 ![TMA load synchronization flow](../img/tma_sync_flow.png)
 

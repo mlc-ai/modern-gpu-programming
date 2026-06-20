@@ -34,6 +34,10 @@ $$\text{TFLOPS} = \frac{2 \times M \times N \times K}{t_{\text{seconds}} \times 
 
 Every optimization in this tutorial comes down to where the data lives and how it moves, so it is worth mapping that out before we write any code. At heart, a Blackwell GEMM kernel is organized around just two activities: moving tiles between memories, and computing on them.
 
+The figure below is the baseline path that every later optimization edits but never replaces:
+operands staged into SMEM, MMA accumulated in TMEM, and the epilogue draining back through
+registers to GMEM.
+
 ![*Memory Data Flow*](../img/memory_dataflow.png)
 
 Read the figure from left to right. Operand tiles first move from GMEM to SMEM; `tcgen05.mma` then consumes the SMEM operands and writes accumulators to TMEM; and finally the epilogue reads TMEM back into registers before storing the result to GMEM. Keep this chain in mind, because every step below changes *how* one of these hops happens — it never changes the hops themselves.

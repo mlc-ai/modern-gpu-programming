@@ -28,6 +28,9 @@ moves out into a dedicated on-chip memory, **Tensor Memory (TMEM)** ({ref}`chap_
 relocation ripples through everything else about how a kernel is written, which is why the rest of
 this chapter is built around the `tcgen05` MMA itself.
 
+The interactive below previews that shift by showing a `tcgen05` MMA writing its partial sums into
+TMEM instead of registers.
+
 ```{raw} html
 <div style="overflow-x:auto;">
 <iframe src="../demo/tcgen05_intro.html" title="tcgen05 and Tensor Memory" loading="lazy"
@@ -196,5 +199,8 @@ In the two-CTA case, the guiding principle is simple: a scale travels with whate
 multicast to both CTAs**, because each CTA's M-half has to multiply against the very same per-N column
 scales. In the kernels, this is what surfaces as the familiar "load SFA per-CTA (single-CTA mask),
 broadcast SFB (pair mask)" pattern.
+
+The figure below summarizes that placement, including the asymmetry between per-CTA `SFA` and
+multicast `SFB`.
 
 ![Block-scaled MMA placement: A/B packed in SMEM; SFA, SFB, and C in TMEM, with SFA split by M and SFB multicast across the CTA pair](../img/mma_block_scaled.svg)

@@ -319,6 +319,7 @@ is written <code class="docutils literal notranslate"><span class="pre">S[(128,<
 </section>
 <section id="allocation">
 <h2>Allocation<a class="headerlink" href="#allocation" title="Link to this heading">#</a></h2>
+<p>Once TMEM is understood as a per-SM 2D resource, the next question is how a kernel reserves part of it.</p>
 <p>Registers come to you for free, in the sense that the compiler decides which ones to use and when to
 release them. TMEM does not work that way: the kernel has to <strong>allocate and free</strong> it explicitly.
 The allocation is a per-CTA affair. One warp in the CTA performs it, requesting columns in units of
@@ -329,6 +330,7 @@ hardware gives you.</p>
 </section>
 <section id="reading-and-writing-tmem">
 <h2>Reading and Writing TMEM<a class="headerlink" href="#reading-and-writing-tmem" title="Link to this heading">#</a></h2>
+<p>After allocation, the practical question is how data crosses the TMEM boundary during a kernel.</p>
 <p>Since TMEM is an address space of its own, the ordinary <code class="docutils literal notranslate"><span class="pre">ld.shared</span></code> and <code class="docutils literal notranslate"><span class="pre">st.shared</span></code> instructions
 cannot reach into it. Data travels in and out through three dedicated <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> instructions, one for
 each path the accumulator and its scale factors need to take.</p>

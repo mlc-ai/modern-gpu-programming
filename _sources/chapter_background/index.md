@@ -20,6 +20,8 @@ GEMM flows across them — and the `tcgen05` compute path ({ref}`chap_tensor_cor
 movement ({ref}`chap_tma`), and the mbarrier model ({ref}`chap_async_barriers`) each build on it in
 their own chapters.
 
+The interactive below gives that whole Blackwell SM picture in one place before we zoom in on each part.
+
 ```{raw} html
 <div style="overflow-x:auto;">
 <iframe src="../demo/sm_architecture.html" title="Blackwell SM architecture" loading="lazy"
@@ -38,6 +40,8 @@ the threads of a CTA share a common pool of fast scratch memory. Coarser still, 
 cluster can reach across physically separate SMs to synchronize and to read each other's memory. Each
 level exists to make one of these forms of cooperation cheap, and on Blackwell the levels are the
 following.
+
+The interactive below names those levels from smallest to largest and shows how they nest.
 
 ```{raw} html
 <iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"
@@ -107,6 +111,8 @@ Read in order, these spaces describe a path. The data path of almost every kerne
 **GMEM → SMEM → (compute) → registers → GMEM**, and for tensor-core kernels TMEM sits in the middle
 of that path, holding the accumulators while the math runs.
 
+The figure below summarizes that end-to-end data path and where each memory space sits in it.
+
 ![Memory dataflow across the hierarchy](../img/memory_dataflow.png)
 
 Of the four, **Tensor Memory (TMEM)** is the only one with no analog on pre-Blackwell hardware, and
@@ -138,6 +144,8 @@ completion barrier ({ref}`chap_async_barriers`) once the bytes have landed. This
 `cp.async.bulk`. The 2-CTA cluster GEMM in Part III is built on exactly this mechanism, using it to
 share operand tiles across the pair of CTAs without ever routing them back through global memory.
 
+The figure below shows the extra DSMEM hop that a CTA cluster makes possible.
+
 ![A CTA cluster sharing distributed shared memory](../img/cta_cluster.png)
 
 Two features that build on DSMEM will reappear throughout the GEMM chapters. The first is **2-CTA
@@ -146,6 +154,8 @@ tile. The second is **TMA multicast**, in which one TMA load delivers the same G
 CTAs at once, eliminating the redundant global traffic that separate loads would otherwise incur.
 
 ## The GEMM Data Pipeline
+
+The interactive below traces the three-stage GEMM tile pipeline that the rest of the book keeps optimizing.
 
 ```{raw} html
 <div style="overflow-x:auto;">

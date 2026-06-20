@@ -372,8 +372,8 @@ reads the tile.</p></li>
 <li><p><strong>MMA → epilogue.</strong> When <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> writes TMEM, the epilogue must wait on the MMA’s completion
 barrier before it reads the result.</p></li>
 </ul>
-<p>The <strong>TMA → MMA</strong> handoff in motion — the TMA engine satisfies the barrier’s tx (byte) count via
-<code class="docutils literal notranslate"><span class="pre">complete-tx</span></code> as its bytes land, and the consumer’s <code class="docutils literal notranslate"><span class="pre">try_wait</span></code> releases:</p>
+<p>The interactive below shows that TMA → MMA handoff as a timeline, which is the same pattern the
+Tensor Core uses when it later signals the epilogue.</p>
 <div style="overflow-x:auto;">
 <iframe src="../demo/mbarrier_tma_timeline.html" title="mbarrier signalling TMA completion" loading="lazy"
         style="width:100%; min-width:1320px; height:700px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>

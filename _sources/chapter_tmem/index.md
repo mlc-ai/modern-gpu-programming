@@ -36,6 +36,8 @@ is written `S[(128, N) : (1@TLane, 1@TCol)]` in the notation of {ref}`chap_data_
 
 ## Allocation
 
+Once TMEM is understood as a per-SM 2D resource, the next question is how a kernel reserves part of it.
+
 Registers come to you for free, in the sense that the compiler decides which ones to use and when to
 release them. TMEM does not work that way: the kernel has to **allocate and free** it explicitly.
 The allocation is a per-CTA affair. One warp in the CTA performs it, requesting columns in units of
@@ -45,6 +47,8 @@ much as you would size your SMEM ring buffers, and you have to stay within the p
 hardware gives you.
 
 ## Reading and Writing TMEM
+
+After allocation, the practical question is how data crosses the TMEM boundary during a kernel.
 
 Since TMEM is an address space of its own, the ordinary `ld.shared` and `st.shared` instructions
 cannot reach into it. Data travels in and out through three dedicated `tcgen05` instructions, one for

@@ -309,6 +309,7 @@ assemble the picture here — the thread hierarchy, the compute units, the memor
 GEMM flows across them — and the <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> compute path (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>), TMA data
 movement (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>), and the mbarrier model (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) each build on it in
 their own chapters.</p>
+<p>The interactive below gives that whole Blackwell SM picture in one place before we zoom in on each part.</p>
 <div style="overflow-x:auto;">
 <iframe src="../demo/sm_architecture.html" title="Blackwell SM architecture" loading="lazy"
         style="width:100%; min-width:1320px; height:680px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
@@ -323,6 +324,7 @@ the threads of a CTA share a common pool of fast scratch memory. Coarser still, 
 cluster can reach across physically separate SMs to synchronize and to read each other’s memory. Each
 level exists to make one of these forms of cooperation cheap, and on Blackwell the levels are the
 following.</p>
+<p>The interactive below names those levels from smallest to largest and shows how they nest.</p>
 <iframe src="../demo/thread_hierarchy.html" title="Blackwell thread hierarchy" loading="lazy"
         style="width:100%; min-width:900px; height:520px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe><p><em>Interactive: click a level — thread → warp → warpgroup → CTA → cluster → grid.</em></p>
 <ul class="simple">
@@ -411,6 +413,7 @@ own capacity, its own latency, and its own rules for who may access it.</p>
 <p>Read in order, these spaces describe a path. The data path of almost every kernel in this book is
 <strong>GMEM → SMEM → (compute) → registers → GMEM</strong>, and for tensor-core kernels TMEM sits in the middle
 of that path, holding the accumulators while the math runs.</p>
+<p>The figure below summarizes that end-to-end data path and where each memory space sits in it.</p>
 <p><img alt="Memory dataflow across the hierarchy" src="../_images/memory_dataflow.png" /></p>
 <p>Of the four, <strong>Tensor Memory (TMEM)</strong> is the only one with no analog on pre-Blackwell hardware, and
 its full details wait until <a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>. The motivation for it is worth understanding
@@ -439,6 +442,7 @@ a pointer, a single thread can bulk-copy a tile out of its own SMEM and into a p
 completion barrier (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) once the bytes have landed. This is a cluster-scoped
 <code class="docutils literal notranslate"><span class="pre">cp.async.bulk</span></code>. The 2-CTA cluster GEMM in Part III is built on exactly this mechanism, using it to
 share operand tiles across the pair of CTAs without ever routing them back through global memory.</p>
+<p>The figure below shows the extra DSMEM hop that a CTA cluster makes possible.</p>
 <p><img alt="A CTA cluster sharing distributed shared memory" src="../_images/cta_cluster.png" /></p>
 <p>Two features that build on DSMEM will reappear throughout the GEMM chapters. The first is <strong>2-CTA
 cooperative MMA</strong>, in which two CTAs each contribute their SMEM operands to a single, larger MMA
@@ -447,6 +451,7 @@ CTAs at once, eliminating the redundant global traffic that separate loads would
 </section>
 <section id="the-gemm-data-pipeline">
 <h2>The GEMM Data Pipeline<a class="headerlink" href="#the-gemm-data-pipeline" title="Link to this heading">#</a></h2>
+<p>The interactive below traces the three-stage GEMM tile pipeline that the rest of the book keeps optimizing.</p>
 <div style="overflow-x:auto;">
 <iframe src="../demo/pipeline_arch.html" title="Blackwell GEMM data pipeline" loading="lazy"
         style="width:100%; min-width:1320px; height:680px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>

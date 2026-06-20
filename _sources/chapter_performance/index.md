@@ -165,6 +165,9 @@ roof. From there it is asynchrony and scheduling that do the rest of the work. A
 These 4096³ rates are the throughput form of the wall-clock times in the End-to-End table of
 {ref}`chap_gemm_advanced` (Steps 7–9 here), so the two tables describe the same runs.
 
+The figure below turns that table into the optimization trajectory we will revisit in Part III: one
+kernel family, one added technique per step, and the throughput each step buys.
+
 ![GEMM optimization journey](../img/gemm_perf.png)
 
 Two lessons from this ladder set up much of the rest of the book. The first is that **the ceiling is
@@ -177,13 +180,14 @@ that an optimization is justified by what it unlocks, not always by the number i
 
 ## Overlap Is the Lever
 
-What is it, then, that drives the climb on the compute-bound side? The raw FLOP/s figure is fixed by
-the tensor cores — you cannot make them multiply any faster — so the only remaining way to go faster
-is to stop *waiting*. A kernel that loads a tile, then computes on it, then stores the result spends
-most of its life idle, with one hardware unit standing around while another finishes its turn. The
-fix is **overlap**: while the tensor core works on tile `k`, the TMA engine is already fetching tile
-`k+1`, and the epilogue is draining tile `k-1`, so that no unit ever sits idle waiting on its
-neighbor.
+For a compute-bound GEMM that already uses tensor cores, the remaining gap usually comes from idle
+time between load, compute, and store stages rather than from weak arithmetic throughput. The raw
+FLOP/s figure is fixed by the tensor cores — you cannot make them multiply any faster — so the only
+remaining way to go faster is to stop *waiting*. A kernel that loads a tile, then computes on it,
+then stores the result spends most of its life idle, with one hardware unit standing around while
+another finishes its turn. The fix is **overlap**: while the tensor core works on tile `k`, the TMA
+engine is already fetching tile `k+1`, and the epilogue is draining tile `k-1`, so that no unit
+ever sits idle waiting on its neighbor.
 
 This is exactly why Blackwell exposes the load (TMA), compute (`tcgen05`), and store paths as
 *independent asynchronous engines*, coordinated by mbarriers ({ref}`chap_async_barriers`). Software

@@ -314,6 +314,8 @@ The reason is a single design decision: the accumulator no longer lives in regis
 moves out into a dedicated on-chip memory, <strong>Tensor Memory (TMEM)</strong> (<a class="reference internal" href="../chapter_tmem/index.html#chap-tmem"><span class="std std-ref">Special Memory: TMEM</span></a>). That one
 relocation ripples through everything else about how a kernel is written, which is why the rest of
 this chapter is built around the <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA itself.</p>
+<p>The interactive below previews that shift by showing a <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA writing its partial sums into
+TMEM instead of registers.</p>
 <div style="overflow-x:auto;">
 <iframe src="../demo/tcgen05_intro.html" title="tcgen05 and Tensor Memory" loading="lazy"
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
@@ -532,6 +534,8 @@ lanes. The full layout is spelled out in <a class="reference internal" href="../
 multicast to both CTAs</strong>, because each CTA’s M-half has to multiply against the very same per-N column
 scales. In the kernels, this is what surfaces as the familiar “load SFA per-CTA (single-CTA mask),
 broadcast SFB (pair mask)” pattern.</p>
+<p>The figure below summarizes that placement, including the asymmetry between per-CTA <code class="docutils literal notranslate"><span class="pre">SFA</span></code> and
+multicast <code class="docutils literal notranslate"><span class="pre">SFB</span></code>.</p>
 <p><img alt="Block-scaled MMA placement: A/B packed in SMEM; SFA, SFB, and C in TMEM, with SFA split by M and SFB multicast across the CTA pair" src="../_images/mma_block_scaled.svg" /></p>
 </section>
 </section>

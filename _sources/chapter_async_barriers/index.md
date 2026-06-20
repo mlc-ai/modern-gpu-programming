@@ -94,8 +94,8 @@ a tensor-core kernel actually contains — only three ever show up:
 - **MMA → epilogue.** When `tcgen05.mma` writes TMEM, the epilogue must wait on the MMA's completion
   barrier before it reads the result.
 
-The **TMA → MMA** handoff in motion — the TMA engine satisfies the barrier's tx (byte) count via
-`complete-tx` as its bytes land, and the consumer's `try_wait` releases:
+The interactive below shows that TMA → MMA handoff as a timeline, which is the same pattern the
+Tensor Core uses when it later signals the epilogue.
 
 ```{raw} html
 <div style="overflow-x:auto;">

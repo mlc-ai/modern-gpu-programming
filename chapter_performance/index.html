@@ -487,6 +487,8 @@ roof. From there it is asynchrony and scheduling that do the rest of the work. A
 </div>
 <p>These 4096³ rates are the throughput form of the wall-clock times in the End-to-End table of
 <a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-ref">Scaling GEMM with Warp Specialization and Clusters</span></a> (Steps 7–9 here), so the two tables describe the same runs.</p>
+<p>The figure below turns that table into the optimization trajectory we will revisit in Part III: one
+kernel family, one added technique per step, and the throughput each step buys.</p>
 <p><img alt="GEMM optimization journey" src="../_images/gemm_perf.png" /></p>
 <p>Two lessons from this ladder set up much of the rest of the book. The first is that <strong>the ceiling is
 real</strong>. The optimized kernel reaches roughly 57% of the fp16 peak at 4096³ (and more at larger
@@ -498,13 +500,14 @@ that an optimization is justified by what it unlocks, not always by the number i
 </section>
 <section id="overlap-is-the-lever">
 <h2>Overlap Is the Lever<a class="headerlink" href="#overlap-is-the-lever" title="Link to this heading">#</a></h2>
-<p>What is it, then, that drives the climb on the compute-bound side? The raw FLOP/s figure is fixed by
-the tensor cores — you cannot make them multiply any faster — so the only remaining way to go faster
-is to stop <em>waiting</em>. A kernel that loads a tile, then computes on it, then stores the result spends
-most of its life idle, with one hardware unit standing around while another finishes its turn. The
-fix is <strong>overlap</strong>: while the tensor core works on tile <code class="docutils literal notranslate"><span class="pre">k</span></code>, the TMA engine is already fetching tile
-<code class="docutils literal notranslate"><span class="pre">k+1</span></code>, and the epilogue is draining tile <code class="docutils literal notranslate"><span class="pre">k-1</span></code>, so that no unit ever sits idle waiting on its
-neighbor.</p>
+<p>For a compute-bound GEMM that already uses tensor cores, the remaining gap usually comes from idle
+time between load, compute, and store stages rather than from weak arithmetic throughput. The raw
+FLOP/s figure is fixed by the tensor cores — you cannot make them multiply any faster — so the only
+remaining way to go faster is to stop <em>waiting</em>. A kernel that loads a tile, then computes on it,
+then stores the result spends most of its life idle, with one hardware unit standing around while
+another finishes its turn. The fix is <strong>overlap</strong>: while the tensor core works on tile <code class="docutils literal notranslate"><span class="pre">k</span></code>, the TMA
+engine is already fetching tile <code class="docutils literal notranslate"><span class="pre">k+1</span></code>, and the epilogue is draining tile <code class="docutils literal notranslate"><span class="pre">k-1</span></code>, so that no unit
+ever sits idle waiting on its neighbor.</p>
 <p>This is exactly why Blackwell exposes the load (TMA), compute (<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>), and store paths as
 <em>independent asynchronous engines</em>, coordinated by mbarriers (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>). Software
 pipelining (step 5) and warp specialization (step 7) are the two structural patterns for arranging
