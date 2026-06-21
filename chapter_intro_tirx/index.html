@@ -406,6 +406,16 @@
     <span class="k">return</span> <span class="n">kernel</span>
 </pre></div>
 </div>
+<div class="note admonition">
+<p class="admonition-title">Running the examples</p>
+<p>These examples need a Blackwell GPU (<code class="docutils literal notranslate"><span class="pre">sm_100a</span></code>, such as a B200). The TIRx compiler ships as the
+<code class="docutils literal notranslate"><span class="pre">tvm.tirx</span></code> module of the Apache TVM wheel; install it alongside a CUDA build of PyTorch:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>apache-tvm<span class="o">==</span><span class="m">0</span>.25.0
+</pre></div>
+</div>
+<p>Confirm it imports with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">tvm,</span> <span class="pre">tvm.tirx;</span> <span class="pre">print(tvm.__version__)&quot;</span></code>. The same setup
+runs every runnable example in the book.</p>
+</div>
 <p>Before we read the kernel, let us make sure it works. We compile it and check its output against a torch reference. We do not have to spell out the exact architecture: the arch (e.g. <code class="docutils literal notranslate"><span class="pre">sm_100a</span></code>) is auto-detected from the device, so the target <code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code> is enough, and <code class="docutils literal notranslate"><span class="pre">tir_pipeline=&quot;tirx&quot;</span></code> is what selects the TIRx lowering pipeline. Once compiled, <code class="docutils literal notranslate"><span class="pre">ex.mod(...)</span></code> takes torch tensors directly, with no manual conversion in between.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
