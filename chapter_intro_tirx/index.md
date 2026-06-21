@@ -127,6 +127,20 @@ def hgemm_v1(M, N, K):
     return kernel
 ```
 
+:::{admonition} Running the examples
+:class: note
+
+These examples need a Blackwell GPU (`sm_100a`, such as a B200). The TIRx compiler ships as the
+`tvm.tirx` module of the Apache TVM wheel; install it alongside a CUDA build of PyTorch:
+
+```bash
+pip install apache-tvm==0.25.0
+```
+
+Confirm it imports with `python -c "import tvm, tvm.tirx; print(tvm.__version__)"`. The same setup
+runs every runnable example in the book.
+:::
+
 Before we read the kernel, let us make sure it works. We compile it and check its output against a torch reference. We do not have to spell out the exact architecture: the arch (e.g. `sm_100a`) is auto-detected from the device, so the target `"cuda"` is enough, and `tir_pipeline="tirx"` is what selects the TIRx lowering pipeline. Once compiled, `ex.mod(...)` takes torch tensors directly, with no manual conversion in between.
 
 ```python
