@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwell SM Architecture</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 14px 24px; max-width: 1300px; margin: 0 auto; }
+  h1 { font-size: 28px; line-height: 1.1; margin-bottom: 12px; }
+
+  .diagram-wrap {
+    max-width: 1000px; margin: 0 auto; position: relative;
+  }
+  .gpu-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 14px;
+    align-items: stretch; margin-bottom: 12px;
+  }
+  .sm-ghost {
+    border: 3px dashed #94a3b8; border-radius: 14px;
+    background: #f1f5f9; min-width: 80px;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 14px; font-weight: 700;
+    position: relative;
+  }
+  .sm-ghost-label {
+    position: absolute; top: -12px; left: 14px;
+    background: #94a3b8; color: #fff; font-size: 13px; line-height: 1.1; font-weight: 700;
+    padding: 2px 10px; border-radius: 4px; letter-spacing: .04em;
+  }
+
+  /* ── SM outer box ──────────────────────────────────────── */
+  .sm-box {
+    border: 3px solid #334155; border-radius: 14px;
+    background: #f8fafc; padding: 16px 20px 22px;
+    position: relative; margin-bottom: 12px;
+  }
+  .sm-label {
+    position: absolute; top: -12px; left: 24px;
+    background: #334155; color: #fff; font-size: 13px; line-height: 1.1; font-weight: 700;
+    padding: 2px 12px; border-radius: 4px; letter-spacing: .04em;
+  }
+
+  /* ── HW units ──────────────────────────────────────────── */
+  .hw-unit {
+    border: 2px solid; border-radius: 8px; padding: 8px 12px;
+    text-align: center; background: #fff; cursor: pointer;
+    transition: all .2s;
+  }
+  .hw-unit.selected { box-shadow: 0 0 0 3px rgba(0,0,0,.12); }
+  .hw-name { font-size: 16px; line-height: 1.05; font-weight: 700; margin-bottom: 1px; }
+  .hw-sub  { font-size: 12.5px; line-height: 1.1; color: #64748b; }
+
+  .u-tc   { border-color: #059669; background: #dcfce7; }
+  .u-tc .hw-name { color: #065f46; }
+  .u-smem { border-color: #8b5cf6; background: #ede9fe; }
+  .u-smem .hw-name { color: #5b21b6; }
+  .u-tmem { border-color: #d97706; background: #fef3c7; }
+  .u-tmem .hw-name { color: #92400e; }
+  .u-rf   { border-color: #dc2626; background: #fee2e2; }
+  .u-rf .hw-name { color: #991b1b; }
+  .u-tma  { border-color: #3b82f6; background: #dbeafe; }
+  .u-tma .hw-name { color: #1e40af; }
+  .u-cuda { border-color: #6b7280; background: #f3f4f6; }
+  .u-cuda .hw-name { color: #374151; }
+
+  /* ── Layout rows ───────────────────────────────────────── */
+  .row-compute {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-bottom: 34px;
+  }
+  .row-mem {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-bottom: 34px;
+  }
+  .row-tma {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-bottom: 0;
+  }
+
+  /* ── HBM outside SM ────────────────────────────────────── */
+  .hbm-box {
+    border: 2.5px solid #6b7280; border-radius: 10px;
+    background: #f3f4f6; color: #374151; padding: 10px 18px;
+    text-align: center;
+  }
+  .hbm-name { font-size: 16px; line-height: 1.1; font-weight: 700; }
+  .hbm-sub  { font-size: 12.5px; line-height: 1.1; color: #6b7280; }
+
+  /* ── SVG overlay ───────────────────────────────────────── */
+  .svg-overlay {
+    position: absolute; top: 0; left: 0;
+    pointer-events: none; z-index: 10;
+  }
+  .arrow-label {
+    font-family: 'SF Mono','Fira Code',monospace;
+    font-size: 12px; font-weight: 600;
+  }
+
+  /* ── Detail panel ──────────────────────────────────────── */
+  .detail-panel {
+    max-width: 1000px; margin: 10px auto 0;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); padding: 10px 16px;
+    min-height: 110px; transition: border-color .3s;
+  }
+  .detail-panel .dp-title { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
+  .detail-panel .dp-body {
+    font-size: 14px; line-height: 1.32; color: #475569;
+  }
+  .detail-panel .dp-body code {
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 12px;
+    background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #1e293b;
+  }
+  .detail-panel.empty .dp-body { color: #94a3b8; font-size: 16px; line-height: 1.3; }
+
+  /* ── Legend ─────────────────────────────────────────────── */
+  .leg { display: flex; gap: 16px; justify-content: center;
+    margin: 10px auto 0; max-width: 900px; flex-wrap: wrap; }
+  .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--dim); }
+</style>
+</head>
+<body>
+  <h1>Blackwell SM Architecture</h1>
+
+  <div class="diagram-wrap" id="diagramWrap">
+    <div class="gpu-row">
+    <div class="sm-box" id="smBox" style="margin-bottom:0;">
+      <div class="sm-label">Streaming Multiprocessor (SM)</div>
+
+      <!-- Compute row: TC (col1), empty (col2), CUDA Core (col3) -->
+      <div class="row-compute">
+        <div class="hw-unit u-tc" data-unit="tc" id="boxTC">
+          <div class="hw-name">Tensor Core (tcgen05)</div>
+          <div class="hw-sub">5th-gen MMA</div>
+        </div>
+        <div></div>
+        <div class="hw-unit u-cuda" data-unit="cuda" id="boxCUDA">
+          <div class="hw-name">CUDA Core</div>
+          <div class="hw-sub">FP/INT units</div>
+        </div>
+      </div>
+
+      <!-- Memory row: SMEM, TMEM, RegFile -->
+      <div class="row-mem">
+        <div class="hw-unit u-smem" data-unit="smem" id="boxSMEM">
+          <div class="hw-name">Shared Memory (SMEM)</div>
+          <div class="hw-sub">228 KB per SM</div>
+        </div>
+        <div class="hw-unit u-tmem" data-unit="tmem" id="boxTMEM">
+          <div class="hw-name">Tensor Memory (TMEM)</div>
+          <div class="hw-sub">TMEM — 128 lanes</div>
+        </div>
+        <div class="hw-unit u-rf" data-unit="rf" id="boxRF">
+          <div class="hw-name">Register File</div>
+          <div class="hw-sub"></div>
+        </div>
+      </div>
+
+      <!-- TMA row: col1 only (aligned with SMEM) -->
+      <div class="row-tma">
+        <div class="hw-unit u-tma" data-unit="tma" id="boxTMA">
+          <div class="hw-name">TMA Engine</div>
+          <div class="hw-sub">Data Mover</div>
+        </div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+    <div class="sm-ghost">
+      <div class="sm-ghost-label">SM ...</div>
+      &times; N
+    </div>
+    </div>
+
+    <!-- HBM outside SM -->
+    <div class="hbm-box" id="boxHBM">
+      <div class="hbm-name">Global Memory (GMEM)</div>
+    </div>
+
+    <!-- SVG overlay for data path arrows -->
+    <svg class="svg-overlay" id="arrowSvg" style="display:none;">
+      <defs>
+        <marker id="ah-blue" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#3b82f6"/>
+        </marker>
+        <marker id="ah-green" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#059669"/>
+        </marker>
+        <marker id="ah-amber" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#d97706"/>
+        </marker>
+      </defs>
+      <!-- HBM → TMA -->
+      <path id="arr1" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)"/>
+      <text id="lbl1" class="arrow-label" fill="#3b82f6"></text>
+      <!-- TMA → SMEM -->
+      <path id="arr2" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)"/>
+      <text id="lbl2" class="arrow-label" fill="#3b82f6"></text>
+      <!-- SMEM → TC -->
+      <path id="arr3" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#ah-green)"/>
+      <text id="lbl3" class="arrow-label" fill="#059669"></text>
+      <!-- TC → TMEM -->
+      <path id="arr4" stroke="#d97706" stroke-width="2" fill="none" marker-end="url(#ah-amber)"/>
+      <text id="lbl4" class="arrow-label" fill="#d97706"></text>
+      <!-- TMEM → RF -->
+      <path id="arr5" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#ah-red)"/>
+      <text id="lbl5" class="arrow-label" fill="#dc2626"></text>
+      <defs>
+        <marker id="ah-red" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0,7 2.5,0 5" fill="#dc2626"/>
+        </marker>
+      </defs>
+      <!-- Store path (dashed): RF → SMEM — hidden by default -->
+      <path id="arr6" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#ah-red)" style="display:none;"/>
+      <text id="lbl6" class="arrow-label" fill="#dc2626" style="display:none;"></text>
+      <!-- Store path (dashed): SMEM → TMA -->
+      <path id="arr7" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)"/>
+      <text id="lbl7" class="arrow-label" fill="#3b82f6"></text>
+      <!-- Store path (dashed): TMA → HBM -->
+      <path id="arr8" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ah-blue)"/>
+      <text id="lbl8" class="arrow-label" fill="#3b82f6"></text>
+    </svg>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-panel empty" id="detailPanel">
+    <div class="dp-title" id="dpTitle"></div>
+    <div class="dp-body" id="dpBody">Click a hardware unit to see details. Solid arrows = load path, dashed arrows = store path.</div>
+  </div>
+
+
+<script>
+(function() {
+  /* ── Unit info ─────────────────────────────────────────── */
+  var info = {
+    tma: {
+      title: 'TMA Engine — Hardware Data Mover',
+      color: '#3b82f6',
+      body: 'Dedicated DMA engine that copies tensor tiles between <strong>HBM</strong> and <strong>Shared Memory</strong>. Only 1 thread dispatches; HW handles address calculation and swizzling.<br><code>cp.async.bulk.tensor</code>'
+    },
+    tc: {
+      title: 'Tensor Core (tcgen05) — 5th-gen MMA',
+      color: '#059669',
+      body: 'Reads A, B from <strong>SMEM</strong>, accumulates into <strong>TMEM</strong>. Supports 128×256 tiles in one instruction. Single thread issues MMA; HW distributes across 128 lanes.<br><code>tcgen05.mma</code> &middot; <code>tcgen05.commit</code>'
+    },
+    smem: {
+      title: 'Shared Memory (SMEM) — 228 KB',
+      color: '#8b5cf6',
+      body: 'On-chip scratchpad shared by all threads in a CTA. Staging area for <strong>TMA loads</strong> (HBM&rarr;SMEM) and <strong>TMA stores</strong> (SMEM&rarr;HBM). Swizzled layout avoids bank conflicts.'
+    },
+    tmem: {
+      title: 'Tensor Memory (TMEM) — New in Blackwell',
+      color: '#d97706',
+      body: 'HW-managed memory private to the SM. 128 lanes &times; N columns of fp32. tcgen05 MMA accumulates here &mdash; no register pressure. <code>tcgen05.ld</code> reads data out for writeback.'
+    },
+    rf: {
+      title: 'Register File',
+      color: '#dc2626',
+      body: 'Private per-thread. Writeback: TMEM &rarr; Registers via <code>tcgen05.ld</code> (fp32), then cast fp32&rarr;fp16, store to SMEM, TMA writes back to HBM.'
+    },
+    cuda: {
+      title: 'CUDA Core — Scalar FP/INT Units',
+      color: '#6b7280',
+      body: 'General-purpose compute units. Handle fp32&rarr;fp16 casts, address arithmetic, loop control, and data reformatting during writeback. Operate on data in <strong>registers</strong>.'
+    }
+  };
+
+  /* ── Detail panel ──────────────────────────────────────── */
+  var panel = document.getElementById('detailPanel');
+  var titleEl = document.getElementById('dpTitle');
+  var bodyEl  = document.getElementById('dpBody');
+  var units = document.querySelectorAll('.hw-unit');
+  var activeUnit = null;
+
+  units.forEach(function(el) {
+    el.addEventListener('click', function() {
+      var key = el.dataset.unit;
+      if (key === activeUnit) { activeUnit = null; clearSelection(); return; }
+      activeUnit = key;
+      units.forEach(function(u) { u.classList.remove('selected'); });
+      el.classList.add('selected');
+      var d = info[key];
+      panel.classList.remove('empty');
+      panel.style.borderColor = d.color;
+      titleEl.textContent = d.title;
+      titleEl.style.color = d.color;
+      bodyEl.innerHTML = d.body;
+    });
+  });
+
+  function clearSelection() {
+    units.forEach(function(u) { u.classList.remove('selected'); });
+    panel.classList.add('empty');
+    panel.style.borderColor = '';
+    titleEl.textContent = '';
+    bodyEl.innerHTML = 'Click a hardware unit to see details. Arrows show the GEMM data path.';
+  }
+
+  /* ── Arrow positioning (rectangular paths) ─────────────── */
+  function positionArrows() {
+    var svg = document.getElementById('arrowSvg');
+    var wrap = document.getElementById('diagramWrap');
+    var wr = wrap.getBoundingClientRect();
+
+    svg.style.display = 'block';
+    svg.setAttribute('width', wr.width);
+    svg.setAttribute('height', wr.height);
+
+    function rel(el) {
+      var r = el.getBoundingClientRect();
+      return {
+        top: r.top - wr.top, bottom: r.bottom - wr.top,
+        left: r.left - wr.left, right: r.right - wr.left,
+        cx: (r.left + r.right) / 2 - wr.left,
+        cy: (r.top + r.bottom) / 2 - wr.top
+      };
+    }
+
+    var hbm  = rel(document.getElementById('boxHBM'));
+    var tma  = rel(document.getElementById('boxTMA'));
+    var smem = rel(document.getElementById('boxSMEM'));
+    var tmem = rel(document.getElementById('boxTMEM'));
+    var rf   = rel(document.getElementById('boxRF'));
+    var tc   = rel(document.getElementById('boxTC'));
+
+    var G = 5;
+
+    /* 1. HBM → TMA (vertical up) */
+    setRect('arr1', tma.cx, hbm.top - G, tma.cx, tma.bottom + G);
+    setLabel('lbl1', '', 0, 0);
+
+    /* 2. TMA → SMEM (vertical up, same column) */
+    setRect('arr2', tma.cx, tma.top - G, smem.cx, smem.bottom + G);
+    setLabel('lbl2', 'cp.async.bulk', tma.cx - 6, (tma.top + smem.bottom) / 2, 'end');
+
+    /* 3. SMEM → TC (vertical up) */
+    setRect('arr3', smem.cx, smem.top - G, smem.cx, tc.bottom + G);
+    setLabel('lbl3', 'tcgen05.mma', smem.cx + 6, (smem.top + tc.bottom) / 2);
+
+    /* 4. TC → TMEM (rectangular: down from TC right side, right to TMEM top) */
+    var y4mid = (tc.bottom + smem.top) / 2;
+    setElbow('arr4', tc.right + G, tc.cy, tc.right + G + 10, tc.cy, tmem.cx, tc.cy, tmem.cx, tmem.top - G);
+    setLabel('lbl4', 'accumulate', (tc.right + tmem.cx) / 2 + 10, tc.cy - 7, 'middle');
+
+    /* 5. TMEM → RF (rectangular: down from TMEM bottom, right to RF bottom) */
+    var y5bot = tmem.bottom + 22;
+    setElbow('arr5', tmem.cx, tmem.bottom + G, tmem.cx, y5bot, rf.cx, y5bot, rf.cx, rf.bottom + G);
+    setLabel('lbl5', 'tcgen05.ld', (tmem.cx + rf.cx) / 2, y5bot + 11, 'middle');
+
+    /* 6. RF → SMEM (rectangular elbow below tcgen05.ld) */
+    var y6bot = y5bot + 22;
+    setElbow('arr6', rf.cx, rf.bottom + G, rf.cx, y6bot, smem.cx, y6bot, smem.cx, smem.bottom + G);
+    setLabel('lbl6', 'store', (rf.cx + smem.cx) / 2, y6bot + 11, 'middle');
+
+    /* ── Store path (dashed arrows) ────────────── */
+    var storeX = smem.cx + 20;
+
+    /* 7. SMEM → TMA (down, offset right from load path) */
+    setRect('arr7', storeX, smem.bottom + G, storeX, tma.top - G);
+    setLabel('lbl7', 'cp.async.bulk', storeX + 6, (smem.bottom + tma.top) / 2);
+
+    /* 8. TMA → HBM (down, offset right) */
+    setRect('arr8', storeX, tma.bottom + G, storeX, hbm.top - G);
+    setLabel('lbl8', '', 0, 0);
+  }
+
+  /* Draw a straight line as a path */
+  function setRect(id, x1, y1, x2, y2) {
+    document.getElementById(id).setAttribute('d',
+      'M'+x1+','+y1+' L'+x2+','+y2);
+  }
+
+  /* Draw a rectangular elbow: start → horiz/vert → turn → end */
+  function setElbow(id, x1, y1, x2, y2, x3, y3, x4, y4) {
+    document.getElementById(id).setAttribute('d',
+      'M'+x1+','+y1+' L'+x2+','+y2+' L'+x3+','+y3+' L'+x4+','+y4);
+  }
+
+  function setLabel(id, text, x, y, anchor) {
+    var el = document.getElementById(id);
+    el.textContent = text;
+    el.setAttribute('x', x);
+    el.setAttribute('y', y);
+    el.setAttribute('text-anchor', anchor || 'start');
+  }
+
+  /* ── Init ──────────────────────────────────────────────── */
+  requestAnimationFrame(function() {
+    requestAnimationFrame(positionArrows);
+  });
+  window.addEventListener('resize', positionArrows);
+})();
+</script>
+</body>
+</html>

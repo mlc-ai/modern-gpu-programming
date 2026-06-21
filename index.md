@@ -1,50 +1,85 @@
-# TIRX: Blackwell Tile-Primitive Programming
+# Modern GPU Programming For MLSys
 
-TIRX (Tensor IR neXt) is a Python DSL for writing high-performance GPU kernels at the IR level. This tutorial targets Blackwell because its TIRX path exposes tile primitives for TMA tile copies, `tcgen05` MMA, TMEM layouts, mbarriers, and CTA clusters.
+Machine learning systems sit at the heart of modern AI workloads. In these systems, performance
+often comes down to the quality of a small number of GPU kernels. Attention kernels, LLM prefill
+and decode kernels, low-precision block-scaled GEMMs, fused MoE layers, and other large fused
+kernels all directly shape end-to-end speed in both training and serving.
 
-TIRX sits between high-level kernel DSLs and raw CUDA/PTX. High-level DSLs are easier to write and often the right tool, but they can hide the exact hardware contract behind scheduling or library choices. Raw CUDA/PTX gives maximum control, but the program becomes descriptor setup, barrier state, layout bookkeeping, and instruction-level plumbing. TIRX is for the middle ground: the kernel still names Blackwell concepts directly, while the compiler can see scope, layout, and dispatch as structured IR instead of scattered intrinsic arguments.
+To make these kernels fast, however, we need more than a list of optimization tricks. Modern GPUs
+are no longer simple variations of the same old design. Recent architectures introduce richer
+memory spaces, new access patterns, and increasingly specialized execution units. To program them
+well, we need both a clear mental model of the hardware and a practical understanding of how
+high-performance kernels are built. This book is about developing both.
 
-A tile primitive is a structured operation on tile values. Its lowering is controlled by three things:
+The book follows a simple progression: first understand the GPU hardware, then learn the
+programming model we will use, and finally build state-of-the-art kernels step by step. Our main
+target is the Blackwell generation, and our main running examples are fast matrix multiplication
+(GEMM) and FlashAttention. Along the way, we will also study the core ingredients behind GPU
+optimization: data layout, asynchronous data movement, and asynchronous coordination.
 
-- **Scope** — which group of threads issues or cooperates on the operation.
-- **Layout** — how the operand tiles map to GMEM, SMEM, TMEM, or registers.
-- **Dispatch** — which hardware path is intended when there is a choice, such as TMA or `tcgen05`.
+The material grows out of the [Machine Learning Systems](https://mlsyscourse.org/) course series
+at Carnegie Mellon University. To make the ideas easier to study and easier to run, this book uses
+the **TIRx** Python DSL to build real GPU kernel examples step by step. TIRx stays close to the
+hardware, which lets us reason about low-level control while still learning through runnable code.
 
-For asynchronous primitives, barriers and waits describe the handoff between tile operations.
+## How This Book Is Organized
 
-## Reading Path
+- **Part I, Understanding the GPU.** This part introduces the overall organization of the GPU,
+  general recipes for writing fast kernels, and key concepts such as data layout, asynchronous
+  memory operations, and coordination. It builds the hardware intuition that the rest of the book
+  relies on.
+- **Part II, TIRx Overview.** This part introduces the key elements of TIRx, which serve as the
+  foundation for the code examples throughout the book.
+- **Part III, GEMM: Tiled to SOTA.** A complete guide to optimizing a tiled GEMM, built up through
+  TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
+- **Part IV, Flash Attention 4.** A complete attention kernel built from the Part III techniques:
+  two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
+- **Reference.** TIRx language reference and compiler internals.
 
-- **Part I: TIRX and Blackwell**
-  1. **Blackwell Background** — Thread groups, memory spaces, TMEM, TMA, `tcgen05`, async barriers, and CTA clusters.
-
-- **Part II: Tile Primitive Programming**
-  2. **Tile Primitive Mental Model** — Why tile primitives matter, then execution scope, tensor layout, and dispatch.
-
-- **Part III: GEMM Deep Dive**
-  3. **Building a Tiled GEMM** — Single-tile GEMM, K-loop accumulation, and spatial tiling across CTAs.
-  4. **Pipelining GEMM with TMA** — TMA async loads, software pipelining, and persistent tile scheduling.
-  5. **Scaling GEMM with Warp Specialization and Clusters** — Warp specialization, 2-CTA cooperative MMA, and multi-consumer execution.
-
-- **Part IV: Advanced Kernel**
-  6. **Flash Attention 4**
-
-- **Part V: Kernel Development Workflow**
-  7. **Writing TIRX Kernels with Agents** — Use the tile-primitive contract as prompt structure for explanation, review, debugging, and test generation.
-
-- **Appendix**
-  - Setup, API reference, language/compile notes, practice kernels, and source maps.
-
-
-```toc
-:maxdepth: 2
-:numbered:
+```{toctree}
+:caption: Part I, Understanding the GPU
+:maxdepth: 1
 
 chapter_background/index
-chapter_layouts/index
+chapter_performance/index
+chapter_data_layout/index
+chapter_layout_generations/index
+chapter_tma/index
+chapter_tensor_cores/index
+chapter_tmem/index
+chapter_async_barriers/index
+chapter_clc/index
+```
+
+```{toctree}
+:caption: Part II, TIRx Overview
+:maxdepth: 1
+
+chapter_intro_tirx/index
+chapter_tirx_layout_api/index
+```
+
+```{toctree}
+:caption: Part III, GEMM: Tiled to SOTA
+:maxdepth: 2
+
 chapter_gemm_basics/index
 chapter_gemm_async/index
 chapter_gemm_advanced/index
+```
+
+```{toctree}
+:caption: Part IV, Flash Attention 4
+:maxdepth: 2
+
 chapter_flash_attention/index
-chapter_ai_assisted/index
+```
+
+```{toctree}
+:caption: Reference
+:maxdepth: 1
+
 appendix/index
+tirx_guide/arch/index
+tirx_guide/language_reference/index
 ```
