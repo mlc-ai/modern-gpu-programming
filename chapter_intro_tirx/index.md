@@ -9,6 +9,20 @@
 - One runnable single-MMA GEMM shows all three; the rest of the book is these design elements at scale.
 :::
 
+:::{admonition} Running the examples
+:class: note
+
+These examples need a Blackwell GPU (`sm_100a`, such as a B200). The TIRx compiler ships as the
+`tvm.tirx` module of the Apache TVM wheel; install it alongside a CUDA build of PyTorch:
+
+```bash
+pip install apache-tvm==0.25.0
+```
+
+Confirm it imports with `python -c "import tvm, tvm.tirx; print(tvm.__version__)"`. The same setup
+runs every runnable example in the book.
+:::
+
 Part I explained what the hardware is; to make it compute anything, we need a way to program it. We could write raw CUDA or PTX, and many fast kernels are written exactly that way. But the decisions that actually determine a kernel's behavior — which threads run an operation, where each tile of data lives, which hardware path executes it — do not appear as such in that code. They are buried in intrinsic arguments, address arithmetic, and convention, scattered across the kernel where they are hard to see and harder to change. TIRx (Tensor IR neXt) is a Python DSL that lifts those three decisions into the open: **scope** (which threads run an operation), **layout** (where the operand tiles live), and **dispatch** (which hardware path executes it). It still names hardware concepts directly — threads, shared and tensor memory, barriers, `tcgen05` MMA — but as structured IR the compiler can see, so it can lower, check, and schedule the kernel rather than treat it as opaque intrinsic calls. Like the framework in *Dive into Deep Learning*, TIRx is the consistent medium through which every concept in this book becomes runnable code, and this chapter introduces it through one small end-to-end kernel.
 
 Rather than introduce these ideas in the abstract, we will work from a single complete kernel: a minimal single-MMA GEMM. We get it running first, and only then read it back, line by line, to see how scope, layout, and dispatch each shape it and how the kernel is compiled. The tensor layout model that the kernel relies on is developed in its own right in {ref}`chap_tirx_layout_api`, and the full language-feature set in {ref}`chap_language_reference`; here we keep the focus on the one kernel and the three design elements.
@@ -126,20 +140,6 @@ def hgemm_v1(M, N, K):
 
     return kernel
 ```
-
-:::{admonition} Running the examples
-:class: note
-
-These examples need a Blackwell GPU (`sm_100a`, such as a B200). The TIRx compiler ships as the
-`tvm.tirx` module of the Apache TVM wheel; install it alongside a CUDA build of PyTorch:
-
-```bash
-pip install apache-tvm==0.25.0
-```
-
-Confirm it imports with `python -c "import tvm, tvm.tirx; print(tvm.__version__)"`. The same setup
-runs every runnable example in the book.
-:::
 
 Before we read the kernel, let us make sure it works. We compile it and check its output against a torch reference. We do not have to spell out the exact architecture: the arch (e.g. `sm_100a`) is auto-detected from the device, so the target `"cuda"` is enough, and `tir_pipeline="tirx"` is what selects the TIRx lowering pipeline. Once compiled, `ex.mod(...)` takes torch tensors directly, with no manual conversion in between.
 
