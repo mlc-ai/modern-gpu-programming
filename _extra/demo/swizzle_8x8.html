@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Swizzle Layout</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  /* Overrides for swizzle cell styling (base uses flex-direction:column; swizzle uses default) */
+  .cell { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); line-height:normal; }
+  .cell.rd { border-color:#222; border-width:3px; z-index:1; }
+  .cell.prev { border-color:rgba(0,0,0,.2); border-width:2px; }
+  .cell.dm { opacity:.18; }
+  .cell.hov { box-shadow:none; }
+  .panel h2 { margin-bottom:10px; }
+
+  /* Cycle bar */
+  .cbar { display:flex; gap:5px; justify-content:center; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+  .cb { width:34px; height:30px; border:1px solid var(--border); background:var(--surface); color:var(--text);
+    cursor:pointer; border-radius:5px; font-size:13px; font-family:inherit; display:flex; align-items:center;
+    justify-content:center; transition:all .12s; font-weight:500; }
+  .cb:hover { background:#eef0f4; }
+  .cb.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .play { width:34px; font-size:16px; }
+
+  /* Bank bar */
+  .blab { font-size:11px; color:var(--dim); text-align:center; margin-top:12px; margin-bottom:3px; font-weight:600; }
+  .bbar { display:flex; gap:3px; }
+  .bs {
+    flex:1; height:30px; border-radius:5px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#fff; border:2.5px solid transparent; transition:all .18s;
+    text-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .bs.ac { border-color:#222; box-shadow:0 0 6px rgba(59,130,246,.3); }
+  .bs.cf { border-color:#d32f2f; box-shadow:0 0 8px rgba(211,47,47,.4); }
+  .bs.dm { opacity:.12; }
+
+  .st { text-align:center; margin-top:8px; font-size:13px; font-weight:600; min-height:20px; }
+  .good { color:#2e7d32; } .bad { color:#c62828; }
+
+  /* Legend overrides */
+  .leg { gap:0; }
+  .swtch.brd { border:3px solid #222; background:#ccc; }
+  .swtch.brd-prev { border:2px solid rgba(0,0,0,.2); background:#ccc; }
+  .swtch.faded { background:#ccc; opacity:.18; }
+  .leg-row+.leg-row { margin-top:6px; }
+
+  /* ── Timeline ── */
+  .tl-wrap { max-width:1100px; margin:24px auto 0; }
+  .tl-head { font-size:15px; font-weight:700; text-align:center; margin-bottom:14px; }
+  .tl-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .tl-box { background:var(--surface); border-radius:10px; padding:14px; min-height:300px; border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .tl-box h3 { font-size:13px; font-weight:700; text-align:center; margin-bottom:10px; color:var(--dim); }
+  .tl-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; cursor:pointer; border-radius:6px;
+    padding:3px 4px; transition:background .12s; }
+  .tl-row:hover { background:#f0f1f4; }
+  .tl-row.sel { background:#e8edf5; }
+  .tl-row.done { background:#f0f7f0; }
+  .tl-cyc { font-size:11px; font-weight:700; color:var(--dim); width:52px; text-align:right; flex-shrink:0; }
+  .tl-banks { display:flex; gap:2px; flex:1; }
+  .tl-b {
+    flex:1; height:26px; border-radius:4px; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2);
+    border:2px solid transparent;
+  }
+  .tl-b.on { border-color:#222; }
+  .tl-b.empty { background:#e8e8e8 !important; color:#bbb; text-shadow:none; }
+  .tl-cnt { font-size:11px; color:var(--dim); width:38px; text-align:left; flex-shrink:0; font-weight:600; }
+  .tl-sum { text-align:center; margin-top:10px; font-size:13px; font-weight:600; }
+
+  @media(max-width:700px) { .tl-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Swizzle Layout — 8×8</h1>
+<div class="sub">mapped_col = logical_col XOR row &nbsp;|&nbsp; 8×8 matrix, 1 element = 1 bank</div>
+
+<div class="controls">
+  <div><span class="lbl">Read</span>
+    <div class="bg" id="rt">
+      <button class="btn on" data-v="col">Read Col</button>
+      <button class="btn" data-v="row">Read Row</button>
+    </div>
+  </div>
+  <div><span class="lbl">Index</span><div class="bg" id="ri"></div></div>
+</div>
+
+<div class="panels">
+  <svg class="arrow-svg" id="arrow"></svg>
+  <div class="panel"><h2>Without Swizzle</h2>
+    <div class="grid" id="g0"></div><div class="blab">Bank Activity</div>
+    <div class="bbar" id="b0"></div><div class="st" id="s0"></div>
+  </div>
+  <div class="panel"><h2>With Swizzle (XOR)</h2>
+    <div class="grid" id="g1"></div><div class="blab">Bank Activity</div>
+    <div class="bbar" id="b1"></div><div class="st" id="s1"></div>
+  </div>
+</div>
+<div class="leg" id="lg"></div>
+
+<div class="tl-wrap">
+  <div class="tl-head">Cycle-by-Cycle Reads</div>
+  <div class="cbar" id="cb"></div>
+  <div class="tl-grid">
+    <div class="tl-box"><h3>Without Swizzle</h3><div id="tl0"></div><div class="tl-sum" id="ts0"></div></div>
+    <div class="tl-box"><h3>With Swizzle (XOR)</h3><div id="tl1"></div><div class="tl-sum" id="ts1"></div></div>
+  </div>
+</div>
+
+<script>
+const BK = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+const BANKS = 8;
+const ROWS=8, COLS=8;
+const ST = { t:'col', i:-1, c:0, pl:false, tm:null };
+
+// Physical bank = col XOR row; 8 banks, 1 element = 1 bank
+const bank = (r,c,sw) => sw ? (c^r) : c;
+// Physical column position for a logical column in a given row
+const physCol = (r,c,sw) => sw ? (c^r) : c;
+// Logical column at a physical position in a given row
+const logAtPhys = (r,p,sw) => sw ? (p^r) : p;
+
+function getCells() {
+  if(ST.i<0) return [];
+  if(ST.t==='col') return Array.from({length:ROWS},(_,j) => ({r:j,c:ST.i}));
+  return Array.from({length:COLS},(_,j) => ({r:ST.i,c:j}));
+}
+
+function getCycles(cl,sw) {
+  if(cl.length===0) return [];
+  const g=new Map();
+  for(const x of cl){const b=bank(x.r,x.c,sw);if(!g.has(b))g.set(b,[]);g.get(b).push({...x,b});}
+  const mx=Math.max(...[...g.values()].map(v=>v.length));
+  const out=[];
+  for(let ci=0;ci<mx;ci++){const rd=[];for(const[,v]of g)if(ci<v.length)rd.push(v[ci]);out.push(rd);}
+  return out;
+}
+
+function draw() {
+  const cl=getCells(), rs=new Set(cl.map(x=>x.r+','+x.c));
+  const cy=[getCycles(cl,false),getCycles(cl,true)], mc=Math.max(cy[0].length,cy[1].length);
+
+  // ── Cycle bar (inside timeline section) ──
+  const cb=document.getElementById('cb'); cb.innerHTML='';
+  if(mc>0){
+    cb.appendChild(Object.assign(mk('span'),{style:'font-size:11px;color:var(--dim);margin-right:6px',textContent:'Click to show reads per cycle'}));
+    const pb=mk('button','cb play'); pb.textContent=ST.pl?'⏸':'▶'; pb.onclick=doPlay; cb.appendChild(pb);
+    cb.appendChild(Object.assign(mk('span'),{style:'font-size:13px;color:var(--dim);margin:0 6px',textContent:'Cycle:'}));
+    const allBtn=mk('button','cb'+(ST.c===0?' on':'')); allBtn.textContent='All'; allBtn.onclick=()=>{ST.c=0;draw();}; cb.appendChild(allBtn);
+    for(let i=1;i<=mc;i++){const b=mk('button','cb'+(ST.c===i?' on':'')); b.textContent=i; b.onclick=(v=>()=>{ST.c=v;draw();})(i); cb.appendChild(b);}
+  }
+
+  // ── Panels (grid + bank bar) ──
+  for(let sw=0;sw<2;sw++){
+    const swz=sw===1, myc=cy[sw], tot=myc.length;
+
+    // Determine current-cycle vs previous-cycle reads for grid highlights
+    let cur=rs, prev=new Set();
+    if(ST.c>0 && ST.c<=tot) {
+      cur=new Set(myc[ST.c-1].map(x=>x.r+','+x.c));
+      for(let ci=0;ci<ST.c-1;ci++) for(const x of myc[ci]) prev.add(x.r+','+x.c);
+    } else if(ST.c>0 && ST.c>tot) {
+      cur=new Set(); for(const x of cl) prev.add(x.r+','+x.c);
+    }
+
+    // Bank usage: current cycle when selected, empty if past last cycle, full read set for "All"
+    const ab=new Map();
+    const bsrc=ST.c===0?cl:(ST.c<=tot?myc[ST.c-1]:[]);
+    for(const x of bsrc){const b='b'in x?x.b:bank(x.r,x.c,swz);ab.set(b,(ab.get(b)||0)+1);}
+
+    // Grid — show PHYSICAL layout (x-axis = physical column position)
+    // Cell color = bank (physCol % 8), cell value = logical column
+    const g=document.getElementById('g'+sw); g.innerHTML='';
+    g.style.gridTemplateColumns='24px repeat('+COLS+',1fr)';
+    g.appendChild(mk('div','hdr'));
+    for(let p=0;p<COLS;p++){const h=mk('div','hdr');h.textContent='b'+(p%BANKS);g.appendChild(h);}
+    for(let r=0;r<ROWS;r++){
+      const l=mk('div','rl');l.textContent='r'+r;g.appendChild(l);
+      for(let p=0;p<COLS;p++){
+        const lc=logAtPhys(r,p,swz);
+        const d=mk('div','cell');d.textContent=lc;d.style.background=BK[p%BANKS];
+        d.dataset.r=r;d.dataset.c=lc;
+        const k=r+','+lc;
+        if(cur.has(k))d.classList.add('rd');
+        else if(prev.has(k))d.classList.add('prev');
+        else if(rs.size>0&&!rs.has(k))d.classList.add('dm');
+        g.appendChild(d);
+      }
+    }
+
+    // Bank bar
+    const bb=document.getElementById('b'+sw);bb.innerHTML='';
+    for(let b=0;b<BANKS;b++){
+      const d=mk('div','bs');d.style.background=BK[b];const cnt=ab.get(b)||0;
+      if(rs.size===0){d.textContent='B'+b;}
+      else if(cnt>1){d.textContent='B'+b+' \u00d7'+cnt;d.classList.add('ac','cf');}
+      else if(cnt===1){d.textContent='B'+b;d.classList.add('ac');}
+      else{d.textContent='B'+b;d.classList.add('dm');}
+      bb.appendChild(d);
+    }
+
+    // Stats — cycle-aware
+    const se=document.getElementById('s'+sw);
+    if(rs.size===0) se.innerHTML='';
+    else if(ST.c===0) {
+      // "All" mode: show total summary with conflict info
+      if(tot<=1) se.innerHTML='<span class="good">'+ab.size+'/'+BANKS+' banks · 1 cycle · No conflicts</span>';
+      else se.innerHTML='<span class="bad">'+ab.size+'/'+BANKS+' banks · '+tot+' cycles · '+tot+'-way conflict</span>';
+    } else {
+      // Single cycle: show current cycle bank usage
+      se.innerHTML='<span style="color:var(--dim)">Cycle '+ST.c+': '+ab.size+'/'+BANKS+' banks active</span>';
+    }
+  }
+
+  // ── Timeline ──
+  drawTimeline(cy, mc);
+}
+
+function drawTimeline(cy, mc) {
+  for(let sw=0;sw<2;sw++){
+    const myc=cy[sw], tot=myc.length;
+    const el=document.getElementById('tl'+sw); el.innerHTML='';
+    const ts=document.getElementById('ts'+sw);
+    if(mc===0){ ts.innerHTML='<span style="color:var(--dim)">Select a read index to see cycles</span>'; continue; }
+
+    for(let ci=0;ci<mc;ci++){
+      // Hide timeline rows after selected cycle
+      if(ST.c>0 && ci+1>ST.c) continue;
+      let cls='tl-row';
+      if(ST.c>0 && ci+1===ST.c) cls+=' sel';
+      else if(ST.c>0 && ci+1<ST.c && ci<tot) cls+=' done';
+      const row=mk('div',cls);
+      row.onclick=(v=>()=>{ST.c=v;draw();})(ci+1);
+
+      // Label
+      const lbl=mk('div','tl-cyc'); lbl.textContent='Cycle '+(ci+1); row.appendChild(lbl);
+
+      // Bank slots
+      const bbar=mk('div','tl-banks');
+      let active=0;
+      for(let b=0;b<BANKS;b++){
+        const slot=mk('div','tl-b');
+        const rds=[];if(ci<tot) for(const rd of myc[ci]) if(rd.b===b) rds.push(rd);
+        if(rds.length>0){
+          slot.style.background=BK[b]; slot.textContent=rds.map(x=>x.c).join(',');
+          if(rds.length>1) slot.style.fontSize='8px';
+          if(ST.c===ci+1) slot.classList.add('on');
+          active++;
+        } else {
+          slot.classList.add('empty'); slot.textContent='\u00b7';
+        }
+        bbar.appendChild(slot);
+      }
+      row.appendChild(bbar);
+
+      // Per-row count
+      const cnt=mk('div','tl-cnt');
+      if(ci<tot) cnt.textContent=active+'/'+BANKS;
+      else cnt.textContent='\u2014';
+      row.appendChild(cnt);
+
+      el.appendChild(row);
+    }
+
+    if(tot<=1) ts.innerHTML='<span class="good">1 cycle — all '+BANKS+' banks used simultaneously</span>';
+    else ts.innerHTML='<span class="bad">'+tot+' cycles — only '+(tot>0?myc[0].length:0)+'/'+BANKS+' banks per cycle</span>';
+  }
+}
+
+function mk(t,c){const d=document.createElement(t);if(c)d.className=c;return d;}
+
+function doPlay(){
+  if(ST.pl){clearInterval(ST.tm);ST.pl=false;draw();return;}
+  const mc=Math.max(getCycles(getCells(),false).length,getCycles(getCells(),true).length);
+  ST.c=1;ST.pl=true;draw();
+  ST.tm=setInterval(()=>{ST.c++;if(ST.c>mc){ST.c=0;clearInterval(ST.tm);ST.pl=false;}draw();},700);
+}
+
+function rebuildIndex(){
+  const ig=document.getElementById('ri'); ig.innerHTML='';
+  const max=ST.t==='col'?COLS:ROWS;
+  if(ST.i>=max) ST.i=-1;
+  const nb=mk('button','btn'+(ST.i<0?' on':''));nb.textContent='None';
+  nb.onclick=()=>{ST.i=-1;ST.c=0;ig.querySelectorAll('.btn').forEach(x=>x.classList.remove('on'));nb.classList.add('on');draw();};
+  ig.appendChild(nb);
+  for(let i=0;i<max;i++){
+    const b=mk('button','btn'+(ST.i===i?' on':''));b.textContent=i;
+    b.onclick=(v=>()=>{ST.i=v;ST.c=0;ig.querySelectorAll('.btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');draw();})(i);
+    ig.appendChild(b);
+  }
+}
+
+(function init(){
+  // Read type
+  document.getElementById('rt').onclick=e=>{
+    const b=e.target.closest('.btn');if(!b)return;
+    ST.t=b.dataset.v;ST.c=0;
+    document.querySelectorAll('#rt .btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    rebuildIndex();draw();
+  };
+  // Index buttons
+  rebuildIndex();
+  // Legend
+  const lg=document.getElementById('lg');
+  // Bank colors (top row)
+  const r1=mk('div','leg-row');
+  for(let i=0;i<BANKS;i++){const d=mk('div','li'),w=mk('div','swtch');w.style.background=BK[i];d.appendChild(w);d.appendChild(document.createTextNode('Bank '+i));r1.appendChild(d);}
+  lg.appendChild(r1);
+  // Encoding + cell meaning (bottom row)
+  const r2=mk('div','leg-row');
+  const enc=[['brd','Current read'],['brd-prev','Earlier cycle'],['faded','Not read']];
+  for(const[cls,txt]of enc){const d=mk('div','li'),w=mk('div','swtch '+cls);d.appendChild(w);d.appendChild(document.createTextNode(txt));r2.appendChild(d);}
+  r2.appendChild(mk('div','leg-sep'));
+  const cv=mk('div','li');cv.textContent='Cell value = logical column';r2.appendChild(cv);
+  r2.appendChild(mk('div','leg-sep'));
+  const hint=mk('div','li');hint.textContent='Click cell to show mapped location';r2.appendChild(hint);
+  lg.appendChild(r2);
+  // Click: highlight same logical cell in both grids + arrow
+  const panels=document.querySelector('.panels');
+  const arrowSvg=document.getElementById('arrow');
+  function drawArrow(){
+    arrowSvg.innerHTML='';
+    const hovs=panels.querySelectorAll('.cell.hov');
+    if(hovs.length<2) return;
+    const pr=panels.getBoundingClientRect();
+    const a=hovs[0].getBoundingClientRect(), b=hovs[1].getBoundingClientRect();
+    const x1=a.left+a.width/2-pr.left, y1=a.top-pr.top;
+    const x2=b.left+b.width/2-pr.left, y2=b.top-pr.top;
+    const mx=(x1+x2)/2, my=Math.min(y1,y2)-30;
+    const d=`M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+    const ns='http://www.w3.org/2000/svg';
+    // arrowhead marker
+    const defs=document.createElementNS(ns,'defs');
+    const marker=document.createElementNS(ns,'marker');
+    marker.setAttribute('id','ah');marker.setAttribute('markerWidth','8');marker.setAttribute('markerHeight','6');
+    marker.setAttribute('refX','7');marker.setAttribute('refY','3');marker.setAttribute('orient','auto');
+    const poly=document.createElementNS(ns,'polygon');
+    poly.setAttribute('points','0 0, 8 3, 0 6');poly.setAttribute('fill','#222');
+    marker.appendChild(poly);defs.appendChild(marker);arrowSvg.appendChild(defs);
+    // path
+    const path=document.createElementNS(ns,'path');
+    path.setAttribute('d',d);path.setAttribute('marker-end','url(#ah)');
+    arrowSvg.appendChild(path);
+    // label
+    const tx=document.createElementNS(ns,'text');
+    const lx=mx, ly=my-4;
+    tx.setAttribute('x',lx);tx.setAttribute('y',ly);tx.setAttribute('text-anchor','middle');
+    tx.textContent='swizzle mapped location';
+    arrowSvg.appendChild(tx);
+  }
+  let hovCell=null;
+  function clearArrow(){
+    panels.querySelectorAll('.cell.hov').forEach(d=>d.classList.remove('hov'));
+    arrowSvg.innerHTML='';hovCell=null;
+  }
+  panels.addEventListener('click',e=>{
+    const cell=e.target.closest('.cell');
+    if(!cell||!cell.dataset.r){clearArrow();return;}
+    if(cell===hovCell){clearArrow();return;}
+    clearArrow();hovCell=cell;
+    const r=cell.dataset.r, c=cell.dataset.c;
+    panels.querySelectorAll('.cell').forEach(d=>{
+      d.classList.toggle('hov',d.dataset.r===r&&d.dataset.c===c);
+    });
+    drawArrow();
+  });
+  panels.addEventListener('mouseover',e=>{
+    const cell=e.target.closest('.cell');
+    if(hovCell&&cell!==hovCell&&(!cell||!cell.classList.contains('hov'))) clearArrow();
+  });
+  // Keyboard
+  document.addEventListener('keydown',e=>{
+    const mc=Math.max(getCycles(getCells(),false).length,getCycles(getCells(),true).length);
+    if(e.key==='ArrowRight'){ST.c=Math.min(ST.c+1,mc);draw();}
+    else if(e.key==='ArrowLeft'){ST.c=Math.max(ST.c-1,0);draw();}
+    else if(e.key===' '){e.preventDefault();doPlay();}
+  });
+  draw();
+})();
+</script>
+</body>
+</html>
