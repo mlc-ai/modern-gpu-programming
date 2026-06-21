@@ -1,0 +1,5 @@
+# Docs build dependencies (GitHub Pages CI). The book has no autodoc, so tvm is
+# not needed to build it.
+sphinx>=7,<9
+myst-parser>=4,<5
+sphinx-book-theme>=1.1

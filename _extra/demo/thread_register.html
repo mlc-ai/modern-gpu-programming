@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Thread + Register Layout</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  /* Thread-local view (lane × reg table) */
+  .tview { margin-top:10px; }
+  .tview table { border-collapse:collapse; width:100%; font-size:11px; }
+  .tview th, .tview td { border:1px solid var(--border); padding:3px 6px; text-align:center; }
+  .tview th { background:var(--bg); font-weight:600; color:var(--dim); font-size:10px; }
+  .tview td { font-weight:700; font-family:'SF Mono','Fira Code',monospace; }
+  .tview td.hov-lane { background:#dbeafe; color:#1e40af; }
+</style>
+</head>
+<body>
+
+<h1>Layout: S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)]</h1>
+<div class="sub">click cell to see assignment</div>
+
+<div class="panels" id="panels">
+  <div class="panel">
+    <h2>Logical 8×8 Matrix</h2>
+    <div class="nota"></div>
+    <div class="grid" id="g0"></div>
+  </div>
+  <div class="panel">
+    <h2>Thread Assignment</h2>
+    <div class="nota"></div>
+    <div class="grid" id="g1"></div>
+    <div class="tview" id="tv"></div>
+  </div>
+  <svg class="arrow-svg" id="arrow"></svg>
+</div>
+
+<div class="formula-bar" id="fb"></div>
+<div class="leg" id="lg"></div>
+
+<script>
+const N = 8;
+
+// 32 laneid colors — same palette as swizzle bank colors
+const BK8 = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+const LANE_COLORS = [];
+for (let v = 0; v < 4; v++) {
+  for (let h = 0; h < 8; h++) {
+    const base = BK8[h];
+    const r = parseInt(base.slice(1,3),16), g = parseInt(base.slice(3,5),16), b = parseInt(base.slice(5,7),16);
+    const shift = [-20, 0, 20, 40][v];
+    const clamp = x => Math.max(0, Math.min(255, x + shift));
+    LANE_COLORS.push(`rgb(${clamp(r)},${clamp(g)},${clamp(b)})`);
+  }
+}
+function laneColor(lid) { return LANE_COLORS[lid % 32]; }
+function laneTextColor(lid) { return lid < 8 ? '#fff' : '#222'; }
+
+// TileLayout(S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)])
+function threadLane(r, c) { return r * 4 + Math.floor(c / 2); }
+function threadReg(r, c) { return c % 2; }
+
+function mk(t, c) { const d = document.createElement(t); if (c) d.className = c; return d; }
+
+let hovCell = null;
+let drawing = false;
+
+function draw() {
+  drawing = true;
+  drawLogicalGrid();
+  drawThreadGrid();
+  drawThreadView();
+  drawFormula();
+  drawArrow();
+  drawLegend();
+  setTimeout(() => { drawing = false; }, 0);
+}
+
+function drawLogicalGrid() {
+  const g = document.getElementById('g0');
+  g.innerHTML = '';
+  g.style.gridTemplateColumns = '24px repeat(' + N + ',1fr)';
+
+  g.appendChild(mk('div', 'hdr'));
+  for (let c = 0; c < N; c++) {
+    const h = mk('div', 'hdr'); h.textContent = 'c' + c; g.appendChild(h);
+  }
+
+  for (let r = 0; r < N; r++) {
+    const rl = mk('div', 'rl'); rl.textContent = 'r' + r; g.appendChild(rl);
+    for (let c = 0; c < N; c++) {
+      const d = mk('div', 'cell');
+      d.dataset.r = r;
+      d.dataset.c = c;
+      d.textContent = r * N + c;
+      d.style.background = '#e8eaed';
+      d.style.color = '#333';
+      if (hovCell && r === hovCell.r && c === hovCell.c) d.classList.add('hov');
+      g.appendChild(d);
+    }
+  }
+}
+
+function drawThreadGrid() {
+  const g = document.getElementById('g1');
+  g.innerHTML = '';
+  g.style.gridTemplateColumns = '24px repeat(' + N + ',1fr)';
+
+  g.appendChild(mk('div', 'hdr'));
+  for (let c = 0; c < N; c++) {
+    const h = mk('div', 'hdr'); h.textContent = 'c' + c; g.appendChild(h);
+  }
+
+  for (let r = 0; r < N; r++) {
+    const rl = mk('div', 'rl'); rl.textContent = 'r' + r; g.appendChild(rl);
+    for (let c = 0; c < N; c++) {
+      const lid = threadLane(r, c);
+      const d = mk('div', 'cell');
+      d.dataset.r = r;
+      d.dataset.c = c;
+      d.style.background = laneColor(lid);
+      d.style.color = laneTextColor(lid);
+      d.textContent = r * N + c;
+      if (hovCell && r === hovCell.r && c === hovCell.c) d.classList.add('hov');
+      g.appendChild(d);
+    }
+  }
+}
+
+function drawThreadView() {
+  const tv = document.getElementById('tv');
+  if (!hovCell) {
+    tv.innerHTML = '';
+    return;
+  }
+  const {r, c} = hovCell;
+  const lid = threadLane(r, c);
+
+  // Show the two elements this lane holds
+  let html = '<table><tr><th></th><th>reg 0</th><th>reg 1</th></tr>';
+  html += `<tr><th>lane ${lid}</th>`;
+  for (let reg = 0; reg < 2; reg++) {
+    // Find the (r,c) for this lane and reg
+    const cr = r; // same row for both regs of this lane
+    const cc = Math.floor(c / 2) * 2 + reg;
+    const val = cr * N + cc;
+    const isHov = cr === hovCell.r && cc === hovCell.c;
+    html += `<td class="${isHov ? 'hov-lane' : ''}" style="background:${laneColor(lid)}; color:${laneTextColor(lid)}; opacity:${isHov ? 1 : 0.6}">${val}</td>`;
+  }
+  html += '</tr></table>';
+  tv.innerHTML = html;
+}
+
+function drawFormula() {
+  const fb = document.getElementById('fb');
+  if (!hovCell) {
+    fb.innerHTML = '<div class="ftitle">Click a cell to see thread (laneid) and register assignment</div>';
+    return;
+  }
+  const {r, c} = hovCell;
+  const logVal = r * N + c;
+  const lid = threadLane(r, c), reg = threadReg(r, c);
+  let html = `<div class="ftitle">Element ${logVal} at (row=${r}, col=${c})</div>`;
+  html += '<div class="fcontent">';
+  html += `addr = row × 4@laneid + (col // 2) × 1@laneid + (col % 2) × 1@reg<br>`;
+  html += `&nbsp;&nbsp;&nbsp;&nbsp; = ${r} × 4@laneid + (${c} // 2) × 1@laneid + (${c} % 2) × 1@reg<br>`;
+  html += `&nbsp;&nbsp;&nbsp;&nbsp; = <b>${lid}</b>@laneid + <b>${reg}</b>@reg`;
+  html += '</div>';
+  fb.innerHTML = html;
+}
+
+// Arrow overlay
+const panels = document.getElementById('panels');
+const arrowSvg = document.getElementById('arrow');
+
+function drawArrow() {
+  arrowSvg.innerHTML = '';
+  const hovs = panels.querySelectorAll('.cell.hov');
+  if (hovs.length < 2) return;
+  const pr = panels.getBoundingClientRect();
+  const a = hovs[0].getBoundingClientRect(), b = hovs[1].getBoundingClientRect();
+  const x1 = a.left + a.width/2 - pr.left, y1 = a.top - pr.top;
+  const x2 = b.left + b.width/2 - pr.left, y2 = b.top - pr.top;
+  const mx = (x1 + x2) / 2, my = -10;
+  const d = `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+  const ns = 'http://www.w3.org/2000/svg';
+  const defs = document.createElementNS(ns, 'defs');
+  const marker = document.createElementNS(ns, 'marker');
+  marker.setAttribute('id', 'ah'); marker.setAttribute('markerWidth', '8'); marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('refX', '7'); marker.setAttribute('refY', '3'); marker.setAttribute('orient', 'auto');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', '0 0, 8 3, 0 6'); poly.setAttribute('fill', '#222');
+  marker.appendChild(poly); defs.appendChild(marker); arrowSvg.appendChild(defs);
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', d); path.setAttribute('marker-end', 'url(#ah)');
+  arrowSvg.appendChild(path);
+}
+
+function clearHov() {
+  panels.querySelectorAll('.cell.hov').forEach(d => d.classList.remove('hov'));
+  arrowSvg.innerHTML = '';
+  hovCell = null;
+}
+
+panels.addEventListener('click', e => {
+  const cell = e.target.closest('.cell');
+  if (!cell || cell.dataset.r === undefined) return;
+  const r = +cell.dataset.r, c = +cell.dataset.c;
+  if (hovCell && hovCell.r === r && hovCell.c === c) return;
+  clearHov();
+  hovCell = { r, c };
+  draw();
+});
+panels.addEventListener('mouseout', e => {
+  if (!hovCell || drawing) return;
+  const next = e.relatedTarget?.closest('.cell');
+  if (!next) { clearHov(); draw(); }
+});
+
+// Legend
+function drawLegend() {
+  const lg = document.getElementById('lg');
+  lg.innerHTML = '';
+  const r1 = mk('div', 'leg-row');
+  r1.style.gap = '3px';
+  for (let l = 0; l < 32; l++) {
+    const pair = mk('div', 'li');
+    pair.style.gap = '1px';
+    for (let reg = 0; reg < 2; reg++) {
+      const sw = mk('div', 'swtch');
+      sw.style.background = laneColor(l);
+      sw.style.display = 'inline-flex'; sw.style.alignItems = 'center'; sw.style.justifyContent = 'center';
+      sw.style.fontSize = '7px'; sw.style.fontWeight = '700';
+      sw.style.color = laneTextColor(l);
+      sw.textContent = l;
+      pair.appendChild(sw);
+    }
+    r1.appendChild(pair);
+  }
+  lg.appendChild(r1);
+  const r2 = mk('div', 'leg-row');
+  const ann = mk('div', 'li');
+  ann.style.fontSize = '11px';
+  ann.textContent = 'Each color pair = 1 thread (reg 0, reg 1)  |  laneid = threadIdx.x % 32';
+  r2.appendChild(ann);
+  lg.appendChild(r2);
+}
+
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A 2-CTA Cluster</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 16px 28px; max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 26px; line-height: 1.1; margin-bottom: 6px; }
+
+  /* outer cluster box */
+  .cluster { border: 2.5px dashed #5b9bd5; background: #f3f8fd; border-radius: 12px;
+             position: relative; padding: 28px 16px 16px; max-width: 860px; margin: 0 auto; cursor: pointer; }
+  .ctag { position: absolute; top: -11px; left: 16px; background: #5b9bd5; color: #fff;
+          font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 4px; letter-spacing: .02em; }
+
+  .grid3 { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+
+  .cta { border: 2.5px solid; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .cta0 { border-color: #5b9bd5; background: #eef5fc; }
+  .cta1 { border-color: #5fb85f; background: #eefaee; }
+  .hd { font-size: 14px; font-weight: 700; text-align: center; }
+  .cta0 .hd { color: #2e6fc9; }
+  .cta1 .hd { color: #4a9a4a; }
+
+  .slot { border: 2px solid; border-radius: 8px; padding: 8px 6px; text-align: center; cursor: pointer;
+          transition: box-shadow .15s; }
+  .slot b { display: block; font-size: 13px; }
+  .slot span { font-size: 11.5px; color: #475569; }
+  .asmem { background: #fbe0e0; border-color: #d95555; }
+  .bsmem { background: #dbe8fb; border-color: #5b9bd5; }
+  .out   { background: #efe3f8; border-color: #9d6eb5; }
+
+  .mid { display: flex; align-items: center; justify-content: center; }
+  .xread { background: #fff; border: 2.2px solid #e0533b; color: #e0533b; font-weight: 700;
+           font-size: 12.5px; line-height: 1.25; text-align: center; border-radius: 9px;
+           padding: 8px 10px; cursor: pointer; white-space: nowrap; transition: box-shadow .15s; }
+
+  .summary { margin-top: 12px; background: #fff8e1; border: 2px solid #f5a623; border-radius: 9px;
+             padding: 8px 12px; text-align: center; font-size: 13px; font-weight: 700; color: #7a5a00; }
+
+  .sel { box-shadow: 0 0 0 3px rgba(0,0,0,.18); }
+
+  .detail-panel { max-width: 860px; margin: 14px auto 0; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--surface); padding: 10px 16px; min-height: 84px; }
+  .dp-title { font-size: 12.5px; font-weight: 700; margin-bottom: 4px; }
+  .dp-body  { font-size: 12px; line-height: 1.6; color: #475569; }
+  .dp-body code { font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; background: #f1f5f9;
+    padding: 1px 5px; border-radius: 3px; color: #1e293b; }
+
+  @media (max-width: 640px) { .grid3 { grid-template-columns: 1fr; } .mid { transform: rotate(90deg); } }
+</style>
+</head>
+<body>
+<h1>A 2-CTA Cluster: Cooperative MMA via Cross-CTA SMEM Read</h1>
+<div class="sub">click a piece — two CTAs share their B tiles across the cluster (DSMEM)</div>
+
+<div class="cluster" id="diagram" data-k="cluster">
+  <span class="ctag">CLUSTER — 2 CTAs across SMs · DSMEM</span>
+  <div class="grid3">
+    <div class="cta cta0" data-k="cta">
+      <div class="hd">CTA 0 · SM-0</div>
+      <div class="slot asmem" data-k="asmem"><b>Asmem (own)</b><span>A rows 0–127</span></div>
+      <div class="slot bsmem" data-k="bsmem"><b>Bsmem</b><span>B cols 0–127</span></div>
+      <div class="slot out"   data-k="out"><b>D[0:128, 0:256]</b></div>
+    </div>
+    <div class="mid">
+      <div class="xread" data-k="xread">cross-CTA<br>read&nbsp;↔</div>
+    </div>
+    <div class="cta cta1" data-k="cta">
+      <div class="hd">CTA 1 · SM-1</div>
+      <div class="slot asmem" data-k="asmem"><b>Asmem (own)</b><span>A rows 128–255</span></div>
+      <div class="slot bsmem" data-k="bsmem"><b>Bsmem</b><span>B cols 128–255</span></div>
+      <div class="slot out"   data-k="out"><b>D[128:256, 0:256]</b></div>
+    </div>
+  </div>
+  <div class="summary">Cluster output: 256 × 256 — twice the 128 × 128 one CTA computes alone</div>
+</div>
+
+<div class="detail-panel" id="detail">
+  <div class="dp-title" id="dpt"></div>
+  <div class="dp-body" id="dpb"></div>
+</div>
+
+<script>
+(function () {
+  var INFO = {
+    cluster: ["Cluster — 2 CTAs across SMs", "A cluster groups CTAs on different SMs so they can synchronize and read each other's shared memory directly (<b>DSMEM</b>). Here a 2-CTA cluster computes one 256&times;256 output tile cooperatively."],
+    cta:     ["CTA — one thread block on one SM", "Each CTA runs on a single SM and owns that SM's shared memory. On its own it would compute a 128&times;256 slice of the output; in the cluster the two CTAs combine into a larger MMA."],
+    asmem:   ["Asmem (own) — this CTA's half of A", "Each CTA stages its own rows of A in shared memory: CTA 0 holds <code>A rows 0&ndash;127</code>, CTA 1 holds <code>A rows 128&ndash;255</code>."],
+    bsmem:   ["Bsmem — this CTA's half of B", "Each CTA stages half of B (CTA 0: <code>cols 0&ndash;127</code>; CTA 1: <code>cols 128&ndash;255</code>). The MMA needs all of B, so each CTA also reads the <em>other</em> CTA's Bsmem across the cluster."],
+    xread:   ["Cross-CTA read (DSMEM)", "A CTA reads the other CTA's <code>Bsmem</code> directly over the cluster interconnect &mdash; no round-trip through global memory. This distributed-shared-memory access is what makes the 2-CTA cooperative MMA possible."],
+    out:     ["Output — a 256&times;256 tile", "Together the pair produces a 256&times;256 tile (CTA 0: rows 0&ndash;127, CTA 1: rows 128&ndash;255), twice the 128&times;128 a single CTA would produce alone."]
+  };
+  var diagram = document.getElementById('diagram');
+  var dpt = document.getElementById('dpt'), dpb = document.getElementById('dpb');
+
+  function select(k) {
+    diagram.parentNode.querySelectorAll('.sel').forEach(function (e) { e.classList.remove('sel'); });
+    diagram.querySelectorAll('[data-k="' + k + '"]').forEach(function (e) { e.classList.add('sel'); });
+    dpt.innerHTML = INFO[k][0];
+    dpb.innerHTML = INFO[k][1];
+  }
+  diagram.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-k]');
+    if (el) select(el.dataset.k);
+  });
+  select('xread');   // default: the cross-CTA read is the point of the figure
+})();
+</script>
+</body>
+</html>

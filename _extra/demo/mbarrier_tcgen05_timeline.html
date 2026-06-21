@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBarrier tcgen05.commit Timeline</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 20px 28px; max-width: 1200px; margin: 0 auto; }
+
+  /* ── Timeline card ───────────────────────────────────────── */
+  .timeline-area {
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    margin-bottom: 16px; overflow-x: auto;
+  }
+  /* ── Step description below timeline ─────────────────────── */
+  .tl-desc {
+    font-size: 11px; font-weight: 700; color: #475569;
+    text-align: center; min-height: 1.4em;
+    margin-top: 6px;
+  }
+
+  /* ── Grid layout ─────────────────────────────────────────── */
+  .tl-grid {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 4px 0;
+    align-items: center;
+    min-width: 560px;
+    position: relative;
+  }
+
+  /* Row labels — neutral dark, no thread color */
+  .tl-label {
+    font-size: 11px; font-weight: 700; text-align: left;
+    padding-right: 12px; white-space: nowrap; color: #475569;
+  }
+  .tl-label.l-bar { font-size: 11px; }
+
+
+  /* ── Thread row cells ────────────────────────────────────── */
+  .tl-row { display: flex; height: 38px; gap: 2px; }
+  .tl-cell {
+    flex: 1; border-radius: 5px; display: flex; align-items: center;
+    justify-content: center; font-size: 9.5px; font-weight: 700;
+    transition: opacity .3s ease; min-width: 0;
+    overflow: hidden; white-space: nowrap; padding: 0 4px;
+  }
+
+  /* Color = state */
+  .tl-cell.c-green  { background: #bbf7d0; color: #14532d; }
+  .tl-cell.c-blue   { background: #3b82f6; color: #fff; }
+  .tl-cell.c-red    { background: #fee2e2; color: #991b1b; }
+  .tl-cell.c-idle   { background: #f1f5f9; color: #9ca3af; }
+  .tl-cell.c-teal   { background: #e0e7ff; color: #3730a3; }
+
+  /* ── Barrier row cells ───────────────────────────────────── */
+  .tl-bar-row { display: flex; height: 24px; gap: 2px; }
+  .tl-bar-cell {
+    flex: 1; border-radius: 3px; display: flex; align-items: center;
+    justify-content: center; font-size: 9px; font-weight: 600;
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 8px;
+    color: #92400e; background: #fef3c7;
+    overflow: hidden; white-space: nowrap; transition: opacity .3s ease;
+  }
+
+  /* ── Sync vertical line (positioned via SVG) ────────────── */
+
+  /* ── Time axis with clickable pills ──────────────────────── */
+  .tl-step-btn {
+    padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 11px;
+    font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s;
+    margin-right: 4px;
+  }
+  .tl-step-btn:hover { background: #f1f5f9; }
+  .tl-time-axis {
+    display: flex; gap: 2px; flex: 1;
+  }
+  .tl-tick {
+    flex: 1; text-align: center; font-size: 10px;
+    color: var(--dim); font-weight: 700;
+    font-family: 'SF Mono','Fira Code',monospace;
+    padding: 4px 0; cursor: pointer;
+    transition: all .15s; border-top: 1px solid #e5e7eb;
+  }
+  .tl-tick:hover { background: #f1f5f9; }
+  .tl-tick.active { background: #e2e8f0; color: #1e293b; border-color: transparent; }
+
+  /* ── Column highlight: dim non-active columns ────────────── */
+  .tl-row.has-active .tl-cell:not(.col-active),
+  .tl-bar-row.has-active .tl-bar-cell:not(.col-active) {
+    opacity: 0.25;
+  }
+
+  /* ── SVG arrow overlay ───────────────────────────────────── */
+  .tl-svg-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ── Legend ──────────────────────────────────────────────── */
+  .leg { display: flex; flex-direction: row; gap: 14px; justify-content: center;
+    margin: 12px 0 14px; flex-wrap: wrap; }
+  .li { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--dim); }
+  .swtch { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* ── Summary cards ───────────────────────────────────────── */
+  .summary-row {
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  }
+  .sum-card {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; background: var(--surface); flex: 1;
+    min-width: 180px; max-width: 350px;
+  }
+  .sum-card h4 { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .sum-card p { font-size: 11.5px; color: #475569; line-height: 1.55; }
+  .sum-card code {
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 10.5px;
+    background: #f1f5f9; padding: 1px 4px; border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+  <h1>MBarrier to Signal tcgen05 Completion</h1>
+
+  <div class="timeline-area">
+    <!-- Wrapper used for SVG overlay positioning -->
+    <div style="position: relative;">
+      <div class="tl-grid" id="tlGrid">
+
+        <!-- T0 row -->
+        <div class="tl-label">T0 (producer)</div>
+        <div class="tl-row" id="rowT0"></div>
+
+        <!-- Tensor Core row -->
+        <div class="tl-label">Tensor Core</div>
+        <div class="tl-row" id="rowTC"></div>
+
+        <!-- MBar row -->
+        <div class="tl-label l-bar">MBar</div>
+        <div class="tl-bar-row" id="rowBar"></div>
+
+        <!-- T1 row -->
+        <div class="tl-label">T1 (consumer)</div>
+        <div class="tl-row" id="rowT1"></div>
+
+        <!-- Time axis: ▶ in label column, pills aligned with cells -->
+        <div class="tl-label" style="font-size:10px; display:flex; align-items:center; gap:4px;">
+          Timeline <button class="tl-step-btn" id="btnStep">&#9654;</button>
+        </div>
+        <div class="tl-time-axis" id="timeAxis"></div>
+      </div>
+
+      <!-- SVG arrow overlay, sized and positioned by JS -->
+      <svg class="tl-svg-wrap" id="arrowSvg" style="display:none;">
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6"
+                  refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#64748b"/>
+          </marker>
+        </defs>
+        <!-- Vertical sync line between col0 and col1, crossing all rows -->
+        <line id="syncLine" stroke="#ef4444" stroke-width="2"
+              stroke-dasharray="5,3"/>
+        <text id="syncLabel" fill="#ef4444" font-size="9" font-weight="700"
+              text-anchor="middle" letter-spacing="0.02em"></text>
+        <!-- Curved arrow: tcgen05.commit→mbar -->
+        <path id="arrowCommit" stroke="#64748b" stroke-width="1.5" fill="none"
+              marker-end="url(#arrowhead)"/>
+      </svg>
+    </div>
+    <div class="tl-desc" id="stepLabel"></div>
+  </div>
+
+  <!-- Legend: color = state -->
+  <div class="leg">
+    <div class="li">
+      <div class="swtch" style="background:#4ade80;"></div> Working / active
+    </div>
+    <div class="li">
+      <div class="swtch" style="background:#3b82f6;"></div> Signaling operation
+    </div>
+    <div class="li">
+      <div class="swtch" style="background:#e0e7ff; border:1px solid #a5b4fc;"></div> Dispatch to TensorCore
+    </div>
+    <div class="li">
+      <div class="swtch" style="background:#fee2e2; border:1px solid #fca5a5;"></div> Blocked / waiting
+    </div>
+    <div class="li">
+      <div class="swtch" style="background:#fef3c7; border:1px solid #fde68a;"></div> Barrier state
+    </div>
+    <div class="li">
+      <div class="swtch" style="background:#f1f5f9; border:1px dashed #d1d5db;"></div> Idle
+    </div>
+    <div class="li">
+      <svg width="18" height="14" viewBox="0 0 18 14"><line x1="2" y1="7" x2="14" y2="7" stroke="#64748b" stroke-width="1.5" marker-end="url(#legArrow)"/><defs><marker id="legArrow" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,6 2.5,0 5" fill="#64748b"/></marker></defs></svg> Signaling to change mbar state
+    </div>
+    <div class="li">
+      <div style="width:2px;height:14px;border-left:2px dashed #ef4444;"></div> Sync threads after init
+    </div>
+  </div>
+
+  <div class="summary-row">
+    <div class="sum-card">
+      <h4>Producer (T0)</h4>
+      <p><code>tcgen05.mma</code> issues async matrix multiply. <code>tcgen05.commit(mbar)</code> tells barrier to track it; HW will <code>arrive::one</code> when done.</p>
+    </div>
+    <div class="sum-card">
+      <h4>Tensor Core</h4>
+      <p>Executes <code>tcgen05.mma</code> and <code>tcgen05.commit</code> queued from T0.</p>
+    </div>
+    <div class="sum-card">
+      <h4>Consumer (T1)</h4>
+      <p><code>mbarrier.try_wait(mbar, phase)</code> suspends T1 until phase completes. Result available in TMEM.</p>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var COLS = 8;
+
+  /* ── Data ─────────────────────────────────────────────────── */
+  var t0Data = [
+    { label: 'init(mbar,1)',        cls: 'c-blue'  },
+    { label: 'tcgen05.mma(...)',    cls: 'c-teal'  },
+    { label: 'tcgen05.commit(mbar)', cls: 'c-teal' },
+    { label: 'other work',          cls: 'c-green' },
+    { label: '',                    cls: 'c-idle'  },
+    { label: '',                    cls: 'c-idle'  },
+    { label: '',                    cls: 'c-idle'  },
+    { label: '',                    cls: 'c-idle'  }
+  ];
+  var tcData = [
+    { label: '',                cls: 'c-idle' },
+    { label: '',                cls: 'c-idle' },
+    { label: 'exec tcgen05.mma', cls: 'c-green' },
+    { label: 'computing...',    cls: 'c-green' },
+    { label: 'computing...',    cls: 'c-green' },
+    { label: 'exec tcgen05.commit', cls: 'c-blue' },
+    { label: '',                cls: 'c-idle' },
+    { label: '',                cls: 'c-idle' }
+  ];
+  var barData = [
+    { label: 'pending=1 tx=0' },
+    { label: 'pending=1 tx=0' },
+    { label: 'pending=1 tx=0' },
+    { label: 'pending=1 tx=0' },
+    { label: 'pending=1 tx=0' },
+    { label: 'pending=0 tx=0' },
+    { label: 'phase done!'  },
+    { label: 'reset pending=1' }
+  ];
+  var t1Data = [
+    { label: '',                  cls: 'c-idle'  },
+    { label: '',                  cls: 'c-idle'  },
+    { label: '',                  cls: 'c-idle'  },
+    { label: 'try_wait(phase=0)', cls: 'c-red'   },
+    { label: 'try_wait(phase=0)', cls: 'c-red'   },
+    { label: 'try_wait(phase=0)', cls: 'c-red'   },
+    { label: 'try_wait(phase=0)', cls: 'c-red'   },
+    { label: 'resumed!',          cls: 'c-green' }
+  ];
+  var descs = [
+    'T0 initializes barrier: pending=1, tx=0',
+    'T0 issues async MMA on tensor core (runs in background)',
+    'T0 queues commit on tensor core \u2014 does NOT signal mbar yet; tensor core will signal when done.',
+    'T0 is free to do other work. T1 calls try_wait \u2014 MMA not done, blocked.',
+    'Tensor core still computing MMA...',
+    'Tensor core executes tcgen05.commit(mbar) \u2014 signals arrival, pending_count \u2192 0',
+    'pending==0 && tx==0 \u2192 phase done!',
+    'Barrier resets: phase flips, pending restored. T1 resumes with result in TMEM.'
+  ];
+
+  /* ── Build rows ──────────────────────────────────────────── */
+  function buildThreadRow(el, data) {
+    el.innerHTML = '';
+    data.forEach(function (d, i) {
+      var c = document.createElement('div');
+      c.className = 'tl-cell ' + d.cls;
+      c.textContent = d.label;
+      c.dataset.col = i;
+      c.addEventListener('click', function () { jumpTo(i); });
+      el.appendChild(c);
+    });
+  }
+
+  function buildBarRow(el, data) {
+    el.innerHTML = '';
+    data.forEach(function (d, i) {
+      var c = document.createElement('div');
+      c.className = 'tl-bar-cell';
+      c.textContent = d.label;
+      c.dataset.col = i;
+      c.addEventListener('click', function () { jumpTo(i); });
+      el.appendChild(c);
+    });
+  }
+
+  function buildAxis() {
+    var ax = document.getElementById('timeAxis');
+    ax.innerHTML = '';
+    for (var i = 0; i < COLS; i++) {
+      var t = document.createElement('div');
+      t.className = 'tl-tick';
+      t.textContent = i;
+      t.dataset.col = i;
+      (function(idx) {
+        t.addEventListener('click', function () { jumpTo(idx); });
+      })(i);
+      ax.appendChild(t);
+    }
+  }
+
+  function highlightAxis(s) {
+    var ticks = document.querySelectorAll('.tl-tick');
+    ticks.forEach(function(t) {
+      if (s >= 0 && parseInt(t.dataset.col) === s) {
+        t.classList.add('active');
+      } else {
+        t.classList.remove('active');
+      }
+    });
+  }
+
+  /* ── Column highlighting ─────────────────────────────────── */
+  var activeStep = -1;
+  var labelEl = document.getElementById('stepLabel');
+  var btnEl   = document.getElementById('btnStep');
+
+  function applyHighlight(s) {
+    var rows = [
+      document.getElementById('rowT0'),
+      document.getElementById('rowTC'),
+      document.getElementById('rowBar'),
+      document.getElementById('rowT1')
+    ];
+    rows.forEach(function (row) {
+      var cells = row.querySelectorAll('.tl-cell, .tl-bar-cell');
+      if (s < 0) {
+        /* No selection: all fully opaque */
+        row.classList.remove('has-active');
+        cells.forEach(function (c) { c.classList.remove('col-active'); });
+      } else {
+        row.classList.add('has-active');
+        cells.forEach(function (c) {
+          if (parseInt(c.dataset.col) === s) {
+            c.classList.add('col-active');
+          } else {
+            c.classList.remove('col-active');
+          }
+        });
+      }
+    });
+    labelEl.textContent = (s >= 0) ? descs[s] : '';
+    highlightAxis(s);
+    positionArrows(s);
+  }
+
+  function jumpTo(col) {
+    activeStep = col;
+    applyHighlight(col);
+    updateBtn();
+  }
+
+  function updateBtn() {
+    btnEl.textContent = (activeStep >= COLS - 1) ? '\u21BA' : '\u25B6';
+  }
+
+  btnEl.addEventListener('click', function () {
+    if (activeStep >= COLS - 1) {
+      activeStep = -1;
+      applyHighlight(-1);
+    } else {
+      activeStep++;
+      applyHighlight(activeStep);
+    }
+    updateBtn();
+  });
+
+  /* ── SVG arrows ──────────────────────────────────────────── */
+  /*
+   * Sync line: vertical red dashed between col 0 and col 1.
+   * Arrow 1: right-mid of tcgen05.commit (T0 col2) → right-mid of MBar col2.
+   * Arrow 2: right-mid of MBar "phase done!" (col6) → right-mid of T1 col6.
+   */
+  function positionArrows(activeCol) {
+    var svg    = document.getElementById('arrowSvg');
+    var rowT0  = document.getElementById('rowT0');
+    var rowTC  = document.getElementById('rowTC');
+    var rowBar = document.getElementById('rowBar');
+    var rowT1  = document.getElementById('rowT1');
+    var wrapEl = svg.parentElement;
+    var wrapRect = wrapEl.getBoundingClientRect();
+
+    svg.style.display = 'block';
+    svg.setAttribute('width',  wrapRect.width);
+    svg.setAttribute('height', wrapRect.height);
+
+    /* ── Sync vertical line: between col0 and col1, crossing all rows ── */
+    var syncL = document.getElementById('syncLine');
+    var syncT = document.getElementById('syncLabel');
+    var t0cells  = rowT0.querySelectorAll('.tl-cell');
+    var tcCells  = rowTC.querySelectorAll('.tl-cell');
+    var barCells = rowBar.querySelectorAll('.tl-bar-cell');
+    var t1cells  = rowT1.querySelectorAll('.tl-cell');
+    if (t0cells[0] && t0cells[1]) {
+      var r0 = t0cells[0].getBoundingClientRect();
+      var r1 = t0cells[1].getBoundingClientRect();
+      var sx = (r0.right + r1.left) / 2 - wrapRect.left;
+      /* Top of T0 row to bottom of T1 row — crosses through all boxes */
+      var sy1 = r0.top - wrapRect.top;
+      var t1last = t1cells[t1cells.length - 1].getBoundingClientRect();
+      var sy2 = t1last.bottom - wrapRect.top;
+      syncL.setAttribute('x1', sx);
+      syncL.setAttribute('y1', sy1);
+      syncL.setAttribute('x2', sx);
+      syncL.setAttribute('y2', sy2);
+      syncT.setAttribute('x', sx);
+      syncT.setAttribute('y', sy1 - 4);
+      syncT.textContent = 'sync across threads after init';
+    }
+
+    /* ── Curved arrows on cell right corners ──────────────────── */
+    var BULGE = 20;
+
+    /* Arrow 1: right-mid of Tensor Core commit (col5) → right-mid of MBar col5 */
+    var a1 = document.getElementById('arrowCommit');
+    if (tcCells[5] && barCells[5]) {
+      var tcr = tcCells[5].getBoundingClientRect();
+      var br  = barCells[5].getBoundingClientRect();
+      var x1 = tcr.right - wrapRect.left;
+      var y1 = tcr.top + tcr.height / 2 - wrapRect.top;
+      var x2 = br.right - wrapRect.left;
+      var y2 = br.top + br.height / 2 - wrapRect.top;
+      var B2 = BULGE * 0.5;
+      a1.setAttribute('d', 'M'+x1+','+y1+' C'+(x1+BULGE)+','+y1+' '+(x2+B2)+','+(y2-B2)+' '+x2+','+y2);
+    }
+
+    /* Dim arrows when a different column is selected */
+    function arrowOpacity(arrowColIndex) {
+      if (activeCol < 0) return 1;
+      return (activeCol === arrowColIndex) ? 1 : 0.15;
+    }
+    a1.style.opacity = arrowOpacity(5);
+    syncL.style.opacity = (activeCol < 0) ? 1 : 0.4;
+    syncT.style.opacity = (activeCol < 0) ? 1 : 0.4;
+  }
+
+  /* ── Init ────────────────────────────────────────────────── */
+  buildThreadRow(document.getElementById('rowT0'), t0Data);
+  buildThreadRow(document.getElementById('rowTC'), tcData);
+  buildBarRow(document.getElementById('rowBar'),   barData);
+  buildThreadRow(document.getElementById('rowT1'), t1Data);
+  buildAxis();
+
+  /* Position arrows after layout paint */
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      positionArrows(-1);
+    });
+  });
+
+  /* Reposition on resize */
+  window.addEventListener('resize', function () {
+    positionArrows(activeStep);
+  });
+
+})();
+</script>
+</body>
+</html>

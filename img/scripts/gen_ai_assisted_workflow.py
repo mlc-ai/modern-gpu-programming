@@ -1,4 +1,4 @@
-"""Generate the agent-assisted TIRX kernel workflow diagram."""
+"""Generate the agent-assisted TIRx kernel workflow diagram."""
 
 from pathlib import Path
 
@@ -74,7 +74,7 @@ def main():
     ax.text(
         7.25,
         7.08,
-        "Writing TIRX Kernels with Agents",
+        "Writing TIRx Kernels with Agents",
         ha="center",
         va="center",
         fontsize=22,
@@ -83,7 +83,7 @@ def main():
     ax.text(
         7.25,
         6.66,
-        "Use the agent to turn a vague goal into a verified TIRX contract.",
+        "Use the agent to turn a vague goal into a verified TIRx contract.",
         ha="center",
         va="center",
         fontsize=12.5,
