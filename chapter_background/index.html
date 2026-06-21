@@ -273,11 +273,12 @@
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-execution-hierarchy">The Execution Hierarchy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#memory-spaces">Memory Spaces</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#distributed-shared-memory-across-a-cluster">Distributed Shared Memory Across a Cluster</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compute-cuda-cores-and-tensor-cores">Compute: CUDA Cores and Tensor Cores</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#memory-spaces">Memory Spaces</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cta-clusters">CTA Clusters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-gemm-data-pipeline">The GEMM Data Pipeline</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#numbers-to-keep-in-mind">Numbers to Keep in Mind</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-to-read-next">What to Read Next</a></li>
 </ul>
             </nav>
@@ -297,7 +298,7 @@
 <ul class="simple">
 <li><p>A kernel runs over a thread hierarchy (thread → warp → warpgroup → CTA → cluster → grid) across distinct memory spaces (registers, SMEM, GMEM, TMEM).</p></li>
 <li><p>Compute splits into CUDA cores and Tensor Cores; dedicated engines like TMA move the data that feeds them.</p></li>
-<li><p>Every later optimization serves one tile pipeline — load (GMEM → SMEM), compute (SMEM → TMEM), epilogue (TMEM → registers → GMEM) — and aims to keep the compute and data-movement engines busy at once.</p></li>
+<li><p>A kernel is a pipeline that stages data through these memory spaces and hands work between independent compute and data-movement engines; the recurring goal is to keep those engines busy at once.</p></li>
 </ul>
 </div>
 <p>To write fast GPU programs, it is important to understand the hardware
@@ -344,37 +345,17 @@ known as distributed shared memory.</p></li>
 </ul>
 <p>These levels are worth dwelling on because, unlike on earlier architectures, Blackwell’s key
 operations are <strong>not all issued by the same group of threads</strong>. A TMA copy is launched by a single
-thread and then carried out by hardware. A TMEM-to-register load is warpgroup-distributed: it is
-really four warp-collective <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> instructions, one per warp, each handling that warp’s 32
-TMEM lanes. A <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA is committed by one elected thread, while a clustered MMA spans two CTAs
-at once. Each operation thus has its own natural granularity, and the set of threads that runs it is
+thread and then carried out by hardware. A TMEM-to-register load is warpgroup-distributed: the four
+warps cooperate, each moving its own slice of the TMEM tile. A <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA is committed by one
+elected thread, while a clustered MMA spans two CTAs at once. Each operation thus has its own natural granularity, and the set of threads that runs it is
 what we call the operation’s <strong>scope</strong> — the first of the three recurring design elements (scope, layout, and
 dispatch) that this book returns to again and again.</p>
 </section>
-<section id="compute-cuda-cores-and-tensor-cores">
-<h2>Compute: CUDA Cores and Tensor Cores<a class="headerlink" href="#compute-cuda-cores-and-tensor-cores" title="Link to this heading">#</a></h2>
-<p>The threads we just described have to run their arithmetic on something, and an SM offers them two
-distinct kinds of math engine rather than one. The division of labor between the two shapes how
-nearly every kernel is written, and they play complementary roles.</p>
-<ul class="simple">
-<li><p><strong>CUDA cores</strong> are general-purpose SIMT ALUs. They run the scalar and vector instructions that
-handle index arithmetic, elementwise math, reductions, and control flow — the glue logic that
-surrounds the heavy matrix work.</p></li>
-<li><p><strong>Tensor Cores</strong> are fixed-function units that perform a dense matrix multiply-accumulate at <em>tile</em>
-granularity, computing <span class="math notranslate nohighlight">\(D = AB + C\)</span> in a single instruction.</p></li>
-</ul>
-<p>The reason this split matters is that dense linear algebra — GEMM, convolution, and attention —
-reaches peak throughput only on the Tensor Cores, so getting performance is largely a matter of
-keeping them fed. What shifts from one GPU generation to the next is <em>how</em> the Tensor Cores are
-programmed and <em>where</em> their results come to rest. Hopper introduced the asynchronous warpgroup MMA
-(<code class="docutils literal notranslate"><span class="pre">wgmma.mma_async</span></code>); Blackwell’s fifth-generation Tensor Core, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, places its accumulators in
-Tensor Memory instead of registers, and we devote <a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a> to it.</p>
-</section>
 <section id="memory-spaces">
 <h2>Memory Spaces<a class="headerlink" href="#memory-spaces" title="Link to this heading">#</a></h2>
-<p>Those math engines are only as fast as the data reaching them, so we turn next to where that data
-lives. There is no single memory that is at once large and fast; physics forces a trade-off between
-capacity and speed. A GPU therefore offers several memories rather than one, each striking that
+<p>The threads in that hierarchy are only as fast as the data reaching them, so we turn next to where
+that data lives. There is no single memory that is at once large and fast; physics forces a trade-off
+between capacity and speed. A GPU therefore offers several memories rather than one, each striking that
 trade-off at a different point, and a kernel works by moving data through them. Each space has its
 own capacity, its own latency, and its own rules for who may access it.</p>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -410,8 +391,8 @@ own capacity, its own latency, and its own rules for who may access it.</p>
 </table>
 </div>
 <p>Read in order, these spaces describe a path. The data path of almost every kernel in this book is
-<strong>GMEM → SMEM → (compute) → registers → GMEM</strong>, and for tensor-core kernels TMEM sits in the middle
-of that path, holding the accumulators while the math runs.</p>
+<strong>GMEM → SMEM → (compute) → registers → SMEM → GMEM</strong>, and for tensor-core kernels TMEM sits in the
+middle of that path, holding the accumulators while the math runs.</p>
 <p>The figure below summarizes that end-to-end data path and where each memory space sits in it.</p>
 <p><img alt="Memory dataflow across the hierarchy" src="../_images/memory_dataflow.png" /></p>
 <p>Of the four, <strong>Tensor Memory (TMEM)</strong> is the only one with no analog on pre-Blackwell hardware, and
@@ -421,28 +402,23 @@ resource. Blackwell instead writes <code class="docutils literal notranslate"><s
 of 128 lanes by up to 512 32-bit columns per CTA (the array physically lives on the SM). The kernel
 then has to read TMEM back into registers explicitly before the epilogue. That extra step is not
 free, and two of its consequences will recur throughout the book. The first is that TMEM reads are
-<strong>explicit and warpgroup-distributed</strong>, carried out by four warp-collective <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code>
-instructions, one per warp’s 32 TMEM lanes. The second is that TMEM, unlike registers, must be
-<strong>explicitly allocated and freed</strong>.</p>
-</section>
-<section id="cta-clusters">
-<h2>CTA Clusters<a class="headerlink" href="#cta-clusters" title="Link to this heading">#</a></h2>
-<p>The thread hierarchy ended at the cluster, the one level whose members can span several SMs, and it
-is worth a closer look because of what that reach buys us. A CTA runs on one SM and works out of that
-SM’s shared memory, but a single CTA’s SMEM budget is
-finite, and large tiles often demand more operand storage, or more reuse, than one block alone can
-supply. Hopper’s answer to this was the <strong>thread block cluster</strong>: a group of CTAs that cooperate more
-tightly than independent blocks do, in that they can synchronize together and read and write each
-other’s shared memory. That last ability is called distributed shared memory, or DSMEM. Blackwell
-keeps clusters and adds to them, with dynamic scheduling (<a class="reference internal" href="../chapter_clc/index.html#chap-clc"><span class="std std-ref">Advanced: Cluster Launch Control</span></a>) and 2-CTA cooperative MMA.</p>
-<p>The capability that makes clusters interesting is <strong>distributed shared memory (DSMEM)</strong>, and the
-hardware exposes it in two parts that are easiest to understand together. The first part is an
-<em>address</em>: the <code class="docutils literal notranslate"><span class="pre">mapa</span></code> instruction takes a local SMEM pointer and a peer CTA’s rank and returns a
-pointer to the same offset within that peer’s SMEM. The second part is a <em>transfer</em>: armed with such
-a pointer, a single thread can bulk-copy a tile out of its own SMEM and into a peer’s, raising a
-completion barrier (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) once the bytes have landed. This is a cluster-scoped
-<code class="docutils literal notranslate"><span class="pre">cp.async.bulk</span></code>. The 2-CTA cluster GEMM in Part III is built on exactly this mechanism, using it to
-share operand tiles across the pair of CTAs without ever routing them back through global memory.</p>
+<strong>explicit and warpgroup-distributed</strong>, carried out cooperatively by the four warps of a warpgroup.
+The second is that TMEM, unlike registers, must be <strong>explicitly allocated and freed</strong>.</p>
+<section id="distributed-shared-memory-across-a-cluster">
+<h3>Distributed Shared Memory Across a Cluster<a class="headerlink" href="#distributed-shared-memory-across-a-cluster" title="Link to this heading">#</a></h3>
+<p>The cluster is the one level of the hierarchy whose members can span several SMs, and that reach buys
+a memory capability the other levels lack. A CTA runs on one SM and works out of that SM’s shared
+memory, but a single CTA’s SMEM budget is finite, and large tiles often demand more operand storage,
+or more reuse, than one block alone can supply. Hopper’s answer was the <strong>thread block cluster</strong>: a
+group of CTAs that cooperate more tightly than independent blocks do, in that they can synchronize
+together and read and write each other’s shared memory — a capability called <strong>distributed shared
+memory (DSMEM)</strong>. Blackwell keeps clusters and adds to them, with dynamic scheduling
+(<a class="reference internal" href="../chapter_clc/index.html#chap-clc"><span class="std std-ref">Advanced: Cluster Launch Control</span></a>) and 2-CTA cooperative MMA.</p>
+<p>DSMEM lets a CTA address and access a peer CTA’s shared memory directly. A thread can name a location
+in a peer’s SMEM and bulk-copy a tile straight from its own SMEM into the peer’s, raising a completion
+barrier (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>) once the bytes have landed. The 2-CTA cluster GEMM in Part III is
+built on exactly this mechanism, using it to share operand tiles across the pair of CTAs without ever
+routing them back through global memory.</p>
 <p>The figure below shows the extra DSMEM hop that a CTA cluster makes possible; click a piece to see
 what each CTA owns and where the cross-CTA read happens.</p>
 <div style="overflow-x:auto;">
@@ -450,10 +426,32 @@ what each CTA owns and where the cross-CTA read happens.</p>
         style="width:100%; min-width:720px; height:580px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div><p><em>Interactive: a 2-CTA cluster — each CTA owns half of A and half of B, reads the other’s B across the
 cluster (DSMEM), and the pair produces a 256×256 output tile.</em></p>
-<p>Two features that build on DSMEM will reappear throughout the GEMM chapters. The first is <strong>2-CTA
-cooperative MMA</strong>, in which two CTAs each contribute their SMEM operands to a single, larger MMA
-tile. The second is <strong>TMA multicast</strong>, in which one TMA load delivers the same GMEM tile to several
-CTAs at once, eliminating the redundant global traffic that separate loads would otherwise incur.</p>
+</section>
+</section>
+<section id="compute-cuda-cores-and-tensor-cores">
+<h2>Compute: CUDA Cores and Tensor Cores<a class="headerlink" href="#compute-cuda-cores-and-tensor-cores" title="Link to this heading">#</a></h2>
+<p>The threads and the data they move have to meet at an arithmetic unit, and an SM offers two distinct
+kinds of math engine rather than one. The division of labor between the two shapes how nearly every
+kernel is written, and they play complementary roles.</p>
+<ul class="simple">
+<li><p><strong>CUDA cores</strong> are general-purpose SIMT ALUs. They run the scalar and vector instructions that
+handle index arithmetic, elementwise math, reductions, and control flow — the glue logic that
+surrounds the heavy matrix work.</p></li>
+<li><p><strong>Tensor Cores</strong> are fixed-function units that perform a dense matrix multiply-accumulate at <em>tile</em>
+granularity, computing <span class="math notranslate nohighlight">\(D = AB + C\)</span> in a single instruction.</p></li>
+</ul>
+<p>The reason this split matters is that the Tensor Cores deliver vastly more arithmetic throughput than
+the CUDA cores — on the order of 10× or more in FLOP/s — so dense linear algebra (GEMM, convolution,
+and attention) reaches peak performance only when it runs on the Tensor Cores. Getting performance is
+therefore largely a matter of keeping those Tensor Cores fed. What shifts from one GPU generation to the next is <em>how</em> the Tensor Cores are
+programmed and <em>where</em> their results come to rest. Hopper introduced the asynchronous warpgroup MMA
+(<code class="docutils literal notranslate"><span class="pre">wgmma.mma_async</span></code>); Blackwell’s fifth-generation Tensor Core, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, places its accumulators in
+Tensor Memory instead of registers, and we devote <a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a> to it.</p>
+<p>Clusters extend these engines in two ways that recur throughout the GEMM chapters. <strong>2-CTA cooperative
+MMA</strong> lets two CTAs each contribute their SMEM operands to a single, larger Tensor Core MMA tile.
+<strong>TMA multicast</strong> lets one load by the data-movement engine deliver the same GMEM tile to several CTAs
+at once, eliminating the redundant global traffic that separate loads would otherwise incur. Both
+build on the distributed shared memory introduced earlier.</p>
 </section>
 <section id="the-gemm-data-pipeline">
 <h2>The GEMM Data Pipeline<a class="headerlink" href="#the-gemm-data-pipeline" title="Link to this heading">#</a></h2>
@@ -468,10 +466,9 @@ such as <code class="docutils literal notranslate"><span class="pre">tma</span> 
 <p>A single GEMM tile flows through three stages.</p>
 <ol class="arabic simple">
 <li><p><strong>Load.</strong> A TMA copy (<a class="reference internal" href="../chapter_tma/index.html#chap-tma"><span class="std std-ref">Async Data Movement: TMA</span></a>) streams an A or B operand tile from GMEM into SMEM. One
-thread issues the copy after <code class="docutils literal notranslate"><span class="pre">mbarrier.arrive.expect_tx(bytes)</span></code> has recorded how many bytes — the
-transaction, or tx, count — are expected to arrive. As the bytes land, the TMA engine issues
-<code class="docutils literal notranslate"><span class="pre">complete-tx</span></code>, and the barrier’s phase flips only once both the arrival count and the tx-count
-have been satisfied.</p></li>
+thread issues the copy, recording up front how many bytes are expected to arrive. As the bytes
+land, the TMA engine reports their progress, and a completion barrier flips only once all the
+expected bytes have been delivered.</p></li>
 <li><p><strong>Compute.</strong> A <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>) reads the operand tiles out of SMEM and
 accumulates the product into a TMEM tile. One elected thread issues it, and it signals a barrier
 when the math is done.</p></li>
@@ -487,61 +484,6 @@ the one before it. A fast kernel pipelines them instead: while the Tensor Core i
 all three engines stay occupied at the same time. Getting three asynchronous engines to hand work off
 to one another safely is precisely the job of the barrier and phase model
 (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>), and the GEMM ladder of Part III is built on top of it.</p>
-</section>
-<section id="numbers-to-keep-in-mind">
-<h2>Numbers to Keep in Mind<a class="headerlink" href="#numbers-to-keep-in-mind" title="Link to this heading">#</a></h2>
-<p>In the end, nearly every design decision in this book comes back to a handful of capacities and
-speeds. It helps to have their orders of magnitude in mind, because they are what explain why kernels
-stage only a few operand tiles at a time, why they budget TMEM so carefully, and why they go to such
-lengths to keep the Tensor Cores fed. The values in the table below are approximate B200 numbers.</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head text-left"><p>Quantity</p></th>
-<th class="head text-center"><p>Value (B200, approx.)</p></th>
-<th class="head text-left"><p>Where it shows up</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td class="text-left"><p>Streaming multiprocessors per GPU</p></td>
-<td class="text-center"><p>~148</p></td>
-<td class="text-left"><p>grid sizing, persistent schedulers</p></td>
-</tr>
-<tr class="row-odd"><td class="text-left"><p>Shared memory per SM</p></td>
-<td class="text-center"><p>up to 228 KB</p></td>
-<td class="text-left"><p>SMEM budget for pipeline depth</p></td>
-</tr>
-<tr class="row-even"><td class="text-left"><p>Tensor Memory per SM</p></td>
-<td class="text-center"><p>128 rows × 512 cols (32-bit)</p></td>
-<td class="text-left"><p>accumulator budget</p></td>
-</tr>
-<tr class="row-odd"><td class="text-left"><p>Registers per thread (max)</p></td>
-<td class="text-center"><p>255 × 32-bit</p></td>
-<td class="text-left"><p>why big accumulators don’t stay in RF</p></td>
-</tr>
-<tr class="row-even"><td class="text-left"><p>Tensor Core peak &#64; fp16/bf16 (dense)</p></td>
-<td class="text-center"><p>order of 2 PFLOP/s</p></td>
-<td class="text-left"><p>the compute roof (<a class="reference internal" href="../chapter_performance/index.html#chap-performance"><span class="std std-ref">What Makes a Kernel Fast</span></a>)</p></td>
-</tr>
-<tr class="row-odd"><td class="text-left"><p>Tensor Core peak &#64; fp8 / fp4 (dense)</p></td>
-<td class="text-center"><p>several PFLOP/s</p></td>
-<td class="text-left"><p>mixed-precision GEMM</p></td>
-</tr>
-<tr class="row-even"><td class="text-left"><p>HBM3e bandwidth</p></td>
-<td class="text-center"><p>order of 8 TB/s</p></td>
-<td class="text-left"><p>the memory roof</p></td>
-</tr>
-<tr class="row-odd"><td class="text-left"><p>One fp16 128×64 tile in SMEM</p></td>
-<td class="text-center"><p>16 KB</p></td>
-<td class="text-left"><p>example staged operand-tile size</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>The exact peak numbers depend on the specific GPU model, its clock, and the sparsity mode, so treat
-the table as a sense of <em>scale</em> rather than as a performance model. The lesson it teaches is a simple one. SMEM is
-large enough to hold only a handful of staged tiles, TMEM is scarce enough that it must be budgeted,
-and tensor-core throughput is so high that data movement <em>has</em> to overlap compute — there is no other
-way to keep those engines busy.</p>
 </section>
 <section id="what-to-read-next">
 <h2>What to Read Next<a class="headerlink" href="#what-to-read-next" title="Link to this heading">#</a></h2>
@@ -603,11 +545,12 @@ the main mechanisms:</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-execution-hierarchy">The Execution Hierarchy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#memory-spaces">Memory Spaces</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#distributed-shared-memory-across-a-cluster">Distributed Shared Memory Across a Cluster</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#compute-cuda-cores-and-tensor-cores">Compute: CUDA Cores and Tensor Cores</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#memory-spaces">Memory Spaces</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cta-clusters">CTA Clusters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-gemm-data-pipeline">The GEMM Data Pipeline</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#numbers-to-keep-in-mind">Numbers to Keep in Mind</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-to-read-next">What to Read Next</a></li>
 </ul>
   </nav></div>
