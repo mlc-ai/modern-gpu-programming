@@ -10,7 +10,7 @@
 
 A coding agent is only as good as what it knows about your problem, and TIRx is exactly the kind of niche, fast-moving target a general model gets wrong by default. Ask one to write a Blackwell kernel cold and it will produce confident, plausible-looking code: intrinsics that do not exist, barrier patterns borrowed from Hopper, dispatch paths that never lower the way it claims. The model has read far more generic CUDA and Triton than TIRx, so that is what it falls back on. The payoff comes from closing that gap: ground the agent in the real `tvm` and `tirx-kernels` source and hand it a tight contract, and the same model becomes a fast, reliable partner for reading and changing Blackwell kernels. This chapter shows how to do that grounding, walks through five concrete use cases where it pays off, and marks the line where agent help stops being trustworthy.
 
-Once the agent can read the right code, there are two ways to talk to it, and the difference matters more than it first appears. The first is delegation. You hand over a broad goal — "make the FA4 barrier section easier to understand" — and let the agent decide how to get there. This is fine for mechanical edits once you already know the direction you want, but it teaches you very little, because all the interesting choices stay hidden inside the agent. The second way is learning-oriented. Here you sharpen the broad goal into a specific instruction, something like "explain `softmax_corr.full` and `softmax_corr.empty` as a mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram, then rebuild the tutorial." For TIRx the second approach is almost always the better investment. The real work is not changing text or code; it is learning which choices are even possible and which hardware contracts each of those choices implies.
+Once the agent can read the right code, there are two ways to talk to it, and the difference matters more than it first appears. The first is delegation. You hand over a broad goal, "make the FA4 barrier section easier to understand," and let the agent decide how to get there. This is fine for mechanical edits once you already know the direction you want, but it teaches you very little, because all the interesting choices stay hidden inside the agent. The second way is learning-oriented. Here you sharpen the broad goal into a specific instruction, something like "explain `softmax_corr.full` and `softmax_corr.empty` as a mailbox-slot lifecycle, keep the value-MMA gate in a separate diagram, then rebuild the tutorial." For TIRx the second approach is almost always the better investment. The real work is not changing text or code; it is learning which choices are even possible and which hardware contracts each of those choices implies.
 
 Of course, you cannot write a specific instruction when you do not yet know what the right instruction is. When that happens, turn the discovery itself over to the agent and ask it for candidates first. A prompt like this works well:
 
@@ -23,7 +23,7 @@ Do not edit yet.
 
 Once you have read the candidates, you pick one and turn it into an explicit instruction. The whole point of this round-trip is that the next time you meet the same kind of problem, you can skip it and write the instruction yourself. That is what makes agents valuable while you are still learning TIRx: they help you discover what is possible, and they convert vague goals into reusable engineering moves.
 
-To do this reliably, though, you need a unit of interaction that both you and the agent can be precise about. The previous chapters built up a consistent way to read Blackwell kernels — identify the tile path, then check scope, layout, dispatch, and synchronization — and that same structure is exactly what carries you from a vague goal to a useful agent instruction. The unit is not a Python function, and it is not a whole CUDA file; it is a TIRx kernel contract. TIRx kernels are full of these local contracts:
+To do this reliably, though, you need a unit of interaction that both you and the agent can be precise about. The previous chapters built up a consistent way to read Blackwell kernels, identify the tile path, then check scope, layout, dispatch, and synchronization, and that same structure is exactly what carries you from a vague goal to a useful agent instruction. The unit is not a Python function, and it is not a whole CUDA file; it is a TIRx kernel contract. TIRx kernels are full of these local contracts:
 
 - which scope owns a tile operation,
 - where each tile lives and how it is laid out,
@@ -31,7 +31,7 @@ To do this reliably, though, you need a unit of interaction that both you and th
 - which barrier proves an async producer is complete,
 - and whether the generated CUDA matches the intended hardware path.
 
-These contracts, together with the source references above, are the context an agent actually needs. Give it that, and it can help you draft, compare, and execute choices — but the programmer still owns the final contract. Keep that division of labor in mind for the rest of the chapter.
+These contracts, together with the source references above, are the context an agent actually needs. Give it that, and it can help you draft, compare, and execute choices, but the programmer still owns the final contract. Keep that division of labor in mind for the rest of the chapter.
 
 ## Workflow
 
@@ -138,7 +138,7 @@ A prompt like this hands the agent the same map a human reviewer would build in 
 
 ## Case Study: Elected MMA Commit Bug
 
-To see why the contract matters, consider a bug that it catches but a raw code dump does not — a case where the prompt needs a hardware fact, not just code. The broken loop below comes from a warp-specialized GEMM. The MMA is issued by a single elected thread, but the barrier arrive has slipped outside the elected-thread scope:
+To see why the contract matters, consider a bug that it catches but a raw code dump does not, a case where the prompt needs a hardware fact, not just code. The broken loop below comes from a warp-specialized GEMM. The MMA is issued by a single elected thread, but the barrier arrive has slipped outside the elected-thread scope:
 
 ```python
 for k in range(K_TILES):
@@ -158,7 +158,7 @@ for k in range(K_TILES):
     mma_ps.advance()
 ```
 
-In these TIRx wrappers, `TCGen05Bar.arrive()` lowers to `tcgen05.commit`, so the caller has to guard it and make sure only the intended issuer ever calls it. Only the elected thread carries the real MMA work in its commit group. The other lanes create empty commit groups, and those empty groups can signal the mbarrier before the MMA has finished. The TMA producer then feels free to overwrite SMEM while the MMA still needs it — and the result is corruption that looks nothing like the obvious cause.
+In these TIRx wrappers, `TCGen05Bar.arrive()` lowers to `tcgen05.commit`, so the caller has to guard it and make sure only the intended issuer ever calls it. Only the elected thread carries the real MMA work in its commit group. The other lanes create empty commit groups, and those empty groups can signal the mbarrier before the MMA has finished. The TMA producer then feels free to overwrite SMEM while the MMA still needs it, and the result is corruption that looks nothing like the obvious cause.
 
 A useful prompt for the agent is not this:
 
@@ -192,7 +192,7 @@ for k in range(K_TILES):
     mma_ps.advance()
 ```
 
-This is the pattern for the rest of the chapter. State the contract, ask the agent to check one edge, then verify the answer against the source, the generated CUDA, and a runnable test. The sections that follow walk through the recurring jobs you will hand an agent — explaining, reviewing, debugging, testing, and reading generated code — and each one is just another instance of this same pattern.
+This is the pattern for the rest of the chapter. State the contract, ask the agent to check one edge, then verify the answer against the source, the generated CUDA, and a runnable test. The sections that follow walk through the recurring jobs you will hand an agent (explaining, reviewing, debugging, testing, and reading generated code), and each one is just another instance of this same pattern.
 
 ## Use Case 1: Explain a Kernel as Tile Primitives
 
@@ -247,7 +247,7 @@ For warp-specialized GEMM, the most useful review questions group by the kind of
 | Add CTA cluster | `cta_group`, remote barriers, cluster tile shape, cleanup sync |
 | Add consumer | per-consumer barrier slots, TMEM ranges, scheduler M tile factor |
 
-Notice that the agent is not deciding the design here. It is checking whether the code still matches a design you already chose. Take `cta_group=2`: it is not just one keyword on `Tx.gemm_async`. It also ripples through TMEM allocation, MMA issue, commit, deallocation, remote barriers, and the scheduler tile shape — exactly the kind of fan-out that is easy to half-finish and tedious to verify by hand.
+Notice that the agent is not deciding the design here. It is checking whether the code still matches a design you already chose. Take `cta_group=2`: it is not just one keyword on `Tx.gemm_async`. It also ripples through TMEM allocation, MMA issue, commit, deallocation, remote barriers, and the scheduler tile shape, exactly the kind of fan-out that is easy to half-finish and tedious to verify by hand.
 
 ## Use Case 3: Debug from Symptoms
 
@@ -270,11 +270,11 @@ The MMA issue uses elect_sync, but mma2tma.arrive is outside that elected scope.
 Does this allow an empty commit group to signal the barrier early?
 ```
 
-This is precisely the kind of question agents handle well. The local contract is spelled out, so the agent only has to check whether the code violates it — no invention required.
+This is precisely the kind of question agents handle well. The local contract is spelled out, so the agent only has to check whether the code violates it, with no invention required.
 
 ## Use Case 4: Generate Reference Tests
 
-Debugging needs something to debug against, and that is where reference tests come in. They also happen to be one of the safest jobs you can give an agent. The rule of thumb is simple: let the agent write the reference, never the kernel. The agent does not need to understand a single Blackwell barrier to produce a correct PyTorch or NumPy reference. What it does need is the layout convention, stated explicitly — leave it out and the reference will silently disagree with the kernel.
+Debugging needs something to debug against, and that is where reference tests come in. They also happen to be one of the safest jobs you can give an agent. The rule of thumb is simple: let the agent write the reference, never the kernel. The agent does not need to understand a single Blackwell barrier to produce a correct PyTorch or NumPy reference. What it does need is the layout convention, stated explicitly; leave it out and the reference will silently disagree with the kernel.
 
 Here is a prompt that works:
 
@@ -308,7 +308,7 @@ Transpose the output back to [batch, seq, num_qo_heads, dim].
 If seq_len_q and seq_len_kv differ, verify causal-mask alignment explicitly.
 ```
 
-Even so, the generated test still deserves a careful read — watch the dtype, the accumulation precision, the head layout, and the tolerance in particular. But reviewing a reference is far less risky than trusting the agent to write the kernel itself.
+Even so, the generated test still deserves a careful read: watch the dtype, the accumulation precision, the head layout, and the tolerance in particular. But reviewing a reference is far less risky than trusting the agent to write the kernel itself.
 
 ## Use Case 5: Inspect Generated CUDA
 
@@ -348,7 +348,7 @@ So the real boundary is not "agent versus human" in some abstract sense. It is w
 
 ## Project Context File
 
-Drawing that boundary once is not enough, because every new conversation begins with an agent that remembers nothing of the last one. A project context file closes that gap. It is a short bug log you paste into future prompts, so the agent never has to rediscover — or worse, contradict — a lesson you already paid for once.
+Drawing that boundary once is not enough, because every new conversation begins with an agent that remembers nothing of the last one. A project context file closes that gap. It is a short bug log you paste into future prompts, so the agent never has to rediscover, or worse, contradict, a lesson you already paid for once.
 
 For example:
 
@@ -371,7 +371,7 @@ Cause: the TMA store group was not committed or waited far enough before Dsmem r
 Fix: commit the store group and wait far enough for the staging SMEM buffer's reuse pattern.
 ```
 
-Keep each entry short — symptom, cause, fix, and nothing more. A few notes in this form are worth far more to an agent than a long, rambling chat history.
+Keep each entry short: symptom, cause, fix, and nothing more. A few notes in this form are worth far more to an agent than a long, rambling chat history.
 
 ## Exercises
 

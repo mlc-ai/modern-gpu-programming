@@ -9,7 +9,7 @@
 - Correctness comes first; performance is the job of the next two chapters.
 :::
 
-GEMM is the workload this entire book is built around: it sits under the linear layers, attention projections, and convolutions that dominate a GPU's time, so the difference between a correct GEMM and a fast one is the difference between leaving most of the chip idle and saturating it. That gap is enormous, and trying to write a saturating kernel in one shot means debugging memory movement, accumulation, tiling, and Tensor Core scheduling all at once, with nothing trustworthy to compare against. The only sane way across is to start from the smallest kernel that produces a correct answer — a single output tile — and grow it one decision at a time, so every later optimization has a working, understandable baseline to improve on. This chapter writes that first correct tiled GEMM. The previous chapters described the TIRx tile primitives in the abstract — the scope / layout / dispatch model from {ref}`chap_tirx_primer` and {ref}`chap_tirx_layout_api`. Here we apply them to a real kernel: we begin with a single 128 x 128 output tile and grow it into a kernel that handles full-size matrices, adding K-dimension accumulation and then spatial tiling across many CTAs.
+GEMM is the workload this entire book is built around: it sits under the linear layers, attention projections, and convolutions that dominate a GPU's time, so the difference between a correct GEMM and a fast one is the difference between leaving most of the chip idle and saturating it. That gap is enormous, and trying to write a saturating kernel in one shot means debugging memory movement, accumulation, tiling, and Tensor Core scheduling all at once, with nothing trustworthy to compare against. The only sane way across is to start from the smallest kernel that produces a correct answer, a single output tile, and grow it one decision at a time, so every later optimization has a working, understandable baseline to improve on. This chapter writes that first correct tiled GEMM. The previous chapters described the TIRx tile primitives in the abstract: the scope / layout / dispatch model from {ref}`chap_tirx_primer` and {ref}`chap_tirx_layout_api`. Here we apply them to a real kernel: we begin with a single 128 x 128 output tile and grow it into a kernel that handles full-size matrices, adding K-dimension accumulation and then spatial tiling across many CTAs.
 
 This is the first of three chapters that walk a single GEMM optimization path from end to end. In this one we build a correct tiled kernel and stop there. The next chapter ({ref}`chap_gemm_async`) replaces the thread copies with TMA and overlaps data movement with compute through pipelining, and {ref}`chap_gemm_advanced` goes further still with warp specialization and CTA clusters. Each chapter builds on the one before it, so the kernels accumulate features rather than start over.
 
@@ -40,7 +40,7 @@ The figure above shows the baseline path that every later optimization edits but
 Read it from left to right: operand tiles first move from GMEM to SMEM; `tcgen05.mma` then
 consumes the SMEM operands and writes accumulators to TMEM; and finally the epilogue reads TMEM
 back into registers before storing the result to GMEM. Keep this chain in mind, because every step
-below changes *how* one of these hops happens — it never changes the hops themselves.
+below changes *how* one of these hops happens; it never changes the hops themselves.
 
 ## Optimization Path
 
@@ -58,16 +58,16 @@ The plain data path above is enough to get a correct answer, but it leaves most 
 (chap_single_tile)=
 ## Step 1: Sequential Single-Tile GEMM
 
-The simplest GEMM that still exercises the full hardware path is one that computes a single output tile. So that is where we begin. Step 1 computes one 128 x 128 output tile with K = 64 — small enough that nothing has to loop, and every piece of the data path appears exactly once. With nothing repeated, we can see each hop in isolation before we ever have to reason about a loop.
+The simplest GEMM that still exercises the full hardware path is one that computes a single output tile. So that is where we begin. Step 1 computes one 128 x 128 output tile with K = 64, small enough that nothing has to loop, and every piece of the data path appears exactly once. With nothing repeated, we can see each hop in isolation before we ever have to reason about a loop.
 
-> **What this step establishes — the baseline**
+> **What this step establishes: the baseline**
 > - Scope: a single warpgroup of 128 threads walks the whole path in order, one stage after another.
 > - Layout: the A and B tiles live in SMEM, the accumulator in TMEM, and the result is staged out through registers.
 > - Dispatch: synchronous `Tx.copy` carries the loads, and `tcgen05` runs the MMA.
 
 ### Single-Tile Dataflow
 
-With the baseline contract fixed, the next thing to pin down is the order in which one tile travels through it. This first kernel walks the core GEMM data path exactly once — the same GMEM -> SMEM -> TMEM -> registers -> GMEM chain from the data-flow figure, with no loop wrapped around it. It allocates its working memory, loads the operands, computes the product, writes the result back, and cleans up after itself:
+With the baseline contract fixed, the next thing to pin down is the order in which one tile travels through it. This first kernel walks the core GEMM data path exactly once, the same GMEM -> SMEM -> TMEM -> registers -> GMEM chain from the data-flow figure, with no loop wrapped around it. It allocates its working memory, loads the operands, computes the product, writes the result back, and cleans up after itself:
 
 1. **Allocate**: SMEM (pool allocator), TMEM (`tcgen05.alloc`), mbarrier
 2. **Load**: All 128 threads cooperatively copy A and B tiles from GMEM to SMEM (sync `Tx.copy`)
@@ -77,7 +77,7 @@ With the baseline contract fixed, the next thing to pin down is the order in whi
 
 ### Four Pieces of the First Kernel
 
-The full kernel is only a few dozen lines, but it is easier to digest in parts. We will read it in four pieces — memory allocation, the synchronous load, the MMA dispatch, and the writeback — and assemble them into one kernel only afterward. The API names that appear along the way are the TIRx tile-primitive vocabulary introduced in Part II ({ref}`chap_tirx_primer`, {ref}`chap_tirx_layout_api`).
+The full kernel is only a few dozen lines, but it is easier to digest in parts. We will read it in four pieces (memory allocation, the synchronous load, the MMA dispatch, and the writeback) and assemble them into one kernel only afterward. The API names that appear along the way are the TIRx tile-primitive vocabulary introduced in Part II ({ref}`chap_tirx_primer`, {ref}`chap_tirx_layout_api`).
 
 **Memory allocation.** The kernel begins by carving out shared memory for the operands, along with a slot for the TMEM address and an mbarrier:
 
@@ -91,7 +91,7 @@ Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)  # 128×64 fp16
 pool.commit()
 ```
 
-Two details here are worth pausing on. The `pool.move_base_to(1024)` pushes Asmem and Bsmem out to offset 1024, reserving the low addresses for the small pieces of metadata above them so that the bulky operand tiles land on a clean boundary. And `layout=A_layout` asks `tma_shared_layout` for a swizzled SMEM placement that both TMA and `tcgen05.mma` can read directly — exactly the kind of layout-as-contract obligation Part II described.
+Two details here are worth pausing on. The `pool.move_base_to(1024)` pushes Asmem and Bsmem out to offset 1024, reserving the low addresses for the small pieces of metadata above them so that the bulky operand tiles land on a clean boundary. And `layout=A_layout` asks `tma_shared_layout` for a swizzled SMEM placement that both TMA and `tcgen05.mma` can read directly, exactly the kind of layout-as-contract obligation Part II described.
 
 **Synchronous load.** With the buffers in place, the operands still have to reach SMEM. In this first version we let the CTA's own threads do the copying:
 
@@ -101,7 +101,7 @@ Tx.cta.copy(Bsmem[:, :], B[:, :])
 T.cuda.cta_sync()
 ```
 
-Because there is only one tile here (M=N=128, K=64), copying the whole of A and B is the entire load. `Tx.cta.copy(...)` makes the CTA cooperate on that copy, with each thread responsible for its own slice of the data. The `T.cuda.cta_sync()` that follows does double duty: it waits for every thread to finish and it publishes their shared-memory writes, so that when the MMA later reads `Asmem` and `Bsmem` it sees complete tiles rather than a half-filled buffer. This thread-driven copy is also the very first thing we will replace — the next chapter ({ref}`chap_gemm_async`) swaps it out for TMA.
+Because there is only one tile here (M=N=128, K=64), copying the whole of A and B is the entire load. `Tx.cta.copy(...)` makes the CTA cooperate on that copy, with each thread responsible for its own slice of the data. The `T.cuda.cta_sync()` that follows does double duty: it waits for every thread to finish and it publishes their shared-memory writes, so that when the MMA later reads `Asmem` and `Bsmem` it sees complete tiles rather than a half-filled buffer. This thread-driven copy is also the very first thing we will replace; the next chapter ({ref}`chap_gemm_async`) swaps it out for TMA.
 
 **MMA dispatch.** With the operands now sitting in SMEM, we can issue the MMA, and we do so from a single elected thread:
 
@@ -281,7 +281,7 @@ A_tensor = torch.randn(M, K, dtype=torch.float16, device=device)
 B_tensor = torch.randn(N, K, dtype=torch.float16, device=device)
 D_tensor = torch.zeros(M, N, dtype=torch.float16, device=device)
 
-# ex.mod(...) takes torch tensors directly — the same call form used in every chapter.
+# ex.mod(...) takes torch tensors directly, the same call form used in every chapter.
 ex.mod(A_tensor, B_tensor, D_tensor)
 
 D_ref = (A_tensor.float() @ B_tensor.float().T).half()
@@ -309,11 +309,11 @@ tflops = 2 * M * N * K / ms / 1e9
 print(f"Performance: {ms:.3f} ms, {tflops:.1f} TFLOPS")
 ```
 
-Steps 1 through 3 run at deliberately small sizes (128×128 here, 256³ in Step 3) to keep these first walkthroughs simple to follow. The cross-step *End-to-End Result* table at the end of {ref}`chap_gemm_advanced` takes the opposite approach: it measures every step — including this Step 1 algorithm — at a single M=N=K=4096 size, so that its speedup ratios are directly comparable.
+Steps 1 through 3 run at deliberately small sizes (128×128 here, 256³ in Step 3) to keep these first walkthroughs simple to follow. The cross-step *End-to-End Result* table at the end of {ref}`chap_gemm_advanced` takes the opposite approach: it measures every step, including this Step 1 algorithm, at a single M=N=K=4096 size, so that its speedup ratios are directly comparable.
 
 ### Limits of the Single-Tile Kernel
 
-This kernel is correct, which was the whole point of Step 1 — but it is correct only in a very narrow setting. Four limitations are baked in on purpose, and the rest of the optimization path lifts them one at a time:
+This kernel is correct, which was the whole point of Step 1, but it is correct only in a very narrow setting. Four limitations are baked in on purpose, and the rest of the optimization path lifts them one at a time:
 
 - It handles only a single K tile, so it cannot contract over a large K.
 - It handles only a single output tile, so M and N are pinned to 128.
@@ -327,8 +327,8 @@ This kernel is correct, which was the whole point of Step 1 — but it is correc
 
 The first limit to remove is the smallest one. Step 1 handles only a single 64-wide K tile, yet real matrices contract over far more than that. So in Step 2 we keep the single output tile but let K span many 64-wide chunks. The idea is straightforward: repeat the load -> MMA -> wait sequence once per chunk, and let each MMA accumulate into the same TMEM slot. The real work, it turns out, is in the synchronization. Reusing one mbarrier across iterations introduces this chapter's first genuine correctness hazard. If the code tracks the wrong phase, a wait can return *before* its MMA has actually finished, silently corrupting the result. The mechanics below show exactly how that goes wrong, and how to avoid it.
 
-> **What this step changes — Layout**
-> - Scope: unchanged — still a single warpgroup.
+> **What this step changes: Layout**
+> - Scope: unchanged, still a single warpgroup.
 > - Layout: the same SMEM tile pair and TMEM accumulator slot are reused across the K-loop. No new storage is allocated; the operand tiles simply stream through one fixed pair of buffers.
 > - Dispatch: unchanged.
 
@@ -344,7 +344,7 @@ Synchronization is where the care is needed. We reuse a single mbarrier for ever
 | 1 | 1 | barrier flips to 0 | `phase_mma = 0` |
 | 2 | 0 | barrier flips to 1 | `phase_mma = 1` |
 
-The single line `phase_mma ^= 1` is what keeps that table honest. Drop it, and the second iteration still calls `try_wait(bar, 0)` — but the barrier already flipped to phase 1 after the first MMA, so the wait sees a mismatch and returns immediately, before the second MMA has even been issued. The kernel then reads a half-computed accumulator and reports a wrong answer with no error at all. This is a bug that compiles and runs perfectly, which is exactly why the phase flip is worth this much attention.
+The single line `phase_mma ^= 1` is what keeps that table honest. Drop it, and the second iteration still calls `try_wait(bar, 0)`, but the barrier already flipped to phase 1 after the first MMA, so the wait sees a mismatch and returns immediately, before the second MMA has even been issued. The kernel then reads a half-computed accumulator and reports a wrong answer with no error at all. This is a bug that compiles and runs perfectly, which is exactly why the phase flip is worth this much attention.
 
 ### Complete Kernel
 
@@ -456,11 +456,11 @@ def hgemm_v2(M, N, K):
 (chap_spatial_tiling)=
 ## Step 3: Spatial Tiling (Multi-CTA)
 
-The K-loop took care of the contraction dimension, but M and N are still pinned to a single 128 x 128 tile. A real output is far larger than one tile, so the last piece of the basic kernel is to cover M and N with many tiles at once. Step 3 launches a 2D grid of CTAs, one per output tile, and lets the GPU compute all the tiles in parallel. The example uses M=N=K=256, which gives a 2x2 grid of tiles — just enough to make the indexing non-trivial without burying it.
+The K-loop took care of the contraction dimension, but M and N are still pinned to a single 128 x 128 tile. A real output is far larger than one tile, so the last piece of the basic kernel is to cover M and N with many tiles at once. Step 3 launches a 2D grid of CTAs, one per output tile, and lets the GPU compute all the tiles in parallel. The example uses M=N=K=256, which gives a 2x2 grid of tiles, just enough to make the indexing non-trivial without burying it.
 
-> **What this step changes — Scope**
+> **What this step changes: Scope**
 > - Scope: a 2D grid of CTAs, with each CTA owning one 128 x 128 output tile.
-> - Layout: unchanged — within a CTA, this is the same SMEM/TMEM/register path as Step 2.
+> - Layout: unchanged; within a CTA, this is the same SMEM/TMEM/register path as Step 2.
 > - Dispatch: unchanged.
 
 ### Grid Mapping

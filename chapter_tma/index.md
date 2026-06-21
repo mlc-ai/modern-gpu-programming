@@ -12,17 +12,17 @@
 A Tensor Core that can do 2 PFLOP/s is worthless the moment it sits idle waiting for
 data, and at scale GEMM and attention are only compute-bound ({ref}`chap_performance`) when the cores
 stay fed. The classic way to feed them is to have the threads loop over addresses and copy tiles in
-themselves, but that spends the warp's instruction budget on bookkeeping — index arithmetic and
-load/store issue — that has nothing to do with the math. The **Tensor Memory Accelerator (TMA)** is
+themselves, but that spends the warp's instruction budget on bookkeeping (index arithmetic and
+load/store issue) that has nothing to do with the math. The **Tensor Memory Accelerator (TMA)** is
 the hardware engine that fixes this: one thread issues a copy, and the engine moves the rectangular
 tile between global and shared memory on its own, leaving the threads free to compute. This chapter
 covers how a single thread issues that copy, how TMA swizzles the tile so the layout matches what the
-Tensor Core expects ({ref}`chap_data_layout`), and how loads and stores signal completion — loads
+Tensor Core expects ({ref}`chap_data_layout`), and how loads and stores signal completion: loads
 through an mbarrier ({ref}`chap_async_barriers`), stores through a commit/wait group.
 
 The interactive demo below shows the whole picture at a glance: TMA moves a tile from global to
 shared memory, and can optionally swizzle it as it lands. Toggle the swizzle mode (None or 128B) and
-hover a source cell to see where it lands in shared memory — under 128B swizzle, the `column XOR row`
+hover a source cell to see where it lands in shared memory; under 128B swizzle, the `column XOR row`
 remapping you see is exactly what the *Swizzled Layouts* section below explains. The sections that
 follow then unpack the three parts of that picture: how the copy is issued, how the layout is
 transformed, and how completion is signaled.
@@ -33,7 +33,7 @@ transformed, and how completion is signaled.
         style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div>
 ```
-*Interactive: the TMA engine copying a tile from global to shared memory — toggle the swizzle mode and hover a source cell to trace where it lands.*
+*Interactive: the TMA engine copying a tile from global to shared memory; toggle the swizzle mode and hover a source cell to trace where it lands.*
 
 ## One Thread Issues, Hardware Moves the Tile
 
@@ -41,36 +41,36 @@ Start with the first part of that picture, the copy itself. The idea behind TMA 
 between the threads and the hardware. Instead of every
 thread running its own load/store loop, a single thread issues one tile copy, and the engine carries
 out the transfer in the background while the rest of the warp gets on with the math. To issue the
-copy, that thread hands the engine a tensor-map descriptor — a compact record of the global tensor's
-shape, strides, the tile (or box) to read, and the swizzle to apply — together with the destination
+copy, that thread hands the engine a tensor-map descriptor (a compact record of the global tensor's
+shape, strides, the tile (or box) to read, and the swizzle to apply) together with the destination
 SMEM address it should copy into. From there the engine streams the bytes on its own.
 
 It helps to notice that the same logical operation, "copy this tile," can be realized in two quite
 different ways. One option is for the threads to cooperate, each pulling its share of the data; the
 other is for a single thread to issue a TMA transfer and let the engine do the rest. The two paths
 behave differently in both performance and synchronization, so picking between them is a genuine
-*dispatch* decision — exactly the scope / layout / dispatch lens we introduced at the start of the
+*dispatch* decision, exactly the scope / layout / dispatch lens we introduced at the start of the
 book.
 
 ## Swizzled Layouts
 
 Moving the tile is only half the job; it also has to land in a form the Tensor Core can read
 efficiently. This is where **swizzling** comes in. As TMA writes the tile into shared memory, it can
-permute the layout so that the Tensor Core later reads it without bank conflicts — provided the
+permute the layout so that the Tensor Core later reads it without bank conflicts, provided the
 swizzle it applies matches the layout (and mode) the MMA expects. The swizzle pattern itself rides
 along in the TMA descriptor, which is what lets one thread set it once and have the engine apply it to
 the whole tile.
 
 This is the point where {ref}`chap_data_layout` meets the hardware. The TMA descriptor, the SMEM
 tile, and the MMA all have to agree on the same swizzle. If they disagree, the engine will still
-faithfully deposit bytes into shared memory — they simply will not be arranged the way the Tensor Core
+faithfully deposit bytes into shared memory; they simply will not be arranged the way the Tensor Core
 wants to read them, and the computation will be wrong.
 
 ## Completion: Loads vs. Stores
 
 Asynchrony is what buys us the overlap, but it also raises a question the old synchronous loop never
-had to worry about. Because the issuing thread returns immediately — long before the bytes have
-actually arrived — how does the kernel know the transfer has finished before something tries to read
+had to worry about. Because the issuing thread returns immediately, long before the bytes have
+actually arrived, how does the kernel know the transfer has finished before something tries to read
 the data? The answer is that TMA needs an explicit completion signal. Loads and stores handle this
 differently, so it is worth looking at each in turn. The figure below traces the load path end to
 end: watch how the expected byte count, the engine's arrivals, and the consumer's wait line up to

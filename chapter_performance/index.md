@@ -6,18 +6,18 @@
 
 - The roofline model bounds a kernel by either memory bandwidth or compute, decided by its *arithmetic intensity* (FLOPs per byte moved).
 - Low arithmetic intensity means memory-bound: raise it (bigger tiles, fusion) or you cannot reach peak FLOPs.
-- The main lever for speed is *overlap* — running data movement and compute at once — limited by occupancy and resource pressure.
+- The main lever for speed is *overlap* (running data movement and compute at once), limited by occupancy and resource pressure.
 :::
 
 You can pour weeks into a kernel and still not know whether it is any good, because
 "fast" means nothing without a ceiling: 330 TFLOP/s sounds impressive until you learn the same GPU
 can sustain on the order of 2 PFLOP/s, leaving that kernel at one-sixth of what the silicon allows.
-The roofline model gives you that ceiling *before you write a line of code* — it pins down the
+The roofline model gives you that ceiling *before you write a line of code*: it pins down the
 speed-of-light for this specific kernel and tells you which resource, memory bandwidth or compute,
 is the one stopping it. With that in hand you optimize the resource that actually binds instead of
 guessing: a memory-bound kernel will not get faster from better math, and a compute-bound one will
 not get faster from fewer bytes. This chapter builds the three ideas the rest of the book leans on
-to ask "is this fast?" — arithmetic intensity, the roofline, and overlap.
+to ask "is this fast?": arithmetic intensity, the roofline, and overlap.
 
 The numbers here are for the NVIDIA B200. Following the convention of {ref}`chap_background`,
 we use order-of-magnitude ceilings: **on the order of 2 PFLOP/s** dense fp16/bf16 tensor-core
@@ -80,7 +80,7 @@ walk through where the workloads in this book fall.
 
   Read this as an *ideal* upper bound rather than a promise: it assumes A and B are read exactly
   once, C is written once (β = 0), on-chip reuse is perfect, and no metadata or padding traffic
-  creeps in — a real kernel always moves somewhat more. Even with that caveat, at `N = 4096` the
+  creeps in, and a real kernel always moves somewhat more. Even with that caveat, at `N = 4096` the
   figure is ≈ 1365 FLOP/byte, far to the right of the ridge, so **GEMM at scale is compute-bound.**
   The ceiling is the tensor-core peak, which means the whole task is reaching that peak: use
   `tcgen05`, keep it fed, and overlap everything. This is also exactly why a naive GEMM disappoints.
@@ -99,7 +99,7 @@ matter how good the compute code is, simply because the bottleneck is bytes, not
 responses available, and it helps to think of them in order: first try to escape the memory-bound
 region entirely, and if you cannot, settle for making the most of it.
 
-**The first response is to raise arithmetic intensity — to do more work per byte.** This is the
+**The first response is to raise arithmetic intensity, to do more work per byte.** This is the
 higher-leverage move, because if it succeeds it carries the kernel across the ridge and converts a
 memory-bound problem into a compute-bound one. Three techniques get you there.
 
@@ -129,7 +129,7 @@ reaching it, which comes down to a handful of mechanical concerns.
   it on its own.
 - Use wide, coalesced or vectorized loads and TMA bulk transfers, so the memory system runs at its
   full width.
-- Keep enough memory requests in flight — through async copies and sufficient occupancy — to hide
+- Keep enough memory requests in flight, through async copies and sufficient occupancy, to hide
   latency and actually reach peak bandwidth.
 - Drop precision wherever the algorithm tolerates it, storing in fp8/fp4 to move fewer bytes.
 
@@ -174,7 +174,7 @@ kernel family, one added technique per step, and the throughput each step buys.
 
 Two lessons from this ladder set up much of the rest of the book. The first is that **the ceiling is
 real**. The optimized kernel reaches roughly 57% of the fp16 peak at 4096³ (and more at larger
-sizes), which puts it close to the vendor library — cuBLAS sits at about 62% here — and the gap that
+sizes), which puts it close to the vendor library (cuBLAS sits at about 62% here), and the gap that
 remains is hardware reality rather than some technique we forgot to apply. The second lesson is that
 **the steps are not all monotone**. Warp specialization at step 7 momentarily *trades away*
 throughput in exchange for a structure that the later steps go on to exploit, which is a reminder
@@ -186,7 +186,7 @@ The ladder showed the gains piling up but not the single idea behind them; nearl
 tensor-core switch is a different way of arranging one thing, and that thing is overlap. To see why,
 return to a compute-bound GEMM that already uses tensor cores. There the remaining gap usually comes
 from idle time between load, compute, and store stages rather than from weak arithmetic throughput. The raw
-FLOP/s figure is fixed by the tensor cores — you cannot make them multiply any faster — so the only
+FLOP/s figure is fixed by the tensor cores (you cannot make them multiply any faster), so the only
 remaining way to go faster is to stop *waiting*. A kernel that loads a tile, then computes on it,
 then stores the result spends most of its life idle, with one hardware unit standing around while
 another finishes its turn. The fix is **overlap**: while the tensor core works on tile `k`, the TMA
@@ -207,8 +207,8 @@ capped by the per-SM resources each warp consumes, chiefly registers and shared 
 kernels in this book make a deliberate trade against this: they spend a great deal of SMEM on
 multi-stage tile buffers, along with plenty of registers, which means they often run at *low*
 occupancy and hide latency through explicit async overlap rather than through a large pool of
-resident warps. Both mechanisms are worth understanding — the classic occupancy-driven latency
-hiding and the explicit pipelining this book emphasizes — because real kernels reach for whichever
+resident warps. Both mechanisms are worth understanding, the classic occupancy-driven latency
+hiding and the explicit pipelining this book emphasizes, because real kernels reach for whichever
 one the resource budget happens to allow.
 
 ## What This Buys You Later
@@ -224,5 +224,5 @@ chapter after chapter, just with different workloads.
   on-chip, and then to apply the very same overlap toolkit.
 
 So whenever a kernel underperforms, the first move is not to start guessing at code changes. It is
-to come back to this chapter's question — compute the arithmetic intensity, find the roof, and then
+to come back to this chapter's question: compute the arithmetic intensity, find the roof, and then
 optimize the resource that is actually binding.

@@ -2,7 +2,7 @@
 # Flash Attention 4 Source
 
 
-This appendix is the full reference source of the Flash Attention 4 kernel that Chapter 6 builds up conceptually. The canonical copy lives in the `tirx-kernels` package at `tirx_kernels/attention/flash_attention4.py`; the listing below is a snapshot of it. The package file stays the source of truth — if it has moved on, prefer it — but everything Chapter 6 describes is gathered here in one place so you can read the whole kernel without leaving the tutorial.
+This appendix is the full reference source of the Flash Attention 4 kernel that Chapter 6 builds up conceptually. The canonical copy lives in the `tirx-kernels` package at `tirx_kernels/attention/flash_attention4.py`; the listing below is a snapshot of it. The package file stays the source of truth (if it has moved on, prefer it), but everything Chapter 6 describes is gathered here in one place so you can read the whole kernel without leaving the tutorial.
 
 The benchmarking harness at the end of the file (the `run_bench` function with its FlashInfer and CuTe-DSL baseline plumbing) is omitted: it is test scaffolding, not part of the kernel. Everything through `run_test` is included verbatim.
 

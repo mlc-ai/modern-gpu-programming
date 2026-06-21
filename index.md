@@ -24,20 +24,20 @@ hardware, which lets us reason about low-level control while still learning thro
 
 ## How This Book Is Organized
 
-- **Part I — Understanding the GPU.** This part introduces the overall organization of the GPU,
+- **Part I, Understanding the GPU.** This part introduces the overall organization of the GPU,
   general recipes for writing fast kernels, and key concepts such as data layout, asynchronous
   memory operations, and coordination. It builds the hardware intuition that the rest of the book
   relies on.
-- **Part II — TIRx Overview.** This part introduces the key elements of TIRx, which serve as the
+- **Part II, TIRx Overview.** This part introduces the key elements of TIRx, which serve as the
   foundation for the code examples throughout the book.
-- **Part III — GEMM: Tiled to SOTA.** A complete guide to optimizing a tiled GEMM, built up through
+- **Part III, GEMM: Tiled to SOTA.** A complete guide to optimizing a tiled GEMM, built up through
   TMA pipelining, persistent scheduling, warp specialization, and 2-CTA clusters.
-- **Part IV — Flash Attention 4.** A complete attention kernel built from the Part III techniques:
+- **Part IV, Flash Attention 4.** A complete attention kernel built from the Part III techniques:
   two MMAs with softmax between them, online-softmax rescaling, causal masking, and GQA.
 - **Reference.** TIRx language reference and compiler internals.
 
 ```{toctree}
-:caption: Part I — Understanding the GPU
+:caption: Part I, Understanding the GPU
 :maxdepth: 1
 
 chapter_background/index
@@ -52,7 +52,7 @@ chapter_clc/index
 ```
 
 ```{toctree}
-:caption: Part II — TIRx Overview
+:caption: Part II, TIRx Overview
 :maxdepth: 1
 
 chapter_intro_tirx/index
@@ -60,7 +60,7 @@ chapter_tirx_layout_api/index
 ```
 
 ```{toctree}
-:caption: Part III — GEMM: Tiled to SOTA
+:caption: Part III, GEMM: Tiled to SOTA
 :maxdepth: 2
 
 chapter_gemm_basics/index
@@ -69,7 +69,7 @@ chapter_gemm_advanced/index
 ```
 
 ```{toctree}
-:caption: Part IV — Flash Attention 4
+:caption: Part IV, Flash Attention 4
 :maxdepth: 2
 
 chapter_flash_attention/index
