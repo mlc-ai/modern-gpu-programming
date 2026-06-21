@@ -402,8 +402,8 @@ and double-buffering. The payoff is that a single ``TileLayout`` model expresses
 both the accumulator (a pure placement, no replica) and its scale factors (a
 replicated, routed placement) within the very same tensor-memory address space.
 
-Beyond GPU Registers
-~~~~~~~~~~~~~~~~~~~~~~
+One Model, Many Targets
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The two case studies were not special cases at all; they were the one model pointed
 at two different pieces of hardware, and that generality is the whole reason for
