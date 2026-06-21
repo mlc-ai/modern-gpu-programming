@@ -45,8 +45,6 @@
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
-    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'chapter_performance/index';</script>
     <script src="../_static/demo-embed.js?v=1ee8c5fa"></script>
     <link rel="icon" href="../_static/mlc-favicon.ico"/>
@@ -273,12 +271,17 @@
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-roofline-model">The Roofline Model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#arithmetic-intensity-of-real-workloads">Arithmetic Intensity of Real Workloads</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#arithmetic-intensity-of-common-workloads">Arithmetic Intensity of Common Workloads</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#elementwise-and-reductions">Elementwise and Reductions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gemm">GEMM</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#attention">Attention</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-arithmetic-intensity-is-low">When Arithmetic Intensity Is Low</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-optimization-ladder">The Optimization Ladder</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overlap-is-the-lever">Overlap Is the Lever</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overlap-is-the-main-lever">Overlap Is the Main Lever</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#occupancy-and-resource-pressure">Occupancy and Resource Pressure</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-this-buys-you-later">What This Buys You Later</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-this-buys-later">What This Buys Later</a></li>
 </ul>
             </nav>
         </div>
@@ -295,256 +298,187 @@
 <div class="overview admonition">
 <p class="admonition-title">Overview</p>
 <ul class="simple">
-<li><p>The roofline model bounds a kernel by either memory bandwidth or compute, decided by its <em>arithmetic intensity</em> (FLOPs per byte moved).</p></li>
-<li><p>Low arithmetic intensity means memory-bound: raise it (bigger tiles, fusion) or you cannot reach peak FLOPs.</p></li>
-<li><p>The main lever for speed is <em>overlap</em> (running data movement and compute at once), limited by occupancy and resource pressure.</p></li>
+<li><p>The roofline model gives a kernel a performance ceiling. The ceiling is set by either memory bandwidth or compute throughput.</p></li>
+<li><p>Arithmetic intensity decides which ceiling applies. It is the amount of useful arithmetic work done per byte moved.</p></li>
+<li><p>Low arithmetic intensity means the kernel is memory-bound. The main ways out are to move fewer bytes, reuse data more, fuse operations, or use smaller dtypes.</p></li>
+<li><p>High arithmetic intensity means the kernel can be compute-bound. The main task is then to keep the Tensor Cores busy.</p></li>
+<li><p>In modern GPU kernels, the main lever is overlap. TMA, Tensor Cores, epilogues, and stores should run at the same time whenever the dependency graph allows it.</p></li>
 </ul>
 </div>
-<p>You can pour weeks into a kernel and still not know whether it is any good, because
-“fast” means nothing without a ceiling: 330 TFLOP/s sounds impressive until you learn the same GPU
-can sustain on the order of 2 PFLOP/s, leaving that kernel at one-sixth of what the silicon allows.
-The roofline model gives you that ceiling <em>before you write a line of code</em>: it pins down the
-speed-of-light for this specific kernel and tells you which resource, memory bandwidth or compute,
-is the one stopping it. With that in hand you optimize the resource that actually binds instead of
-guessing: a memory-bound kernel will not get faster from better math, and a compute-bound one will
-not get faster from fewer bytes. This chapter builds the three ideas the rest of the book leans on
-to ask “is this fast?”: arithmetic intensity, the roofline, and overlap.</p>
-<p>The numbers here are for the NVIDIA B200. Following the convention of <a class="reference internal" href="../chapter_background/index.html#chap-background"><span class="std std-ref">GPU Execution Model</span></a>,
-we use order-of-magnitude ceilings: <strong>on the order of 2 PFLOP/s</strong> dense fp16/bf16 tensor-core
-throughput and <strong>on the order of 8 TB/s</strong> of HBM3e bandwidth. The exact values depend on the
-specific GPU model and its clock, so treat them as round numbers for reasoning, not datasheet
-guarantees.</p>
+<p>A kernel is only fast relative to a ceiling. A number like 330 TFLOP/s may look large by itself, but it means something very different on a GPU that can sustain on the order of 2 PFLOP/s on dense fp16 or bf16 Tensor Core work. Without a ceiling, it is hard to tell whether a kernel is close to the hardware limit or still leaving most of the chip idle.</p>
+<p>The roofline model gives that ceiling. It separates the kernel into two basic activities: moving bytes and doing arithmetic. If the kernel cannot move data fast enough, memory bandwidth sets the limit. If the kernel has enough data reuse and enough arithmetic work, compute throughput sets the limit.</p>
+<p>The numbers in this chapter use the NVIDIA B200 as the running example. Following the convention from <a class="reference internal" href="../chapter_background/index.html#chap-background"><span class="std std-ref">GPU Execution Model</span></a>, we use round ceilings for reasoning: roughly 2 PFLOP/s of dense fp16 or bf16 Tensor Core throughput, and roughly 8 TB/s of HBM3e bandwidth. The exact values depend on the specific device, clock, power limit, and measurement setup, so they should be read as order-of-magnitude limits rather than datasheet constants.</p>
+<p>This chapter introduces the three ideas used throughout the rest of the book: arithmetic intensity, the roofline model, and overlap.</p>
 <section id="the-roofline-model">
 <h2>The Roofline Model<a class="headerlink" href="#the-roofline-model" title="Link to this heading">#</a></h2>
-<p>Every kernel does two things, no matter how complicated it looks: it moves bytes between memory and
-the chip, and it does arithmetic on those bytes. At any moment one of these two activities is the
-one holding the kernel back, and whichever it is sets the ceiling on how fast the kernel can run.
-This simple observation is the heart of the <em>roofline</em> model, introduced by Williams, Waterman, and
-Patterson (“Roofline: An Insightful Visual Performance Model for Multicore Architectures,”
-<em>Communications of the ACM</em>, 2009). The model bounds attainable performance by the slower of the
-two paths:</p>
-<div class="math notranslate nohighlight">
-\[\text{attainable FLOP/s} = \min\big(\underbrace{\text{peak FLOP/s}}_{\text{compute roof}},\ \underbrace{\text{bandwidth} \times \text{AI}}_{\text{memory roof}}\big)\]</div>
-<p>The quantity that decides which path wins is <strong>arithmetic intensity (AI)</strong>: the ratio of useful
-floating-point work to the bytes moved at whichever memory level sets the roof. For an HBM roofline
-those are HBM bytes; an L2 or SMEM roofline would count traffic at that level instead.</p>
-<div class="math notranslate nohighlight">
-\[\text{AI} = \frac{\text{FLOPs}}{\text{bytes moved}} \quad [\text{FLOP/byte}]\]</div>
-<p>If we plot attainable performance against arithmetic intensity, the two terms of the minimum become
-two ceilings: a sloped <em>memory roof</em> that climbs with bandwidth × arithmetic intensity, and a flat
-<em>compute roof</em> fixed at peak FLOP/s. The two lines cross at the <strong>ridge point</strong>.</p>
-<p><img alt="Roofline for the B200, with example workloads" src="../_images/roofline.png" /></p>
-<p>That ridge point is where the model earns its keep, because it splits every kernel into one of two
-regimes. For the B200 it sits at roughly <code class="docutils literal notranslate"><span class="pre">2000</span> <span class="pre">/</span> <span class="pre">8</span> <span class="pre">≈</span> <span class="pre">250</span></code> FLOP/byte. A kernel whose arithmetic
-intensity falls <strong>below</strong> the ridge can never reach peak compute, no matter how clever the code is:
-it is <em>memory-bound</em>, and the only lever left is to move fewer bytes, or to move them faster. A
-kernel <strong>above</strong> the ridge is <em>compute-bound</em>. Here moving the bytes is no longer the limiting
-factor (though it is never literally free), and the job becomes keeping the tensor cores busy. The
-payoff is that knowing which side a kernel lands on tells you, before you write a single line of
-code, which resource you are actually fighting.</p>
+<p>Every kernel moves data and does arithmetic. The roofline model bounds the kernel by the slower of those two paths.</p>
+<p>The compute ceiling is the maximum arithmetic throughput of the hardware. For a Tensor Core GEMM on B200, the relevant ceiling is the Tensor Core throughput. For a scalar or elementwise kernel, the relevant ceiling may instead be CUDA core throughput or another functional unit.</p>
+<p>The memory ceiling is bandwidth multiplied by arithmetic intensity. If a kernel does little arithmetic for each byte moved, memory bandwidth limits performance. If it does many operations per byte, memory is less likely to be the limiting factor.</p>
+<p>The basic roofline bound is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>attainable FLOP/s &lt;= min(peak FLOP/s, memory bandwidth * arithmetic intensity)
+</pre></div>
+</div>
+<p>Arithmetic intensity is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>arithmetic intensity = useful FLOPs / bytes moved
+</pre></div>
+</div>
+<p>The memory level must be specified. For an HBM roofline, the bytes are HBM bytes. For an L2 roofline, they are L2 bytes. For an SMEM roofline, they are shared memory bytes. In this chapter, the default roofline is the HBM roofline.</p>
+<p>On a roofline plot, the x axis is arithmetic intensity, measured in FLOP per byte. The y axis is attainable performance. The memory roof is a sloped line:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>performance = bandwidth * arithmetic intensity
+</pre></div>
+</div>
+<p>The compute roof is a flat line:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>performance = peak FLOP/s
+</pre></div>
+</div>
+<p>The two meet at the ridge point:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ridge point = peak FLOP/s / bandwidth
+</pre></div>
+</div>
+<p>For the B200 round numbers used here:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ridge point ≈ 2000 TFLOP/s / 8 TB/s
+            ≈ 250 FLOP/byte
+</pre></div>
+</div>
+<p>A kernel below that arithmetic intensity is memory-bound under the HBM roofline. It cannot reach peak Tensor Core throughput because it cannot deliver enough bytes per second to feed that much arithmetic.</p>
+<p>A kernel above that arithmetic intensity can be compute-bound. At that point, memory traffic is no longer the first-order limit. The remaining job is to drive the compute units well enough to approach the flat roof.</p>
+<p>The useful part of the roofline model is not the plot itself. The useful part is that it tells the programmer which resource is binding. A memory-bound kernel does not become fast because its math instructions are slightly better. A compute-bound kernel does not become fast because it saves a few irrelevant bytes. The first step is to know which side of the ridge the kernel is on.</p>
+<p><img alt="A B200 roofline with example workloads, showing the memory roof, the compute roof, and the ridge point" src="../_images/roofline.png" /></p>
 </section>
-<section id="arithmetic-intensity-of-real-workloads">
-<h2>Arithmetic Intensity of Real Workloads<a class="headerlink" href="#arithmetic-intensity-of-real-workloads" title="Link to this heading">#</a></h2>
-<p>We have seen that arithmetic intensity decides which side of the ridge a kernel lands on, so the
-natural next question is how to find a kernel’s arithmetic intensity in the first place. The
-encouraging answer is that it is mostly a property of the algorithm, not of the implementation. You
-can often work it out from the math of what a kernel computes long before you write the kernel
-itself, and that estimate already tells you which side of the ridge you will be fighting on. Let us
-walk through where the workloads in this book fall.</p>
-<ul>
-<li><p><strong>Elementwise and reductions</strong> (GELU, RMSNorm) read and write large tensors but do only a handful
-of FLOPs per element. Their arithmetic intensity lands far below the ridge point, deep in the
-memory-bound region, so the very best one of these kernels can hope for is to saturate HBM
-bandwidth. That sets the agenda: coalesced or TMA loads, and fusion to squeeze more math out of
-each byte loaded.</p></li>
-<li><p><strong>GEMM</strong> is the opposite story, because its arithmetic intensity grows with problem size. For a
-square <code class="docutils literal notranslate"><span class="pre">M=N=K</span></code> fp16 matmul, the ideal works out to</p>
-<div class="math notranslate nohighlight">
-\[\text{AI} = \frac{2N^3}{(3N^2)\cdot 2\,\text{bytes}} = \frac{N}{3}\ \text{FLOP/byte}.\]</div>
-<p>Read this as an <em>ideal</em> upper bound rather than a promise: it assumes A and B are read exactly
-once, C is written once (β = 0), on-chip reuse is perfect, and no metadata or padding traffic
-creeps in, and a real kernel always moves somewhat more. Even with that caveat, at <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">4096</span></code> the
-figure is ≈ 1365 FLOP/byte, far to the right of the ridge, so <strong>GEMM at scale is compute-bound.</strong>
-The ceiling is the tensor-core peak, which means the whole task is reaching that peak: use
-<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, keep it fed, and overlap everything. This is also exactly why a naive GEMM disappoints.
-The problem permits peak performance, but a poor implementation leaves the tensor cores idle and
-sits orders of magnitude below the roof.</p>
-</li>
-<li><p><strong>Attention</strong> sits in between, with an arithmetic intensity that depends on sequence length and
-head dimension. Flash Attention (<a class="reference internal" href="../chapter_flash_attention/index.html#chap-flash-attention"><span class="std std-ref">Flash Attention 4</span></a>) is, at its core, an exercise in
-<em>raising</em> that arithmetic intensity by keeping intermediate tiles in TMEM/SMEM instead of
-streaming them out through HBM and back.</p></li>
-</ul>
+<section id="arithmetic-intensity-of-common-workloads">
+<h2>Arithmetic Intensity of Common Workloads<a class="headerlink" href="#arithmetic-intensity-of-common-workloads" title="Link to this heading">#</a></h2>
+<p>Arithmetic intensity is often an algorithm property before it is an implementation detail. A rough estimate can usually be made before writing the kernel.</p>
+<section id="elementwise-and-reductions">
+<h3>Elementwise and Reductions<a class="headerlink" href="#elementwise-and-reductions" title="Link to this heading">#</a></h3>
+<p>Elementwise kernels, such as GELU, and reduction-style kernels, such as RMSNorm, read and write large tensors while doing only a small number of FLOPs per element.</p>
+<p>Their arithmetic intensity is low. They sit far to the left of the ridge point. The best version of such a kernel usually tries to approach the memory bandwidth roof, not the Tensor Core compute roof.</p>
+<p>For these kernels, the important questions are mechanical:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Are the loads and stores coalesced?
+Are bytes moved only once?
+Can the operation be fused with a producer or consumer?
+Can the dtype be smaller?
+Can TMA or vectorized accesses help?
+</pre></div>
+</div>
+<p>If there is no reuse and no fusion opportunity, the memory roof is the real ceiling.</p>
+</section>
+<section id="gemm">
+<h3>GEMM<a class="headerlink" href="#gemm" title="Link to this heading">#</a></h3>
+<p>GEMM is the opposite case. Its arithmetic intensity grows with problem size because each loaded tile can be reused for many multiply-accumulate operations.</p>
+<p>For a square fp16 matmul with <code class="docutils literal notranslate"><span class="pre">M</span> <span class="pre">=</span> <span class="pre">N</span> <span class="pre">=</span> <span class="pre">K</span></code>, the ideal arithmetic intensity is approximately:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>AI ≈ 2N^3 / (3 * 2N^2)
+   = N / 3 FLOP/byte
+</pre></div>
+</div>
+<p>This estimate assumes A and B are read once, C is written once, beta is zero, on-chip reuse is perfect, and there is no extra metadata, padding, or redundant traffic. Real kernels move more data than this ideal model. But the estimate is still useful.</p>
+<p>At <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">4096</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>AI ≈ 4096 / 3
+   ≈ 1365 FLOP/byte
+</pre></div>
+</div>
+<p>That is well to the right of the B200 ridge point of roughly 250 FLOP/byte. Large GEMM is therefore compute-bound under the HBM roofline. The goal is not merely to reduce HBM traffic. The goal is to use Tensor Cores, keep them fed, and overlap data movement with compute so the compute roof becomes reachable.</p>
+<p>This is why a naive GEMM can be slow even though GEMM has high arithmetic intensity. The algorithm permits high performance, but the implementation may leave the Tensor Cores idle.</p>
+</section>
+<section id="attention">
+<h3>Attention<a class="headerlink" href="#attention" title="Link to this heading">#</a></h3>
+<p>Attention sits between these extremes. Its arithmetic intensity depends on sequence length, head dimension, tiling, masking, and whether intermediate tensors are materialized.</p>
+<p>The key problem in standard attention is the score matrix. If the kernel writes the score matrix to HBM and later reads it back, it moves a large intermediate through memory. Flash Attention (<a class="reference internal" href="../chapter_flash_attention/index.html#chap-flash-attention"><span class="std std-ref">Flash Attention 4</span></a>) raises arithmetic intensity by keeping the relevant tiles on chip and avoiding that HBM round trip.</p>
+<p>So attention optimization is partly a roofline problem and partly a scheduling problem. The algorithm is changed so that fewer bytes go to HBM. Then the kernel is scheduled so that the remaining movement and compute overlap.</p>
+</section>
 </section>
 <section id="when-arithmetic-intensity-is-low">
 <h2>When Arithmetic Intensity Is Low<a class="headerlink" href="#when-arithmetic-intensity-is-low" title="Link to this heading">#</a></h2>
-<p>Suppose your kernel sits left of the ridge, so it is memory-bound. The tensor cores will idle no
-matter how good the compute code is, simply because the bottleneck is bytes, not FLOPs. You have two
-responses available, and it helps to think of them in order: first try to escape the memory-bound
-region entirely, and if you cannot, settle for making the most of it.</p>
-<p><strong>The first response is to raise arithmetic intensity, to do more work per byte.</strong> This is the
-higher-leverage move, because if it succeeds it carries the kernel across the ridge and converts a
-memory-bound problem into a compute-bound one. Three techniques get you there.</p>
-<ul class="simple">
-<li><p><em>Fuse.</em> The single biggest source of low arithmetic intensity is writing an intermediate result
-out to global memory only to read it straight back. Fusing the producer and the consumer keeps
-that intermediate in registers or SMEM, so the bytes never touch HBM at all. Fusing an elementwise
-epilogue into a GEMM, or folding a normalization into the op that feeds it, eliminates entire HBM
-round trips. Flash Attention is the extreme case of this idea: it fuses <span class="math notranslate nohighlight">\(QK^\top\)</span>, softmax, and
-the <span class="math notranslate nohighlight">\(PV\)</span> product so that the large score matrix <code class="docutils literal notranslate"><span class="pre">S</span></code> is never written to HBM, and that fusion is
-precisely what pushes attention rightward on the roofline.</p></li>
-<li><p><em>Block for reuse.</em> Load a tile into SMEM or registers once, then use it for many operations before
-evicting it. Reuse is exactly what gives GEMM its high arithmetic intensity, and any op with reuse
-to exploit benefits the same way.</p></li>
-<li><p><em>Use a smaller dtype.</em> Moving to fp16, fp8, or fp4 carries fewer bytes per element, which both
-raises arithmetic intensity (FLOPs per byte) and cuts the bandwidth the kernel demands. The one
-caveat is that block-scaled fp8/fp4 brings back some traffic for the scale-factor metadata and the
-dequantization, so the real gain is a little smaller than the raw byte ratio suggests.</p></li>
-</ul>
-<p><strong>The second response applies when the arithmetic intensity is simply irreducible: accept the memory
-roof and saturate it.</strong> Sometimes there is no work left to add. A pure copy, or a single-pass
-elementwise or reduction over a large tensor, has no reuse to exploit, and its best possible
-performance genuinely <em>is</em> the memory roof. The goal then shifts from beating the roof to actually
-reaching it, which comes down to a handful of mechanical concerns.</p>
-<ul class="simple">
-<li><p>Move each byte once, with no redundant reads. Pull shared inputs through L2, and when several CTAs
-need the same tile, multicast it once with a cluster/TMA load instead of letting each CTA re-read
-it on its own.</p></li>
-<li><p>Use wide, coalesced or vectorized loads and TMA bulk transfers, so the memory system runs at its
-full width.</p></li>
-<li><p>Keep enough memory requests in flight, through async copies and sufficient occupancy, to hide
-latency and actually reach peak bandwidth.</p></li>
-<li><p>Drop precision wherever the algorithm tolerates it, storing in fp8/fp4 to move fewer bytes.</p></li>
-</ul>
-<p>Once a memory-bound kernel reaches the memory roof, it is done. No compute technique can help, and
-the only way to go faster from there is to change the algorithm so that it moves less data in the
-first place.</p>
+<p>If a kernel is left of the ridge, it is memory-bound. The Tensor Cores or CUDA cores may be idle because the bottleneck is bytes, not arithmetic instructions.</p>
+<p>There are two responses.</p>
+<p>The first response is to raise arithmetic intensity. This is the higher-leverage path because it can move the kernel toward the compute-bound region.</p>
+<p>The most important technique is fusion. A common source of low arithmetic intensity is writing an intermediate tensor to HBM and reading it back immediately in the next operation. Fusing the producer and consumer keeps that intermediate in registers, SMEM, or TMEM. The HBM round trip disappears.</p>
+<p>Examples include:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>GEMM plus elementwise epilogue
+normalization folded into a neighboring op
+attention computed without materializing the full score matrix
+</pre></div>
+</div>
+<p>The second technique is blocking for reuse. If a tile is loaded once and used many times before eviction, each byte supports more arithmetic work. GEMM gets its high arithmetic intensity from exactly this reuse. Other workloads can use the same idea whenever they have repeated use of a tile.</p>
+<p>The third technique is reducing the number of bytes per value. Moving from fp32 to fp16, fp8, or fp4 reduces traffic and increases FLOPs per byte. The real gain is smaller than the raw dtype ratio when the format needs metadata, scale factors, or extra conversion work. Block-scaled fp8 and fp4 are examples of this. Even so, smaller dtypes are often one of the most direct ways to move a kernel rightward on the roofline.</p>
+<p>The second response is to accept the memory roof and try to reach it. Some kernels do not have enough work to fuse or enough reuse to exploit. A pure copy, a simple elementwise operation, or a single-pass reduction over a large tensor may be fundamentally memory-bound.</p>
+<p>In that case, the goal is not to beat the roof. The goal is to saturate it.</p>
+<p>That means:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>move each byte once
+avoid redundant reads
+use coalesced or vectorized accesses
+use TMA for regular bulk tiles
+keep enough memory requests in flight
+use smaller storage dtypes when the algorithm allows it
+</pre></div>
+</div>
+<p>Once a memory-bound kernel reaches the memory roof, further compute optimization does not help. The only way to go faster is to change the algorithm so it moves fewer bytes.</p>
 </section>
 <section id="the-optimization-ladder">
 <h2>The Optimization Ladder<a class="headerlink" href="#the-optimization-ladder" title="Link to this heading">#</a></h2>
-<p>The roofline tells us what is <em>possible</em>, but it says nothing about how hard the gap will be to
-close. Theory tells us a 4096³ fp16 GEMM is compute-bound and could in principle approach the
-~2 PFLOP/s ceiling; getting there is a wholly separate engineering problem. To see what closing the
-gap actually looks like, consider what the implementations in Part III measure on a B200, where the
-same algorithm climbs toward the roof one technique at a time.</p>
-<p>The single biggest jump is the very first one, switching from CUDA-core tiling to the
-<strong>tensor-core + TMA</strong> path. At <code class="docutils literal notranslate"><span class="pre">M=N=K=2048</span></code>:</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Implementation</p></th>
-<th class="head text-right"><p>TFLOP/s</p></th>
-<th class="head text-right"><p>vs. naive</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Naive tiled GEMM (no tensor core)</p></td>
-<td class="text-right"><p>2.9</p></td>
-<td class="text-right"><p>1×</p></td>
-</tr>
-<tr class="row-odd"><td><p>TMA load + <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA</p></td>
-<td class="text-right"><p>330</p></td>
-<td class="text-right"><p><strong>116×</strong></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>That one step buys two orders of magnitude, and yet it lands at 330 TFLOP/s, still far from the
-roof. From there it is asynchrony and scheduling that do the rest of the work. At <code class="docutils literal notranslate"><span class="pre">M=N=K=4096</span></code>:</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Step</p></th>
-<th class="head"><p>Technique</p></th>
-<th class="head text-right"><p>TFLOP/s</p></th>
-<th class="head text-right"><p>% of ~2 PFLOP/s peak</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>5</p></td>
-<td><p>Software pipeline (depth 2)</p></td>
-<td class="text-right"><p>639</p></td>
-<td class="text-right"><p>~32%</p></td>
-</tr>
-<tr class="row-odd"><td><p>6</p></td>
-<td><p>Persistent kernel + tile scheduler</p></td>
-<td class="text-right"><p>723</p></td>
-<td class="text-right"><p>~36%</p></td>
-</tr>
-<tr class="row-even"><td><p>7</p></td>
-<td><p>Warp specialization</p></td>
-<td class="text-right"><p>603</p></td>
-<td class="text-right"><p>~30%</p></td>
-</tr>
-<tr class="row-odd"><td><p>8</p></td>
-<td><p>2-CTA cluster</p></td>
-<td class="text-right"><p>1057</p></td>
-<td class="text-right"><p>~53%</p></td>
-</tr>
-<tr class="row-even"><td><p>9</p></td>
-<td><p>Multi-consumer</p></td>
-<td class="text-right"><p>1145</p></td>
-<td class="text-right"><p>~57%</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>These 4096³ rates are the throughput form of the wall-clock times in the End-to-End table of
-<a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-ref">Scaling GEMM with Warp Specialization and Clusters</span></a> (Steps 7–9 here), so the two tables describe the same runs.</p>
-<p>The figure below turns that table into the optimization trajectory we will revisit in Part III: one
-kernel family, one added technique per step, and the throughput each step buys.</p>
-<p><img alt="GEMM optimization journey" src="../_images/gemm_perf.png" /></p>
-<p>Two lessons from this ladder set up much of the rest of the book. The first is that <strong>the ceiling is
-real</strong>. The optimized kernel reaches roughly 57% of the fp16 peak at 4096³ (and more at larger
-sizes), which puts it close to the vendor library (cuBLAS sits at about 62% here), and the gap that
-remains is hardware reality rather than some technique we forgot to apply. The second lesson is that
-<strong>the steps are not all monotone</strong>. Warp specialization at step 7 momentarily <em>trades away</em>
-throughput in exchange for a structure that the later steps go on to exploit, which is a reminder
-that an optimization is justified by what it unlocks, not always by the number it posts on its own.</p>
+<p>The roofline says what is possible. It does not say how easy it is to reach that limit.</p>
+<p>A large fp16 GEMM may be compute-bound in theory. That only means the HBM roof is not the main limit. It does not mean any implementation will reach the Tensor Core roof. Closing the gap requires the right instructions, layouts, staging, synchronization, and scheduling.</p>
+<p>The GEMM kernels in Part III show this as a sequence of steps on B200 (<a class="reference internal" href="../chapter_gemm_advanced/index.html#chap-gemm-advanced"><span class="std std-ref">Scaling GEMM with Warp Specialization and Clusters</span></a>). Each step keeps the same basic algorithm but changes how the tile is computed or scheduled.</p>
+<p>The first large jump is switching from CUDA core tiling to the Tensor Core and TMA path. A CUDA core GEMM performs the right mathematical operation, but it does not use the hardware unit that provides the dense matrix multiply peak. Moving the computation onto Tensor Cores raises the reachable ceiling by orders of magnitude.</p>
+<p>After that first jump, the main improvements come from overlap and scheduling. TMA brings future tiles into shared memory. <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> runs asynchronously. The epilogue drains previous results. Software pipelining and warp specialization arrange those pieces so that the hardware engines are active at the same time.</p>
+<p>The important lesson is that the optimization steps are not just local tricks. They change which hardware unit is on the critical path and how much idle time remains between stages.</p>
+<p>There is also no rule that every intermediate step must be faster by itself. A step such as warp specialization may temporarily spend resources on a structure that does not immediately improve the number. It can still be the right step if it enables later overlap that the simpler structure could not express.</p>
+<p><img alt="The GEMM optimization journey on B200: each point adds one technique, from CUDA-core tiling to Tensor Cores, TMA, pipelining, warp specialization, and cluster-level scheduling" src="../_images/gemm_perf.png" /></p>
+<p>The roofline gives the final target. The optimization ladder shows the engineering path toward that target.</p>
 </section>
-<section id="overlap-is-the-lever">
-<h2>Overlap Is the Lever<a class="headerlink" href="#overlap-is-the-lever" title="Link to this heading">#</a></h2>
-<p>The ladder showed the gains piling up but not the single idea behind them; nearly every step past the
-tensor-core switch is a different way of arranging one thing, and that thing is overlap. To see why,
-return to a compute-bound GEMM that already uses tensor cores. There the remaining gap usually comes
-from idle time between load, compute, and store stages rather than from weak arithmetic throughput. The raw
-FLOP/s figure is fixed by the tensor cores (you cannot make them multiply any faster), so the only
-remaining way to go faster is to stop <em>waiting</em>. A kernel that loads a tile, then computes on it,
-then stores the result spends most of its life idle, with one hardware unit standing around while
-another finishes its turn. The fix is <strong>overlap</strong>: while the tensor core works on tile <code class="docutils literal notranslate"><span class="pre">k</span></code>, the TMA
-engine is already fetching tile <code class="docutils literal notranslate"><span class="pre">k+1</span></code>, and the epilogue is draining tile <code class="docutils literal notranslate"><span class="pre">k-1</span></code>, so that no unit
-ever sits idle waiting on its neighbor.</p>
-<p>This is exactly why Blackwell exposes the load (TMA), compute (<code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>), and store paths as
-<em>independent asynchronous engines</em>, coordinated by mbarriers (<a class="reference internal" href="../chapter_async_barriers/index.html#chap-async-barriers"><span class="std std-ref">Async Coordination: mbarriers</span></a>). Software
-pipelining (step 5) and warp specialization (step 7) are the two structural patterns for arranging
-that overlap, and Part III builds on both.</p>
+<section id="overlap-is-the-main-lever">
+<h2>Overlap Is the Main Lever<a class="headerlink" href="#overlap-is-the-main-lever" title="Link to this heading">#</a></h2>
+<p>Once a GEMM is compute-bound and already uses Tensor Cores, the remaining gap usually comes from idle time.</p>
+<p>A simple kernel might do this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>load tile k
+compute tile k
+store tile k
+load tile k + 1
+compute tile k + 1
+store tile k + 1
+</pre></div>
+</div>
+<p>That schedule leaves hardware idle. While the load runs, the Tensor Core waits. While the Tensor Core runs, the copy engine may be idle. While the store drains, both may be waiting.</p>
+<p>A pipelined kernel instead tries to run independent stages together:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>load tile k + 1
+compute tile k
+store tile k - 1
+</pre></div>
+</div>
+<p>This is the central idea behind the Blackwell kernel structure used later in the book. TMA handles asynchronous data movement. <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> handles asynchronous Tensor Core work. The epilogue and stores handle the output side. <code class="docutils literal notranslate"><span class="pre">mbarrier</span></code> objects connect the stages so that each consumer waits only when the data it needs is actually required.</p>
+<p>The point is not to remove dependencies. The point is to schedule around them. The MMA for tile <code class="docutils literal notranslate"><span class="pre">k</span></code> cannot start until tile <code class="docutils literal notranslate"><span class="pre">k</span></code> is loaded. The epilogue for tile <code class="docutils literal notranslate"><span class="pre">k</span></code> cannot read the accumulator until the MMA for tile <code class="docutils literal notranslate"><span class="pre">k</span></code> is complete. But the load for tile <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">+</span> <span class="pre">1</span></code> can often run while the MMA for tile <code class="docutils literal notranslate"><span class="pre">k</span></code> is in flight, and the store for tile <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">-</span> <span class="pre">1</span></code> can often drain at the same time.</p>
+<p>This is why so many later chapters focus on asynchronous mechanisms:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TMA for global memory to shared memory movement
+mbarriers for load completion and resource handoff
+tcgen05 for asynchronous Tensor Core compute
+TMEM for long-lived accumulators
+warp specialization to separate producer and consumer roles
+clusters for larger cooperative tiles and multicast
+</pre></div>
+</div>
+<p>They are different mechanisms, but they serve the same scheduling goal: keep useful work running on more than one hardware path at once.</p>
 </section>
 <section id="occupancy-and-resource-pressure">
 <h2>Occupancy and Resource Pressure<a class="headerlink" href="#occupancy-and-resource-pressure" title="Link to this heading">#</a></h2>
-<p>Overlap is not the only way to hide latency, and it is worth knowing the classic alternative. That
-alternative is <strong>occupancy</strong>: the number of warps or warpgroups an SM keeps resident, so that
-whenever one warp stalls the SM can simply switch to another that is ready to run. Occupancy is
-capped by the per-SM resources each warp consumes, chiefly registers and shared memory. The modern
-kernels in this book make a deliberate trade against this: they spend a great deal of SMEM on
-multi-stage tile buffers, along with plenty of registers, which means they often run at <em>low</em>
-occupancy and hide latency through explicit async overlap rather than through a large pool of
-resident warps. Both mechanisms are worth understanding, the classic occupancy-driven latency
-hiding and the explicit pipelining this book emphasizes, because real kernels reach for whichever
-one the resource budget happens to allow.</p>
+<p>Overlap is not the only latency-hiding mechanism. The older and more general mechanism is occupancy.</p>
+<p>Occupancy is the amount of work resident on an SM. If one warp stalls, the scheduler can run another warp that is ready. This hides latency by keeping a pool of independent warps available.</p>
+<p>Occupancy is limited by per-SM resources. The main limits are registers, shared memory, warp slots, and CTA slots. A kernel that uses many registers per thread or a large amount of shared memory per CTA may have low occupancy because only a small number of CTAs or warps can fit on the SM.</p>
+<p>Many modern Tensor Core kernels intentionally spend resources in ways that reduce occupancy. Multi-stage shared memory pipelines consume SMEM. Large register fragments consume registers. TMEM allocations consume Tensor Memory capacity. Warp specialization may reserve whole warps for producer or consumer roles.</p>
+<p>The trade is deliberate. Instead of hiding latency by having many unrelated warps resident, these kernels hide latency through explicit overlap inside a smaller number of resident CTAs. A low-occupancy kernel can still be fast if its pipeline keeps TMA, Tensor Cores, and stores busy.</p>
+<p>Neither approach is universally better. Some kernels need high occupancy because they have irregular memory access or limited explicit overlap. Others need deep staging and specialization because that is the only way to feed the Tensor Core efficiently. The right question is not whether occupancy is high. The right question is whether the active hardware units are kept busy.</p>
 </section>
-<section id="what-this-buys-you-later">
-<h2>What This Buys You Later<a class="headerlink" href="#what-this-buys-you-later" title="Link to this heading">#</a></h2>
-<p>With these three ideas in hand, the rest of the book reads as a sequence of concrete answers to one
-recurring question: which roof am I under, and what moves me toward it? The same pattern plays out
-chapter after chapter, just with different workloads.</p>
-<ul class="simple">
-<li><p>For memory-bound kernels, the answer is coalesced or TMA loads together with fusion.</p></li>
-<li><p>For compute-bound GEMM in Part III, the answer is tensor cores to raise the ceiling, followed by
-TMA, pipelining, and specialization to reach it.</p></li>
-<li><p>For Flash Attention in Part IV, the answer is to raise arithmetic intensity by keeping tiles
-on-chip, and then to apply the very same overlap toolkit.</p></li>
-</ul>
-<p>So whenever a kernel underperforms, the first move is not to start guessing at code changes. It is
-to come back to this chapter’s question: compute the arithmetic intensity, find the roof, and then
-optimize the resource that is actually binding.</p>
+<section id="what-this-buys-later">
+<h2>What This Buys Later<a class="headerlink" href="#what-this-buys-later" title="Link to this heading">#</a></h2>
+<p>The rest of the book keeps returning to the same diagnosis:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Which roof is this kernel under?
+What resource is binding?
+What change moves the kernel closer to that roof?
+</pre></div>
+</div>
+<p>For memory-bound kernels, the answer is usually fewer bytes and better bandwidth use. That means fusion, coalescing, vectorized accesses, TMA where applicable, and smaller dtypes.</p>
+<p>For compute-bound GEMM, the answer is Tensor Cores first, then overlap. The kernel has to stage operands, issue asynchronous MMA work, keep the pipeline full, and drain the result without stalling the compute path.</p>
+<p>For Flash Attention, the first move is to raise arithmetic intensity by keeping the score and probability tiles on chip. After that, it uses the same overlap tools as GEMM: tiled data movement, shared memory staging, asynchronous compute, and careful resource handoff.</p>
+<p>This gives a practical workflow for optimization. Estimate arithmetic intensity. Locate the roof. Decide whether the kernel is memory-bound or compute-bound. Then optimize the resource that actually sets the ceiling.</p>
+<p>Without that step, kernel optimization becomes guesswork. With it, each change has a reason: either it raises arithmetic intensity, moves the memory path closer to bandwidth peak, or reduces idle time under the compute roof.</p>
 </section>
 </section>
 
@@ -596,12 +530,17 @@ optimize the resource that is actually binding.</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-roofline-model">The Roofline Model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#arithmetic-intensity-of-real-workloads">Arithmetic Intensity of Real Workloads</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#arithmetic-intensity-of-common-workloads">Arithmetic Intensity of Common Workloads</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#elementwise-and-reductions">Elementwise and Reductions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gemm">GEMM</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#attention">Attention</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-arithmetic-intensity-is-low">When Arithmetic Intensity Is Low</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-optimization-ladder">The Optimization Ladder</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overlap-is-the-lever">Overlap Is the Lever</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overlap-is-the-main-lever">Overlap Is the Main Lever</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#occupancy-and-resource-pressure">Occupancy and Resource Pressure</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-this-buys-you-later">What This Buys You Later</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-this-buys-later">What This Buys Later</a></li>
 </ul>
   </nav></div>
 
