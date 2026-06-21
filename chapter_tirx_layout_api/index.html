@@ -45,8 +45,6 @@
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
-    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'chapter_tirx_layout_api/index';</script>
     <script src="../_static/demo-embed.js?v=1ee8c5fa"></script>
     <link rel="icon" href="../_static/mlc-favicon.ico"/>
@@ -272,23 +270,27 @@
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layouts-by-example">Layouts by example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layouts-by-example">Layouts by Example</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-demo">Interactive Demo</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tilelayout">TileLayout</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#forward-mapping">Forward Mapping</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-nvidia-tensor-core-tile">Case Study: NVIDIA Tensor-Core Tile</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-blackwell-tensor-memory">Case Study: Blackwell Tensor Memory</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ready-made-layouts">Ready-Made Layouts</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#shard">Shard</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#replica">Replica</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#offset">Offset</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#putting-the-pieces-together">Putting the Pieces Together</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzlelayout-composelayout">SwizzleLayout, ComposeLayout</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-swizzle">Why Swizzle</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-transform">The Transform</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-the-parameters">Choosing the Parameters</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bank-and-line-of-an-element">Bank and Line of an Element</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#worked-example-128b-swizzle-float16-8-64-tile">Worked Example: 128B Swizzle, <code class="docutils literal notranslate"><span class="pre">float16</span></code>, <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> Tile</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#named-axes">Named Axes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forward-mapping">Forward Mapping</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-tensor-core-register-tile">Case Study: Tensor Core Register Tile</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-blackwell-tensor-memory">Case Study: Blackwell Tensor Memory</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scale-factor-layouts">Scale Factor Layouts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ready-made-layouts">Ready-Made Layouts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzlelayout-and-composelayout">SwizzleLayout and ComposeLayout</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-swizzle">Why Swizzle</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-swizzle-transform">The Swizzle Transform</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-swizzle-parameters">Choosing Swizzle Parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bank-and-line-of-an-element">Bank and Line of an Element</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#worked-example-128b-swizzle-on-an-8-64-float16-tile">Worked Example: 128B Swizzle on an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> float16 Tile</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#design-rationale">Design Rationale</a></li>
 </ul>
             </nav>
@@ -301,78 +303,84 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="tirx-layout-api">
+  <section class="tex2jax_ignore mathjax_ignore" id="tirx-layout-api">
 <span id="chap-tirx-layout-api"></span><h1>TIRx Layout API<a class="headerlink" href="#tirx-layout-api" title="Link to this heading">#</a></h1>
 <div class="overview admonition">
 <p class="admonition-title">Overview</p>
 <ul class="simple">
-<li><p>The TIRx layout API: <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> (shard / replica / offset over named axes), <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code>, and <code class="docutils literal notranslate"><span class="pre">ComposeLayout</span></code>.</p></li>
-<li><p>A layout maps each logical index to a <em>set</em> of physical coordinates; <code class="docutils literal notranslate"><span class="pre">layout.apply()</span></code> evaluates it.</p></li>
-<li><p>Ready-made constructors (<code class="docutils literal notranslate"><span class="pre">tmem_datapath_layout</span></code>, <code class="docutils literal notranslate"><span class="pre">tcgen05_atom_layout</span></code>, <code class="docutils literal notranslate"><span class="pre">wg_local_layout</span></code>) cover the common hardware tiles.</p></li>
+<li><p>The TIRx layout API turns the layout notation from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> into compiler objects. The main objects are <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code>, <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code>, and <code class="docutils literal notranslate"><span class="pre">ComposeLayout</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> describes affine placement over named hardware axes. It is built from shard specs <code class="docutils literal notranslate"><span class="pre">S[...]</span></code>, replica specs <code class="docutils literal notranslate"><span class="pre">R[...]</span></code>, and optional offsets.</p></li>
+<li><p>A layout maps one logical coordinate to one or more physical coordinates. <code class="docutils literal notranslate"><span class="pre">layout.apply()</span></code> evaluates that mapping.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> describes the XOR-based shared-memory swizzles used to avoid bank conflicts. <code class="docutils literal notranslate"><span class="pre">ComposeLayout</span></code> stacks a swizzle on top of a tile layout.</p></li>
+<li><p>Ready-made constructors such as <code class="docutils literal notranslate"><span class="pre">tmem_datapath_layout</span></code>, <code class="docutils literal notranslate"><span class="pre">tcgen05_atom_layout</span></code>, and <code class="docutils literal notranslate"><span class="pre">wg_local_layout</span></code> cover the hardware layouts that appear repeatedly in kernels.</p></li>
 </ul>
 </div>
-<p><a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> introduced the layout <em>notation</em>, the shape–stride pair
-<code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code> with strides on named axes, and the replication term <code class="docutils literal notranslate"><span class="pre">R[n</span> <span class="pre">:</span> <span class="pre">stride]</span></code> for
-data the hardware copies rather than partitions. This chapter turns that notation into a real
-compiler object: the same <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">R[...]</span></code> you read on paper now <em>construct</em> a
-<strong>TileLayout</strong>, which you attach to a buffer and the compiler evaluates, checks, and hands to every
-tile op. The API mirrors the notation, so there is little new syntax to learn: just the objects
-(<code class="docutils literal notranslate"><span class="pre">TileLayout</span></code>, <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code>, <code class="docutils literal notranslate"><span class="pre">ComposeLayout</span></code> from <code class="docutils literal notranslate"><span class="pre">tvm.tirx.layout</span></code>), the named-axis
-vocabulary, the ready-made constructors for common hardware tiles, and the single rule a layout
-evaluates by, worked through two real hardware tiles. If the notation looks unfamiliar, read
-<a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> first; here we build on it.</p>
-<p>The workflow is deliberately simple. You build a layout once and attach it to a
-buffer (either through <code class="docutils literal notranslate"><span class="pre">pool.alloc(shape,</span> <span class="pre">dtype,</span> <span class="pre">layout=...)</span></code> or through
-<code class="docutils literal notranslate"><span class="pre">T.decl_buffer(shape,</span> <span class="pre">dtype,</span> <span class="pre">scope=...,</span> <span class="pre">layout=...)</span></code>), and from then on every
-tile op that touches that buffer reads its placement straight from the layout, so
-you never repeat the placement at each use site. All of the objects you attach
-live in a single module:</p>
+<p><a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> introduced the notation used throughout this book: a tile shape, a set of strides over named axes, and an optional replication term for values that are copied rather than partitioned. This chapter turns that notation into the API used by the compiler.</p>
+<p>The goal is that the notation on the page and the code in the kernel look almost the same. When you write a layout such as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>you are not just writing an explanation. You are constructing a <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> object that can be attached to a buffer. After that, every tile operation that touches the buffer can read its placement from the layout. The placement is written once, checked once, and reused by the compiler.</p>
+<p>A layout is attached either when allocating from a pool or when declaring a buffer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="o">.</span><span class="n">alloc</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">layout</span><span class="p">)</span>
+
+<span class="n">T</span><span class="o">.</span><span class="n">decl_buffer</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">layout</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>From that point on, the buffer carries its physical placement. The tile operations do not need to repeat where each element lives.</p>
+<p>The layout objects live in one module:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tvm.tirx.layout</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">TileLayout</span><span class="p">,</span> <span class="n">SwizzleLayout</span><span class="p">,</span> <span class="n">ComposeLayout</span><span class="p">,</span>    <span class="c1"># the three layout classes</span>
-    <span class="n">S</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span>                                        <span class="c1"># shard / replica spec builders</span>
-    <span class="n">laneid</span><span class="p">,</span> <span class="n">warpid</span><span class="p">,</span> <span class="n">tid_in_wg</span><span class="p">,</span> <span class="n">TLane</span><span class="p">,</span> <span class="n">TCol</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span>   <span class="c1"># named axes (a few of many)</span>
-    <span class="n">tcgen05_atom_layout</span><span class="p">,</span> <span class="n">tmem_datapath_layout</span><span class="p">,</span>   <span class="c1"># ready-made layout constructors</span>
+    <span class="n">TileLayout</span><span class="p">,</span>
+    <span class="n">SwizzleLayout</span><span class="p">,</span>
+    <span class="n">ComposeLayout</span><span class="p">,</span>
+    <span class="n">S</span><span class="p">,</span>
+    <span class="n">R</span><span class="p">,</span>
+    <span class="n">laneid</span><span class="p">,</span>
+    <span class="n">warpid</span><span class="p">,</span>
+    <span class="n">tid_in_wg</span><span class="p">,</span>
+    <span class="n">TLane</span><span class="p">,</span>
+    <span class="n">TCol</span><span class="p">,</span>
+    <span class="n">m</span><span class="p">,</span>
+    <span class="n">tcgen05_atom_layout</span><span class="p">,</span>
+    <span class="n">tmem_datapath_layout</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>There is really only one idea to carry over from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>. A layout
-does not map a logical index to a single address; it maps it to a <em>set</em> of
-coordinates on the named axes, because one element can genuinely live in several
-places at once. That map breaks cleanly into three parts, shard (<code class="docutils literal notranslate"><span class="pre">D</span></code>), replica
-(<code class="docutils literal notranslate"><span class="pre">R</span></code>), and offset (<code class="docutils literal notranslate"><span class="pre">O</span></code>), and the rest of the chapter builds it up one piece
-at a time.</p>
+<p>There is one central idea behind the API. A layout does not have to map a logical index to a single physical address. It maps a logical index to a set of physical coordinates over named axes. In the usual case that set has one element. When replication is present, the same logical element has several physical placements.</p>
+<p>This is why the layout model has three pieces: shard, replica, and offset. The shard places the element. The replica copies it to additional coordinates. The offset shifts the whole placement.</p>
 <section id="layouts-by-example">
-<h2>Layouts by example<a class="headerlink" href="#layouts-by-example" title="Link to this heading">#</a></h2>
-<p>Before the formal rules, here is what the layout API looks like in use. Each call below builds a
-<code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> (the chapter’s central object) from the same <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> / <code class="docutils literal notranslate"><span class="pre">R[...]</span></code> notation as
-<a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>, so the code reads almost exactly like the notation on the page:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># An accumulator in tensor memory: logical row -&gt; TMEM lane, column -&gt; TMEM column.</span>
-<span class="n">acc</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
-
-<span class="c1"># A block-scaled MMA&#39;s scale factors: 32 rows replicated across the warpgroup&#39;s four</span>
-<span class="c1"># warps (the &quot;warpx4&quot; broadcast), via a stride-32 replica.</span>
-<span class="n">scale_factor_layout</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">32</span><span class="p">,</span> <span class="n">sf_per_mma</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">32</span><span class="nd">@TLane</span><span class="p">])</span>
-
-<span class="c1"># A tensor-core register fragment, distributed over the lanes of two warps.</span>
-<span class="n">frag</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
-
-<span class="c1"># Ready-made constructors for the layouts that recur in real kernels:</span>
-<span class="n">acc</span> <span class="o">=</span> <span class="n">tmem_datapath_layout</span><span class="p">(</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>                  <span class="c1"># tcgen05 accumulator</span>
-<span class="n">ld</span>  <span class="o">=</span> <span class="n">tcgen05_atom_layout</span><span class="p">(</span><span class="s2">&quot;32x32b&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">64</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>  <span class="c1"># tcgen05.ld register tile</span>
+<h2>Layouts by Example<a class="headerlink" href="#layouts-by-example" title="Link to this heading">#</a></h2>
+<p>The examples below show the basic shape of the API.</p>
+<p>An accumulator in TMEM can be written as a direct placement over the TMEM axes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">acc</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
 </pre></div>
 </div>
-<p>The rest of the chapter explains these precisely: how a <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> decomposes into shard,
-replica, and offset, the rule it evaluates by, and how <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> and <code class="docutils literal notranslate"><span class="pre">ComposeLayout</span></code>
-extend it for swizzled memory.</p>
+<p>Here the logical row maps to <code class="docutils literal notranslate"><span class="pre">TLane</span></code>, and the logical column maps to <code class="docutils literal notranslate"><span class="pre">TCol</span></code>. In <a class="reference internal" href="../chapter_tmem/index.html#chap-tmem"><span class="std std-ref">Special Memory: TMEM</span></a>, the hardware coordinates are called Lane and Col. In the TIRx layout notation, those hardware axes are written as <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">TCol</span></code>.</p>
+<p>A block-scaled MMA scale-factor layout uses replication:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">scale_factor_layout</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span>
+    <span class="n">S</span><span class="p">[(</span><span class="mi">32</span><span class="p">,</span> <span class="n">sf_per_mma</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span> <span class="p">:</span> <span class="mi">32</span><span class="nd">@TLane</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The shard places a 32-row group in TMEM. The replica repeats that group four times at a stride of 32 lanes, so the 32-row group is visible across the full 128-lane TMEM space.</p>
+<p>A tensor-core register fragment can be distributed across lanes and warps:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">frag</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span>
+    <span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The same physical axis can appear more than once. In this example, two different iters both contribute to <code class="docutils literal notranslate"><span class="pre">laneid</span></code>. A stride without an explicit axis uses the default memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code>.</p>
+<p>In real kernels, common hardware layouts usually come from constructors:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">acc</span> <span class="o">=</span> <span class="n">tmem_datapath_layout</span><span class="p">(</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>
+
+<span class="n">ld</span> <span class="o">=</span> <span class="n">tcgen05_atom_layout</span><span class="p">(</span><span class="s2">&quot;32x32b&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">64</span><span class="p">),</span> <span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These constructors return ordinary <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> objects. They are conveniences, not a separate mechanism. You can inspect the returned layout, compose it with other layouts, or write the underlying <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">R[...]</span></code> form by hand when a shape is unusual.</p>
 </section>
 <section id="interactive-demo">
 <h2>Interactive Demo<a class="headerlink" href="#interactive-demo" title="Link to this heading">#</a></h2>
-<p>Before we get into the mechanics, it helps to have something concrete to poke at.
-The demo below lets you pick a preset, edit the logical shape and the <code class="docutils literal notranslate"><span class="pre">S/R/O</span></code>
-layout, choose a dtype and a swizzle mode, and then click on an element to see
-which physical thread or threads own it. It is worth coming back to as each piece
-of notation is introduced: the math in the sections that follow is just a precise
-description of what you can watch happen here.</p>
+<p>Before the mechanics, it helps to have something concrete to poke at. The demo below lets you choose a preset layout, edit the logical shape and the <code class="docutils literal notranslate"><span class="pre">S</span></code> or <code class="docutils literal notranslate"><span class="pre">R</span></code> terms, choose a dtype and swizzle mode, and click an element to see which physical coordinate or coordinates own it.</p>
 <p>
   <a class="reference external" href="../_static/tirx-layout-demo/index.html"
      target="_blank" rel="noopener"
@@ -396,422 +404,423 @@ description of what you can watch happen here.</p>
     if (f && e.source === f.contentWindow) f.style.height = d.height + 'px';
   });
 })();
-</script></section>
+</script><p>The demo is useful because most of the API is just a precise version of what the demo shows. A logical element enters the layout. The layout flattens it, splits it across its iters, accumulates coordinates on named axes, and then applies replication if needed.</p>
+</section>
 <section id="tilelayout">
 <h2>TileLayout<a class="headerlink" href="#tilelayout" title="Link to this heading">#</a></h2>
-<p>The examples above all reduced to one object, so let us build it from the ground up.
-A <strong>TileLayout</strong> is written <code class="docutils literal notranslate"><span class="pre">S[shape</span> <span class="pre">:</span> <span class="pre">strides]</span></code>. The <code class="docutils literal notranslate"><span class="pre">S</span></code> marks a shard spec,
-which you can read as “a tile of this <em>shape</em>, with each logical index mapped by
-these per-axis <em>strides</em>”; when an element needs to be replicated, you extend it
-with a replica set and write <code class="docutils literal notranslate"><span class="pre">S[...]</span> <span class="pre">+</span> <span class="pre">R[...]</span></code>. Until replication enters the
-picture this is nothing more than the familiar shape–stride pair, only with named
-axes. Underneath, a layout is assembled from three parts taken in turn, shard
-(<code class="docutils literal notranslate"><span class="pre">D</span></code>), replica (<code class="docutils literal notranslate"><span class="pre">R</span></code>), and offset (<code class="docutils literal notranslate"><span class="pre">O</span></code>), so let us look at each in order.</p>
-<p>The atom that every part is built from is the <strong>iter</strong>, a triple
-<code class="docutils literal notranslate"><span class="pre">(extent,</span> <span class="pre">stride,</span> <span class="pre">axis)</span></code> describing a single linear, strided walk along one axis.
-You can think of an iter as the named-axis version of one shape/stride entry:
-<em>extent</em> many steps, <em>stride</em> apart, along <em>axis</em>.</p>
-<ul class="simple">
-<li><p><strong>D (Shard).</strong> This is a list of one or more iters, each carrying an extent and a
-stride on some axis. The shard partitions the logical index across these iters
-and produces a single base coordinate, generalizing the ordinary shape–stride
-rule to several axes at once. We write it in parentheses, for example
-<code class="docutils literal notranslate"><span class="pre">S[(8,2,4,2):(4&#64;laneid,1&#64;warpid,1&#64;laneid,1)]</span></code>.</p></li>
-<li><p><strong>R (Replica).</strong> This is a set of replication iters that enumerate offsets in
-hardware space, independent of the logical index. Adding each element of that set
-to the shard result is what gives us replication, or broadcasting. We write it in
-square brackets, for example <code class="docutils literal notranslate"><span class="pre">R[2:4&#64;warpid]</span></code>.</p></li>
-<li><p><strong>O (Offset).</strong> This is a fixed coordinate offset (one integer per axis) added
-to every result. It is how you place data at a chosen base position or reserve a
-resource for exclusive use.</p></li>
-</ul>
-<p>The three parts compose in a natural order: the shard finds the base coordinate,
-the replica fans it out, and the offset shifts the whole result. So for a logical
-index <code class="docutils literal notranslate"><span class="pre">x</span></code> the layout produces</p>
-<div class="math notranslate nohighlight">
-\[L(x) = \{\, D(x) + r + O \mid r \in R \,\},\]</div>
-<p>Here <code class="docutils literal notranslate"><span class="pre">D(x)</span></code> is the base coordinate coming from the sharded iters, <code class="docutils literal notranslate"><span class="pre">r</span></code> ranges
-over all combinations of the replica iters (collapsing to a single zero offset
-when <code class="docutils literal notranslate"><span class="pre">R</span></code> is empty), and <code class="docutils literal notranslate"><span class="pre">O</span></code> is the constant offset. The set notation is what
-lets <code class="docutils literal notranslate"><span class="pre">L(x)</span></code> stay a singleton in the common case while still being able to hold
-several coordinates once <code class="docutils literal notranslate"><span class="pre">R</span></code> is non-empty. Each term is written <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&#64;</span> <span class="pre">axis</span></code>, and
-if a stride is not paired with an axis, the memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code> is assumed by default.</p>
-<p>Written out in TIRx, a shard together with a replica and an offset reads:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="nd">@warpid</span><span class="p">)</span>
+<p>A <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> is the main affine layout object. It is usually written with the same notation used in the text:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">shape</span> <span class="p">:</span> <span class="n">strides</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Reading this left to right: <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">R[...]</span></code> build the spec, the <code class="docutils literal notranslate"><span class="pre">+</span></code>
-operator glues the shard, the replica, and a bare <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&#64;</span> <span class="pre">axis</span></code> offset together, and
-<code class="docutils literal notranslate"><span class="pre">TileLayout(...)</span></code> wraps the whole thing into the object you attach to a buffer.
-(If you already have pre-built <code class="docutils literal notranslate"><span class="pre">Iter(extent,</span> <span class="pre">stride,</span> <span class="pre">axis)</span></code> objects, you pass them
-through <code class="docutils literal notranslate"><span class="pre">TileLayout.from_iters(shard,</span> <span class="pre">replica,</span> <span class="pre">offset)</span></code> instead.)</p>
-<p>What makes the axes carry real meaning is that each one names a specific hardware
-resource, and that name is part of the layout itself rather than something inferred
-from context. Blocks <code class="docutils literal notranslate"><span class="pre">bx</span></code> / <code class="docutils literal notranslate"><span class="pre">by</span></code> / <code class="docutils literal notranslate"><span class="pre">bz</span></code> and cluster blocks <code class="docutils literal notranslate"><span class="pre">cbx</span></code> / <code class="docutils literal notranslate"><span class="pre">cby</span></code>
-/ <code class="docutils literal notranslate"><span class="pre">cbz</span></code> place a tile across the grid; the thread axes <code class="docutils literal notranslate"><span class="pre">tx</span></code> (block-wide),
-<code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">wgid</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>, and <code class="docutils literal notranslate"><span class="pre">wid_in_wg</span></code> spread it across
-a CTA or warpgroup; <code class="docutils literal notranslate"><span class="pre">m</span></code> is linear memory; <code class="docutils literal notranslate"><span class="pre">P</span></code> / <code class="docutils literal notranslate"><span class="pre">F</span></code> are the partition and
-free axes of a 2D scratchpad; <code class="docutils literal notranslate"><span class="pre">Bank</span></code> is a shared-memory bank; and <code class="docutils literal notranslate"><span class="pre">TLane</span></code> /
-<code class="docutils literal notranslate"><span class="pre">TCol</span></code> address Blackwell tensor memory.</p>
-<section id="forward-mapping">
-<h3>Forward Mapping<a class="headerlink" href="#forward-mapping" title="Link to this heading">#</a></h3>
-<p>We have built a <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> out of shard, replica, and offset; now we evaluate
-it. Evaluating a layout means taking a logical coordinate and working out where it
-lands. The method <code class="docutils literal notranslate"><span class="pre">layout.apply(*coord)</span></code> does exactly this: it hands you back a
-dict from axis name to coordinate, such as <code class="docutils literal notranslate"><span class="pre">{&quot;laneid&quot;:</span> <span class="pre">…,</span> <span class="pre">&quot;warpid&quot;:</span> <span class="pre">…,</span> <span class="pre">&quot;m&quot;:</span> <span class="pre">…}</span></code>,
-and the four steps below are precisely what it runs inside. Concretely, evaluating
-<code class="docutils literal notranslate"><span class="pre">L(x)</span></code> for a coordinate <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">(x_0,</span> <span class="pre">…,</span> <span class="pre">x_{r-1})</span></code> drawn from a shape
-<code class="docutils literal notranslate"><span class="pre">(S_0,</span> <span class="pre">…,</span> <span class="pre">S_{r-1})</span></code> comes down to four mechanical steps, flatten, split,
-accumulate, broadcast, and we will lean on them for the rest of the chapter.</p>
-<p><strong>1. Flatten</strong> the coordinate row-major to a single index:</p>
-<div class="math notranslate nohighlight">
-\[\mathrm{flat} = \sum_{d} x_d \prod_{e &gt; d} S_e .\]</div>
-<p><strong>2. Split</strong> that index across the shard extents <code class="docutils literal notranslate"><span class="pre">(e_0,</span> <span class="pre">…,</span> <span class="pre">e_{n-1})</span></code>
-(one component <code class="docutils literal notranslate"><span class="pre">c_k</span></code> per shard iter, innermost-first):</p>
-<div class="math notranslate nohighlight">
-\[c_k = \left\lfloor \mathrm{flat} \,\Big/ \textstyle\prod_{l &gt; k} e_l \right\rfloor
-      \bmod e_k .\]</div>
-<p><strong>3. Accumulate</strong> each component onto its axis with its stride to get the base
-coordinate, then <strong>add the offset</strong>:</p>
-<div class="math notranslate nohighlight">
-\[D(x)[a] = \sum_{k\,:\,a_k = a} c_k\, s_k ,
-\qquad
-\bigl(D(x) + O\bigr)[a] = D(x)[a] + O[a] .\]</div>
-<p><strong>4. Broadcast</strong> the replica iters: <code class="docutils literal notranslate"><span class="pre">r</span></code> ranges over
-<code class="docutils literal notranslate"><span class="pre">∏_t</span> <span class="pre">[0,</span> <span class="pre">e_t)</span></code> and adds, per replica iter <code class="docutils literal notranslate"><span class="pre">(e_t,</span> <span class="pre">s_t,</span> <span class="pre">a_t)</span></code>, <code class="docutils literal notranslate"><span class="pre">r_t</span> <span class="pre">s_t</span></code> to
-axis <code class="docutils literal notranslate"><span class="pre">a_t</span></code>, yielding the set <code class="docutils literal notranslate"><span class="pre">L(x)</span></code>:</p>
-<div class="math notranslate nohighlight">
-\[L(x)[a] = D(x)[a] + O[a] + \sum_{t\,:\,a_t = a} r_t\, s_t .\]</div>
-<p>One consequence of doing flatten before split is worth pausing on: the layout never
-hard-codes the input shape. A layout <em>admits</em> any shape whose total size equals
-<code class="docutils literal notranslate"><span class="pre">∏_k</span> <span class="pre">e_k</span></code>, and once that holds the very same layout works for all of them, because
-the flatten/split step simply re-derives the per-iter components from whatever shape
-it happens to be handed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">S</span></code> term is the shard spec. You can read it as: take a logical tile of this shape and place it using these strides over named axes.</p>
+<p>When a value needs to appear in multiple places, the shard spec is extended with a replica spec:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">shape</span> <span class="p">:</span> <span class="n">strides</span><span class="p">]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="n">replica_shape</span> <span class="p">:</span> <span class="n">replica_stride</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>An optional offset can also be added:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">shape</span> <span class="p">:</span> <span class="n">strides</span><span class="p">]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="n">replica_shape</span> <span class="p">:</span> <span class="n">replica_stride</span><span class="p">]</span> <span class="o">+</span> <span class="n">offset</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Under the surface, these pieces are represented by iters. An iter is a triple:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(extent, stride, axis)
+</pre></div>
+</div>
+<p>It describes a strided walk over one named axis. The extent tells how many positions the iter has. The stride tells how far each step moves. The axis tells which hardware coordinate is being changed.</p>
+<p>A layout has three parts.</p>
+<section id="shard">
+<h3>Shard<a class="headerlink" href="#shard" title="Link to this heading">#</a></h3>
+<p>The shard, or <code class="docutils literal notranslate"><span class="pre">D</span></code>, is the part built by <code class="docutils literal notranslate"><span class="pre">S[...]</span></code>. It partitions the logical index across one or more iters and produces the base physical coordinate.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>has four shard iters. Their extents are <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code>, and <code class="docutils literal notranslate"><span class="pre">2</span></code>. Their strides place data on <code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">laneid</span></code> again, and the default memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code>.</p>
+<p>This generalizes the ordinary shape-and-stride rule. The difference is that the strides are attached to named hardware axes instead of to a single flat address.</p>
 </section>
-<section id="case-study-nvidia-tensor-core-tile">
-<h3>Case Study: NVIDIA Tensor-Core Tile<a class="headerlink" href="#case-study-nvidia-tensor-core-tile" title="Link to this heading">#</a></h3>
-<p>With the four steps (flatten, split, accumulate, broadcast) in hand, the quickest
-way to see that they do something real is to run them on an actual tensor-core tile
-and watch a hardware mapping fall out. Consider a logical
-<code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">16)</span></code> tile distributed across 2 warps of 32 lanes each, where each lane holds
-part of the tile in its own registers (the <code class="docutils literal notranslate"><span class="pre">reg</span></code> slot is just the default memory
-axis <code class="docutils literal notranslate"><span class="pre">m</span></code>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">2</span><span class="p">):(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span><span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span><span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="nd">@warpid</span><span class="p">)</span>
+<section id="replica">
+<h3>Replica<a class="headerlink" href="#replica" title="Link to this heading">#</a></h3>
+<p>The replica, or <code class="docutils literal notranslate"><span class="pre">R</span></code>, describes additional physical copies of the same logical element. The replica iters are independent of the logical index. They enumerate extra offsets in hardware space.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">R</span><span class="p">[</span><span class="mi">2</span> <span class="p">:</span> <span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>The shard factors the logical indices into four iters of extent <code class="docutils literal notranslate"><span class="pre">8,</span> <span class="pre">2,</span> <span class="pre">4,</span> <span class="pre">2</span></code> over
-the axes <code class="docutils literal notranslate"><span class="pre">laneid,</span> <span class="pre">warpid,</span> <span class="pre">laneid,</span> <span class="pre">m</span></code>. Let us run the four steps on a generic
-element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code>:</p>
-<ol class="arabic simple">
-<li><p><strong>flatten:</strong> <code class="docutils literal notranslate"><span class="pre">flat</span> <span class="pre">=</span> <span class="pre">16</span> <span class="pre">i</span> <span class="pre">+</span> <span class="pre">j</span></code>.</p></li>
-<li><p><strong>split</strong> by <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">2,</span> <span class="pre">4,</span> <span class="pre">2)</span></code>: <code class="docutils literal notranslate"><span class="pre">c_0</span> <span class="pre">=</span> <span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">c_1</span> <span class="pre">=</span> <span class="pre">⌊j/8⌋</span></code>,
-<code class="docutils literal notranslate"><span class="pre">c_2</span> <span class="pre">=</span> <span class="pre">⌊j/2⌋</span> <span class="pre">mod</span> <span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">c_3</span> <span class="pre">=</span> <span class="pre">j</span> <span class="pre">mod</span> <span class="pre">2</span></code>.</p></li>
-<li><p><strong>accumulate + offset:</strong> <code class="docutils literal notranslate"><span class="pre">laneid</span> <span class="pre">=</span> <span class="pre">4</span> <span class="pre">c_0</span> <span class="pre">+</span> <span class="pre">c_2</span> <span class="pre">=</span> <span class="pre">4</span> <span class="pre">i</span> <span class="pre">+</span> <span class="pre">⌊j/2⌋</span> <span class="pre">mod</span> <span class="pre">4</span></code> (two
-iters land on <code class="docutils literal notranslate"><span class="pre">laneid</span></code>); <code class="docutils literal notranslate"><span class="pre">warpid</span> <span class="pre">=</span> <span class="pre">c_1</span> <span class="pre">+</span> <span class="pre">5</span> <span class="pre">=</span> <span class="pre">⌊j/8⌋</span> <span class="pre">+</span> <span class="pre">5</span></code> (offset
-<code class="docutils literal notranslate"><span class="pre">5&#64;warpid</span></code>); <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">c_3</span> <span class="pre">=</span> <span class="pre">j</span> <span class="pre">mod</span> <span class="pre">2</span></code>.</p></li>
-<li><p><strong>replica</strong> <code class="docutils literal notranslate"><span class="pre">R[2:4&#64;warpid]</span></code>: <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">∈</span> <span class="pre">{0,</span> <span class="pre">1}</span></code> adds <code class="docutils literal notranslate"><span class="pre">4r</span></code> to <code class="docutils literal notranslate"><span class="pre">warpid</span></code>, so
-each element lives on <strong>two</strong> warps.</p></li>
-</ol>
-<p>So the full mapping is</p>
-<div class="math notranslate nohighlight">
-\[\mathrm{laneid} = 4 i + \lfloor j/2 \rfloor \bmod 4, \quad
-\mathrm{warpid} = \lfloor j/8 \rfloor + 5 + 4 r\ (r \in \{0,1\}), \quad
-m = j \bmod 2 .\]</div>
-<p>So the shard places the tile on warps <code class="docutils literal notranslate"><span class="pre">{5,</span> <span class="pre">6}</span></code> (from <code class="docutils literal notranslate"><span class="pre">⌊j/8⌋</span> <span class="pre">+</span> <span class="pre">5</span></code>), and the
-replica then copies it to <code class="docutils literal notranslate"><span class="pre">{9,</span> <span class="pre">10}</span></code>. Spelling out a few elements makes the pattern
-concrete:</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<colgroup>
-<col style="width: 15.2%" />
-<col style="width: 10.9%" />
-<col style="width: 28.3%" />
-<col style="width: 13.0%" />
-<col style="width: 21.7%" />
-<col style="width: 10.9%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code></p></th>
-<th class="head"><p>flat</p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">(c0,</span> <span class="pre">c1,</span> <span class="pre">c2,</span> <span class="pre">c3)</span></code></p></th>
-<th class="head"><p>laneid</p></th>
-<th class="head"><p>warpid (×2)</p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">m</span></code></p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0)</span></code></p></td>
-<td><p>0</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">0)</span></code></p></td>
-<td><p>0</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{5,</span> <span class="pre">9}</span></code></p></td>
-<td><p>0</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code></p></td>
-<td><p>1</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">1)</span></code></p></td>
-<td><p>0</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{5,</span> <span class="pre">9}</span></code></p></td>
-<td><p>1</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">2)</span></code></p></td>
-<td><p>2</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">0)</span></code></p></td>
-<td><p>1</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{5,</span> <span class="pre">9}</span></code></p></td>
-<td><p>0</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">0)</span></code></p></td>
-<td><p>16</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">0)</span></code></p></td>
-<td><p>4</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{5,</span> <span class="pre">9}</span></code></p></td>
-<td><p>0</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">8)</span></code></p></td>
-<td><p>8</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1,</span> <span class="pre">0,</span> <span class="pre">0)</span></code></p></td>
-<td><p>0</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{6,</span> <span class="pre">10}</span></code></p></td>
-<td><p>0</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">(7,</span> <span class="pre">15)</span></code></p></td>
-<td><p>127</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(7,</span> <span class="pre">1,</span> <span class="pre">3,</span> <span class="pre">1)</span></code></p></td>
-<td><p>31</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{6,</span> <span class="pre">10}</span></code></p></td>
-<td><p>1</p></td>
-</tr>
-</tbody>
-</table>
+<p>creates two copies separated by four warps on the <code class="docutils literal notranslate"><span class="pre">warpid</span></code> axis.</p>
+<p>Replication is not a trick for convenience. It describes real hardware behavior. Some data is broadcast across warps, lanes, or memory regions. A logical-to-physical mapping naturally supports that because one logical element can map to a set of physical coordinates.</p>
+</section>
+<section id="offset">
+<h3>Offset<a class="headerlink" href="#offset" title="Link to this heading">#</a></h3>
+<p>The offset, or <code class="docutils literal notranslate"><span class="pre">O</span></code>, is a fixed coordinate added to every result.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mi">5</span><span class="nd">@warpid</span>
+</pre></div>
 </div>
+<p>shifts the whole placement by five on the <code class="docutils literal notranslate"><span class="pre">warpid</span></code> axis.</p>
+<p>Offsets are used to place a tile at a chosen base coordinate, reserve a region for exclusive use, or describe a tile that starts after another tile in the same resource.</p>
+</section>
+<section id="putting-the-pieces-together">
+<h3>Putting the Pieces Together<a class="headerlink" href="#putting-the-pieces-together" title="Link to this heading">#</a></h3>
+<p>A layout applies these three parts in order.</p>
+<p>First, the shard computes the base coordinate. Then the replica fans that coordinate out into zero or more additional copies. Finally, the offset shifts every coordinate.</p>
+<p>For a logical coordinate <code class="docutils literal notranslate"><span class="pre">x</span></code>, the result is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>L(x) = { D(x) + r + O | r in R }
+</pre></div>
+</div>
+<p>If there is no replica, <code class="docutils literal notranslate"><span class="pre">R</span></code> contains only the zero offset, so the result is a singleton set. If there is a replica, the result contains one coordinate for each replica position.</p>
+<p>In TIRx syntax, a full layout can look like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layout</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span>
+    <span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">2</span> <span class="p">:</span> <span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span>
+    <span class="o">+</span> <span class="mi">5</span><span class="nd">@warpid</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Read left to right, the shard places the logical tile, the replica copies it across two warp groups, and the offset shifts the whole placement to start at <code class="docutils literal notranslate"><span class="pre">warpid</span> <span class="pre">=</span> <span class="pre">5</span></code>.</p>
+<p>If the iters have already been built as objects, the same layout can be constructed directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="o">.</span><span class="n">from_iters</span><span class="p">(</span><span class="n">shard</span><span class="p">,</span> <span class="n">replica</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Most user code uses the <code class="docutils literal notranslate"><span class="pre">S[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">R[...]</span></code> notation because it is closer to the mathematical form.</p>
+</section>
+</section>
+<section id="named-axes">
+<h2>Named Axes<a class="headerlink" href="#named-axes" title="Link to this heading">#</a></h2>
+<p>The axes in a layout are not anonymous dimensions. Each axis names a real hardware coordinate or a compiler-level placement coordinate.</p>
+<p>Examples include:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>bx, by, bz
+cbx, cby, cbz
+tx
+warpid
+laneid
+wgid
+tid_in_wg
+wid_in_wg
+m
+P, F
+Bank
+TLane, TCol
+</pre></div>
+</div>
+<p>Grid axes such as <code class="docutils literal notranslate"><span class="pre">bx</span></code>, <code class="docutils literal notranslate"><span class="pre">by</span></code>, and <code class="docutils literal notranslate"><span class="pre">bz</span></code> place work across CTAs. Cluster axes such as <code class="docutils literal notranslate"><span class="pre">cbx</span></code>, <code class="docutils literal notranslate"><span class="pre">cby</span></code>, and <code class="docutils literal notranslate"><span class="pre">cbz</span></code> place work within a CTA cluster. Thread axes such as <code class="docutils literal notranslate"><span class="pre">tx</span></code>, <code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>, and <code class="docutils literal notranslate"><span class="pre">wid_in_wg</span></code> describe ownership inside a CTA or warpgroup. The axis <code class="docutils literal notranslate"><span class="pre">m</span></code> is the default linear memory axis. <code class="docutils literal notranslate"><span class="pre">P</span></code> and <code class="docutils literal notranslate"><span class="pre">F</span></code> are used for two-dimensional scratchpad-style placement. <code class="docutils literal notranslate"><span class="pre">Bank</span></code> names shared memory banks. <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">TCol</span></code> are the TIRx layout names for the TMEM Lane and Col coordinates.</p>
+<p>The axis name is part of the layout. This matters because two coordinates with the same integer value can mean different hardware things. <code class="docutils literal notranslate"><span class="pre">1&#64;tx</span></code> is not the same as <code class="docutils literal notranslate"><span class="pre">1&#64;tid_in_wg</span></code>. <code class="docutils literal notranslate"><span class="pre">1&#64;laneid</span></code> is not the same as <code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code>. The layout keeps those meanings explicit.</p>
+</section>
+<section id="forward-mapping">
+<h2>Forward Mapping<a class="headerlink" href="#forward-mapping" title="Link to this heading">#</a></h2>
+<p>Evaluating a layout means taking a logical coordinate and computing where it lands physically. The API method is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layout</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="o">*</span><span class="n">coord</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For a layout without replication, the result is one coordinate dictionary. With replication, the result is a set of coordinate dictionaries. A coordinate dictionary maps axis names to integer positions, such as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;laneid&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span> <span class="s2">&quot;warpid&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The evaluation rule has four steps.</p>
+<p>First, flatten the logical coordinate in row-major order. For a logical coordinate:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>x = (x0, x1, ..., xr-1)
+</pre></div>
+</div>
+<p>inside a logical shape:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(S0, S1, ..., Sr-1)
+</pre></div>
+</div>
+<p>the flat index is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>flat = x0 * S1 * S2 * ... * Sr-1
+     + x1 * S2 * ... * Sr-1
+     + ...
+     + xr-2 * Sr-1
+     + xr-1
+</pre></div>
+</div>
+<p>Second, split that flat index across the shard extents. If the shard extents are:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>(e0, e1, ..., en-1)
+</pre></div>
+</div>
+<p>then the split produces components:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>c0, c1, ..., cn-1
+</pre></div>
+</div>
+<p>using the same row-major order over the shard extents.</p>
+<p>Third, accumulate each component onto its axis using its stride. If shard iter <code class="docutils literal notranslate"><span class="pre">k</span></code> has extent <code class="docutils literal notranslate"><span class="pre">ek</span></code>, stride <code class="docutils literal notranslate"><span class="pre">sk</span></code>, and axis <code class="docutils literal notranslate"><span class="pre">ak</span></code>, then component <code class="docutils literal notranslate"><span class="pre">ck</span></code> contributes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ck * sk @ ak
+</pre></div>
+</div>
+<p>All contributions to the same axis are added together. The offset is then added.</p>
+<p>Fourth, apply the replica iters. Each replica iter contributes an additional offset independent of the logical coordinate. If there are several replica iters, the layout enumerates all combinations.</p>
+<p>One useful consequence of this rule is that the layout does not need to hard-code the input shape. What it needs is that the logical tile has the same total number of elements as the product of the shard extents. Once that holds, flattening and splitting define the mapping.</p>
+</section>
+<section id="case-study-tensor-core-register-tile">
+<h2>Case Study: Tensor Core Register Tile<a class="headerlink" href="#case-study-tensor-core-register-tile" title="Link to this heading">#</a></h2>
+<p>Consider a logical <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">16)</span></code> tile distributed across two warps of 32 lanes each. Each lane owns a small register fragment. The register slot is represented by the default memory axis <code class="docutils literal notranslate"><span class="pre">m</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layout</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span>
+    <span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@warpid</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@laneid</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">2</span> <span class="p">:</span> <span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span>
+    <span class="o">+</span> <span class="mi">5</span><span class="nd">@warpid</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Take a logical element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> from the <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">16)</span></code> tile.</p>
+<p>The row-major flat index is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>flat = 16 * i + j
+</pre></div>
+</div>
+<p>Splitting by the shard extents <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">2,</span> <span class="pre">4,</span> <span class="pre">2)</span></code> gives:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>c0 = i
+c1 = floor(j / 8)
+c2 = floor(j / 2) mod 4
+c3 = j mod 2
+</pre></div>
+</div>
+<p>The shard contributions are:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>laneid = 4 * c0 + c2
+warpid = c1
+m      = c3
+</pre></div>
+</div>
+<p>After adding the offset <code class="docutils literal notranslate"><span class="pre">5&#64;warpid</span></code>, this becomes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>laneid = 4 * i + floor(j / 2) mod 4
+warpid = floor(j / 8) + 5
+m      = j mod 2
+</pre></div>
+</div>
+<p>The replica term:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">R</span><span class="p">[</span><span class="mi">2</span> <span class="p">:</span> <span class="mi">4</span><span class="nd">@warpid</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>adds either <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">4</span></code> to <code class="docutils literal notranslate"><span class="pre">warpid</span></code>. So the full mapping is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>laneid = 4 * i + floor(j / 2) mod 4
+warpid = floor(j / 8) + 5 + 4 * r, where r in {0, 1}
+m      = j mod 2
+</pre></div>
+</div>
+<p>The shard places the tile on warps 5 and 6. The replica then copies it to warps 9 and 10. The same logical element therefore appears in two warp positions.</p>
+<p>This example shows why the model uses a set of physical coordinates. Replication is not naturally represented by a function from physical coordinate to logical coordinate. It is naturally represented by a function from one logical coordinate to several physical coordinates.</p>
 </section>
 <section id="case-study-blackwell-tensor-memory">
-<h3>Case Study: Blackwell Tensor Memory<a class="headerlink" href="#case-study-blackwell-tensor-memory" title="Link to this heading">#</a></h3>
-<p>The previous example bound its strides to thread axes, but the model does not
-care what an axis means: bind the strides to different axes and everything works
-the same way. To see that, we point the same model at Blackwell <strong>tensor
-memory</strong>, a 2D address space addressed by <code class="docutils literal notranslate"><span class="pre">TLane</span></code> × <code class="docutils literal notranslate"><span class="pre">TCol</span></code> (both of them
-<em>memory</em> axes). Now every stride binds to a memory axis, so the layout is a pure
-placement: no threads, no replica, no offset, and <code class="docutils literal notranslate"><span class="pre">L(x)</span></code> is a plain singleton:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">2</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">112</span><span class="p">):(</span><span class="mi">112</span><span class="nd">@TCol</span><span class="p">,</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span><span class="mi">1</span><span class="nd">@TCol</span><span class="p">)])</span>
+<h2>Case Study: Blackwell Tensor Memory<a class="headerlink" href="#case-study-blackwell-tensor-memory" title="Link to this heading">#</a></h2>
+<p>The same layout model works for memory placement. The axes do not have to be thread axes. They can be memory axes.</p>
+<p>TMEM is addressed by hardware Lane and Col coordinates. In the TIRx layout notation, those axes are written as <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">TCol</span></code>.</p>
+<p>Consider this layout:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layout</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span>
+    <span class="n">S</span><span class="p">[(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">112</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">112</span><span class="nd">@TCol</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<p>If we take the logical tile shape to equal the shard extents, <code class="docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">128,</span> <span class="pre">112)</span></code>,
-then the split step becomes the identity (<code class="docutils literal notranslate"><span class="pre">c_k</span> <span class="pre">=</span> <span class="pre">x_k</span></code>) and element <code class="docutils literal notranslate"><span class="pre">(a,</span> <span class="pre">l,</span> <span class="pre">c)</span></code>
-maps to:</p>
-<div class="math notranslate nohighlight">
-\[\mathrm{TLane} = l, \qquad \mathrm{TCol} = 112\,a + c .\]</div>
-<p>Reading off the iters, the extent-128 iter (<code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code>) lays the tile across
-<strong>128 lanes</strong>, while the extent-2 iter (<code class="docutils literal notranslate"><span class="pre">112&#64;TCol</span></code>) and the extent-112 iter
-(<code class="docutils literal notranslate"><span class="pre">1&#64;TCol</span></code>) together cover <strong>224 columns</strong> (<code class="docutils literal notranslate"><span class="pre">TCol</span> <span class="pre">=</span> <span class="pre">112</span> <span class="pre">a</span> <span class="pre">+</span> <span class="pre">c</span> <span class="pre">∈</span> <span class="pre">[0,</span> <span class="pre">224)</span></code>). Once
-again, a few elements make this concrete:</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<colgroup>
-<col style="width: 50.0%" />
-<col style="width: 25.0%" />
-<col style="width: 25.0%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">(a,</span> <span class="pre">l,</span> <span class="pre">c)</span></code></p></th>
-<th class="head"><p>TLane</p></th>
-<th class="head"><p>TCol</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></code></p></td>
-<td><p>0</p></td>
-<td><p>0</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">5,</span> <span class="pre">3)</span></code></p></td>
-<td><p>5</p></td>
-<td><p>3</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">0,</span> <span class="pre">0)</span></code></p></td>
-<td><p>0</p></td>
-<td><p>112</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">127,</span> <span class="pre">111)</span></code></p></td>
-<td><p>127</p></td>
-<td><p>223</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>Notice that the 224-wide span is intentionally <strong>not a power of two</strong>. A
-block-scaled FP8 GEMM may reach for a 224-column tile precisely because tensor
-memory cannot hold two accumulator stages plus the scale factors at a full 256
-columns. This is exactly the kind of shape that general-shape support lets the
-layout express directly, instead of forcing it through a power-of-two mold.</p>
-<p><strong>Scale factors (SFA / SFB).</strong> The accumulator above needed no replica; its scale
-factors are where the replica earns its keep. A block-scaled MMA keeps its per-block
-scale factors in tensor memory too, and there a single physical group has to feed
-several warps at the same time, exactly the broadcast that a replica provides. The
-atom looks like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">32</span><span class="p">,</span> <span class="n">sf_per_mma</span><span class="p">):(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span> <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">32</span><span class="nd">@TLane</span><span class="p">])</span>
+<p>If the logical tile shape is <code class="docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">128,</span> <span class="pre">112)</span></code>, the split components are just the logical coordinates themselves. For element <code class="docutils literal notranslate"><span class="pre">(a,</span> <span class="pre">l,</span> <span class="pre">c)</span></code>, the mapping is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TLane = l
+TCol  = 112 * a + c
 </pre></div>
 </div>
-<p>Here we have 32 rows on <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">sf_per_mma</span></code> scale factors on <code class="docutils literal notranslate"><span class="pre">TCol</span></code>, and
-the replica <code class="docutils literal notranslate"><span class="pre">R[4:32&#64;TLane]</span></code> replicates that 32-row group along the TMEM <code class="docutils literal notranslate"><span class="pre">TLane</span></code>
-axis (32 → 128 TMEM lanes, with stride 32 covering <code class="docutils literal notranslate"><span class="pre">TLane</span></code> 0–127). This is the
-“warpx4” router: each of the four warps’ 32-lane TMEM window sees the same
-scale-factor group, and the actual reads are then carried out by those warps’
-threads. From there the atom is direct-summed with an outer iter over <code class="docutils literal notranslate"><span class="pre">(M</span> <span class="pre">rows,</span>
-<span class="pre">K</span> <span class="pre">scale-factor</span> <span class="pre">groups)</span></code>, packing <code class="docutils literal notranslate"><span class="pre">epc</span> <span class="pre">=</span> <span class="pre">32</span> <span class="pre">/</span> <span class="pre">SF_bits</span></code> scale factors into each
-32-bit <code class="docutils literal notranslate"><span class="pre">TCol</span></code> cell (for instance four fp8 <code class="docutils literal notranslate"><span class="pre">e8m0</span></code> SFs per cell); optional
-stride-0 <code class="docutils literal notranslate"><span class="pre">reuse</span></code> and outer <code class="docutils literal notranslate"><span class="pre">pipe_depth</span></code> iters then capture SF reuse across MMAs
-and double-buffering. The payoff is that a single <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> model expresses
-both the accumulator (a pure placement, no replica) and its scale factors (a
-replicated, routed placement) within the very same tensor-memory address space.</p>
+<p>The extent-128 iter with stride <code class="docutils literal notranslate"><span class="pre">1&#64;TLane</span></code> fills the 128 TMEM Lane rows. The extent-2 iter with stride <code class="docutils literal notranslate"><span class="pre">112&#64;TCol</span></code> and the extent-112 iter with stride <code class="docutils literal notranslate"><span class="pre">1&#64;TCol</span></code> together cover 224 columns:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TCol in [0, 224)
+</pre></div>
+</div>
+<p>The 224-column span is intentional. TMEM layouts do not have to be powers of two. A block-scaled FP8 GEMM may choose a 224-column accumulator because a full 256-column tile would not leave enough TMEM capacity for two accumulator stages plus scale factors. The layout API can express that shape directly.</p>
+</section>
+<section id="scale-factor-layouts">
+<h2>Scale Factor Layouts<a class="headerlink" href="#scale-factor-layouts" title="Link to this heading">#</a></h2>
+<p>The accumulator layout above is a pure placement. Each logical accumulator element maps to one TMEM coordinate. Scale factors for block-scaled MMA are different because the same physical group may need to be visible across several warp windows. This is where replication becomes useful.</p>
+<p>A compact scale-factor layout can be written as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">scale</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span>
+    <span class="n">S</span><span class="p">[(</span><span class="mi">32</span><span class="p">,</span> <span class="n">sf_per_mma</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="nd">@TLane</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@TCol</span><span class="p">)]</span>
+    <span class="o">+</span> <span class="n">R</span><span class="p">[</span><span class="mi">4</span> <span class="p">:</span> <span class="mi">32</span><span class="nd">@TLane</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The shard places a 32-row scale-factor group in TMEM:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TLane = r
+TCol  = s
+</pre></div>
+</div>
+<p>for a logical scale coordinate <code class="docutils literal notranslate"><span class="pre">(r,</span> <span class="pre">s)</span></code>.</p>
+<p>The replica term creates four copies separated by 32 lanes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TLane = r + 32 * q, where q in {0, 1, 2, 3}
+TCol  = s
+</pre></div>
+</div>
+<p>So the 32-row group is visible at TMEM lanes 0 through 31, 32 through 63, 64 through 95, and 96 through 127. This is the <code class="docutils literal notranslate"><span class="pre">warpx4</span></code> broadcast pattern (<a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Data Layout Across GPU Generations</span></a>). Each of the four warp-sized TMEM lane windows sees the same scale-factor group.</p>
+<p>In the full block-scaled MMA layout, this atom is combined with outer iters over M rows and K scale-factor groups. Several scale factors may also be packed into one 32-bit <code class="docutils literal notranslate"><span class="pre">TCol</span></code> cell, depending on the scale-factor dtype. For example, fp8 scale factors can pack four values into one 32-bit column cell. Optional stride-zero reuse and pipeline-depth iters can then describe scale reuse across multiple MMAs and double buffering.</p>
+<p>The important part is that the same <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> model describes both cases. The accumulator is a single placement in TMEM. The scale factors are a replicated placement in the same TMEM address space.</p>
 </section>
 <section id="ready-made-layouts">
-<h3>Ready-Made Layouts<a class="headerlink" href="#ready-made-layouts" title="Link to this heading">#</a></h3>
-<p>In practice you rarely hand-write the hardware tiles above. The placements that come
-up again and again, a <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> accumulator, the register fragment a
-<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> produces, a warpgroup register tile, already ship as
-constructors in <code class="docutils literal notranslate"><span class="pre">tvm.tirx.layout</span></code>, each one returning a ready-to-use
-<code class="docutils literal notranslate"><span class="pre">TileLayout</span></code>:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">tmem_datapath_layout(datapath,</span> <span class="pre">rows,</span> <span class="pre">cols)</span></code> gives you the logical-row →
-physical TMEM-lane placement that an MMA writes, for datapath <code class="docutils literal notranslate"><span class="pre">&quot;D&quot;</span></code> (M=128, an
-identity row→lane map) or <code class="docutils literal notranslate"><span class="pre">&quot;F&quot;</span></code> (M=64, warp-scattered).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">tcgen05_atom_layout(instr_shape,</span> <span class="pre">tensor_shape,</span> <span class="pre">dtype)</span></code> gives you the
-per-warpgroup register tile that a <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> / <code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code> atom
-(<code class="docutils literal notranslate"><span class="pre">.32x32b</span></code>, <code class="docutils literal notranslate"><span class="pre">.16x64b</span></code>, …) moves to and from registers. At the DSL level the
-tile is warpgroup-distributed, but it lowers to four warp-collective
-<code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> / <code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code> instructions, each PTX instruction issued by
-one warp, which moves its own 32 TMEM lanes.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">wg_local_layout(cols,</span> <span class="pre">rows=128)</span></code> gives you a warpgroup register tile,
-with one row per thread on <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>.</p></li>
-</ul>
-<p>Every one of these returns an ordinary <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> built from the same <code class="docutils literal notranslate"><span class="pre">S</span></code> /
-<code class="docutils literal notranslate"><span class="pre">R</span></code> spec, so nothing is hidden: you can inspect what it produced, compose it
-further, or drop down to writing the spec by hand whenever a shape is unusual,
-which is exactly what the accumulator case study above did.</p>
+<h2>Ready-Made Layouts<a class="headerlink" href="#ready-made-layouts" title="Link to this heading">#</a></h2>
+<p>Most kernels do not hand-write every hardware layout. TIRx provides constructors for the layouts that appear often.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tmem_datapath_layout</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>returns the TMEM accumulator layout written by <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code>. The <code class="docutils literal notranslate"><span class="pre">datapath</span></code> argument selects the row placement pattern. For example, <code class="docutils literal notranslate"><span class="pre">&quot;D&quot;</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">M</span> <span class="pre">=</span> <span class="pre">128</span></code> identity-style placement, while <code class="docutils literal notranslate"><span class="pre">&quot;F&quot;</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">M</span> <span class="pre">=</span> <span class="pre">64</span></code> scattered placement.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tcgen05_atom_layout</span><span class="p">(</span><span class="n">instr_shape</span><span class="p">,</span> <span class="n">tensor_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>returns the register tile layout moved by a <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> or <code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code> atom. Examples of instruction shapes include <code class="docutils literal notranslate"><span class="pre">.32x32b</span></code>, <code class="docutils literal notranslate"><span class="pre">.16x64b</span></code>, <code class="docutils literal notranslate"><span class="pre">.16x128b</span></code>, and related forms. At the DSL level this is a warpgroup-distributed tile. During lowering it becomes four warp-collective <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> or <code class="docutils literal notranslate"><span class="pre">tcgen05.st</span></code> instructions, one per warp, with each warp handling its own 32 TMEM lanes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">wg_local_layout</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>returns a warpgroup-local register tile, usually with one row per thread on <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>.</p>
+<p>These helpers are there to avoid rewriting common hardware mappings by hand. They do not hide the model. Each helper returns an ordinary <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> built from the same <code class="docutils literal notranslate"><span class="pre">S</span></code> and <code class="docutils literal notranslate"><span class="pre">R</span></code> pieces described above.</p>
 </section>
+<section id="swizzlelayout-and-composelayout">
+<h2>SwizzleLayout and ComposeLayout<a class="headerlink" href="#swizzlelayout-and-composelayout" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code> is affine. It can express strides, replication, and offsets over named axes. That is enough for many placements, including thread fragments, TMEM tiles, and compact scale-factor layouts.</p>
+<p>Shared memory swizzles need something else. The swizzle used to avoid bank conflicts is not an affine stride pattern. It is an XOR-based permutation of the linear shared-memory address.</p>
+<p>TIRx therefore keeps swizzling as a separate layout object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SwizzleLayout</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>and composes it with the tile layout:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ComposeLayout</span><span class="p">(</span><span class="n">swizzle</span><span class="p">,</span> <span class="n">tile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The tile layout first produces a linear memory address. The swizzle then permutes that address. Keeping these two layers separate is cleaner than forcing the XOR permutation into the affine layout model.</p>
 </section>
-<section id="swizzlelayout-composelayout">
-<h2>SwizzleLayout, ComposeLayout<a class="headerlink" href="#swizzlelayout-composelayout" title="Link to this heading">#</a></h2>
-<p>Everything so far has been affine: a logical index multiplied by some strides, plus
-an offset. That is enough to describe placement, but it runs into a wall at one of
-the most common performance problems in shared memory, bank conflicts, because the
-cure for those is a deliberately <em>non-linear</em> shuffle of addresses. This is why TIRx
-introduces a second kind of layout.</p>
-<p>A <em>swizzle</em> is an XOR-based permutation of the linear memory address. There is no
-way to write it as a strided <code class="docutils literal notranslate"><span class="pre">TileLayout</span></code>, so rather than twist the affine model
-out of shape to accommodate it, TIRx keeps it separate and composes the two: a
-<code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> stacked on top of the tile layout, written
-<code class="docutils literal notranslate"><span class="pre">ComposeLayout(swizzle,</span> <span class="pre">tile)</span></code>. The tile layout produces a linear memory address,
-and the swizzle then permutes that address. The next few sections explain why the
-permutation is needed in the first place and how it is defined.</p>
 <section id="why-swizzle">
-<h3>Why Swizzle<a class="headerlink" href="#why-swizzle" title="Link to this heading">#</a></h3>
-<p>Recall the mechanism from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>. Shared memory is organized as
-<strong>32 banks of 4 bytes</strong>, and a <em>bank conflict</em> occurs, serializing the access,
-whenever the lanes of a single access touch different addresses that fall in the
-same bank. With a plain row-major tile this conflict is not bad luck but
-<em>structural</em>. Take the <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> <code class="docutils literal notranslate"><span class="pre">float16</span></code> tile <code class="docutils literal notranslate"><span class="pre">S[(8,64):(64&#64;m,1&#64;m)]</span></code>, where
-element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> sits at address <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code>. A single row spans
-<code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">×</span> <span class="pre">2</span> <span class="pre">=</span> <span class="pre">128</span></code> bytes, which is exactly one bank line, so walking <em>down a column</em>
-(holding <code class="docutils literal notranslate"><span class="pre">j</span></code> fixed and increasing <code class="docutils literal notranslate"><span class="pre">i</span></code>) jumps a full bank line on every step and
-lands on the <strong>same bank</strong> each time, an 8-way column conflict (8 rows all funneled
-into one bank). The transform below is what scatters those accesses back across the
-banks, and we will close the loop on this very tile in the worked example.</p>
+<h2>Why Swizzle<a class="headerlink" href="#why-swizzle" title="Link to this heading">#</a></h2>
+<p>Shared memory is divided into 32 banks, with each bank word holding 4 bytes. When the lanes of one access touch different addresses in the same bank, the access is serialized by a bank conflict.</p>
+<p>A plain row-major tile can create this conflict structurally. Consider an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> float16 tile with row-major layout:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">64</span><span class="nd">@m</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@m</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>The logical element <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> has linear element address:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>m = 64 * i + j
+</pre></div>
+</div>
+<p>Each row is 64 float16 values, or 128 bytes. That is exactly one full shared memory bank line. If a warp reads down a column with fixed <code class="docutils literal notranslate"><span class="pre">j</span></code>, each row step advances by one full 128-byte line. The bank index repeats, so the column read collapses onto the same bank across rows.</p>
+<p>The swizzle changes this by making the low address bits depend on higher row bits. A column that would otherwise land repeatedly on the same bank is scattered across different banks.</p>
 </section>
-<section id="the-transform">
-<h3>The Transform<a class="headerlink" href="#the-transform" title="Link to this heading">#</a></h3>
-<p>The idea behind the swizzle is simple: make a column’s addresses depend on the row,
-so that they scatter across banks instead of stacking on one. An XOR achieves this
-cheaply, with no multiply and no table lookup. A <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> is controlled by
-three integer parameters, <code class="docutils literal notranslate"><span class="pre">per_element</span></code> (M), <code class="docutils literal notranslate"><span class="pre">swizzle_len</span></code> (B), and
-<code class="docutils literal notranslate"><span class="pre">atom_len</span></code> (S), and maps a linear element address <code class="docutils literal notranslate"><span class="pre">m</span></code> as follows, leaving the
-low <code class="docutils literal notranslate"><span class="pre">M</span></code> bits untouched while XOR-ing a higher group of bits down into a lower one:</p>
-<div class="math notranslate nohighlight">
-\[\text{addr}(m) = \bigl(f(m \gg M)\bigr)\!\cdot\! 2^{M} + (m \bmod 2^{M}),
-\qquad
-f(x) = x \oplus \bigl((x \mathbin{\&amp;} (\,(2^{B}-1)\ll S\,)) \gg S\bigr).\]</div>
-<p>In words, the bits at positions <code class="docutils literal notranslate"><span class="pre">[S,</span> <span class="pre">S+B)</span></code> of <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">m</span> <span class="pre">&gt;&gt;</span> <span class="pre">M</span></code> are XOR-ed into the
-bits <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">B)</span></code>. For the layout to be well-formed we need <code class="docutils literal notranslate"><span class="pre">S</span> <span class="pre">≥</span> <span class="pre">B</span></code>.</p>
+<section id="the-swizzle-transform">
+<h2>The Swizzle Transform<a class="headerlink" href="#the-swizzle-transform" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">SwizzleLayout</span></code> is controlled by three integer parameters:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>per_element = M
+swizzle_len = B
+atom_len    = S
+</pre></div>
+</div>
+<p>The input is a linear element address <code class="docutils literal notranslate"><span class="pre">m</span></code>.</p>
+<p>The low <code class="docutils literal notranslate"><span class="pre">M</span></code> bits of <code class="docutils literal notranslate"><span class="pre">m</span></code> are left unchanged. This preserves a small contiguous group of elements. The higher bits are shifted down into a temporary value:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>x = m &gt;&gt; M
+</pre></div>
+</div>
+<p>Then the bit group at positions <code class="docutils literal notranslate"><span class="pre">[S,</span> <span class="pre">S</span> <span class="pre">+</span> <span class="pre">B)</span></code> of <code class="docutils literal notranslate"><span class="pre">x</span></code> is XORed into the bit group <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">B)</span></code> of <code class="docutils literal notranslate"><span class="pre">x</span></code>. The swizzled address is then formed by putting the unchanged low <code class="docutils literal notranslate"><span class="pre">M</span></code> bits back.</p>
+<p>Equivalently:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>mask = (1 &lt;&lt; B) - 1
+
+low  = m &amp; ((1 &lt;&lt; M) - 1)
+x    = m &gt;&gt; M
+x2   = x ^ ((x &gt;&gt; S) &amp; mask)
+
+addr = (x2 &lt;&lt; M) | low
+</pre></div>
+</div>
+<p>For the layout to be well formed, <code class="docutils literal notranslate"><span class="pre">S</span></code> must be at least <code class="docutils literal notranslate"><span class="pre">B</span></code>.</p>
+<p>The point of the transform is not to change which logical elements are in the tile. It changes where those elements land in shared memory. The MMA still reads the same logical tile. The swizzle makes the physical bank pattern better.</p>
 </section>
-<section id="choosing-the-parameters">
-<h3>Choosing the Parameters<a class="headerlink" href="#choosing-the-parameters" title="Link to this heading">#</a></h3>
-<p>You will seldom choose <code class="docutils literal notranslate"><span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">B</span></code>, and <code class="docutils literal notranslate"><span class="pre">S</span></code> by hand. In practice they are
-pinned down by two things you already know: the <strong>element dtype</strong> and the
-<strong>swizzle mode</strong>, that is, the 32B / 64B / 128B shared-memory swizzle widths:</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}M = \operatorname{bitlen}\!\left(\frac{128}{\text{dtype bits}}\right) - 1,
-\qquad
-B = \begin{cases} 1 &amp; 32\text{B} \\ 2 &amp; 64\text{B} \\ 3 &amp; 128\text{B} \end{cases},
-\qquad
-S = 3 .\end{split}\]</div>
-<p>As a concrete example, <code class="docutils literal notranslate"><span class="pre">float16</span></code> (16-bit) gives <code class="docutils literal notranslate"><span class="pre">M</span> <span class="pre">=</span> <span class="pre">bitlen(8)</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">=</span> <span class="pre">3</span></code>, and
-paired with a 128B swizzle that becomes
-<code class="docutils literal notranslate"><span class="pre">SwizzleLayout(per_element=3,</span> <span class="pre">swizzle_len=3,</span> <span class="pre">atom_len=3)</span></code>. Intuitively, <code class="docutils literal notranslate"><span class="pre">M</span></code>
-keeps a 16-byte (128-bit) contiguous run unswizzled, which matches the minimum
-vector access so the swizzle never splits a vectorized load. You attach the result
-to a buffer by composing the two layers: <code class="docutils literal notranslate"><span class="pre">ComposeLayout(SwizzleLayout(3,</span> <span class="pre">3,</span> <span class="pre">3),</span>
-<span class="pre">tile)</span></code> is what you pass to the <code class="docutils literal notranslate"><span class="pre">layout=</span></code> of a swizzled SMEM allocation.</p>
+<section id="choosing-swizzle-parameters">
+<h2>Choosing Swizzle Parameters<a class="headerlink" href="#choosing-swizzle-parameters" title="Link to this heading">#</a></h2>
+<p>In normal use, the swizzle parameters are chosen from the dtype and the shared-memory swizzle mode. The common modes are 32-byte, 64-byte, and 128-byte swizzles.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">per_element</span></code> parameter is chosen so that a small vector-sized group stays contiguous. For float16, a 16-byte vector contains 8 elements, so:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>M = log2(8) = 3
+</pre></div>
+</div>
+<p>With a 128-byte swizzle, the layout uses:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SwizzleLayout</span><span class="p">(</span><span class="n">per_element</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">swizzle_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">atom_len</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This keeps the 16-byte vector group intact while still permuting the larger shared-memory address pattern enough to break the column bank conflict.</p>
+<p>Most code should not derive these parameters by hand. The dtype and descriptor mode usually determine them. What matters for the programmer is that the swizzle in the TIRx layout, the TMA descriptor, and the MMA expectation all match.</p>
+<p>A swizzled shared memory allocation therefore looks like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tile</span> <span class="o">=</span> <span class="n">TileLayout</span><span class="p">(</span><span class="n">S</span><span class="p">[(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span><span class="mi">64</span><span class="nd">@m</span><span class="p">,</span> <span class="mi">1</span><span class="nd">@m</span><span class="p">)])</span>
+<span class="n">swizzle</span> <span class="o">=</span> <span class="n">SwizzleLayout</span><span class="p">(</span><span class="n">per_element</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">swizzle_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">atom_len</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">layout</span> <span class="o">=</span> <span class="n">ComposeLayout</span><span class="p">(</span><span class="n">swizzle</span><span class="p">,</span> <span class="n">tile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The composed layout is what gets attached to the shared memory buffer.</p>
 </section>
 <section id="bank-and-line-of-an-element">
-<h3>Bank and Line of an Element<a class="headerlink" href="#bank-and-line-of-an-element" title="Link to this heading">#</a></h3>
-<p>Before we can claim the swizzle removed the conflict, we need a way to translate a
-swizzled address back into the bank it actually touches. Since a bank word is 4
-bytes and an element occupies <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">dtype_bytes</span></code> bytes, the swizzled element
-address <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">=</span> <span class="pre">addr(m)</span></code> lands in</p>
-<div class="math notranslate nohighlight">
-\[\text{bankword} = \left\lfloor \frac{a \cdot b}{4} \right\rfloor,
-\qquad
-\text{bank} = \text{bankword} \bmod 32,
-\qquad
-\text{line} = \left\lfloor \frac{\text{bankword}}{32} \right\rfloor .\]</div>
+<h2>Bank and Line of an Element<a class="headerlink" href="#bank-and-line-of-an-element" title="Link to this heading">#</a></h2>
+<p>To see whether a swizzle helps, translate the swizzled element address back into a shared memory bank.</p>
+<p>Let <code class="docutils literal notranslate"><span class="pre">addr</span></code> be the swizzled element address, and let <code class="docutils literal notranslate"><span class="pre">b</span></code> be the element size in bytes. The byte address is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>byte = addr * b
+</pre></div>
+</div>
+<p>The bank is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>bank = floor(byte / 4) mod 32
+</pre></div>
+</div>
+<p>The 128-byte bank line is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>line = floor(byte / 128)
+</pre></div>
+</div>
+<p>For float16, <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">2</span></code>, so the bank formula becomes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>bank = floor(addr / 2) mod 32
+</pre></div>
+</div>
+<p>This is the formula used in the worked example below.</p>
 </section>
-<section id="worked-example-128b-swizzle-float16-8-64-tile">
-<h3>Worked Example: 128B Swizzle, <code class="docutils literal notranslate"><span class="pre">float16</span></code>, <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> Tile<a class="headerlink" href="#worked-example-128b-swizzle-float16-8-64-tile" title="Link to this heading">#</a></h3>
-<p>Let us return to the conflicting tile from earlier and finish the story. Applying
-<code class="docutils literal notranslate"><span class="pre">SwizzleLayout(3,</span> <span class="pre">3,</span> <span class="pre">3)</span></code> over <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">64i</span> <span class="pre">+</span> <span class="pre">j</span></code>, the address simplifies to</p>
-<div class="math notranslate nohighlight">
-\[\text{addr}(i, j) = 64\,i + 8\,(\lfloor j/8 \rfloor \oplus i) + (j \bmod 8),\]</div>
-<p>and with <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">=</span> <span class="pre">2</span></code> we have <code class="docutils literal notranslate"><span class="pre">bank</span> <span class="pre">=</span> <span class="pre">⌊addr/2⌋</span> <span class="pre">mod</span> <span class="pre">32</span></code>. Now read column <code class="docutils literal notranslate"><span class="pre">j</span> <span class="pre">=</span> <span class="pre">0</span></code>
-down the 8 rows: the addresses are <code class="docutils literal notranslate"><span class="pre">addr</span> <span class="pre">=</span> <span class="pre">72</span> <span class="pre">i</span></code>, which fall on banks
-<code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">4,</span> <span class="pre">8,</span> <span class="pre">12,</span> <span class="pre">16,</span> <span class="pre">20,</span> <span class="pre">24,</span> <span class="pre">28</span></code>: <strong>eight distinct banks, and no conflict</strong>. Compare
-that to the unswizzled tile, where the same column gives <code class="docutils literal notranslate"><span class="pre">bank</span> <span class="pre">=</span> <span class="pre">⌊j/2⌋</span></code> for every
-row, a single bank, fully serialized. The swizzle did exactly what we wanted.</p>
-<p>The 128B/<code class="docutils literal notranslate"><span class="pre">float16</span></code> case above is just one instance of a more general guarantee:
-with swizzle, a read of any <strong>8×16B column is conflict-free, under any format</strong>
-(32B / 64B / 128B). The catch is that this holds only when the element width,
-swizzle mode, and access pattern all match the swizzle (the TMA/MMA descriptor mode
-the parameters were chosen for) and not for an arbitrary access. The <code class="docutils literal notranslate"><span class="pre">B</span></code>
-parameter is tuned per swizzle width precisely so that the eight 16-byte rows of a
-column always land on distinct banks.</p>
-<p>You can watch all of this in the interactive demo. Pick a dtype and a swizzle mode
-(<code class="docutils literal notranslate"><span class="pre">off</span></code> / <code class="docutils literal notranslate"><span class="pre">none</span></code> / <code class="docutils literal notranslate"><span class="pre">32B</span></code> / <code class="docutils literal notranslate"><span class="pre">64B</span></code> / <code class="docutils literal notranslate"><span class="pre">128B</span></code>) in the <em>Swizzle (SMEM)</em> control, and the
-physical panel switches to a <em>line × bank</em> view, where each cell is one 4-byte bank
-word holding <code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">/</span> <span class="pre">dtype_bytes</span></code> elements side by side. Choose <code class="docutils literal notranslate"><span class="pre">none</span></code> and a column
-collapses onto a single bank, the conflict made visible; turn a swizzle on and the
-same column scatters across the banks.</p>
-</section>
+<section id="worked-example-128b-swizzle-on-an-8-64-float16-tile">
+<h2>Worked Example: 128B Swizzle on an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> float16 Tile<a class="headerlink" href="#worked-example-128b-swizzle-on-an-8-64-float16-tile" title="Link to this heading">#</a></h2>
+<p>Return to the row-major float16 tile:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>m = 64 * i + j
+</pre></div>
+</div>
+<p>Use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SwizzleLayout</span><span class="p">(</span><span class="n">per_element</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">swizzle_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">atom_len</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The transform becomes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>x    = m &gt;&gt; 3
+addr = ((x ^ ((x &gt;&gt; 3) &amp; 7)) &lt;&lt; 3) | (m &amp; 7)
+</pre></div>
+</div>
+<p>Since:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>m = 64 * i + j
+</pre></div>
+</div>
+<p>we can write:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>q = floor(j / 8)
+r = j mod 8
+</pre></div>
+</div>
+<p>and the swizzled address is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>addr = 64 * i + 8 * (q xor i) + r
+</pre></div>
+</div>
+<p>Now look at column <code class="docutils literal notranslate"><span class="pre">j</span> <span class="pre">=</span> <span class="pre">0</span></code>. Then <code class="docutils literal notranslate"><span class="pre">q</span> <span class="pre">=</span> <span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">=</span> <span class="pre">0</span></code>, so:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>addr = 72 * i
+</pre></div>
+</div>
+<p>For float16, the bank is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>bank = floor(addr / 2) mod 32
+</pre></div>
+</div>
+<p>So the eight rows map to:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>i = 0: bank 0
+i = 1: bank 4
+i = 2: bank 8
+i = 3: bank 12
+i = 4: bank 16
+i = 5: bank 20
+i = 6: bank 24
+i = 7: bank 28
+</pre></div>
+</div>
+<p>The column now touches eight distinct banks. The conflict is gone.</p>
+<p>Without swizzling, the same column has address:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>m = 64 * i
+</pre></div>
+</div>
+<p>and therefore:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>bank = floor(64 * i / 2) mod 32 = 0
+</pre></div>
+</div>
+<p>Every row lands on bank 0, so the access is serialized. The swizzle changes only the physical placement, but that is enough to turn the column access into a conflict-free one.</p>
+<p>This guarantee depends on using the swizzle in the way it was designed. The dtype, swizzle width, and access shape have to match the TMA and MMA descriptor modes. A 128-byte float16 swizzle is designed around the relevant 16-byte row chunks and Tensor Core access pattern. It is not a promise that arbitrary shared memory accesses become conflict free. The demo at the top of this chapter makes this visible: choose a dtype and swizzle mode, and watch a column collapse onto one bank with no swizzle, then scatter across the bank view once the matching swizzle is applied.</p>
 </section>
 <section id="design-rationale">
 <h2>Design Rationale<a class="headerlink" href="#design-rationale" title="Link to this heading">#</a></h2>
-<p>It is worth closing by naming the three choices that pushed this model toward what
-it is, rather than toward some plainer scheme.</p>
-<ul class="simple">
-<li><p><strong>General shape support.</strong> Non-power-of-two shapes turn out to be everywhere, in
-global tensors, in multi-stage shared-memory buffers, and in capacity-limited
-on-chip scratchpads, so the layout treats general shapes as the default rather
-than bolting them on as a special case.</p></li>
-<li><p><strong>Logical-to-physical mapping.</strong> The map runs from logical coordinates to a <em>set</em>
-of physical coordinates, not the other way around. This is what lets replication,
-one logical element living in several physical locations, be expressed cleanly,
-something a physical-to-logical formulation cannot always manage for strided
-patterns.</p></li>
-<li><p><strong>Explicit hardware axes.</strong> Each axis carries its hardware meaning inside the
-layout itself, so an expression is unambiguous without any external context. For
-instance, <code class="docutils literal notranslate"><span class="pre">1&#64;tx</span></code> (a block-wide thread id) and <code class="docutils literal notranslate"><span class="pre">1&#64;tid_in_wg</span></code> (a thread id
-within a warpgroup) stay distinct, instead of collapsing into a generic <code class="docutils literal notranslate"><span class="pre">t</span></code>
-whose meaning depends on where it was defined. Legality and feasibility checks,
-meanwhile, are deliberately left to the higher-level tile-primitive layer (Parts
-III–IV) rather than to the layout itself.</p></li>
-</ul>
+<p>The layout API follows three design choices.</p>
+<p>First, it supports general shapes. Hardware tiles are not always powers of two. Global tensors, shared memory stages, TMEM accumulators, and scale-factor buffers often have shapes that come from capacity limits or algorithm choices. The layout model treats those shapes as normal.</p>
+<p>Second, the mapping goes from logical coordinates to physical coordinates. This direction is important because replication is common. One logical element may live in several physical places. A logical-to-physical map represents that directly as a set of coordinates.</p>
+<p>Third, hardware axes are explicit. The layout does not use anonymous dimensions and rely on context to explain them later. The difference between <code class="docutils literal notranslate"><span class="pre">tx</span></code>, <code class="docutils literal notranslate"><span class="pre">tid_in_wg</span></code>, <code class="docutils literal notranslate"><span class="pre">laneid</span></code>, <code class="docutils literal notranslate"><span class="pre">warpid</span></code>, <code class="docutils literal notranslate"><span class="pre">TLane</span></code>, and <code class="docutils literal notranslate"><span class="pre">TCol</span></code> is written into the layout itself.</p>
+<p>Legality and feasibility checks are not the job of the layout object alone. A layout can say where data is placed. Higher-level tile primitives decide whether a given operation can legally and efficiently use that placement. This separation keeps the layout API small while still giving the compiler enough information to dispatch real hardware operations.</p>
 </section>
 </section>
 
@@ -862,23 +871,27 @@ III–IV) rather than to the layout itself.</p></li>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layouts-by-example">Layouts by example</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#layouts-by-example">Layouts by Example</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-demo">Interactive Demo</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tilelayout">TileLayout</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#forward-mapping">Forward Mapping</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-nvidia-tensor-core-tile">Case Study: NVIDIA Tensor-Core Tile</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-blackwell-tensor-memory">Case Study: Blackwell Tensor Memory</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ready-made-layouts">Ready-Made Layouts</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#shard">Shard</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#replica">Replica</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#offset">Offset</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#putting-the-pieces-together">Putting the Pieces Together</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzlelayout-composelayout">SwizzleLayout, ComposeLayout</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-swizzle">Why Swizzle</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-transform">The Transform</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-the-parameters">Choosing the Parameters</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bank-and-line-of-an-element">Bank and Line of an Element</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#worked-example-128b-swizzle-float16-8-64-tile">Worked Example: 128B Swizzle, <code class="docutils literal notranslate"><span class="pre">float16</span></code>, <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> Tile</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#named-axes">Named Axes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forward-mapping">Forward Mapping</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-tensor-core-register-tile">Case Study: Tensor Core Register Tile</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#case-study-blackwell-tensor-memory">Case Study: Blackwell Tensor Memory</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scale-factor-layouts">Scale Factor Layouts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ready-made-layouts">Ready-Made Layouts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzlelayout-and-composelayout">SwizzleLayout and ComposeLayout</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-swizzle">Why Swizzle</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-swizzle-transform">The Swizzle Transform</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-swizzle-parameters">Choosing Swizzle Parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bank-and-line-of-an-element">Bank and Line of an Element</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#worked-example-128b-swizzle-on-an-8-64-float16-tile">Worked Example: 128B Swizzle on an <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> float16 Tile</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#design-rationale">Design Rationale</a></li>
 </ul>
   </nav></div>
