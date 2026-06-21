@@ -407,7 +407,7 @@ Ready-Made Layouts
 
 In practice you rarely hand-write the hardware tiles above. The placements that come
 up again and again — a ``tcgen05`` accumulator, the register fragment a
-``tcgen05.ld`` produces, a warpgroup-local register tile — already ship as
+``tcgen05.ld`` produces, a warpgroup register tile — already ship as
 constructors in ``tvm.tirx.layout``, each one returning a ready-to-use
 ``TileLayout``:
 
@@ -420,7 +420,7 @@ constructors in ``tvm.tirx.layout``, each one returning a ready-to-use
   tile is warpgroup-distributed, but it lowers to four warp-collective
   ``tcgen05.ld`` / ``tcgen05.st`` instructions — each PTX instruction is issued by
   one warp, which moves its own 32 TMEM lanes.
-- ``wg_local_layout(cols, rows=128)`` gives you a warpgroup-local register tile,
+- ``wg_local_layout(cols, rows=128)`` gives you a warpgroup register tile,
   with one row per thread on ``tid_in_wg``.
 
 Every one of these returns an ordinary ``TileLayout`` built from the same ``S`` /
