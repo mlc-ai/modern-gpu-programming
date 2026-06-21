@@ -20,7 +20,7 @@ Before we can place tiles in memory, we need the algorithm those tiles serve. Fo
 
 $$O = \text{softmax}(QK^{\top} / \sqrt{d})V$$
 
-The most direct reading of this formula is also the one we cannot use. It says: form the full score matrix `S = QKᵀ`, softmax it, then multiply by `V`. The trouble is that the full `S` is enormous. At seq=4096 it holds roughly 16M elements per head, about 64 MB in fp32, which is orders of magnitude larger than SMEM or the single 128×512 TMEM region. There is simply nowhere on-chip to put it. Flash Attention's answer is to never materialize `S` at all. Instead it streams `K/V` in blocks and carries three per-row running states that summarize everything seen so far:
+Read literally, the formula says to form the full score matrix `S = QKᵀ`, softmax it, then multiply by `V`. That is the one approach we cannot use, because the full `S` is enormous. At seq=4096 it holds roughly 16M elements per head, about 64 MB in fp32, which is orders of magnitude larger than SMEM or the single 128×512 TMEM region. There is simply nowhere on-chip to put it. Flash Attention's answer is to never materialize `S` at all. Instead it streams `K/V` in blocks and carries three per-row running states that summarize everything seen so far:
 
 - `row_max`: the maximum score seen so far.
 - `row_sum`: the running denominator of softmax.
