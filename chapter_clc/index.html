@@ -317,9 +317,9 @@ in clusters that share DSMEM and synchronize through cluster barriers — are a 
 addition that makes their <strong>scheduling</strong> dynamic.</p>
 <section id="the-two-instructions">
 <h2>The Two Instructions<a class="headerlink" href="#the-two-instructions" title="Link to this heading">#</a></h2>
-<p>We have said CLC hands tiles out on demand; now we can see exactly how a CTA asks for one. The whole
-mechanism is exposed as just two PTX instructions (<code class="docutils literal notranslate"><span class="pre">clusterlaunchcontrol</span></code>, PTX ISA 8.6): one asks the
-grid scheduler for the next tile, and the other reads back the answer. Let us look at each in turn.</p>
+<p>CLC hands tiles out on demand. A CTA asks for one through just two PTX instructions
+(<code class="docutils literal notranslate"><span class="pre">clusterlaunchcontrol</span></code>, PTX ISA 8.6): one asks the grid scheduler for the next tile, and the other
+reads back the answer. Let us look at each in turn.</p>
 <ul class="simple">
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">try_cancel</span></code></strong> — <code class="docutils literal notranslate"><span class="pre">clusterlaunchcontrol.try_cancel.async</span></code>. This is a single asynchronous request
 that asks the scheduler to <em>cancel the launch</em> of the next pending cluster and hand this cluster its
