@@ -271,22 +271,17 @@
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#two-constraints-that-never-went-away">Two Constraints That Never Went Away</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ampere-register-fragment-over-warp-lane">Ampere: Register Fragment over Warp/Lane</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-tensor-core-expects-an-m8n8-register-fragment">What the Tensor Core Expects: an m8n8 Register Fragment</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ldmatrix-smem-the-fragment"><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>: SMEM → the Fragment</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-the-fragment-back">Writing the Fragment Back</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzle-the-same-conflict-already-on-ampere">Swizzle: the Same Conflict, Already on Ampere</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hopper-wgmma-smem-descriptors-and-swizzle-formats">Hopper: <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>, SMEM Descriptors, and Swizzle Formats</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-tensor-core-expects-a-smem-matrix-descriptor">What the Tensor Core Expects: a SMEM Matrix Descriptor</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blackwell-tcgen05-and-tmem">Blackwell: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> and TMEM</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-tensor-core-expects-smem-operands-and-a-tmem-accumulator">What the Tensor Core Expects: SMEM Operands and a TMEM Accumulator</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scale-factor-layout-in-tmem">Scale-Factor Layout in TMEM</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ampere-register-fragments-over-warp-lanes">Ampere: Register Fragments over Warp Lanes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-ampere-tensor-core-expects">What the Ampere Tensor Core Expects</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ldmatrix-shared-memory-to-register-fragment"><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>: Shared Memory to Register Fragment</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-the-ampere-fragment-back">Writing the Ampere Fragment Back</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzle-on-ampere">Swizzle on Ampere</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hopper-wgmma-shared-memory-descriptors-and-swizzle-formats">Hopper: <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>, Shared Memory Descriptors, and Swizzle Formats</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-hopper-tensor-core-expects">What the Hopper Tensor Core Expects</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hopper-output-still-uses-registers">Hopper Output Still Uses Registers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blackwell-tcgen05-and-tmem">Blackwell: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> and TMEM</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scale-factor-layout-in-tmem">Scale Factor Layout in TMEM</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-recurring-fragment">A Recurring Fragment</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-throughline">The Throughline</a></li>
 </ul>
             </nav>
@@ -304,268 +299,202 @@
 <div class="overview admonition">
 <p class="admonition-title">Overview</p>
 <ul class="simple">
-<li><p>Across Ampere → Hopper → Blackwell the MMA stays the same operation in form (<code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">AB</span> <span class="pre">+</span> <span class="pre">C</span></code>); what changes is the shapes, dtypes, and accumulator it supports and how operands must be laid out to reach the Tensor Core.</p></li>
-<li><p>Ampere uses a per-lane register fragment, Hopper a SMEM matrix descriptor with swizzle formats, Blackwell SMEM operands plus a TMEM accumulator.</p></li>
-<li><p>Two constraints hold every generation: global-memory coalescing and shared-memory bank conflicts.</p></li>
+<li><p>Across Ampere, Hopper, and Blackwell, the Tensor Core still performs the same high-level operation: <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">A</span> <span class="pre">B</span> <span class="pre">+</span> <span class="pre">C</span></code>.</p></li>
+<li><p>What changes from one generation to the next is how operands reach the Tensor Core, which tile shapes and dtypes are supported, and where the accumulator lives.</p></li>
+<li><p>Ampere uses warp-level register fragments. Shared memory tiles are loaded into the fragment with <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>, and the accumulator stays in registers.</p></li>
+<li><p>Hopper lets <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> read operands directly from shared memory through matrix descriptors. The descriptor names the shared-memory swizzle format that the Tensor Core expects.</p></li>
+<li><p>Blackwell keeps the shared-memory operand path but moves the accumulator into TMEM. Block-scaled MMA also stages its scale factors through TMEM.</p></li>
+<li><p>Two memory constraints remain present across all generations: global memory coalescing and shared memory bank conflicts.</p></li>
 </ul>
 </div>
-<p>The tensor core on every recent GPU performs the same kind of operation, the matrix
-multiply-accumulate <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">AB</span> <span class="pre">+</span> <span class="pre">C</span></code>. So you might expect a kernel that hits peak throughput on one
-generation to carry over to the next. It often does not: the same kernel can run silently slow, or
-return silently wrong results, on the following chip. The reason is that the operation’s high-level
-form stays fixed while <em>how its operands reach the tensor core</em> does not, and neither do the shapes,
-dtypes, and accumulator each generation supports. What each generation actually demands is a
-<em>specific</em> operand layout, and a layout the hardware merely tolerates as ordinary memory can still be
-the wrong one for the tensor core. This chapter follows that one moving part across <strong>Ampere</strong> →
-<strong>Hopper</strong> → <strong>Blackwell</strong>, building on the layout notation from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> (<code class="docutils literal notranslate"><span class="pre">S[...]</span></code>,
-named axes, swizzle); the Blackwell TMEM specifics are in <a class="reference internal" href="../chapter_tmem/index.html#chap-tmem"><span class="std std-ref">Special Memory: TMEM</span></a>.</p>
+<p>The Tensor Core operation looks stable from far away. It multiplies tiles of A and B, adds an accumulator C, and produces D. That form has been the same since Volta.</p>
+<p>The details around that operation have not stayed fixed. A kernel that is fast on one generation may be slow on the next. A kernel that uses the wrong layout may also compute the wrong answer, even if the logical math still says <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">A</span> <span class="pre">B</span> <span class="pre">+</span> <span class="pre">C</span></code>. The reason is that the Tensor Core does not consume abstract matrices. It consumes operands in very specific hardware layouts.</p>
+<p>This chapter follows that layout contract across three generations. Ampere exposes the Tensor Core through warp-level register fragments. Hopper moves the input operands to shared memory descriptors. Blackwell keeps shared memory operands but moves the accumulator into TMEM. The operation is still matrix-multiply-accumulate, but the path into and out of the Tensor Core changes each time.</p>
+<p>The layout notation from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> is the language we use to describe these contracts. The Blackwell TMEM details are covered separately in <a class="reference internal" href="../chapter_tmem/index.html#chap-tmem"><span class="std std-ref">Special Memory: TMEM</span></a>.</p>
 <section id="two-constraints-that-never-went-away">
 <h2>Two Constraints That Never Went Away<a class="headerlink" href="#two-constraints-that-never-went-away" title="Link to this heading">#</a></h2>
-<p>Before any tensor core enters the picture at all, two layout rules already govern how a kernel moves
-data, and they hold on every generation we will look at. The first is <strong>global-memory coalescing</strong>.
-When the 32 lanes of a warp issue a load, the memory system wants those addresses to fall in one
-contiguous, aligned segment, so that it can serve the whole warp in as few transactions as possible;
-scatter the addresses around and the same load fragments into many transactions. The second is
-<strong>shared-memory bank conflicts</strong>. SMEM is divided into 32 banks, and if several lanes in a warp
-happen to address different rows of the <em>same</em> bank, the hardware cannot satisfy them at once and the
-accesses serialize. The standard remedy here is <strong>swizzle</strong>: we permute the address mapping so that a
-warp’s lanes land in distinct banks instead of piling onto one.</p>
-<p>Both of these are really about <em>ordinary</em> memory traffic; they would matter even in a kernel that
-never touched a tensor core. What the rest of this chapter adds is a third demand layered on top of
-them: the specific layout the <em>tensor core</em> itself insists on for its operands.</p>
+<p>Before the Tensor Core is involved, two ordinary memory constraints already shape the layout of a GPU kernel.</p>
+<p>The first is global memory coalescing. When the 32 lanes of a warp issue a global memory load, the memory system wants the addresses to fall into a small number of contiguous, aligned memory segments. If the addresses are scattered, the warp load becomes several memory transactions. The same logical data movement takes more bandwidth and more time.</p>
+<p>The second is shared memory bank conflicts. Shared memory is divided into 32 banks. If lanes in a warp access different addresses that map to the same bank, those accesses cannot all be served at once. The hardware serializes them. A layout that looks harmless as a flat shared memory array can therefore be slow because of its bank pattern.</p>
+<p>Swizzling is the usual way to fix the shared memory side. The logical tile stays the same, but the physical address mapping is permuted so that the access pattern spreads across banks instead of stacking onto one bank.</p>
+<p>These two constraints apply even to kernels that never use Tensor Cores. Tensor Core kernels add a third constraint: the operands must be arranged in the layout expected by the Tensor Core instruction itself. The rest of this chapter is about how that third constraint changes across Ampere, Hopper, and Blackwell.</p>
 </section>
-<section id="ampere-register-fragment-over-warp-lane">
-<h2>Ampere: Register Fragment over Warp/Lane<a class="headerlink" href="#ampere-register-fragment-over-warp-lane" title="Link to this heading">#</a></h2>
-<p>With those two memory rules in place, we can turn to the third demand, the one the tensor core itself
-makes, starting with the earliest of our three generations. On Ampere-class GPUs (<code class="docutils literal notranslate"><span class="pre">sm_80</span></code>) the
-tensor-core instruction is the warp-level
-<code class="docutils literal notranslate"><span class="pre">mma.sync.aligned.m16n8k*</span></code>, and the defining fact about it is where it reads its operands from:
-<strong>registers</strong>. A, B, and the C/D accumulator are all per-thread register fragments, spread across the
-warp’s 32 lanes. Almost everything else about the Ampere data path follows from this one constraint,
-because the data has to be shuffled into registers before the instruction and back out of them
-afterward:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SMEM --ldmatrix--&gt; registers --mma.sync--&gt; registers --st.shared--&gt; SMEM
+<section id="ampere-register-fragments-over-warp-lanes">
+<h2>Ampere: Register Fragments over Warp Lanes<a class="headerlink" href="#ampere-register-fragments-over-warp-lanes" title="Link to this heading">#</a></h2>
+<p>On Ampere-class GPUs, the main Tensor Core instruction is the warp-level <code class="docutils literal notranslate"><span class="pre">mma.sync.aligned.m16n8k*</span></code> family. The important fact is where the instruction reads and writes data: registers.</p>
+<p>A, B, and the C or D accumulator are all per-thread register fragments distributed across the 32 lanes of a warp. Shared memory is only the staging area. Before the MMA can run, the operand tile must be moved from shared memory into the exact register fragment layout expected by the instruction.</p>
+<p>The data path looks like this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SMEM to registers with ldmatrix
+registers to registers with mma.sync
+registers back to SMEM with ordinary stores
 </pre></div>
 </div>
-<section id="what-the-tensor-core-expects-an-m8n8-register-fragment">
-<h3>What the Tensor Core Expects: an m8n8 Register Fragment<a class="headerlink" href="#what-the-tensor-core-expects-an-m8n8-register-fragment" title="Link to this heading">#</a></h3>
-<p>Because the Ampere operands live in registers, the first thing to pin down is their register layout.
-To use the <code class="docutils literal notranslate"><span class="pre">mma.sync</span></code> instruction at all, we have to know precisely which value sits in which lane’s register;
-the layout is not an implementation detail we can ignore, it is part of the instruction’s contract.
-The register fragment is built from <strong>8×8 (“m8n8”) sub-tiles</strong>, which are the unit that <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>
-moves and the tensor core reads. Take <code class="docutils literal notranslate"><span class="pre">mma.m16n8k16</span></code> (fp16/bf16 in, fp32 accumulate) as the concrete
-case. The 32 lanes are carved <strong>8 along M × 4 along N</strong>, and each lane owns a handful of registers.
-All three operands share that M carve, but they differ in what runs across the lanes and the
-registers:</p>
-<ul class="simple">
-<li><p><strong>The C/D accumulator (M×N = 16×8).</strong> Lane <code class="docutils literal notranslate"><span class="pre">l</span></code> holds rows <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">∈</span> <span class="pre">{l/4,</span> <span class="pre">l/4</span> <span class="pre">+</span> <span class="pre">8}</span></code> and columns
-<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">∈</span> <span class="pre">{2·(l%4),</span> <span class="pre">2·(l%4)+1}</span></code>, that is, four fp32 values per lane, namely two 8-row halves crossed
-with two adjacent columns. Four consecutive lanes together cover one row’s eight columns.</p></li>
-<li><p><strong>The A operand (M×K = 16×16).</strong> It uses the same M carve as C/D, but now K runs across <code class="docutils literal notranslate"><span class="pre">l%4</span></code> and
-the registers (four b32 registers per lane, each packing two fp16 along K).</p></li>
-<li><p><strong>The B operand (K×N = 16×8).</strong> Its K matches A’s, and N is the 8-lane group (two b32 registers
-per lane).</p></li>
-</ul>
-<p>This is exactly the concrete <code class="docutils literal notranslate"><span class="pre">m16n8k16</span></code> C/D fragment hiding behind the named-axes demo in
-<a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a> (<code class="docutils literal notranslate"><span class="pre">S[(8,</span> <span class="pre">4,</span> <span class="pre">2)</span> <span class="pre">:</span> <span class="pre">(4&#64;laneid,</span> <span class="pre">1&#64;laneid,</span> <span class="pre">1&#64;reg)]</span></code>), where each lane holds two
-adjacent columns per 8×8 and four consecutive lanes cover one row.</p>
+<p>Most of the Ampere layout story follows from this path. The kernel must store the tile in shared memory in a form that can be loaded efficiently, then use <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> to produce the register fragment required by <code class="docutils literal notranslate"><span class="pre">mma.sync</span></code>.</p>
 </section>
-<section id="ldmatrix-smem-the-fragment">
-<h3><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>: SMEM → the Fragment<a class="headerlink" href="#ldmatrix-smem-the-fragment" title="Link to this heading">#</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> is the Ampere warp-collective instruction that moves an 8×8 shared-memory tile into the
-fixed register fragment the tensor core expects.</p>
-<p>The figure below shows that SMEM-to-fragment mapping. The reverse path on Ampere still uses ordinary
-stores; <code class="docutils literal notranslate"><span class="pre">stmatrix</span></code> only arrives later, on Hopper and beyond.</p>
-<p><img alt="ldmatrix loads an 8x8 SMEM tile into the warp register fragment; stmatrix, the reverse, is a Hopper (sm_90+) instruction" src="../_images/ldstmatrix.svg" /></p>
-<p>The job of <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> is to get the tile out of SMEM and into that fragment. A single
-<code class="docutils literal notranslate"><span class="pre">ldmatrix.sync.aligned.m8n8.x{1,2,4}[.trans].shared.b16</span></code> loads one, two, or four 8×8 16-bit matrices
-from SMEM into the fragment, and it does so as one warp-collective instruction. Three details are
-what make it line up with the MMA:</p>
-<ul class="simple">
-<li><p><strong>The addresses come from the lanes themselves.</strong> Each source row’s base address is supplied by one
-lane: matrix <code class="docutils literal notranslate"><span class="pre">m</span></code>, row <code class="docutils literal notranslate"><span class="pre">r</span></code> is addressed by lane <code class="docutils literal notranslate"><span class="pre">m·8</span> <span class="pre">+</span> <span class="pre">r</span></code>. So <code class="docutils literal notranslate"><span class="pre">.x1</span></code> draws its row addresses from
-lanes 0–7, <code class="docutils literal notranslate"><span class="pre">.x2</span></code> from lanes 0–15, and <code class="docutils literal notranslate"><span class="pre">.x4</span></code> from all of lanes 0–31.</p></li>
-<li><p><strong>The result lands already distributed</strong> the way the MMA wants it, so lane <code class="docutils literal notranslate"><span class="pre">l</span></code> ends up holding
-row <code class="docutils literal notranslate"><span class="pre">l/4</span></code> and columns <code class="docutils literal notranslate"><span class="pre">2·(l%4)</span></code> and <code class="docutils literal notranslate"><span class="pre">2·(l%4)+1</span></code> (one b32 packing the two adjacent fp16), precisely
-the fragment the MMA reads.</p></li>
-<li><p><strong>The optional <code class="docutils literal notranslate"><span class="pre">.trans</span></code> qualifier</strong> transposes each 8×8 as it loads, so the two halves map <em>down a
-column</em> instead of across a row. This is how we feed the tensor core an operand that happens to be
-stored the opposite way from what the MMA expects.</p></li>
-</ul>
-<p>A plain per-lane <code class="docutils literal notranslate"><span class="pre">ld.shared</span></code> loop simply cannot produce the MMA’s scattered fragment cheaply, whereas
-this one <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> performs the entire SMEM→register shuffle the tensor core demands.</p>
-</section>
-<section id="writing-the-fragment-back">
-<h3>Writing the Fragment Back<a class="headerlink" href="#writing-the-fragment-back" title="Link to this heading">#</a></h3>
-<p>Once the MMA finishes, its result sits scattered across the lanes in the C/D layout we described
-above, and we still have to get it out. On Ampere we write it back with ordinary per-thread
-<code class="docutils literal notranslate"><span class="pre">st.shared</span></code> stores (optionally with a warp shuffle first to regather it) into a SMEM tile, from
-which a coalesced <code class="docutils literal notranslate"><span class="pre">st.global</span></code> can finally reach GMEM. There is no dedicated reverse of <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> on
-Ampere: the <code class="docutils literal notranslate"><span class="pre">stmatrix</span></code> instruction, which gathers the register fragment straight back into SMEM, does
-not exist on <code class="docutils literal notranslate"><span class="pre">sm_80</span></code> and only arrives with Hopper (<code class="docutils literal notranslate"><span class="pre">sm_90+</span></code>). So the Ampere story is symmetric and
-simple: the register fragment is fixed by the hardware, <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> bridges SMEM into it on the way in,
-and plain stores bridge it back out on the way out.</p>
-</section>
-<section id="swizzle-the-same-conflict-already-on-ampere">
-<h3>Swizzle: the Same Conflict, Already on Ampere<a class="headerlink" href="#swizzle-the-same-conflict-already-on-ampere" title="Link to this heading">#</a></h3>
-<p>Ampere kernels already needed swizzle, and the reason is the conflicting access pattern we have just
-set up. The same SMEM tile is <em>written</em> one way and <em>read</em> another: it is filled coalesced from GMEM
-along a <strong>row</strong>, and then read by <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> along a <strong>column</strong>. With a plain row-major tile the row
-write hits 8 distinct banks and is conflict-free, but the column read hits one bank 8 times, an
-8-way conflict. Switching to a col-major tile does not save us; it merely flips which of the two
-accesses pays the price. Without a permutation, one side always loses: row-major favors the write,
-while col-major favors the read. The figure below contrasts the two accesses on a plain row-major
-tile, showing the row write spread across distinct banks while the column read collides on one.</p>
-<p><img alt="Row write hits 8 distinct banks (conflict-free); column read hits one bank 8 times (conflict)" src="../_images/swizzle_conflict.svg" /></p>
-<p>The way out is the XOR <strong>swizzle</strong> from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>: we store element <code class="docutils literal notranslate"><span class="pre">(r,</span> <span class="pre">c)</span></code> at column
-<code class="docutils literal notranslate"><span class="pre">c</span> <span class="pre">⊕</span> <span class="pre">r</span></code>, and that single permutation makes the row write <em>and</em> the column read conflict-free at the
-same time. As we will see in the next section, Hopper later folds this exact permutation into the TMA
-and MMA descriptors so that nobody has to spell it out by hand; on Ampere, though, it still had to
-live in hand-written index math.</p>
-</section>
-</section>
-<section id="hopper-wgmma-smem-descriptors-and-swizzle-formats">
-<h2>Hopper: <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>, SMEM Descriptors, and Swizzle Formats<a class="headerlink" href="#hopper-wgmma-smem-descriptors-and-swizzle-formats" title="Link to this heading">#</a></h2>
-<p>Ampere paid for its register fragment on every MMA. The next generation keeps the same <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">AB</span> <span class="pre">+</span> <span class="pre">C</span></code>
-but rethinks where the operands come from, and that one decision reshapes the whole input path.</p>
-<section id="what-the-tensor-core-expects-a-smem-matrix-descriptor">
-<h3>What the Tensor Core Expects: a SMEM Matrix Descriptor<a class="headerlink" href="#what-the-tensor-core-expects-a-smem-matrix-descriptor" title="Link to this heading">#</a></h3>
-<p>Recall that the Ampere data path spends real instructions shuffling operands through registers.
-Hopper (<code class="docutils literal notranslate"><span class="pre">sm_90</span></code>) removes that cost on the <em>input</em> side. Its <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> instruction reads its operands
-<strong>straight from SMEM</strong>, with no <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> in between: the <strong>B</strong> operand always comes from a SMEM
-matrix descriptor, while the <strong>A</strong> operand can come from either a SMEM descriptor or a register
-fragment; these are the <code class="docutils literal notranslate"><span class="pre">.ss</span></code> and <code class="docutils literal notranslate"><span class="pre">.rs</span></code> forms of the instruction. For a SMEM-sourced operand the
-tensor core does not read just any SMEM, however. It reads through a 64-bit <strong>matrix descriptor</strong>,
-which fixes the one format the operand is allowed to be stored in. The descriptor is what turns an
-index <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">k)</span></code> into an actual SMEM address, and it carries five fields:</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Field</p></th>
-<th class="head"><p>Meaning</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><strong>start_address</strong></p></td>
-<td><p>base of the tile in SMEM, 16-byte-aligned (stored as <code class="docutils literal notranslate"><span class="pre">addr</span> <span class="pre">≫</span> <span class="pre">4</span></code>)</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>swizzle</strong></p></td>
-<td><p>the swizzle format, which sets the <strong>atom shape</strong> (8 × 128/64/32/16 B) and the XOR pattern inside it</p></td>
-</tr>
-<tr class="row-even"><td><p><strong>ldo</strong> (leading byte offset)</p></td>
-<td><p>stride to the next atom along the <strong>major</strong> dim</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>sdo</strong> (stride byte offset)</p></td>
-<td><p>stride to the next atom along the <strong>other</strong> dim</p></td>
-</tr>
-<tr class="row-even"><td><p><strong>matrix base offset</strong></p></td>
-<td><p>small offset (often 0) applied before swizzling, to align the tile’s start within a swizzle atom</p></td>
-</tr>
-</tbody>
-</table>
+<section id="what-the-ampere-tensor-core-expects">
+<h2>What the Ampere Tensor Core Expects<a class="headerlink" href="#what-the-ampere-tensor-core-expects" title="Link to this heading">#</a></h2>
+<p>The Ampere Tensor Core reads register fragments built from 8 by 8 subtile units. These are the units that <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> loads and that the MMA consumes.</p>
+<p>Take <code class="docutils literal notranslate"><span class="pre">mma.m16n8k16</span></code> with fp16 or bf16 inputs and fp32 accumulation as the concrete case. The accumulator tile has shape <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">by</span> <span class="pre">8</span></code>. It is distributed across the 32 lanes in a fixed pattern.</p>
+<p>For the C or D accumulator, lane <code class="docutils literal notranslate"><span class="pre">l</span></code> holds rows:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>l / 4
+l / 4 + 8
+</pre></div>
 </div>
-<p>With these fields in hand, the hardware views A(M×K) as a 2-D grid of <strong>atoms</strong>, and each field plays
-its own part in resolving an index <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">k)</span></code>. The swizzle format sets two things at once: the shape of
-each atom (8 × 128 B for <code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B</span></code>, and 8 × 64 / 32 / 16 B for the smaller modes) and how its
-bytes are XOR-permuted inside, which is the very same swizzle from the Ampere section and is what
-keeps the <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> read free of bank conflicts. The two strides <strong>ldo</strong> and <strong>sdo</strong> then tell the
-hardware how far to step <em>between</em> atoms, and which axis each one walks depends on the operand’s
-major-ness: <strong>ldo</strong> strides along the <strong>major</strong> dimension and <strong>sdo</strong> along the <strong>other</strong> one. For a
-K-major tile (A stored K-contiguous), that puts <code class="docutils literal notranslate"><span class="pre">ldo</span></code> along K and <code class="docutils literal notranslate"><span class="pre">sdo</span></code> down M; an MN-major tile
-simply swaps the two. So to resolve <code class="docutils literal notranslate"><span class="pre">A[m,</span> <span class="pre">k]</span></code> the hardware combines the two strides to land on the
-right atom, and then applies the swizzle to find the exact byte inside it:</p>
-<p><img alt="A SMEM matrix descriptor (start_address, ldo, sdo, swizzle, base offset) tiles A(M×K) into 8×N B swizzle atoms, with ldo/sdo the strides between atoms" src="../_images/smem_descriptor.svg" /></p>
-<p>It is worth being clear about what this buys us, because it relocates the kernel’s job rather than
-removing it. The kernel still has to write A into SMEM in exactly this atom-tiled, swizzled format
-(the TMA load is what does that), and it still has to hand <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> a descriptor whose <code class="docutils literal notranslate"><span class="pre">ldo</span></code>, <code class="docutils literal notranslate"><span class="pre">sdo</span></code>,
-and <code class="docutils literal notranslate"><span class="pre">swizzle</span></code> match the data it wrote (in the kernels these end up as literal constants, for example
-<code class="docutils literal notranslate"><span class="pre">ldo</span> <span class="pre">=</span> <span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">sdo</span> <span class="pre">=</span> <span class="pre">64</span></code>, <code class="docutils literal notranslate"><span class="pre">swizzle</span> <span class="pre">=</span> <span class="pre">64B</span></code>). What is new is that swizzle is now a first-class format on
-Hopper (<code class="docutils literal notranslate"><span class="pre">SWIZZLE_NONE</span> <span class="pre">/</span> <span class="pre">32B</span> <span class="pre">/</span> <span class="pre">64B</span> <span class="pre">/</span> <span class="pre">128B</span></code>), and the <em>same</em> format is named in both the TMA
-descriptor that fills the tile and the <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> descriptor that reads it. Because both sides quote the
-same format, the load and the MMA agree by construction, instead of relying on the hand-written index
-math that carried this on Ampere.</p>
-<p>The element arrangement inside a single atom, for each of the formats (<code class="docutils literal notranslate"><span class="pre">SWIZZLE_128B</span></code> = 8 × 128 B,
-<code class="docutils literal notranslate"><span class="pre">SWIZZLE_64B</span></code>, <code class="docutils literal notranslate"><span class="pre">SWIZZLE_32B</span></code>), is precisely the swizzle-atom demo in <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>.</p>
-<p>The <strong>output</strong> side, by contrast, has not moved. The accumulator <code class="docutils literal notranslate"><span class="pre">D</span></code> of <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> is still a per-thread
-<strong>register</strong> fragment, built from the same 8×8 sub-tiles we met on Ampere, although now its register
-count and exact lane mapping scale with the instruction’s <strong>N</strong> (a <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> is shaped <code class="docutils literal notranslate"><span class="pre">m64nNk16</span></code>), so
-it is no longer a single fixed m8n8 tile. The upshot is that a Hopper GEMM reads its operands the new
-way but still keeps the accumulator in registers and runs a register epilogue, just as on Ampere.
-Moving the accumulator out of registers altogether is the change that waits for Blackwell’s TMEM.</p>
+<p>and columns:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2 * (l % 4)
+2 * (l % 4) + 1
+</pre></div>
+</div>
+<p>So each lane owns four fp32 accumulator values: two rows from the two 8-row halves, crossed with two adjacent columns. Four consecutive lanes cover the eight columns of one row.</p>
+<p>The A operand uses the same M-side row carve. The K dimension is spread across <code class="docutils literal notranslate"><span class="pre">l</span> <span class="pre">%</span> <span class="pre">4</span></code> and across the registers held by the lane. For fp16 or bf16, each 32-bit register packs two K values.</p>
+<p>The B operand uses a matching K placement and spreads the N side across the lane group and registers.</p>
+<p>The exact details vary by instruction shape and dtype, but the principle is fixed. The Tensor Core expects a particular per-lane register fragment. If the values are not in those registers in that pattern, the instruction will multiply the wrong elements.</p>
+<p>In layout notation, the m8n8 fragment is the kind of pattern written with named lane axes, for example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>S[(8, 4, 2) : (4@laneid, 1@laneid, 1@m)]
+</pre></div>
+</div>
+<p>The two <code class="docutils literal notranslate"><span class="pre">laneid</span></code> iters together describe how the row and column pieces are scattered across lanes, while the final <code class="docutils literal notranslate"><span class="pre">m</span></code> component describes the per-lane register slot.</p>
 </section>
+<section id="ldmatrix-shared-memory-to-register-fragment">
+<h2><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>: Shared Memory to Register Fragment<a class="headerlink" href="#ldmatrix-shared-memory-to-register-fragment" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> is the Ampere instruction that bridges shared memory and the Tensor Core register fragment. It is a warp-collective load. One instruction moves one or more 8 by 8 16-bit matrices from shared memory into the distributed register layout expected by <code class="docutils literal notranslate"><span class="pre">mma.sync</span></code>.</p>
+<p>The instruction forms are:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ldmatrix.sync.aligned.m8n8.x1.shared.b16
+ldmatrix.sync.aligned.m8n8.x2.shared.b16
+ldmatrix.sync.aligned.m8n8.x4.shared.b16
+</pre></div>
+</div>
+<p>with an optional <code class="docutils literal notranslate"><span class="pre">.trans</span></code> qualifier.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.x1</span></code>, <code class="docutils literal notranslate"><span class="pre">.x2</span></code>, and <code class="docutils literal notranslate"><span class="pre">.x4</span></code> forms load one, two, or four 8 by 8 matrices. The row base addresses are supplied by lanes. For matrix <code class="docutils literal notranslate"><span class="pre">m</span></code> and row <code class="docutils literal notranslate"><span class="pre">r</span></code>, the base address comes from lane <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">8</span> <span class="pre">+</span> <span class="pre">r</span></code>. That means <code class="docutils literal notranslate"><span class="pre">.x1</span></code> uses lanes 0 through 7 for row addresses, <code class="docutils literal notranslate"><span class="pre">.x2</span></code> uses lanes 0 through 15, and <code class="docutils literal notranslate"><span class="pre">.x4</span></code> uses lanes 0 through 31.</p>
+<p>The result lands directly in the MMA fragment. For the basic 8 by 8 case, lane <code class="docutils literal notranslate"><span class="pre">l</span></code> receives the row and column pair that the Tensor Core expects. A plain loop of per-lane <code class="docutils literal notranslate"><span class="pre">ld.shared</span></code> instructions would have to reproduce that scatter manually. <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> performs the shared-memory-to-fragment rearrangement as one warp-collective instruction.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.trans</span></code> form transposes each 8 by 8 matrix as it loads. This is used when the operand is stored in the opposite orientation from the one the MMA instruction expects.</p>
+<p><img alt="ldmatrix loads an 8x8 shared memory tile into the warp register fragment; the reverse direction on Ampere uses ordinary stores, and a dedicated stmatrix instruction appears later on Hopper" src="../_images/ldstmatrix.svg" /></p>
+</section>
+<section id="writing-the-ampere-fragment-back">
+<h2>Writing the Ampere Fragment Back<a class="headerlink" href="#writing-the-ampere-fragment-back" title="Link to this heading">#</a></h2>
+<p>After <code class="docutils literal notranslate"><span class="pre">mma.sync</span></code> finishes, the accumulator is still a register fragment. The epilogue has to move that fragment out.</p>
+<p>On Ampere, there is no dedicated reverse of <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>. The kernel uses ordinary per-thread stores, sometimes with warp shuffles or local rearrangement before the store, to write the accumulator into shared memory or global memory in a useful layout.</p>
+<p>This keeps the Ampere model simple but also exposes a lot of layout work to the kernel. The input side uses <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> to create the fragment. The compute instruction reads and writes register fragments. The output side is handled by ordinary stores from those fragments.</p>
+</section>
+<section id="swizzle-on-ampere">
+<h2>Swizzle on Ampere<a class="headerlink" href="#swizzle-on-ampere" title="Link to this heading">#</a></h2>
+<p>Ampere kernels already need shared memory swizzles. The reason is that the shared memory tile is usually written in one access pattern and read in another.</p>
+<p>Suppose a tile is filled from global memory along rows. A row-major layout makes that write coalesced and bank friendly. But <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> may later read the tile in a pattern that effectively walks down columns or across 8 by 8 subtiles. With a plain row-major layout, those reads can stack onto the same shared memory bank.</p>
+<p>For a simple <code class="docutils literal notranslate"><span class="pre">(8,</span> <span class="pre">64)</span></code> float16 tile, one row is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>64 * 2 bytes = 128 bytes
+</pre></div>
+</div>
+<p>which is exactly one full shared memory bank line. Walking down a fixed column advances by 128 bytes each row, so the bank index repeats. Eight rows can collapse onto the same bank, creating an 8-way conflict.</p>
+<p>Changing to a plain column-major layout does not solve the whole problem. It usually moves the conflict to the other access. The row write becomes worse while the column-style read becomes better.</p>
+<p>The XOR swizzle fixes this by making the physical column depend on the row. A simple version is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>physical_col = logical_col xor row
+</pre></div>
+</div>
+<p>The logical tile is unchanged. The physical placement in shared memory is permuted so that both the row-style write and the Tensor Core read pattern can avoid bank conflicts.</p>
+<p>On Ampere, this swizzle is usually expressed through hand-written shared memory index math. Later generations make it part of the descriptor format used by the hardware engines.</p>
+<p><img alt="On a plain row-major tile a row write spreads across banks while a column read collides on one bank; the XOR swizzle scatters the column read across banks without giving up the coalesced row write" src="../_images/swizzle_conflict.svg" /></p>
+</section>
+<section id="hopper-wgmma-shared-memory-descriptors-and-swizzle-formats">
+<h2>Hopper: <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>, Shared Memory Descriptors, and Swizzle Formats<a class="headerlink" href="#hopper-wgmma-shared-memory-descriptors-and-swizzle-formats" title="Link to this heading">#</a></h2>
+<p>Hopper changes the input side of the Tensor Core path. Instead of requiring every operand to be loaded into registers with <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>, Hopper <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> can read operands directly from shared memory.</p>
+<p>The B operand is read from a shared memory matrix descriptor. The A operand can be read either from a shared memory descriptor or from registers, giving the <code class="docutils literal notranslate"><span class="pre">.ss</span></code> and <code class="docutils literal notranslate"><span class="pre">.rs</span></code> forms.</p>
+<p>This removes the explicit <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> step for SMEM-sourced operands. It does not remove the layout requirement. The Tensor Core still expects the operand to be stored in a precise shared memory format. The difference is that the format is now described to the hardware through a matrix descriptor.</p>
+</section>
+<section id="what-the-hopper-tensor-core-expects">
+<h2>What the Hopper Tensor Core Expects<a class="headerlink" href="#what-the-hopper-tensor-core-expects" title="Link to this heading">#</a></h2>
+<p>A Hopper shared memory matrix descriptor is a compact description of a matrix tile in shared memory. It tells <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> how to turn logical operand coordinates into shared memory addresses.</p>
+<p>The descriptor includes fields such as:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>start address
+leading dimension offset
+stride dimension offset
+swizzle mode
+base offset
+</pre></div>
+</div>
+<p>The exact interpretation depends on the operand major mode. For a K-major tile, one stride advances along K and the other advances along M. For an MN-major tile, the roles are swapped.</p>
+<p>The swizzle mode is one of the shared memory descriptor formats, such as:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SWIZZLE_NONE
+SWIZZLE_32B
+SWIZZLE_64B
+SWIZZLE_128B
+</pre></div>
+</div>
+<p>The swizzle mode determines two things. It determines the atom shape used by the descriptor, and it determines the XOR permutation applied inside that atom. For example, the 128-byte swizzle mode treats the operand as a grid of 8-row by 128-byte atoms, with the swizzle applied inside each atom.</p>
+<p>The kernel still has to place the bytes correctly. TMA usually fills the shared memory tile, and the TMA descriptor must use the same swizzle format that the <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> descriptor later names. If TMA writes a 128-byte swizzled tile, the <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> descriptor must read it as a 128-byte swizzled tile. If the descriptor and the data disagree, the Tensor Core will read scrambled operands.</p>
+<p>This is the main shift from Ampere. The swizzle is no longer only hidden inside hand-written shared memory indexing. Hopper makes it a first-class descriptor format. The TMA load that writes the tile and the <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> instruction that reads the tile can both name the same format.</p>
+<p><img alt="A Hopper shared memory matrix descriptor maps operand coordinates into swizzled shared memory atoms: the descriptor strides choose the atom, and the swizzle chooses the byte position inside the atom" src="../_images/smem_descriptor.svg" /></p>
+</section>
+<section id="hopper-output-still-uses-registers">
+<h2>Hopper Output Still Uses Registers<a class="headerlink" href="#hopper-output-still-uses-registers" title="Link to this heading">#</a></h2>
+<p>Hopper changes the input path, but the accumulator still lives in registers.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> instruction writes the accumulator into a per-thread register fragment. The exact fragment size and register count depend on the instruction shape, such as <code class="docutils literal notranslate"><span class="pre">m64nNk16</span></code>, where N changes the number of accumulator registers. But the basic idea is the same as Ampere: the epilogue consumes a register fragment.</p>
+<p>So Hopper has a mixed layout model. The input operands can come directly from shared memory descriptors, with swizzle described by the hardware. The output accumulator remains a register layout problem.</p>
+<p>Blackwell changes that output side.</p>
 </section>
 <section id="blackwell-tcgen05-and-tmem">
 <h2>Blackwell: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> and TMEM<a class="headerlink" href="#blackwell-tcgen05-and-tmem" title="Link to this heading">#</a></h2>
-<p>Hopper moved the operands into SMEM but left the accumulator in registers. The third generation
-finishes the move, relocating the accumulator out of the register file and introducing a new operand
-that has no place to live anywhere else.</p>
-<section id="what-the-tensor-core-expects-smem-operands-and-a-tmem-accumulator">
-<h3>What the Tensor Core Expects: SMEM Operands and a TMEM Accumulator<a class="headerlink" href="#what-the-tensor-core-expects-smem-operands-and-a-tmem-accumulator" title="Link to this heading">#</a></h3>
-<p>Blackwell (<code class="docutils literal notranslate"><span class="pre">sm_100</span></code>) inherits Hopper’s SMEM matrix descriptor for the A/B operands (and an A operand
-may additionally be read from TMEM), so the input side will feel largely familiar. The real change is
-on the output side: the <strong>accumulator</strong> now moves into TMEM. Unlike an Ampere <code class="docutils literal notranslate"><span class="pre">mma</span></code> accumulator,
-which lives in a register fragment throughout, the Blackwell accumulator never visits registers during
-the compute phase at all; it stays in TMEM until the epilogue reads it out. We leave the question of
-how the (M, N) accumulator and the A/B operands split across one or two CTAs (<code class="docutils literal notranslate"><span class="pre">cta_group::1</span></code> vs
-<code class="docutils literal notranslate"><span class="pre">cta_group::2</span></code>) to <a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>. The layout that is genuinely new at this generation, and
-the one we will focus on here, is the <strong>scale factors</strong> of a block-scaled MMA.</p>
+<p>Blackwell keeps the shared memory descriptor idea for the data operands. A and B are still prepared in shared memory in the layout the Tensor Core expects. Some modes can also read an A operand from TMEM.</p>
+<p>The major change is the accumulator. <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> writes its accumulator into Tensor Memory, or TMEM, instead of keeping it as a long-lived register fragment. During the compute phase, the accumulator stays in TMEM. The epilogue later uses <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> to load it back into registers.</p>
+<p>This moves the output layout problem from registers to TMEM. The kernel must allocate TMEM, choose the right TMEM layout, wait for MMA completion, and then use the matching <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> path to recover the accumulator fragment for the epilogue.</p>
+<p>The details of how <code class="docutils literal notranslate"><span class="pre">cta_group::1</span></code> and <code class="docutils literal notranslate"><span class="pre">cta_group::2</span></code> split the accumulator across one or two CTAs are covered in <a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>. The layout that is most different from earlier generations is the block-scaled scale-factor layout.</p>
 </section>
 <section id="scale-factor-layout-in-tmem">
-<h3>Scale-Factor Layout in TMEM<a class="headerlink" href="#scale-factor-layout-in-tmem" title="Link to this heading">#</a></h3>
-<p>The new operand promised above is the per-block scale. A block-scaled MMA (mxfp8, nvfp4) carries two
-extra operands beyond A and B: <code class="docutils literal notranslate"><span class="pre">SFA</span> <span class="pre">(M,</span> <span class="pre">SFK)</span></code> and
-<code class="docutils literal notranslate"><span class="pre">SFB</span> <span class="pre">(N,</span> <span class="pre">SFK)</span></code>, where <code class="docutils literal notranslate"><span class="pre">SFK</span> <span class="pre">=</span> <span class="pre">K</span> <span class="pre">/</span> <span class="pre">block</span></code>. The thing that sets them apart is where they live: unlike A
-and B, <strong>the scale factors reside in TMEM</strong> rather than SMEM, so they cannot simply ride the ordinary
-operand path. Instead they take a small SMEM→TMEM detour: a TMA load first brings them into SMEM, and
-then <code class="docutils literal notranslate"><span class="pre">tcgen05.cp</span></code> copies them on into TMEM before the MMA runs.</p>
-<p>Once they are in TMEM, their layout, the PTX <em>tcgen05 MMA scale-factor A layout</em>, turns out to be
-exactly the lane-replication example from <a class="reference internal" href="../chapter_data_layout/index.html#chap-data-layout"><span class="std std-ref">Data Layout</span></a>. A 128-row scale vector packs into
-32 lanes (row <code class="docutils literal notranslate"><span class="pre">r</span></code> goes to lane <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">%</span> <span class="pre">32</span></code>, with <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">//</span> <span class="pre">32</span></code> running along TMEM columns at stride
-<code class="docutils literal notranslate"><span class="pre">epc</span> <span class="pre">=</span> <span class="pre">4</span></code>) and is then broadcast <code class="docutils literal notranslate"><span class="pre">warpx4</span></code> to all 128 reading lanes (<code class="docutils literal notranslate"><span class="pre">R[4</span> <span class="pre">:</span> <span class="pre">32&#64;TLane]</span></code>).</p>
-<p>The one piece here that has no Ampere or Hopper analogue is the byte packing, that is, how many
-distinct scales a single <code class="docutils literal notranslate"><span class="pre">uint32</span></code> column holds. This is set by the <strong>scale_vec</strong> mode, and it matches
-the PTX <em>scale-factor A</em> 1x/2x/4x layouts:</p>
-<p><img alt="scale_vec byte packing: 1X (fp8) broadcasts one scale across 4 bytes; 2X (mxfp4) packs two scales each duplicated; 4X (nvfp4) packs four K-block scales" src="../_images/sf_scale_vec.svg" /></p>
-<p>When the MMA spans two CTAs (<code class="docutils literal notranslate"><span class="pre">cta_group::2</span></code>), the scale factors split exactly the way their data
-does: <strong>SFA follows A</strong>, so each CTA holds the M-half that matches its A rows, while <strong>SFB is
-multicast</strong> to both CTAs (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>).</p>
-<p>For all that changes from one generation to the next, one structure quietly recurs in
-every one of them: the <strong>m8n8 register fragment</strong>. It is what <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> builds on Ampere, what
-<code class="docutils literal notranslate"><span class="pre">wgmma</span></code> outputs on Hopper, and what <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> reads TMEM into on Blackwell (<a class="reference internal" href="../chapter_tmem/index.html#chap-tmem"><span class="std std-ref">Special Memory: TMEM</span></a>): a
-single register layout that survives every change to the surrounding hardware.</p>
+<h2>Scale Factor Layout in TMEM<a class="headerlink" href="#scale-factor-layout-in-tmem" title="Link to this heading">#</a></h2>
+<p>Block-scaled MMA modes, such as <code class="docutils literal notranslate"><span class="pre">mxfp8</span></code> and <code class="docutils literal notranslate"><span class="pre">nvfp4</span></code>, add scale-factor operands. In addition to A and B, the MMA reads:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SFA(M, SFK)
+SFB(N, SFK)
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">SFK</span></code> is the number of K scale blocks.</p>
+<p>The data operands A and B live in shared memory. The scale factors live in TMEM. That gives them a different movement path.</p>
+<p>TMA loads from global memory into shared memory. It does not load directly into TMEM. So scale factors usually move in two steps:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>global memory to shared memory with TMA
+shared memory to TMEM with tcgen05.cp
+</pre></div>
+</div>
+<p>Only after that copy are the scale factors in the memory space where <code class="docutils literal notranslate"><span class="pre">tcgen05.mma</span></code> expects to read them.</p>
+<p>The TMEM scale-factor layout uses the TMEM hardware coordinates Lane and Col. In the TIRx layout notation, those axes are written as <code class="docutils literal notranslate"><span class="pre">TLane</span></code> and <code class="docutils literal notranslate"><span class="pre">TCol</span></code>.</p>
+<p>A 128-row scale vector is compacted into a 32-lane group and then replicated across the four 32-lane windows of TMEM. In layout notation, the core pattern is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>S[(32, sf_per_mma) : (1@TLane, 1@TCol)] + R[4 : 32@TLane]
+</pre></div>
+</div>
+<p>The shard places the base 32-row group:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TLane = r
+TCol  = s
+</pre></div>
+</div>
+<p>The replica term adds copies at lane offsets 0, 32, 64, and 96:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TLane = r + 32 * q, where q in {0, 1, 2, 3}
+TCol  = s
+</pre></div>
+</div>
+<p>This is the <code class="docutils literal notranslate"><span class="pre">warpx4</span></code> broadcast pattern. The same compact scale-factor group becomes visible across the full 128-lane TMEM space.</p>
+<p>There is also byte packing inside the 32-bit <code class="docutils literal notranslate"><span class="pre">TCol</span></code> cells. The packing depends on the <code class="docutils literal notranslate"><span class="pre">scale_vec</span></code> mode:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>1X: one scale value is broadcast across the 32-bit cell
+2X: two scale values are packed, each duplicated
+4X: four K-block scale values are packed
+</pre></div>
+</div>
+<p><img alt="scale_vec byte packing: 1X broadcasts one scale across the 4-byte cell; 2X packs two scales, each duplicated; 4X packs four K-block scales" src="../_images/sf_scale_vec.svg" /></p>
+<p>This packing has no direct Ampere or Hopper analogue because those generations do not have TMEM scale-factor operands for <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> block-scaled MMA.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">cta_group::2</span></code>, scale factors follow the data they scale. SFA scales A, so it is split by M across the two CTAs, matching the A rows owned by each CTA. SFB scales B, which is shared by the two CTA halves of the computation, so SFB is multicast to both CTAs (<a class="reference internal" href="../chapter_tensor_cores/index.html#chap-tensor-cores"><span class="std std-ref">Tensor Cores: tcgen05</span></a>).</p>
 </section>
+<section id="a-recurring-fragment">
+<h2>A Recurring Fragment<a class="headerlink" href="#a-recurring-fragment" title="Link to this heading">#</a></h2>
+<p>Even though the surrounding memory path changes, one structure keeps returning: the m8n8-style register fragment.</p>
+<p>On Ampere, <code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> builds that fragment so <code class="docutils literal notranslate"><span class="pre">mma.sync</span></code> can read it.</p>
+<p>On Hopper, <code class="docutils literal notranslate"><span class="pre">wgmma</span></code> writes its accumulator as a register fragment for the epilogue.</p>
+<p>On Blackwell, the accumulator lives in TMEM during compute, but <code class="docutils literal notranslate"><span class="pre">tcgen05.ld</span></code> loads it back into a register fragment before the epilogue processes and stores it (<a class="reference internal" href="../chapter_tmem/index.html#chap-tmem"><span class="std std-ref">Special Memory: TMEM</span></a>).</p>
+<p>So the fragment does not disappear. Its role changes. Earlier generations keep the accumulator there for the whole compute phase. Blackwell uses it mostly at the boundary between TMEM and the epilogue.</p>
 </section>
 <section id="the-throughline">
 <h2>The Throughline<a class="headerlink" href="#the-throughline" title="Link to this heading">#</a></h2>
-<p>Stepping back, there is a clear direction to the three generations: more and more of the layout gets
-<strong>described to the hardware</strong> through descriptors, instead of being open-coded with shuffle
-instructions:</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Generation</p></th>
-<th class="head"><p>Operands read from</p></th>
-<th class="head"><p>Layout described by</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Ampere (<code class="docutils literal notranslate"><span class="pre">sm_80</span></code>)</p></td>
-<td><p>registers</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code> + hand-staged (swizzled) SMEM stores</p></td>
-</tr>
-<tr class="row-odd"><td><p>Hopper (<code class="docutils literal notranslate"><span class="pre">sm_90</span></code>)</p></td>
-<td><p>SMEM</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">wgmma</span></code> matrix descriptor + TMA box &amp; swizzle</p></td>
-</tr>
-<tr class="row-even"><td><p>Blackwell (<code class="docutils literal notranslate"><span class="pre">sm_100</span></code>)</p></td>
-<td><p>SMEM / TMEM</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> matrix descriptor + TMEM accumulator &amp; scale-factor layouts</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>It bears repeating that the descriptors do not remove the work; they relocate it. The kernel still
-has to place the bytes in the exact format the engine reads, which means a TMA load, the matrix
-descriptor it feeds, and the MMA that consumes it must all agree on one and the same swizzle. Let any
-one of them fall out of step with the others and the tensor core will happily read scrambled data.</p>
+<p>The direction across the three generations is clear.</p>
+<p>On Ampere, the kernel explicitly builds Tensor Core register fragments. Shared memory swizzle is mostly the kernel’s responsibility through index math.</p>
+<p>On Hopper, the Tensor Core can read operands directly from shared memory through matrix descriptors. Swizzle becomes a named descriptor format shared by TMA and <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>.</p>
+<p>On Blackwell, the input side still uses shared memory operands, but the accumulator moves to TMEM. Block-scaled MMA also adds scale-factor operands that must be staged into TMEM.</p>
+<p>The descriptors do not remove layout work. They make the contract explicit. The kernel still has to ensure that the data movement path, the memory layout, and the Tensor Core instruction all agree. A TMA descriptor that writes a swizzled SMEM tile, an MMA descriptor that reads that tile, and the layout attached to the buffer must all describe the same physical arrangement.</p>
+<p>If any one of those pieces disagrees, the hardware will still run. It will just read the wrong bytes or read them slowly. That is why layout is not decoration around a Tensor Core kernel. It is part of the instruction interface.</p>
 </section>
 </section>
 
@@ -617,22 +546,17 @@ one of them fall out of step with the others and the tensor core will happily re
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#two-constraints-that-never-went-away">Two Constraints That Never Went Away</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ampere-register-fragment-over-warp-lane">Ampere: Register Fragment over Warp/Lane</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-tensor-core-expects-an-m8n8-register-fragment">What the Tensor Core Expects: an m8n8 Register Fragment</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ldmatrix-smem-the-fragment"><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>: SMEM → the Fragment</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-the-fragment-back">Writing the Fragment Back</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzle-the-same-conflict-already-on-ampere">Swizzle: the Same Conflict, Already on Ampere</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hopper-wgmma-smem-descriptors-and-swizzle-formats">Hopper: <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>, SMEM Descriptors, and Swizzle Formats</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-tensor-core-expects-a-smem-matrix-descriptor">What the Tensor Core Expects: a SMEM Matrix Descriptor</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blackwell-tcgen05-and-tmem">Blackwell: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> and TMEM</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-tensor-core-expects-smem-operands-and-a-tmem-accumulator">What the Tensor Core Expects: SMEM Operands and a TMEM Accumulator</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scale-factor-layout-in-tmem">Scale-Factor Layout in TMEM</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ampere-register-fragments-over-warp-lanes">Ampere: Register Fragments over Warp Lanes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-ampere-tensor-core-expects">What the Ampere Tensor Core Expects</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ldmatrix-shared-memory-to-register-fragment"><code class="docutils literal notranslate"><span class="pre">ldmatrix</span></code>: Shared Memory to Register Fragment</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-the-ampere-fragment-back">Writing the Ampere Fragment Back</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swizzle-on-ampere">Swizzle on Ampere</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hopper-wgmma-shared-memory-descriptors-and-swizzle-formats">Hopper: <code class="docutils literal notranslate"><span class="pre">wgmma</span></code>, Shared Memory Descriptors, and Swizzle Formats</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-hopper-tensor-core-expects">What the Hopper Tensor Core Expects</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hopper-output-still-uses-registers">Hopper Output Still Uses Registers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#blackwell-tcgen05-and-tmem">Blackwell: <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> and TMEM</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scale-factor-layout-in-tmem">Scale Factor Layout in TMEM</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-recurring-fragment">A Recurring Fragment</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-throughline">The Throughline</a></li>
 </ul>
   </nav></div>
