@@ -36,9 +36,9 @@ addition that makes their **scheduling** dynamic.
 
 ## The Two Instructions
 
-We have said CLC hands tiles out on demand; now we can see exactly how a CTA asks for one. The whole
-mechanism is exposed as just two PTX instructions (`clusterlaunchcontrol`, PTX ISA 8.6): one asks the
-grid scheduler for the next tile, and the other reads back the answer. Let us look at each in turn.
+CLC hands tiles out on demand. A CTA asks for one through just two PTX instructions
+(`clusterlaunchcontrol`, PTX ISA 8.6): one asks the grid scheduler for the next tile, and the other
+reads back the answer. Let us look at each in turn.
 
 - **`try_cancel`** — `clusterlaunchcontrol.try_cancel.async`. This is a single asynchronous request
   that asks the scheduler to *cancel the launch* of the next pending cluster and hand this cluster its
