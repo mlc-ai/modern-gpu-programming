@@ -57,11 +57,11 @@ body { background:var(--bg); color:var(--text); font-family:'Inter','SF Pro','Se
 body.figure h1, body.figure .sub { display:none; }
 body.notitle h1, body.notitle .sub { display:none; }
 h1 { text-align:center; font-size:15px; font-weight:700; margin-bottom:2px; }
-.sub { text-align:center; color:var(--dim); font-size:10px; margin-bottom:20px; font-family:'SF Mono','Fira Code',monospace; }
+.sub { text-align:center; color:var(--dim); font-size:13px; margin-bottom:20px; font-family:'SF Mono','Fira Code',monospace; }
 
 /* Controls */
 .controls { display:flex; gap:18px; justify-content:center; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
-.lbl { font-size:10px; color:var(--dim); margin-right:4px; font-weight:600; }
+.lbl { font-size:13px; color:var(--dim); margin-right:4px; font-weight:600; }
 .bg { display:inline-flex; gap:2px; }
 .btn {
   padding:5px 11px; border:1px solid var(--border); background:var(--surface); color:var(--text);
@@ -99,8 +99,8 @@ h1 { text-align:center; font-size:15px; font-weight:700; margin-bottom:2px; }
 /* Formula bar */
 .formula-bar { max-width:1100px; margin:18px auto 0; background:var(--surface); border-radius:10px;
   padding:12px 18px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,.06); }
-.formula-bar .ftitle { font-size:10px; font-weight:700; margin-bottom:6px; }
-.formula-bar .fcontent { font-size:10px; font-family:'SF Mono','Fira Code',monospace; color:var(--accent); line-height:1.6; }
+.formula-bar .ftitle { font-size:15px; font-weight:700; margin-bottom:6px; }
+.formula-bar .fcontent { font-size:15px; font-family:'SF Mono','Fira Code',monospace; color:var(--accent); line-height:1.6; }
 
 /* Legend */
 .leg { display:flex; flex-direction:column; align-items:center; gap:4px; margin-top:14px; }
