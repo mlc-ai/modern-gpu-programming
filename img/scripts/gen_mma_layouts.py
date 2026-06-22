@@ -15,18 +15,21 @@ from matplotlib.patches import Rectangle, FancyBboxPatch
 
 from pathlib import Path; OUT = str(Path(__file__).resolve().parent.parent)  # the repo img/ dir
 
-SMEM_BG = "#eff6ff"
-TMEM_BG = "#fffbeb"
+SMEM_BG = "#ede9fe"
+TMEM_BG = "#fef3c7"
+SMEM_EDGE = "#8b5cf6"
+TMEM_EDGE = "#d97706"
+MMA_C = "#059669"
 EDGE = "#94a3b8"
 TXT = "#334155"
-A_C = "#2563eb"
-B_C = "#0891b2"
-C0 = "#059669"
+A_C = "#8b5cf6"
+B_C = "#6d28d9"
+C0 = "#d97706"
 C1 = "#d97706"
-C0B = "#34d399"
-C1B = "#fbbf24"
-SFA_C = "#7c3aed"
-SFB_C = "#9333ea"
+C0B = "#f59e0b"
+C1B = "#f59e0b"
+SFA_C = "#b45309"
+SFB_C = "#92400e"
 GRAY = "#cbd5e1"
 
 
@@ -40,8 +43,9 @@ def setup(w, h):
 
 
 def group(ax, x, y, w, h, label, bg):
+    edge = SMEM_EDGE if bg == SMEM_BG else TMEM_EDGE if bg == TMEM_BG else EDGE
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0,rounding_size=1.5",
-                                facecolor=bg, edgecolor=EDGE, linewidth=1.0))
+                                facecolor=bg, edgecolor=edge, linewidth=1.2))
     ax.text(x + 1.5, y + h - 1.2, label, fontsize=8, fontweight="bold", color=TXT,
             ha="left", va="top")
 
@@ -61,8 +65,8 @@ def tile(ax, x, y, w, h, color, title, sub=None, fs=8.5):
 
 def arrow(ax, x0, x1, y, text="tcgen05\nMMA"):
     ax.annotate("", xy=(x1, y), xytext=(x0, y),
-                arrowprops=dict(arrowstyle="-|>", color="#475569", lw=1.6))
-    ax.text((x0 + x1) / 2, y + 6, text, ha="center", va="center", fontsize=7, color="#475569")
+                arrowprops=dict(arrowstyle="-|>", color=MMA_C, lw=1.8))
+    ax.text((x0 + x1) / 2, y + 6, text, ha="center", va="center", fontsize=7, color=MMA_C)
 
 
 def title(ax, t):

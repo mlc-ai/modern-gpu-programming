@@ -6,11 +6,11 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-06-17T20:27:40.393132</dc:date>
+    <dc:date>2026-06-22T00:14:47.340909</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
-      <dc:title>Matplotlib v3.10.5, https://matplotlib.org/</dc:title>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
      </cc:Agent>
     </dc:creator>
    </cc:Work>
@@ -40,7 +40,7 @@ Q 21.429 27.82368 21.429 30.40164
 L 21.429 162.73692 
 Q 21.429 165.31488 28.5435 165.31488 
 z
-" clip-path="url(#pb55e885453)" style="fill: #eff6ff; stroke: #94a3b8; stroke-linejoin: miter"/>
+" clip-path="url(#pdf7e328103)" style="fill: #ede9fe; stroke: #8b5cf6; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
     <path d="M 35.658 96.56928 
@@ -48,7 +48,7 @@ L 187.434 96.56928
 L 187.434 41.5728 
 L 35.658 41.5728 
 z
-" clip-path="url(#pb55e885453)" style="fill: #2563eb; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#pdf7e328103)" style="fill: #8b5cf6; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
     <path d="M 35.658 157.065408 
@@ -56,7 +56,7 @@ L 187.434 157.065408
 L 187.434 107.568576 
 L 35.658 107.568576 
 z
-" clip-path="url(#pb55e885453)" style="fill: #0891b2; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#pdf7e328103)" style="fill: #6d28d9; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
     <path d="M 294.1515 165.31488 
@@ -69,7 +69,7 @@ Q 287.037 27.82368 287.037 30.40164
 L 287.037 162.73692 
 Q 287.037 165.31488 294.1515 165.31488 
 z
-" clip-path="url(#pb55e885453)" style="fill: #fffbeb; stroke: #94a3b8; stroke-linejoin: miter"/>
+" clip-path="url(#pdf7e328103)" style="fill: #fef3c7; stroke: #d97706; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
     <path d="M 301.266 157.065408 
@@ -77,7 +77,7 @@ L 453.042 157.065408
 L 453.042 49.822272 
 L 301.266 49.822272 
 z
-" clip-path="url(#pb55e885453)" style="fill: #059669; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#pdf7e328103)" style="fill: #d97706; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <!-- cta_group::1, M=128  —  1 CTA -->
@@ -807,17 +807,17 @@ z
    </g>
    <g id="patch_7">
     <path d="M 208.404348 96.56928 
-Q 237.23511 96.56928 264.277019 96.56928 
-" style="fill: none; stroke: #475569; stroke-width: 1.6; stroke-linecap: round"/>
-    <path d="M 260.277019 94.56928 
-L 264.277019 96.56928 
-L 260.277019 98.56928 
+Q 237.23511 96.56928 264.053412 96.56928 
+" style="fill: none; stroke: #059669; stroke-width: 1.8; stroke-linecap: round"/>
+    <path d="M 260.053412 94.56928 
+L 264.053412 96.56928 
+L 260.053412 98.56928 
 z
-" style="fill: #475569; stroke: #475569; stroke-width: 1.6; stroke-linecap: round"/>
+" style="fill: #059669; stroke: #059669; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="text_6">
     <!-- tcgen05 -->
-    <g style="fill: #475569" transform="translate(222.891516 84.269768) scale(0.07 -0.07)">
+    <g style="fill: #059669" transform="translate(222.891516 84.269768) scale(0.07 -0.07)">
      <defs>
       <path id="DejaVuSans-74" d="M 1172 4494 
 L 1172 3500 
@@ -995,7 +995,7 @@ z
      <use xlink:href="#DejaVuSans-35" transform="translate(346.191406 0)"/>
     </g>
     <!-- MMA -->
-    <g style="fill: #475569" transform="translate(228.801594 92.108237) scale(0.07 -0.07)">
+    <g style="fill: #059669" transform="translate(228.801594 92.108237) scale(0.07 -0.07)">
      <defs>
       <path id="DejaVuSans-4d" d="M 628 4666 
 L 1569 4666 
@@ -1315,7 +1315,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pb55e885453">
+  <clipPath id="pdf7e328103">
    <rect x="7.2" y="7.2" width="474.3" height="171.864"/>
   </clipPath>
  </defs>
