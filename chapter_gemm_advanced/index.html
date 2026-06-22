@@ -675,8 +675,7 @@
 <div style="overflow-x:auto;">
 <iframe src="../demo/cta_cluster.html" title="A 2-CTA cluster: cooperative MMA via cross-CTA SMEM read" loading="lazy"
         style="width:100%; min-width:720px; height:580px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
-</div><p><em>Interactive: each CTA owns half of A and half of B, reads the other’s B across the cluster (DSMEM),
-and the pair produces one 256×256 output tile.</em></p>
+</div><p><em>Interactive: each CTA owns one A row slice and one stored-B row slice, then reads the other CTA’s stored-B slice across the cluster (DSMEM). After <code class="docutils literal notranslate"><span class="pre">B.T</span></code>, the two stored-B slices cover the full output-column span, so the pair produces one 256×256 output tile.</em></p>
 <p><strong>Why A and B are split across the cluster</strong>: To see how the 256×256 tile gets partitioned, recall that the tutorial stores GEMM as <code class="docutils literal notranslate"><span class="pre">D</span> <span class="pre">=</span> <span class="pre">A</span> <span class="pre">&#64;</span> <span class="pre">B.T</span></code>, where stored B has shape <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">K</span></code>. With two CTAs in a cluster, the split falls out cleanly:</p>
 <ul class="simple">
 <li><p><strong>A is split vertically</strong>: CTA-0 holds A0 (rows 0-127), CTA-1 holds A1 (rows 128-255). Stacked: <code class="docutils literal notranslate"><span class="pre">[A0;</span> <span class="pre">A1]</span></code> (256 rows).</p></li>
