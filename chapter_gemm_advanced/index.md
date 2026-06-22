@@ -347,8 +347,7 @@ The whole optimization rests on a single hardware capability: with `cta_group=2`
         style="width:100%; min-width:720px; height:580px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
 </div>
 ```
-*Interactive: each CTA owns half of A and half of B, reads the other's B across the cluster (DSMEM),
-and the pair produces one 256×256 output tile.*
+*Interactive: each CTA owns one A row slice and one stored-B row slice, then reads the other CTA's stored-B slice across the cluster (DSMEM). After `B.T`, the two stored-B slices cover the full output-column span, so the pair produces one 256×256 output tile.*
 
 **Why A and B are split across the cluster**: To see how the 256×256 tile gets partitioned, recall that the tutorial stores GEMM as `D = A @ B.T`, where stored B has shape `N x K`. With two CTAs in a cluster, the split falls out cleanly:
 

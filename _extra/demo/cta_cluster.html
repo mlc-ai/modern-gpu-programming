@@ -54,7 +54,7 @@
 </head>
 <body>
 <h1>A 2-CTA Cluster: Cooperative MMA via Cross-CTA SMEM Read</h1>
-<div class="sub">click a piece — two CTAs share their B tiles across the cluster (DSMEM)</div>
+<div class="sub">click a piece — two CTAs share stored-B row slices across the cluster (DSMEM)</div>
 
 <div class="cluster" id="diagram" data-k="cluster">
   <span class="ctag">CLUSTER — 2 CTAs across SMs · DSMEM</span>
@@ -88,9 +88,9 @@
   var INFO = {
     cluster: ["Cluster — 2 CTAs across SMs", "A cluster groups CTAs on different SMs so they can synchronize and read each other's shared memory directly (<b>DSMEM</b>). Here a 2-CTA cluster computes one 256&times;256 output tile cooperatively."],
     cta:     ["CTA — one thread block on one SM", "Each CTA runs on a single SM and owns that SM's shared memory. On its own it would compute a 128&times;256 slice of the output; in the cluster the two CTAs combine into a larger MMA."],
-    asmem:   ["Asmem (own) — this CTA's half of A", "Each CTA stages its own rows of A in shared memory: CTA 0 holds <code>A rows 0&ndash;127</code>, CTA 1 holds <code>A rows 128&ndash;255</code>."],
-    bsmem:   ["Bsmem — this CTA's half of B", "Each CTA stages one stored-B row slice (CTA 0: <code>rows 0&ndash;127</code>; CTA 1: <code>rows 128&ndash;255</code>). After transpose, those slices become logical output-column spans. The MMA needs all of B, so each CTA also reads the <em>other</em> CTA's Bsmem across the cluster."],
-    xread:   ["Cross-CTA read (DSMEM)", "A CTA reads the other CTA's <code>Bsmem</code> directly over the cluster interconnect &mdash; no round-trip through global memory. This distributed-shared-memory access is what makes the 2-CTA cooperative MMA possible."],
+    asmem:   ["Asmem (own) — this CTA's A row slice", "Each CTA stages its own rows of A in shared memory: CTA 0 holds <code>A rows 0&ndash;127</code>, CTA 1 holds <code>A rows 128&ndash;255</code>."],
+    bsmem:   ["Bsmem — this CTA's stored-B row slice", "Each CTA stages one stored-B row slice (CTA 0: <code>rows 0&ndash;127</code>; CTA 1: <code>rows 128&ndash;255</code>). After <code>B.T</code>, those slices become logical output-column spans. The MMA needs both spans, so each CTA also reads the <em>other</em> CTA's Bsmem across the cluster."],
+    xread:   ["Cross-CTA read (DSMEM)", "A CTA reads the other CTA's stored-B slice from <code>Bsmem</code> directly over the cluster interconnect &mdash; no round-trip through global memory. This distributed-shared-memory access is what makes the 2-CTA cooperative MMA possible."],
     out:     ["Output — a 256&times;256 tile", "Together the pair produces a 256&times;256 tile (CTA 0: rows 0&ndash;127, CTA 1: rows 128&ndash;255), twice the 128&times;128 a single CTA would produce alone."]
   };
   var diagram = document.getElementById('diagram');
