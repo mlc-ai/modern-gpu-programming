@@ -124,7 +124,7 @@ S[(8, 16) : (16@m, 1@m)]
 The tags start to earn their keep when a layout describes data *spread across threads* rather than
 laid out in memory. Take `S[(8, 4, 2) : (4@laneid, 1@laneid, 1@reg)]`: instead of pointing into
 linear memory, it maps rows and columns onto lane IDs and a per-lane register. Here `laneid` means
-the warp lane index within a warp, roughly `thread_index % warp_size`. This is exactly the
+the warp lane index within a warp, `thread_index % warp_size`. This is exactly the
 tensor-core register fragment you will meet in {ref}`chap_layout_generations`.
 
 The interactive visualization below shows how a layout can distribute tensor elements across warp

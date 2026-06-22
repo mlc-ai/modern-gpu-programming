@@ -396,7 +396,7 @@ the hardware resources that operate on it.</p>
 <p>The tags start to earn their keep when a layout describes data <em>spread across threads</em> rather than
 laid out in memory. Take <code class="docutils literal notranslate"><span class="pre">S[(8,</span> <span class="pre">4,</span> <span class="pre">2)</span> <span class="pre">:</span> <span class="pre">(4&#64;laneid,</span> <span class="pre">1&#64;laneid,</span> <span class="pre">1&#64;reg)]</span></code>: instead of pointing into
 linear memory, it maps rows and columns onto lane IDs and a per-lane register. Here <code class="docutils literal notranslate"><span class="pre">laneid</span></code> means
-the warp lane index within a warp, roughly <code class="docutils literal notranslate"><span class="pre">thread_index</span> <span class="pre">%</span> <span class="pre">warp_size</span></code>. This is exactly the
+the warp lane index within a warp, <code class="docutils literal notranslate"><span class="pre">thread_index</span> <span class="pre">%</span> <span class="pre">warp_size</span></code>. This is exactly the
 tensor-core register fragment you will meet in <a class="reference internal" href="../chapter_layout_generations/index.html#chap-layout-generations"><span class="std std-ref">Tensor Core Operand Layouts Across GPU Generations</span></a>.</p>
 <p>The interactive visualization below shows how a layout can distribute tensor elements across warp
 lanes and per-lane registers, rather than placing them in linear memory.</p>
