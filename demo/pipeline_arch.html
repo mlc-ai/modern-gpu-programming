@@ -33,7 +33,7 @@
 
   .s-gmem  { border-color: #6b7280; background: #f3f4f6; color: #374151; }
   .s-smem  { border-color: #8b5cf6; background: #ede9fe; color: #5b21b6; }
-  .s-tmem  { border-color: #d97706; background: #fef3c7; color: #92400e; }
+  .s-tmem  { border-color: #f59e0b; background: #fffbeb; color: #c2410c; }
   .s-reg   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
 
   .arrow-h {
@@ -50,7 +50,7 @@
   .p-arrow-label:hover { background: rgba(0,0,0,.1); }
   .p-arrow-label.c-blue   { color: #3b82f6; }
   .p-arrow-label.c-green  { color: #059669; }
-  .p-arrow-label.c-amber  { color: #d97706; }
+  .p-arrow-label.c-amber  { color: #f59e0b; }
   .p-arrow-label.c-red    { color: #dc2626; }
 
   /* ── Architecture (bottom) ───────────────────────────── */
@@ -80,8 +80,8 @@
   .u-tc .hw-name { color: #065f46; }
   .u-smem { border-color: #8b5cf6; background: #ede9fe; }
   .u-smem .hw-name { color: #5b21b6; }
-  .u-tmem { border-color: #d97706; background: #fef3c7; }
-  .u-tmem .hw-name { color: #92400e; }
+  .u-tmem { border-color: #f59e0b; background: #fffbeb; }
+  .u-tmem .hw-name { color: #c2410c; }
   .u-rf   { border-color: #dc2626; background: #fee2e2; }
   .u-rf .hw-name { color: #991b1b; }
   .u-tma  { border-color: #3b82f6; background: #dbeafe; }
@@ -171,7 +171,7 @@
       <div class="stage-box s-tmem" data-stage="tmem">TMEM<br><span style="font-size:11px;font-weight:500;">accum</span></div>
     </div>
     <div class="arrow-h">
-      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#d97706" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#d97706"/></svg>
+      <svg viewBox="0 0 40 20"><path d="M2 10 H30" stroke="#f59e0b" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#f59e0b"/></svg>
       <div class="p-arrow-label c-amber" data-action="ld">tcgen05.ld</div>
     </div>
     <div class="stage">
@@ -260,7 +260,7 @@
           <polygon points="0 0,6 2,0 4" fill="#059669"/>
         </marker>
         <marker id="ah-amber" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
-          <polygon points="0 0,6 2,0 4" fill="#d97706"/>
+          <polygon points="0 0,6 2,0 4" fill="#f59e0b"/>
         </marker>
         <marker id="ah-red" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
           <polygon points="0 0,6 2,0 4" fill="#dc2626"/>
@@ -273,8 +273,8 @@
       <text id="lbl2" class="arrow-label" fill="#3b82f6" style="display:none;"></text>
       <path id="arr3" class="arch-arrow" data-arrows="mma" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#ah-green)" style="display:none;"/>
       <text id="lbl3" class="arrow-label" fill="#059669" style="display:none;"></text>
-      <path id="arr4" class="arch-arrow" data-arrows="mma" stroke="#d97706" stroke-width="2" fill="none" marker-end="url(#ah-amber)" style="display:none;"/>
-      <text id="lbl4" class="arrow-label" fill="#d97706" style="display:none;"></text>
+      <path id="arr4" class="arch-arrow" data-arrows="mma" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#ah-amber)" style="display:none;"/>
+      <text id="lbl4" class="arrow-label" fill="#f59e0b" style="display:none;"></text>
       <path id="arr5" class="arch-arrow" data-arrows="ld" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#ah-red)" style="display:none;"/>
       <text id="lbl5" class="arrow-label" fill="#dc2626" style="display:none;"></text>
       <!-- RF → SMEM (store) — hidden by default -->
@@ -308,7 +308,7 @@
       pipeStages: ['smem1', 'tmem'],
       archUnits: ['boxSMEM', 'boxTC', 'boxTMEM'],
       archArrows: 'mma' },
-    ld:        { title: 'tcgen05.ld — Load from Tensor Memory', color: '#d97706',
+    ld:        { title: 'tcgen05.ld — Load from Tensor Memory', color: '#f59e0b',
       body: 'Reads accumulated fp32 results from TMEM into registers for writeback. Each thread gets its slice of the output tile.',
       pipeStages: ['tmem', 'reg'],
       archUnits: ['boxTMEM', 'boxRF'],
