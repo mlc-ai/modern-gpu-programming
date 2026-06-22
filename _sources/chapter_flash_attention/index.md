@@ -8,11 +8,19 @@
 - The kernel composes everything from Part III (TMA, `tcgen05`, TMEM, barriers) with warp roles, online-softmax rescaling, causal masking, and GQA.
 :::
 
-Attention is the kernel that decides whether a transformer runs at all, and it is also where everything we built so far finally has to work together. Every piece we assembled for GEMM (TMA tile movement, `tcgen05` MMA, TMEM, warpgroup register tiles, explicit barriers) carries over here unchanged. The challenge of attention is that it is not one MMA repeated: it is *two* MMAs with real work wedged between them, namely online softmax, causal masking, and the rescaling that keeps earlier and later blocks in a common scale. That middle stage is where all the new difficulty lives, for two reasons. First, a plain matmul only ever adds to its accumulator and never revisits it; attention has to keep rescaling the results it already computed as new blocks of keys and values stream in. Second, the softmax itself is heavy CUDA-core work, exponentials and row-wise reductions, that runs between the two Tensor Core MMAs rather than on them, so it sits right on the critical path. That second cost is why so much of attention optimization is really softmax optimization: reformulating `exp`, and overlapping the softmax with the MMAs instead of stalling on it. This is the chapter where everything composes into one real, end-to-end kernel: the sections below keep just enough of the Flash Attention 4 algorithm to make the kernel readable, then trace a single tile from GMEM through both MMAs and the softmax between them.
+Attention is the kernel that decides whether a transformer runs at all, and it is also where everything we built so far finally has to work together. Every piece we assembled for GEMM carries over here: TMA tile movement, `tcgen05` MMA, TMEM, warpgroup register tiles, and explicit barriers.
+
+The challenge is that attention is not one MMA repeated. It is two MMAs with real work wedged between them: online softmax, causal masking, and the rescaling that keeps earlier and later blocks in a common scale.
+
+That middle stage is where the new difficulty lives. A plain matmul only adds to its accumulator; attention has to revisit and rescale results it already computed as new keys and values stream in. The softmax work itself also runs on CUDA cores between the two Tensor Core MMAs, so exponentials and row-wise reductions sit directly on the critical path.
+
+That is why so much of attention optimization is really softmax optimization: reformulating `exp`, and overlapping softmax with the MMAs instead of stalling on it.
 
 Our goal in this chapter is not to re-derive Flash Attention from scratch. We will keep just enough of the algorithm in view to make the kernel readable, and then spend our attention on the part that is genuinely new: how that algorithm turns into TIRx.
 
-The clearest way in is to follow a single tile as it flows through the kernel. `Q`, `K`, and `V` enter as input tiles, loaded from GMEM into SMEM. The score MMA multiplies `Q` and `K` into a score tile `S` in TMEM. Softmax then turns `S` into a numerator tile `P`, and the value MMA combines `P` and `V` to update the output accumulator `O`. So far this looks like two matmuls glued together, but there is one twist that GEMM never had to deal with: whenever the running softmax maximum changes, the `O` accumulated so far is suddenly in the wrong scale, and it must be rescaled before the next value MMA can safely add into it. The sections below trace this path first, and only then show how TIRx hands each stage to a warpgroup and wires the stages together.
+The clearest way in is to follow a single tile as it flows through the kernel. `Q`, `K`, and `V` enter as input tiles, loaded from GMEM into SMEM. The score MMA multiplies `Q` and `K` into a score tile `S` in TMEM. Softmax turns `S` into a numerator tile `P`, and the value MMA combines `P` and `V` to update the output accumulator `O`.
+
+So far this looks like two matmuls glued together, but there is one twist that GEMM never had to deal with: whenever the running softmax maximum changes, the `O` accumulated so far is suddenly in the wrong scale. It must be rescaled before the next value MMA can safely add into it. The sections below trace this path first, and only then show how TIRx hands each stage to a warpgroup and wires the stages together.
 
 ## Algorithm Shape
 
@@ -119,7 +127,7 @@ When you read the kernel, find the role branch first. It tells you which team ow
 
 One asymmetry ends up shaping the entire barrier graph: *every* MMA, both score and value, issues from WG3 warp 0 alone. WG0 and WG1 never issue an MMA at all. They only consume the score tile, run softmax, and write `P` back to TMEM.
 
-This separation is precisely why softmax needs barriers around it. `s_ready` carries the score tile from the MMA warp over to softmax; `p_o_rescale` carries `P` and a rescaled `O` from softmax and correction back to the value MMA. We will keep returning to those two names for the rest of the chapter.
+This separation is precisely why softmax needs barriers around it. `s_ready` carries the score tile from the MMA warp over to softmax; `p_o_rescale` carries `P` and an `O` slot that is safe for the value MMA, either already rescaled or released because no rescale was needed. We will keep returning to those two names for the rest of the chapter.
 
 ## Reading the Fragments
 
@@ -132,7 +140,7 @@ The fragments in this chapter are excerpts from `flash_attention4.py`, so they i
 | `MMA_K` | MMA inner-K step in `P`/`V` columns (16); `K_SPLIT = 6 * MMA_K = 96` |
 | `K_SPLIT` | split point of the value-MMA schedule (see *The Two MMA Phases*); the first value MMA covers columns `0:K_SPLIT` (`6 * MMA_K = 96`) |
 | `should_rescale` | WG2 per-row flag: whether the old `O` needs rescaling before the next value MMA (reduced across the warpgroup with `any_sync`) |
-| `rescale_threshold` | when the scaled row-max change is small enough, `acc_scale` is clamped to exactly 1.0 and the rescale is skipped (8.0) |
+| `rescale_threshold` | skip threshold for small row-max changes: if the new max does not clear it, the kernel keeps the old max and sets `acc_scale` to exactly 1.0 (8.0) |
 | `scale_log2` | the softmax scale in log2 units, `log2(e)/√d`, so `P = exp2((S - m) · scale_log2)` |
 | `acc_scale` | per-row rescale factor softmax passes to WG2 through the SMEM mailbox |
 | `chunk_start`/`chunk_end`, `p_start`/`p_end` | column range of the 32-wide softmax chunk being read / written |
@@ -367,7 +375,16 @@ Just as in GEMM, you can predict a barrier's type from who produces the signal:
 - MMA completion uses `TCGen05Bar`, because `tcgen05.commit` signals the completion group.
 - Pure thread-to-thread handoffs use `MBarrier`, where the participating threads arrive explicitly.
 
-The split softmax-to-value handoff rewards a closer look. `p_o_rescale` lets the value MMA start once the first 96 columns of `P` are written and the `O` tile is safe to accumulate into. On the first K/V block WG2 pre-arrives this barrier, since there is no old `O` to rescale yet. On later blocks WG2 arrives only after it has either skipped an unnecessary rescale or finished rescaling the old `O`. The rescale is skipped when the per-row scale is effectively 1.0: softmax clamps `acc_scale` to exactly 1.0 when the row max barely moves, specifically when the log2-scaled max delta `(m_old - m_new) * scale_log2` stays within `rescale_threshold` so that the `exp2` rescale factor rounds to 1.0, and WG2 then reduces `should_rescale` across the warpgroup with `any_sync` so that it touches `O` only when at least one row genuinely needs it. The point is that the rescale being skipped is no small thing: it is a full TMEM → RF → TMEM read-modify-write over the whole `O` accumulator, pure wasted work once the max has stabilized and the scale rounds to 1.0. Meanwhile `p_ready_2` releases the last 32 columns of `P`, which matches the `96 + 32` value-MMA schedule from the previous section.
+The split softmax-to-value handoff rewards a closer look. It uses two gates:
+
+- `p_o_rescale` lets the value MMA start once the first 96 columns of `P` are written and the `O` tile is safe to accumulate into.
+- `p_ready_2` releases the last 32 columns of `P`, matching the `96 + 32` value-MMA schedule from the previous section.
+
+The first K/V block is the easy case. WG2 pre-arrives `p_o_rescale`, because there is no old `O` tile to rescale yet.
+
+Later blocks have to be more careful. WG2 arrives at `p_o_rescale` only after it has either skipped an unnecessary rescale or finished rescaling the old `O`. The skip test is deliberately conservative: softmax computes the log2-scaled delta `(m_old - m_new) * scale_log2`; if that value is still above `-rescale_threshold`, the new max has not moved far enough to justify rescaling, so the kernel keeps the old max and sets `acc_scale` to exactly 1.0. Only a larger max jump takes the `exp2` path and asks WG2 to rescale `O`.
+
+WG2 then reduces `should_rescale` across the warpgroup with `any_sync`. If no row needs the update, it leaves `O` alone. That skip matters because rescaling `O` is a full TMEM -> RF -> TMEM read-modify-write over the whole accumulator, pure wasted work when the threshold logic has already kept `acc_scale` at 1.0.
 
 Notice that all the new barriers cluster in one place. `s_ready`, `p_o_rescale`, `p_ready_2`, and the softmax/correction pair are all barriers around softmax. They exist for a single reason: the score MMA and value MMA are no longer adjacent. Register math, TMEM rewrites, and output rescaling now sit between them, and every one of those steps needs a handoff of its own.
 

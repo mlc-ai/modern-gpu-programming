@@ -9,11 +9,15 @@
 - Correctness comes first; performance is the job of the next two chapters.
 :::
 
-GEMM is the workload this entire book is built around: it sits under the linear layers, attention projections, and convolutions that dominate a GPU's time, so the difference between a correct GEMM and a fast one is the difference between leaving most of the chip idle and saturating it. That gap is enormous, and trying to write a saturating kernel in one shot means debugging memory movement, accumulation, tiling, and Tensor Core scheduling all at once, with nothing trustworthy to compare against. The only sane way across is to start from the smallest kernel that produces a correct answer, a single output tile, and grow it one decision at a time, so every later optimization has a working, understandable baseline to improve on. This chapter writes that first correct tiled GEMM. The previous chapters described the TIRx tile primitives in the abstract: the scope / layout / dispatch model from {ref}`chap_tirx_primer` and {ref}`chap_tirx_layout_api`. Here we apply them to a real kernel: we begin with a single 128 x 128 output tile and grow it into a kernel that handles full-size matrices, adding K-dimension accumulation and then spatial tiling across many CTAs.
+GEMM is the workload this entire book is built around. It sits under the linear layers, attention projections, and convolutions that dominate a GPU's time, so the difference between a correct GEMM and a fast one is the difference between leaving most of the chip idle and saturating it.
+
+That gap is too large to cross in one jump. A saturating kernel makes you debug memory movement, accumulation, tiling, and Tensor Core scheduling all at once, with nothing trustworthy to compare against. The safer path is to start from the smallest kernel that produces a correct answer, then grow it one decision at a time.
+
+This chapter writes that first correct tiled GEMM. The previous chapters introduced the TIRx scope / layout / dispatch model in the abstract; here we apply it to a real kernel. We begin with one 128 x 128 output tile and grow it into a kernel that handles full-size matrices, adding K-dimension accumulation and then spatial tiling across many CTAs.
 
 This is the first of three chapters that walk a single GEMM optimization path from end to end. In this one we build a correct tiled kernel and stop there. The next chapter ({ref}`chap_gemm_async`) replaces the thread copies with TMA and overlaps data movement with compute through pipelining, and {ref}`chap_gemm_advanced` goes further still with warp specialization and CTA clusters. Each chapter builds on the one before it, so the kernels accumulate features rather than start over.
 
-It helps to read each step as an edit to a single contract with three terms: which **scope** runs the operation, which **layout** the operand tiles use, and which **dispatch** path executes it. Most optimizations touch exactly one of these three pillars and leave the other two untouched, so we open each step with a small card that names the pillar that changes. Step 1 establishes the baseline that the rest of the path edits.
+It helps to read each step as an edit to a single contract with three terms: which **scope** runs the operation, which **layout** the operand tiles use, and which **dispatch** path executes it. Most steps have one primary change, so we open them with a small card that names that change and calls out any synchronization detail needed to make the reuse safe. Step 1 establishes the baseline that the rest of the path edits.
 
 ## GEMM
 
@@ -325,11 +329,14 @@ This kernel is correct, which was the whole point of Step 1, but it is correct o
 (chap_k_loop)=
 ## Step 2: K-Loop Accumulation
 
-The first limit to remove is the smallest one. Step 1 handles only a single 64-wide K tile, yet real matrices contract over far more than that. So in Step 2 we keep the single output tile but let K span many 64-wide chunks. The idea is straightforward: repeat the load -> MMA -> wait sequence once per chunk, and let each MMA accumulate into the same TMEM slot. The real work, it turns out, is in the synchronization. Reusing one mbarrier across iterations introduces this chapter's first genuine correctness hazard. If the code tracks the wrong phase, a wait can return *before* its MMA has actually finished, silently corrupting the result. The mechanics below show exactly how that goes wrong, and how to avoid it.
+The first limit to remove is the smallest one. Step 1 handles only a single 64-wide K tile, yet real matrices contract over far more than that. In Step 2 we keep the single output tile but let K span many 64-wide chunks.
 
-> **What this step changes: Layout**
+The idea is straightforward: repeat the load -> MMA -> wait sequence once per chunk, and let each MMA accumulate into the same TMEM slot. The real work, it turns out, is in the synchronization. Reusing one mbarrier across iterations introduces this chapter's first genuine correctness hazard. If the code tracks the wrong phase, a wait can return *before* its MMA has actually finished, silently corrupting the result. The mechanics below show exactly how that goes wrong, and how to avoid it.
+
+> **What this step changes: Layout reuse**
 > - Scope: unchanged, still a single warpgroup.
-> - Layout: the same SMEM tile pair and TMEM accumulator slot are reused across the K-loop. No new storage is allocated; the operand tiles simply stream through one fixed pair of buffers.
+> - Layout/reuse: the same SMEM tile pair and TMEM accumulator slot are reused across the K-loop. No new storage is allocated; the operand tiles stream through one fixed pair of buffers, and the accumulator state stays in one TMEM slot.
+> - Synchronization: the reused MMA barrier must advance through the right phase on every K chunk, or a later wait can observe an earlier completion.
 > - Dispatch: unchanged.
 
 ### K-Loop Mechanics
