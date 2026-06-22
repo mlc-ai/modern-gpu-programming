@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tiling and Swizzling with 3D TMA</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  .main { display:flex; gap:16px; max-width:1300px; margin:0 auto; align-items:center; justify-content:center;
+    position:relative; }
+  .mat-box { background:var(--surface); border-radius:10px; padding:14px; border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,.06); text-align:center; }
+  .mat-box h2 { font-size:14px; font-weight:700; margin-bottom:2px; }
+  .mat-box .dims { font-size:11px; color:var(--dim); margin-bottom:6px; font-weight:600; }
+
+  .grid { display:inline-grid; gap:0; }
+  .hdr { font-size:8px; color:var(--dim); text-align:center; padding:1px 0; font-weight:600; }
+  .rl { font-size:8px; color:var(--dim); display:flex; align-items:center; justify-content:flex-end;
+    padding-right:2px; font-weight:600; }
+
+  /* Global memory cells */
+  .gc {
+    border-radius:2px; display:flex; align-items:center; justify-content:center;
+    font-size:5px; font-weight:700; border:1px solid transparent; transition:all .1s;
+    min-width:0; color:var(--text);
+  }
+  .gc.idle { background:#dde0e4; opacity:1; }
+  .gc.inbox { background:var(--color-hover-bg); border-color:var(--accent); color:var(--color-hover-text);
+    cursor:pointer; opacity:1; }
+  .gc.hov { border-color:#222; border-width:2px; z-index:2; box-shadow:0 0 5px rgba(59,130,246,.4); }
+
+  /* Shared memory cells (tiling-exploration style) */
+  .sc {
+    display:flex; align-items:center; justify-content:center;
+    font-size:7px; font-weight:700; border:1px solid rgba(255,255,255,.15); transition:all .15s;
+    min-width:0; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2);
+  }
+  .sc.rd { outline:2.5px solid #222; outline-offset:-1px; z-index:1; }
+  .sc.dm { opacity:.18; }
+
+  /* Group labels */
+  .groups { display:flex; gap:8px; justify-content:center; }
+  .group-label { text-align:center; font-size:11px; font-weight:700; color:var(--accent); margin-bottom:4px; }
+
+  .arrow-box { display:flex; flex-direction:column; align-items:center; gap:4px; padding:0 10px; }
+  .arrow-box .arrow { font-size:32px; color:var(--accent); }
+  .arrow-box .label { font-size:13px; font-weight:700; color:var(--accent); }
+  .arrow-box .detail { font-size:10px; color:var(--dim); font-weight:600; text-align:center; line-height:1.5; }
+
+  .arrow-svg { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; overflow:visible; }
+  .arrow-svg path { fill:none; stroke:#222; stroke-width:1.5; }
+  .arrow-svg text { font-size:11px; font-weight:600; fill:#222; font-family:inherit; }
+
+  .info { max-width:1300px; margin:14px auto 0; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:10px 16px; font-size:13px; line-height:1.6; }
+  .info b { font-weight:700; }
+  .info .formula { font-family:'SF Mono','Fira Code',monospace; color:var(--accent); font-weight:600; }
+
+  .leg { gap:0; margin-top:12px; }
+</style>
+</head>
+<body>
+
+<h1>Tiling and Swizzling with 3D TMA</h1>
+<div class="sub">Use 3D TMA to copy into tiled shared memory</div>
+
+<div class="controls">
+  <div><span class="lbl">Swizzle</span>
+    <div class="bg" id="sw">
+      <button class="btn" data-v="none">None</button>
+      <button class="btn on" data-v="128">128B</button>
+    </div>
+  </div>
+  <div><span class="lbl">Col offset</span><div class="bg" id="cc"></div></div>
+</div>
+
+<div class="main" id="main">
+  <svg class="arrow-svg" id="arrowsvg"></svg>
+
+  <div class="mat-box">
+    <h2 style="color:var(--color-group-2)">Global Memory</h2>
+    <div class="dims">16&times;256 fp16 (contiguous, row = 512B)</div>
+    <div class="grid" id="gg"></div>
+  </div>
+
+  <div class="arrow-box">
+    <div class="arrow">&rarr;</div>
+    <div class="label">3D TMA</div>
+    <div class="detail" id="tmainfo"></div>
+  </div>
+
+  <div class="mat-box">
+    <h2 style="color:var(--color-group-4)">Shared Memory (tiled &amp; swizzled)</h2>
+    <div class="groups" id="gs"></div>
+  </div>
+</div>
+
+<div class="info" id="infobox"></div>
+
+<div class="leg">
+  <div class="leg-row" id="sl"></div>
+</div>
+
+<script>
+var BK = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+
+var GDR = 16;          // global rows
+var GDC = 32;          // global sector columns (256 fp16 / 8 per sector)
+var NGROUPS = 2;       // groups per TMA load
+var TOTAL_GROUPS = 4;  // total groups across full row (256 fp16 / 64)
+var GSECS = 8;         // sectors per group (64 fp16 = 128B = one swizzle atom width)
+var BOX_R = 8;         // TMA box rows
+var ROW_BYTES = 512;   // 256 fp16 × 2B
+var GRP_BYTES = 128;   // 64 fp16 × 2B per group
+var GCSZ = 10;         // global cell size
+var SCSZ = 12;         // shared cell size
+
+var ST = { sw: '128', col: 0, hovR: -1, hovC: -1, hovGi: 0 };
+
+function mk(t, c) { var d = document.createElement(t); if (c) d.className = c; return d; }
+
+function draw() {
+  var useSw = ST.sw === '128';
+  var colOff = ST.col;                          // which pair of groups (0 or 1)
+  var boxGrp = NGROUPS;                         // always all groups
+  var boxRows = GDR;                            // always all 16 rows
+
+  // Box in global: contiguous rectangle
+  var colBase = colOff * NGROUPS * GSECS;       // sector offset for col
+  var boxColStart = colBase;
+  var boxColEnd = colBase + NGROUPS * GSECS;
+
+  // TMA info
+  var globalGStart = colOff * NGROUPS;
+  document.getElementById('tmainfo').innerHTML =
+    'cp.async.bulk.tensor.3d<br>(row=0, group=' + globalGStart + ', col=0)' +
+    (useSw ? '<br>+ SWIZZLE_128B' : '');
+
+
+  // Info box
+  var swName = useSw ? 'CU_TENSOR_MAP_SWIZZLE_128B' : 'CU_TENSOR_MAP_SWIZZLE_NONE';
+  document.getElementById('infobox').innerHTML =
+    '<b>TensorMap</b>: <span class="formula">' +
+    'dtype = f16, globalDim = [64, 16, ' + TOTAL_GROUPS + '], globalStrides = [512B, 128B], ' +
+    'boxDim = [64, 16, 2], swizzle = ' + swName + '</span><br>' +
+    '<b>Instruction</b>: <span class="formula">cp.async.bulk.tensor.3d.shared::cta.global.mbarrier::complete_tx::bytes [smem], [tensormap, {' +
+    '0, 0, ' + globalGStart + '}], [mbar]</span><br>' +
+    '<b>Key idea</b>: <span class="formula">Let gslice be the 16\u00d7128 f16 matrix slice \u2192 ' +
+        'gslice.reshape(16, 2, 64).transpose(1, 0, 2)' +
+        ' has shape (2, 16, 64) \u2192 matches contiguous view of shared memory</span><br>' +
+    '<b>Note</b>: TensorMap and PTX follows column-major per official spec \u2014 globalDim, globalStrides, boxDim, and copy instruction coordinates are reversed from row-major order.';
+
+  // Global memory: single contiguous grid
+  var gg = document.getElementById('gg');
+  gg.innerHTML = '';
+  gg.style.gridTemplateColumns = 'repeat(' + GDC + ',' + GCSZ + 'px)';
+  for (var r = 0; r < GDR; r++) {
+    for (var c = 0; c < GDC; c++) {
+      var d = mk('div', 'gc');
+      d.style.width = GCSZ + 'px';
+      d.style.height = GCSZ + 'px';
+      var inBox = (c >= boxColStart && c < boxColEnd);
+      if (inBox) {
+        d.classList.add('inbox');
+        var cellGi = Math.floor((c - colBase) / GSECS);
+        var lr = r;
+        var lc = c - colBase - cellGi * GSECS;
+        d.dataset.lr = lr;
+        d.dataset.lc = lc;
+        d.dataset.gi = cellGi;
+        if (ST.hovR === lr && ST.hovC === lc && ST.hovGi === cellGi) d.classList.add('hov');
+      } else {
+        d.classList.add('idle');
+      }
+      gg.appendChild(d);
+    }
+  }
+
+  // Shared memory: two groups side by side
+  var gs = document.getElementById('gs');
+  gs.innerHTML = '';
+
+  for (var gi = 0; gi < NGROUPS; gi++) {
+    var gd = mk('div', 'group');
+    var glabel = mk('div', 'group-label');
+    glabel.textContent = 'g' + gi;
+    gd.appendChild(glabel);
+
+    var grid = mk('div', 'grid');
+    var showRL = (gi === 0);
+    grid.style.gridTemplateColumns = '16px repeat(' + GSECS + ',' + SCSZ + 'px)';
+
+    // Column headers
+    grid.appendChild(mk('div', 'hdr'));
+    for (var s = 0; s < GSECS; s++) {
+      var h = mk('div', 'hdr');
+      h.textContent = 's' + s;
+      grid.appendChild(h);
+    }
+
+    // Rows (16 rows × 8 sectors per group)
+    for (var r = 0; r < GDR; r++) {
+      var rl = mk('div', 'rl');
+      if (showRL) rl.textContent = r;
+      grid.appendChild(rl);
+      for (var p = 0; p < GSECS; p++) {
+        var logCol = useSw ? (p ^ (r % 8)) : p;
+
+        var d = mk('div', 'sc');
+        d.style.width = SCSZ + 'px';
+        d.style.height = SCSZ + 'px';
+        d.style.background = BK[p % 8];
+        d.textContent = logCol;
+
+        // Is this cell in the TMA box?
+        var inBox = true;  // always all groups, all rows
+        if (inBox) {
+          d.classList.add('rd');
+          // Mark hover target
+          if (ST.hovR >= 0 && gi === ST.hovGi) {
+            var destSec = useSw ? (ST.hovC ^ (ST.hovR % 8)) : ST.hovC;
+            if (r === ST.hovR && p === destSec) {
+              d.id = 'shov';
+            }
+          }
+        } else {
+          d.classList.add('dm');
+        }
+
+        grid.appendChild(d);
+      }
+    }
+
+    gd.appendChild(grid);
+    gs.appendChild(gd);
+  }
+
+  drawArrow();
+
+  // Legend
+  var sl = document.getElementById('sl');
+  sl.innerHTML = '';
+  for (var i = 0; i < 8; i++) {
+    var li = mk('div', 'li');
+    var sw = mk('div', 'swtch');
+    sw.style.background = BK[i];
+    li.appendChild(sw);
+    li.appendChild(document.createTextNode('sector ' + i));
+    sl.appendChild(li);
+  }
+}
+
+function drawArrow() {
+  var svg = document.getElementById('arrowsvg');
+  svg.innerHTML = '';
+  if (ST.hovR < 0) return;
+
+  var mainEl = document.getElementById('main');
+  var gCell = document.querySelector('.gc.hov');
+  var sCell = document.getElementById('shov');
+  if (!gCell || !sCell) return;
+
+  var pr = mainEl.getBoundingClientRect();
+  var ga = gCell.getBoundingClientRect();
+  var sa = sCell.getBoundingClientRect();
+  var x1 = ga.left + ga.width / 2 - pr.left;
+  var y1 = ga.top + ga.height / 2 - pr.top;
+  var x2 = sa.left + sa.width / 2 - pr.left;
+  var y2 = sa.top + sa.height / 2 - pr.top;
+  var mx = (x1 + x2) / 2;
+  var my = Math.min(y1, y2) - 40;
+
+  var ns = 'http://www.w3.org/2000/svg';
+  var defs = document.createElementNS(ns, 'defs');
+  var marker = document.createElementNS(ns, 'marker');
+  marker.setAttribute('id', 'ah');
+  marker.setAttribute('markerWidth', '8');
+  marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('refX', '7');
+  marker.setAttribute('refY', '3');
+  marker.setAttribute('orient', 'auto');
+  var poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', '0 0, 8 3, 0 6');
+  poly.setAttribute('fill', '#222');
+  marker.appendChild(poly);
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  var path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', 'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2);
+  path.setAttribute('marker-end', 'url(#ah)');
+  svg.appendChild(path);
+
+  var useSw = ST.sw === '128';
+  if (useSw) {
+    var tx = document.createElementNS(ns, 'text');
+    tx.setAttribute('x', mx);
+    tx.setAttribute('y', my - 4);
+    tx.setAttribute('text-anchor', 'middle');
+    tx.textContent = 'col ' + ST.hovC + ' XOR (row ' + ST.hovR + ' % 8) = sector ' + ((ST.hovC ^ (ST.hovR % 8)) % 8);
+    svg.appendChild(tx);
+  }
+}
+
+(function init() {
+  document.getElementById('sw').onclick = function(e) {
+    var b = e.target.closest('.btn'); if (!b) return;
+    ST.sw = b.dataset.v;
+    document.querySelectorAll('#sw .btn').forEach(function(x) { x.classList.remove('on'); });
+    b.classList.add('on');
+    ST.hovR = -1; ST.hovC = -1;
+    draw();
+  };
+
+  // Col offset buttons: 0, 128
+  var cc = document.getElementById('cc');
+  var colChoices = [{v:0,t:'0'},{v:1,t:'128'}];
+  for (var i = 0; i < colChoices.length; i++) {
+    var b = mk('button', 'btn' + (i === 0 ? ' on' : ''));
+    b.textContent = colChoices[i].t;
+    b.onclick = (function(v) { return function() {
+      ST.col = v;
+      cc.querySelectorAll('.btn').forEach(function(x) { x.classList.remove('on'); });
+      this.classList.add('on');
+      ST.hovR = -1; ST.hovC = -1;
+      draw();
+    }; })(colChoices[i].v);
+    cc.appendChild(b);
+  }
+
+  // Hover handlers
+  var mainEl = document.getElementById('main');
+  mainEl.addEventListener('mouseenter', function(e) {
+    var cell = e.target.closest('.gc.inbox');
+    if (!cell) return;
+    ST.hovR = +cell.dataset.lr;
+    ST.hovC = +cell.dataset.lc;
+    ST.hovGi = +(cell.dataset.gi || 0);
+    draw();
+  }, true);
+  mainEl.addEventListener('mouseleave', function(e) {
+    var cell = e.target.closest('.gc.inbox');
+    if (!cell) return;
+    ST.hovR = -1;
+    ST.hovC = -1;
+    draw();
+  }, true);
+
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Swizzle Imposes Tiling Constraint</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  .main { display:flex; gap:16px; max-width:1300px; margin:0 auto; align-items:flex-start; }
+  .box { background:var(--surface); border-radius:10px; padding:12px; border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,.06); flex:1; text-align:center; }
+  .box h2 { text-align:center; font-size:13px; font-weight:700; margin-bottom:8px; color:var(--dim); }
+
+  .grid { display:inline-grid; gap:0; }
+  .hdr { font-size:9px; color:var(--dim); text-align:center; padding:1px 0; font-weight:600; }
+  .rl { font-size:9px; color:var(--dim); display:flex; align-items:center; justify-content:flex-end;
+    padding-right:3px; font-weight:600; }
+  .cell {
+    display:flex; align-items:center; justify-content:center;
+    font-size:8px; font-weight:700; border:1px solid rgba(255,255,255,.15); transition:all .15s;
+    min-width:0; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2);
+  }
+  .cell.grey { background:var(--color-cell-bg); color:var(--text); text-shadow:none; border-color:rgba(0,0,0,.06); }
+  .cell.rd { outline:2.5px solid #222; outline-offset:-1px; z-index:1; }
+  .cell.dm { opacity:.18; }
+  .cell.src { outline:2.5px solid var(--accent); outline-offset:-1px; background:var(--color-hover-bg) !important;
+    color:var(--color-hover-text) !important; text-shadow:none; z-index:1; }
+
+  .grid-wrap { position:relative; display:inline-block; }
+  .tile-overlay { position:absolute; top:0; left:0; pointer-events:none; }
+  .tile-overlay line { stroke:#222; stroke-width:2; }
+
+  .groups { display:flex; gap:8px; justify-content:center; }
+  .group-label { text-align:center; font-size:11px; font-weight:700; color:var(--accent); margin-bottom:4px; }
+  .group-label.inv { visibility:hidden; }
+
+  .bottom-bar { max-width:1300px; margin:10px auto 0; }
+  .blab { font-size:11px; color:var(--dim); text-align:center; margin-bottom:3px; font-weight:600; }
+  .bbar { display:flex; gap:2px; }
+  .bs {
+    flex:1; height:24px; border-radius:4px; display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700; color:#fff; border:2px solid transparent; transition:all .15s;
+    text-shadow:0 1px 1px rgba(0,0,0,.2);
+  }
+  .bs.ac { border-color:#222; }
+  .bs.cf { border-color:#d32f2f; }
+  .bs.dm { opacity:.12; }
+
+  .st { text-align:center; margin-top:8px; font-size:13px; font-weight:600; min-height:20px; }
+  .good { color:var(--color-good); }
+  .bad { color:var(--color-bad); }
+
+  .dtype-info { display:inline-flex; gap:8px; align-items:center; margin-left:6px; }
+  .dtype-tag { font-size:11px; font-weight:600; color:var(--accent);
+    font-family:'SF Mono','Fira Code',monospace; background:var(--surface);
+    border:1px solid var(--border); border-radius:4px; padding:2px 7px; }
+
+  .formula-box { max-width:1300px; margin:8px auto 0; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:8px 14px; font-size:12px; }
+  .formula-box .ftitle { font-weight:700; margin-bottom:2px; }
+  .formula-box .fcontent { font-family:'SF Mono','Fira Code',monospace; color:var(--accent); font-weight:600; }
+
+  .leg { gap:0; margin-top:14px; }
+  .leg-row+.leg-row { margin-top:6px; }
+</style>
+</head>
+<body>
+
+<h1>Swizzle Imposes Tiling Constraint</h1>
+<div class="sub">128B swizzle on a 16&times;16 matrix &mdash; tiling into 16&times;8 groups eliminates bank conflicts</div>
+
+<div class="controls">
+  <div><span class="lbl">Tile</span>
+    <div class="bg" id="tl">
+      <button class="btn on" data-v="1">Yes</button>
+      <button class="btn" data-v="0">No</button>
+    </div>
+  </div>
+  <div><span class="lbl">Row Range</span>
+    <div class="bg" id="rr">
+      <button class="btn on" data-v="0">0-7</button>
+      <button class="btn" data-v="1">8-15</button>
+    </div>
+  </div>
+</div>
+<div class="controls">
+  <div><span class="lbl">Column</span><div class="bg" id="ci"></div></div>
+</div>
+
+<div class="main">
+  <div class="box">
+    <h2>Original 16&times;16 Matrix</h2>
+    <div class="grid-wrap" id="glw">
+      <div class="grid" id="gl"></div>
+      <svg class="tile-overlay" id="tov"></svg>
+    </div>
+  </div>
+  <div class="box">
+    <h2 id="rh">Tiled for 128B Swizzle (two 16&times;8 groups)</h2>
+    <div id="rv"></div>
+  </div>
+</div>
+<div class="bottom-bar">
+  <div class="blab">Bank Sector Activity</div>
+  <div class="bbar" id="bb"></div>
+  <div class="st" id="stat"></div>
+</div>
+<div class="controls">
+  <div><span class="lbl">dtype</span>
+    <div class="bg" id="dt">
+      <button class="btn" data-v="1">f8</button>
+      <button class="btn on" data-v="2">f16</button>
+      <button class="btn" data-v="4">f32</button>
+    </div>
+  </div>
+  <div class="dtype-info" id="dtype-info"></div>
+</div>
+<div class="formula-box">
+  <div class="ftitle">Hardware computes swizzle_col based on physical offset, as if each row has 8 elements. 16 elements per row means each original row will be treated as 2 rows in swizzle computation.</div>
+  <div class="fcontent" id="ffml"></div>
+</div>
+<div class="leg" id="lg"></div>
+
+<script>
+const BK = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+const SECS = 8, ROWS = 16, COLS = 16, GCOLS = 8;
+const SZ = 22; // cell size in px
+const DTYPES = { 1: 'f8', 2: 'f16', 4: 'f32' };
+const ST = { tile: true, col: 0, rr: 0, dsize: 2 };
+
+function updateDtype() {
+  const epc = 16 / ST.dsize;
+  const dn = DTYPES[ST.dsize];
+  const info = document.getElementById('dtype-info'); info.innerHTML = '';
+  const items = [
+    'Atom = 8 rows \u00d7 8 cols = 8 \u00d7 128B',
+    '1 cell = ' + epc + ' ' + dn,
+    'Atom = 8\u00d7' + (8 * epc) + ' ' + dn,
+    'Col tile = 8\u00d7' + epc + ' ' + dn,
+  ];
+  for (const t of items) { const d = mk('span', 'dtype-tag'); d.textContent = t; info.appendChild(d); }
+}
+
+function draw() {
+  updateDtype();
+  const rStart = ST.rr * 8, rEnd = rStart + 8;
+  const selCol = ST.col;
+  const selGroup = Math.floor(selCol / GCOLS);
+  const selLocal = selCol % GCOLS;
+
+  const srcSet = new Set();
+  for (let r = rStart; r < rEnd; r++) srcSet.add(r + ',' + selCol);
+
+  // Left: original 16x16
+  const gl = document.getElementById('gl'); gl.innerHTML = '';
+  gl.style.gridTemplateColumns = '20px repeat(16,' + SZ + 'px)';
+  // Column headers
+  gl.appendChild(mk('div', 'hdr'));
+  for (let c = 0; c < COLS; c++) { const h = mk('div', 'hdr'); h.textContent = c; gl.appendChild(h); }
+  for (let r = 0; r < ROWS; r++) {
+    const l = mk('div', 'rl'); l.textContent = r; gl.appendChild(l);
+    for (let c = 0; c < COLS; c++) {
+      const d = mk('div', 'cell grey');
+      d.style.width = SZ + 'px'; d.style.height = SZ + 'px';
+      d.textContent = c;
+      if (srcSet.has(r + ',' + c)) d.classList.add('src');
+      else d.classList.add('dm');
+      gl.appendChild(d);
+    }
+  }
+
+  // Tile boundary overlay
+  const tov = document.getElementById('tov');
+  tov.innerHTML = '';
+  if (ST.tile) {
+    requestAnimationFrame(() => {
+      const wrap = document.getElementById('glw');
+      const wr = wrap.getBoundingClientRect();
+      const cells = gl.querySelectorAll('.cell');
+      if (cells.length < COLS * ROWS) return;
+      const first = cells[0].getBoundingClientRect();
+      const midR = cells[GCOLS - 1].getBoundingClientRect();
+      const last = cells[COLS * ROWS - 1].getBoundingClientRect();
+      const x0 = first.left - wr.left;
+      const y0 = first.top - wr.top;
+      const xm = midR.right - wr.left;
+      const x1 = last.right - wr.left;
+      const y1 = last.bottom - wr.top;
+      tov.setAttribute('width', wr.width);
+      tov.setAttribute('height', wr.height);
+      const ns = 'http://www.w3.org/2000/svg';
+      // Outer rectangle: top, bottom, left, right
+      [[x0,y0,x1,y0],[x0,y1,x1,y1],[x0,y0,x0,y1],[x1,y0,x1,y1],
+      // Middle dividing line
+       [xm,y0,xm,y1]].forEach(([lx1,ly1,lx2,ly2]) => {
+        const ln = document.createElementNS(ns, 'line');
+        ln.setAttribute('x1', lx1); ln.setAttribute('y1', ly1);
+        ln.setAttribute('x2', lx2); ln.setAttribute('y2', ly2);
+        tov.appendChild(ln);
+      });
+    });
+  } else {
+    tov.setAttribute('width', 0);
+    tov.setAttribute('height', 0);
+  }
+
+  // Right side
+  const rh = document.getElementById('rh');
+  const rv = document.getElementById('rv'); rv.innerHTML = '';
+  const ab = new Map();
+
+  rh.textContent = ST.tile
+    ? 'Tiled for 128B Swizzle (two 16\u00d78 groups)'
+    : 'Not Tiled + 128B Swizzle (16\u00d716)';
+
+  // Always two-group layout; labels hidden when not tiled
+  const groups = mk('div', 'groups');
+  for (let gi = 0; gi < 2; gi++) {
+    const gd = mk('div', 'group');
+    const gl2 = mk('div', 'group-label' + (ST.tile ? '' : ' inv'));
+    gl2.textContent = 'g' + gi;
+    gd.appendChild(gl2);
+    const grid = mk('div', 'grid');
+    const showRL = (gi === 0);
+    grid.style.gridTemplateColumns = (showRL ? '20px ' : '') + 'repeat(8,' + SZ + 'px)';
+    if (showRL) grid.appendChild(mk('div', 'hdr'));
+    for (let p = 0; p < GCOLS; p++) { const h = mk('div', 'hdr'); h.textContent = 's' + p; grid.appendChild(h); }
+
+    for (let r = 0; r < ROWS; r++) {
+      if (showRL) { const l = mk('div', 'rl'); l.textContent = r; grid.appendChild(l); }
+      for (let p = 0; p < GCOLS; p++) {
+        let lc, sec;
+        if (ST.tile) {
+          // Tiled: XOR index = row % 8
+          lc = p ^ (r % 8);
+          sec = p;
+        } else {
+          // Not tiled: XOR index = (row * 2 + atomIdx) % 8
+          const xorIdx = (r * 2 + gi) % 8;
+          lc = p ^ xorIdx;
+          sec = p;
+        }
+        const origCol = gi * GCOLS + lc;
+        const d = mk('div', 'cell');
+        d.style.width = SZ + 'px'; d.style.height = SZ + 'px';
+        d.textContent = origCol;
+        d.style.background = BK[sec];
+
+        const isSelected = (gi === selGroup && lc === selLocal && r >= rStart && r < rEnd);
+        if (isSelected) {
+          d.classList.add('rd');
+          ab.set(sec, (ab.get(sec) || 0) + 1);
+        } else {
+          d.classList.add('dm');
+        }
+        grid.appendChild(d);
+      }
+    }
+    gd.appendChild(grid);
+    groups.appendChild(gd);
+  }
+  rv.appendChild(groups);
+
+  // Bank sector bar
+  const bb = document.getElementById('bb'); bb.innerHTML = '';
+  for (let b = 0; b < SECS; b++) {
+    const d = mk('div', 'bs'); d.style.background = BK[b]; const cnt = ab.get(b) || 0;
+    d.textContent = 'S' + b;
+    if (cnt > 1) { d.classList.add('ac', 'cf'); d.textContent = 'S' + b + '\u00d7' + cnt; }
+    else if (cnt > 0) d.classList.add('ac');
+    else d.classList.add('dm');
+    bb.appendChild(d);
+  }
+
+  // Status
+  const stat = document.getElementById('stat');
+  const maxConflict = ab.size > 0 ? Math.max(...ab.values()) : 0;
+  if (maxConflict <= 1 && ab.size > 0) {
+    stat.innerHTML = '<span class="good">' + ab.size + '/8 sectors \u2192 1 cycle \u2014 conflict-free</span>';
+  } else if (maxConflict > 1) {
+    stat.innerHTML = '<span class="bad">' + maxConflict + '-way conflict \u2192 ' + maxConflict + ' cycles</span>';
+  } else {
+    stat.innerHTML = '';
+  }
+
+  // Formula
+  const ffml = document.getElementById('ffml');
+  if (ST.tile) {
+    ffml.textContent = '(8 cols/row): swizzle_col = col XOR (row % 8) \u2192 all 8 XOR values distinct \u2192 conflict-free';
+  } else {
+    ffml.textContent = '(16 cols/row): swizzle_col = col XOR ((row \u00d7 2 + col // 8) % 8) \u2192 XOR value increments by 2 per row \u2192 only 4 distinct \u2192 2-way conflict';
+  }
+}
+
+function rebuildCols() {
+  const ig = document.getElementById('ci'); ig.innerHTML = '';
+  for (let i = 0; i < COLS; i++) {
+    const b = mk('button', 'btn' + (ST.col === i ? ' on' : '')); b.textContent = i;
+    b.onclick = (v => () => { ST.col = v; ig.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); draw(); })(i);
+    ig.appendChild(b);
+  }
+}
+
+function mk(t, c) { const d = document.createElement(t); if (c) d.className = c; return d; }
+
+(function init() {
+  document.getElementById('tl').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.tile = b.dataset.v === '1';
+    document.querySelectorAll('#tl .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    draw();
+  };
+  document.getElementById('rr').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.rr = +b.dataset.v;
+    document.querySelectorAll('#rr .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    draw();
+  };
+  document.getElementById('dt').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.dsize = +b.dataset.v;
+    document.querySelectorAll('#dt .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    draw();
+  };
+  rebuildCols();
+
+  // Legend
+  const lg = document.getElementById('lg');
+  const r1 = mk('div', 'leg-row');
+  for (let i = 0; i < SECS; i++) { const d = mk('div', 'li'), w = mk('div', 'swtch'); w.style.background = BK[i]; d.appendChild(w); d.appendChild(document.createTextNode('Sector ' + i)); r1.appendChild(d); }
+  lg.appendChild(r1);
+  const r2 = mk('div', 'leg-row');
+  r2.appendChild(Object.assign(mk('div', 'li'), {innerHTML: '<div class="swtch" style="background:var(--color-hover-bg);border:2.5px solid var(--accent)"></div> Source in original'}));
+  r2.appendChild(Object.assign(mk('div', 'li'), {innerHTML: '<div class="swtch brd"></div> Selected read in swizzled view'}));
+  r2.appendChild(Object.assign(mk('div', 'li'), {textContent: 'Cell value = original column index'}));
+  r2.appendChild(Object.assign(mk('div', 'li'), {textContent: 'g = group \u2014 each group is contiguous in memory'}));
+  lg.appendChild(r2);
+
+  draw();
+})();
+</script>
+</body>
+</html>
