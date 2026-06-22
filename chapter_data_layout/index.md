@@ -1,5 +1,5 @@
 (chap_data_layout)=
-# Data Layout
+# Data Layout and Its Notation
 
 :::{admonition} Overview
 :class: overview

@@ -1,5 +1,5 @@
 (chap_layout_generations)=
-# Data Layout Across GPU Generations
+# Tensor Core Operand Layouts Across GPU Generations
 
 :::{admonition} Overview
 :class: overview
@@ -18,7 +18,7 @@ The details around that operation have not stayed fixed. A kernel that is fast o
 
 This chapter follows that layout contract across three generations. Ampere exposes the Tensor Core through warp-level register fragments. Hopper moves the input operands to shared memory descriptors. Blackwell keeps shared memory operands but moves the accumulator into TMEM. The operation is still matrix-multiply-accumulate, but the path into and out of the Tensor Core changes each time.
 
-The layout notation from {ref}`chap_data_layout` is the language we use to describe these contracts. The Blackwell TMEM details are covered separately in {ref}`chap_tmem`.
+The layout notation from the {ref}`Data Layout <chap_data_layout>` chapter is the language we use to describe these contracts. The Blackwell TMEM details are covered separately in {ref}`chap_tmem`.
 
 ## Two Constraints That Never Went Away
 
