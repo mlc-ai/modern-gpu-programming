@@ -38,7 +38,6 @@ exclude_patterns = [
     "img/scripts",
     ".git",
     ".github",
-    "static/build.yml",
     # Part V (Workflow & Practice) is hidden for now — excluded so it does not
     # build or appear in the nav. Re-add to the index.md toctree to restore.
     "chapter_profiling/index.md",
