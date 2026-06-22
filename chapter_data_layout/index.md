@@ -10,18 +10,21 @@
 :::
 
 The same numbers, written into memory in a different physical arrangement, can run an order of
-magnitude apart on the same GPU. The reason is that a tensor's logical indices say nothing about
-where its bytes actually sit, and the hardware is highly sensitive to that placement: it
-determines whether 32 lanes' loads coalesce into one transaction or scatter into 32, whether their
-addresses land in distinct memory banks or collide and serialize, and even whether a tile matches
-the byte arrangement a Tensor Core can read at all. When we work with machine learning programs,
-however, we usually think in terms of multi-dimensional tensors. A **data layout** describes how a
-tensor element with logical indices `(i, j, …)` is mapped to a physical location, whether in memory, in
-registers, or in some other piece of hardware storage. In this chapter, we introduce the main data
-layouts that arise in modern GPU programming. To keep the discussion tractable, we will develop a
-single compact **notation** that describes all of them across the range of situations a machine
-learning system runs into. We will close with **swizzling**, the mechanism that makes both
-row-wise and column-wise access to a tile efficient at the same time.
+magnitude apart on the same GPU.
+
+The reason is that a tensor's logical indices say nothing about where its bytes actually sit. The
+hardware is highly sensitive to that placement: it determines whether 32 lanes' loads coalesce into
+one transaction or scatter into 32, whether their addresses land in distinct memory banks or collide
+and serialize, and even whether a tile matches the byte arrangement a Tensor Core can read at all.
+
+Machine learning programs usually describe tensors by their logical shape. A **data layout** adds the
+missing physical part: it says where an element with logical indices `(i, j, …)` lives, whether in
+memory, in registers, or in some other hardware storage.
+
+This chapter introduces the main layouts that arise in modern GPU programming. To keep the discussion
+tractable, we develop one compact **notation** that describes them across the situations a machine
+learning system runs into. We close with **swizzling**, the mechanism that makes both row-wise and
+column-wise access to a tile efficient at the same time.
 
 ## The Shape–Stride Model
 
