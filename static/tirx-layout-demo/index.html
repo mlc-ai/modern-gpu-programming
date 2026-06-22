@@ -39,7 +39,7 @@
   /* Demo-specific overrides */
   .ti {
     padding:5px 9px; border:1px solid var(--border); border-radius:5px;
-    font-family:'SF Mono','Fira Code',monospace; font-size:13px; color:var(--text);
+    font-family:'SF Mono','Fira Code',monospace; font-size:10px; color:var(--text);
     background:var(--surface);
   }
   .ti.expr { min-width:440px; max-width:70vw; }
@@ -48,9 +48,9 @@
 
   /* preset = secondary helper (just loads an example into the two fields) */
   .preset-row { display:flex; align-items:center; gap:8px; justify-content:center;
-    margin-bottom:8px; font-size:12px; }
-  .preset-row .lbl { font-size:12px; }
-  .preset-hint { color:var(--dim); font-size:12px; font-style:italic; }
+    margin-bottom:8px; font-size:9px; }
+  .preset-row .lbl { font-size:9px; }
+  .preset-hint { color:var(--dim); font-size:9px; font-style:italic; }
 
   /* shape + layout = the first-class inputs */
   .main-controls { display:flex; gap:20px; justify-content:center; align-items:flex-end;
@@ -58,27 +58,27 @@
     background:#f6f9ff; max-width:960px; margin:0 auto 10px; }
   .field { display:flex; flex-direction:column; gap:5px; }
   .field.grow { flex:1; min-width:300px; }
-  .flbl { font-size:13px; font-weight:700; color:var(--text); }
-  .flbl-sub { font-weight:500; color:var(--dim); font-size:11px;
+  .flbl { font-size:10px; font-weight:700; color:var(--text); }
+  .flbl-sub { font-weight:500; color:var(--dim); font-size:8px;
     font-family:'SF Mono','Fira Code',monospace; }
-  .field .ti { font-size:14px; padding:8px 11px; }
+  .field .ti { font-size:11px; padding:8px 11px; }
   .field .ti.expr { width:100%; min-width:0; max-width:none; }
   .sw-group { display:flex; gap:6px; }
-  .sw-group .ti { font-size:13px; padding:8px 8px; }
+  .sw-group .ti { font-size:10px; padding:8px 8px; }
 
-  #status { font-size:12px; font-family:'SF Mono','Fira Code',monospace; color:var(--dim);
+  #status { font-size:9px; font-family:'SF Mono','Fira Code',monospace; color:var(--dim);
     text-align:center; margin-bottom:14px; }
 
   /* Stack the two panels vertically (logical on top, physical below) */
   .panels { grid-template-columns:1fr; max-width:1280px; align-items:start; }
   .grid { gap:2px; }
-  .cell { aspect-ratio:1; font-size:21px; border-radius:5px; border-width:2px; }
+  .cell { aspect-ratio:1; font-size:18px; border-radius:5px; border-width:2px; }
   .cell.dm { opacity:.18; }
 
   /* Right panel: physical-coordinate view (2D table or 1D wrapped tiles) */
   #phys { max-height:580px; overflow:auto; padding:2px; }
   .phys-table { display:grid; gap:3px; }
-  .ax-hdr { font-size:18px; color:var(--dim); font-weight:600;
+  .ax-hdr { font-size:15px; color:var(--dim); font-weight:600;
     font-family:'SF Mono','Fira Code',monospace; display:flex; align-items:center; justify-content:center; }
   .ax-hdr.row { justify-content:flex-end; padding-right:4px; white-space:nowrap; }
   .pcell { border:1px solid var(--border); border-radius:4px; min-height:30px; padding:2px;
@@ -94,13 +94,13 @@
     background:var(--bg); min-width:54px; transition:all .15s; }
   .thread-tile.hov-tile { box-shadow:0 0 8px rgba(59,130,246,.35); border-color:#222; }
   .thread-tile.dm-tile { opacity:.2; }
-  .thread-lbl { font-size:18px; font-weight:700; color:var(--dim);
+  .thread-lbl { font-size:15px; font-weight:700; color:var(--dim);
     font-family:'SF Mono','Fira Code',monospace; text-align:center; margin-bottom:4px; white-space:nowrap; }
   .thread-slots { display:flex; flex-wrap:wrap; gap:2px; justify-content:center; }
 
   .gcell {
     border-radius:3px; display:flex; align-items:center; justify-content:center;
-    font-size:21px; font-weight:700; width:46px; height:46px; flex:0 0 auto; cursor:pointer;
+    font-size:18px; font-weight:700; width:46px; height:46px; flex:0 0 auto; cursor:pointer;
     border:2px solid transparent; transition:all .15s;
   }
   .gcell.hov { border-color:#222; box-shadow:0 0 6px rgba(59,130,246,.45); }
@@ -108,11 +108,11 @@
 
   .formula-bar { max-width:1280px; }
   /* Larger labels/headers/legend for embedded (scaled) readability */
-  .panel h2 { font-size:22px; }
-  .panel .nota { font-size:19px; }
-  .hdr { font-size:18px; }
-  .rl { font-size:18px; }
-  .li { font-size:14px; }
+  .panel h2 { font-size:19px; }
+  .panel .nota { font-size:16px; }
+  .hdr { font-size:15px; }
+  .rl { font-size:15px; }
+  .li { font-size:11px; }
 </style>
 </head>
 <body>
