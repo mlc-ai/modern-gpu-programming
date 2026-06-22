@@ -309,7 +309,7 @@
 <p class="admonition-title">Overview</p>
 <ul class="simple">
 <li><p>Attention runs two MMAs with softmax wedged between them, so it cannot just repeat one MMA the way GEMM does.</p></li>
-<li><p>The kernel composes everything from Part III (TMA, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, TMEM, barriers) with warp roles, online-softmax rescaling, causal masking, and GQA.</p></li>
+<li><p>The kernel composes the hardware primitives from Part I (TMA, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code>, TMEM, barriers) and the GEMM techniques from Part III with warp roles, online-softmax rescaling, causal masking, and GQA.</p></li>
 </ul>
 </div>
 <p>Attention is the kernel that decides whether a transformer runs at all, and it is also where everything we built so far finally has to work together. Every piece we assembled for GEMM carries over here: TMA tile movement, <code class="docutils literal notranslate"><span class="pre">tcgen05</span></code> MMA, TMEM, warpgroup register tiles, and explicit barriers.</p>
