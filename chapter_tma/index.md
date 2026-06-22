@@ -58,6 +58,39 @@ This is the point where the layout notation becomes more than a bookkeeping devi
 
 A useful way to read the swizzle is that TMA is not changing the logical tile. It is changing where the logical elements land physically in shared memory. The later MMA still consumes the same logical A or B tile. The swizzle only decides how that tile is arranged across shared memory banks.
 
+## 3D TMA for Tiling and Swizzling
+
+A plain TMA copy moves a flat 2D tile, but the shared-memory layout the Tensor Core wants is usually *tiled* into swizzle atoms (the 8 x 128-byte atoms from {ref}`chap_data_layout`). TMA handles that with an extra descriptor dimension. A **3D TMA** describes the shared-memory box as `(group, row, col)`, where the group dimension walks across atoms and the inner two address within one atom. A single 3D copy then both lays the tile out atom by atom (tiling) and applies the swizzle inside each atom, so the data arrives already in the layout the MMA expects, with no separate tiling or swizzling pass.
+
+```{raw} html
+<div style="overflow-x:auto;">
+<iframe class="demo-tma3d" src="../demo/tma_3d.html" title="Tiling and swizzling with 3D TMA" loading="lazy"
+        style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
+</div>
+```
+*Interactive: a 3D TMA copy, addressed as (group, row, col), tiling into swizzled shared memory.*
+
+Choosing the swizzle *format* is tied to this tiling. A wider swizzle scatters a column across more banks, so 128-byte swizzle is the default when it fits, but an N-byte atom needs the tile's contiguous dimension to fill it. A tile that is small because of a shape constraint therefore cannot use 128-byte swizzle and must step down to 64-byte or 32-byte: the rule of thumb is to pick the largest swizzle the tile can fill ({ref}`chap_data_layout`). The demo below shows the constraint directly: a 128-byte swizzle on a 16 x 16 tile becomes conflict-free only once the tile is split into 16 x 8 groups that match the atom.
+
+```{raw} html
+<div style="overflow-x:auto;">
+<iframe class="demo-tma3d" src="../demo/tiling_constraint.html" title="Swizzle imposes a tiling constraint" loading="lazy"
+        style="width:100%; min-width:1320px; height:640px; border:1px solid var(--pst-color-border, #d0d0d0); border-radius:6px;"></iframe>
+</div>
+<script>
+(function () {
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.type !== 'demoHeight' || !d.height) return;
+    document.querySelectorAll('iframe.demo-tma3d').forEach(function (f) {
+      if (e.source === f.contentWindow) f.style.height = d.height + 'px';
+    });
+  });
+})();
+</script>
+```
+*Interactive: a 128-byte swizzle on a 16 x 16 tile, conflict-free once tiled into 16 x 8 groups.*
+
 ## Completion: Loads
 
 The copy is asynchronous, so issuing it is not enough. A consumer cannot read the shared-memory tile just because the TMA instruction has been issued. The tile is safe to read only after the engine has finished writing the bytes.
