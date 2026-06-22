@@ -88,10 +88,6 @@ Read in order, these spaces describe a path. The data path of almost every kerne
 **GMEM → SMEM → (compute) → registers → SMEM → GMEM**, and for tensor-core kernels TMEM sits in the
 middle of that path, holding the accumulators while the math runs.
 
-The figure below summarizes that end-to-end data path and where each memory space sits in it.
-
-![Memory dataflow across the hierarchy](../img/memory_dataflow.png)
-
 Of the four, **Tensor Memory (TMEM)** is the only one with no analog on pre-Blackwell hardware, and
 its full details wait until {ref}`chap_tensor_cores`. The motivation for it is worth understanding
 now, though. Earlier GPUs kept large MMA accumulators in registers, where they competed for a scarce
