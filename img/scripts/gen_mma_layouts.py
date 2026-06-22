@@ -16,20 +16,20 @@ from matplotlib.patches import Rectangle, FancyBboxPatch
 from pathlib import Path; OUT = str(Path(__file__).resolve().parent.parent)  # the repo img/ dir
 
 SMEM_BG = "#ede9fe"
-TMEM_BG = "#fef3c7"
+TMEM_BG = "#fffbeb"
 SMEM_EDGE = "#8b5cf6"
-TMEM_EDGE = "#d97706"
+TMEM_EDGE = "#f59e0b"
 MMA_C = "#059669"
 EDGE = "#94a3b8"
 TXT = "#334155"
 A_C = "#8b5cf6"
 B_C = "#6d28d9"
-C0 = "#d97706"
-C1 = "#d97706"
-C0B = "#f59e0b"
-C1B = "#f59e0b"
-SFA_C = "#b45309"
-SFB_C = "#92400e"
+C0 = "#f59e0b"
+C1 = "#f59e0b"
+C0B = "#fbbf24"
+C1B = "#fbbf24"
+SFA_C = "#fb923c"
+SFB_C = "#f97316"
 GRAY = "#cbd5e1"
 
 

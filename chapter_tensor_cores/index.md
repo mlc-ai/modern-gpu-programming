@@ -62,7 +62,7 @@ The choice matters because it changes how the logical accumulator tile `C(M, N)`
 
 There are four useful cases to keep in mind.
 
-The figures below follow the demo color convention: purple marks SMEM operands, amber marks TMEM accumulator state, and green marks the Tensor Core MMA path. CTA identity is shown by labels and position rather than by changing those hardware colors.
+The figures below follow the demo color convention: purple marks SMEM operands, orange marks TMEM accumulator state, and green marks the Tensor Core MMA path. CTA identity is shown by labels and position rather than by changing those hardware colors.
 
 ### `cta_group::1`, `M = 128`
 

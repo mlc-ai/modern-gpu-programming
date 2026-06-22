@@ -108,14 +108,14 @@
     </div>
     <div style="color:#059669; font-size:18px; font-weight:700; line-height:1;">&rarr;</div>
   </div>
-  <div class="mat-box" style="border-color:#d97706;">
-    <h2 style="color:#92400e">C (TMEM)</h2>
+  <div class="mat-box" style="border-color:#f59e0b;">
+    <h2 style="color:#c2410c">C (TMEM)</h2>
     <div class="dims" id="cd"></div>
     <div style="display:flex; align-items:flex-start; gap:4px;">
-      <div style="writing-mode:vertical-lr; transform:rotate(180deg); font-size:9px; font-weight:700; color:#d97706; display:flex; align-items:center; justify-content:center;">128 Lanes (M)</div>
+      <div style="writing-mode:vertical-lr; transform:rotate(180deg); font-size:9px; font-weight:700; color:#f59e0b; display:flex; align-items:center; justify-content:center;">128 Lanes (M)</div>
       <div>
         <div class="grid" id="gc"></div>
-        <div style="text-align:center; font-size:9px; font-weight:700; color:#d97706; margin-top:2px;" id="col-label">Col (N) — allocated by <code style="font-size:8px; border:1px solid #d97706; border-radius:3px; padding:0 3px;">tmem.alloc</code></div>
+        <div style="text-align:center; font-size:9px; font-weight:700; color:#f59e0b; margin-top:2px;" id="col-label">Col (N) — allocated by <code style="font-size:8px; border:1px solid #f59e0b; border-radius:3px; padding:0 3px;">tmem.alloc</code></div>
       </div>
     </div>
   </div>
@@ -136,13 +136,13 @@
   </div>
   <div style="border:1px solid #059669; border-radius:8px; padding:8px 14px; font-family:'SF Mono','Fira Code',monospace; font-size:11px;">
     <div style="font-weight:700; color:#065f46; margin-bottom:4px;">tcgen05.mma PTX</div>
-    <div style="color:#475569;">tcgen05.mma.cta_group::1.kind::f16 <span style="color:#059669;">taddr</span>, <span style="color:#8b5cf6;">a_desc</span>, <span style="color:#8b5cf6;">b_desc</span>, <span style="color:#d97706;">idesc</span>, <span style="color:#059669;">enable</span>;</div>
+    <div style="color:#475569;">tcgen05.mma.cta_group::1.kind::f16 <span style="color:#059669;">taddr</span>, <span style="color:#8b5cf6;">a_desc</span>, <span style="color:#8b5cf6;">b_desc</span>, <span style="color:#f59e0b;">idesc</span>, <span style="color:#059669;">enable</span>;</div>
   </div>
 </div>
 
 <script>
-// SMEM purple for A/B, TMEM amber for C (matching Blackwell arch slide)
-const BK = ['#8b5cf6','#8b5cf6','#d95555','#45b5a5','#d97706','#e0b828','#9d6eb5','#e87888'];
+// SMEM purple for A/B, TMEM orange for C (matching Blackwell arch slide)
+const BK = ['#8b5cf6','#8b5cf6','#d95555','#45b5a5','#f59e0b','#e0b828','#9d6eb5','#e87888'];
 const TOTAL = 128, BLOCK = 16;
 const BCOUNT = TOTAL / BLOCK; // 8x8 blocks
 // M = output rows, N = output cols. M fixed at 128 for tcgen05.

@@ -56,8 +56,8 @@
   .u-tc .hw-name { color: #065f46; }
   .u-smem { border-color: #8b5cf6; background: #ede9fe; }
   .u-smem .hw-name { color: #5b21b6; }
-  .u-tmem { border-color: #d97706; background: #fef3c7; }
-  .u-tmem .hw-name { color: #92400e; }
+  .u-tmem { border-color: #f59e0b; background: #fffbeb; }
+  .u-tmem .hw-name { color: #c2410c; }
   .u-rf   { border-color: #dc2626; background: #fee2e2; }
   .u-rf .hw-name { color: #991b1b; }
   .u-tma  { border-color: #3b82f6; background: #dbeafe; }
@@ -189,7 +189,7 @@
           <polygon points="0 0,7 2.5,0 5" fill="#059669"/>
         </marker>
         <marker id="ah-amber" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
-          <polygon points="0 0,7 2.5,0 5" fill="#d97706"/>
+          <polygon points="0 0,7 2.5,0 5" fill="#f59e0b"/>
         </marker>
       </defs>
       <!-- HBM → TMA -->
@@ -202,8 +202,8 @@
       <path id="arr3" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#ah-green)"/>
       <text id="lbl3" class="arrow-label" fill="#059669"></text>
       <!-- TC → TMEM -->
-      <path id="arr4" stroke="#d97706" stroke-width="2" fill="none" marker-end="url(#ah-amber)"/>
-      <text id="lbl4" class="arrow-label" fill="#d97706"></text>
+      <path id="arr4" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#ah-amber)"/>
+      <text id="lbl4" class="arrow-label" fill="#f59e0b"></text>
       <!-- TMEM → RF -->
       <path id="arr5" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#ah-red)"/>
       <text id="lbl5" class="arrow-label" fill="#dc2626"></text>
@@ -252,7 +252,7 @@
     },
     tmem: {
       title: 'Tensor Memory (TMEM) — New in Blackwell',
-      color: '#d97706',
+      color: '#f59e0b',
       body: 'HW-managed memory private to the SM. 128 lanes &times; N columns of fp32. tcgen05 MMA accumulates here &mdash; no register pressure. <code>tcgen05.ld</code> reads data out for writeback.'
     },
     rf: {

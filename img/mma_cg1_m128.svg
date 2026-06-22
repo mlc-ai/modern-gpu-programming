@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-06-22T00:14:47.340909</dc:date>
+    <dc:date>2026-06-22T00:35:32.775971</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -40,7 +40,7 @@ Q 21.429 27.82368 21.429 30.40164
 L 21.429 162.73692 
 Q 21.429 165.31488 28.5435 165.31488 
 z
-" clip-path="url(#pdf7e328103)" style="fill: #ede9fe; stroke: #8b5cf6; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#p41ec26fa18)" style="fill: #ede9fe; stroke: #8b5cf6; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
     <path d="M 35.658 96.56928 
@@ -48,7 +48,7 @@ L 187.434 96.56928
 L 187.434 41.5728 
 L 35.658 41.5728 
 z
-" clip-path="url(#pdf7e328103)" style="fill: #8b5cf6; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#p41ec26fa18)" style="fill: #8b5cf6; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
     <path d="M 35.658 157.065408 
@@ -56,7 +56,7 @@ L 187.434 157.065408
 L 187.434 107.568576 
 L 35.658 107.568576 
 z
-" clip-path="url(#pdf7e328103)" style="fill: #6d28d9; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#p41ec26fa18)" style="fill: #6d28d9; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
     <path d="M 294.1515 165.31488 
@@ -69,7 +69,7 @@ Q 287.037 27.82368 287.037 30.40164
 L 287.037 162.73692 
 Q 287.037 165.31488 294.1515 165.31488 
 z
-" clip-path="url(#pdf7e328103)" style="fill: #fef3c7; stroke: #d97706; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#p41ec26fa18)" style="fill: #fffbeb; stroke: #f59e0b; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
     <path d="M 301.266 157.065408 
@@ -77,7 +77,7 @@ L 453.042 157.065408
 L 453.042 49.822272 
 L 301.266 49.822272 
 z
-" clip-path="url(#pdf7e328103)" style="fill: #d97706; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
+" clip-path="url(#p41ec26fa18)" style="fill: #f59e0b; stroke: #ffffff; stroke-width: 1.2; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <!-- cta_group::1, M=128  —  1 CTA -->
@@ -1315,7 +1315,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pdf7e328103">
+  <clipPath id="p41ec26fa18">
    <rect x="7.2" y="7.2" width="474.3" height="171.864"/>
   </clipPath>
  </defs>
