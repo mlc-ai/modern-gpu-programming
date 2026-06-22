@@ -47,3 +47,19 @@
   left: 0;
   transform-origin: 0 0;
 }
+
+/* Full-screen view (toggled by the middle toolbar button): the demo fills the
+   screen with no zoom transform; exiting restores the column-fit, scaled view. */
+.demo-embed.demo-fs {
+  background: var(--pst-color-on-background, #ffffff);
+  display: flex;
+  flex-direction: column;
+}
+.demo-embed.demo-fs .demo-viewport { flex: 1 1 auto; overflow: auto; }
+.demo-embed.demo-fs .demo-stage { width: 100% !important; height: 100% !important; }
+.demo-embed.demo-fs .demo-stage iframe {
+  position: static;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+}

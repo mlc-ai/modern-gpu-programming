@@ -97,8 +97,27 @@
       b.addEventListener("click", fn);
       return b;
     }
+    // The middle button expands the demo to full screen (the old fit-width button
+    // was redundant: fit-width is already the default and on every resize). On exit
+    // we recompute() to restore the column-fit, scaled view.
+    function goFullscreen() {
+      var req = embed.requestFullscreen || embed.webkitRequestFullscreen;
+      if (req) { try { req.call(embed); } catch (e) {} }
+    }
+    function onFsChange() {
+      var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl === embed) {
+        embed.classList.add("demo-fs");
+      } else if (embed.classList.contains("demo-fs")) {
+        embed.classList.remove("demo-fs");
+        recompute(true);
+      }
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+
     bar.appendChild(btn("−", "Zoom out", function () { z = Math.max(0.2, z / 1.2); apply(); }));
-    bar.appendChild(btn("⤢", "Fit width", function () { z = fitZ; apply(); }));
+    bar.appendChild(btn("⛶", "Full screen", goFullscreen));
     bar.appendChild(btn("+", "Zoom in", function () { z = Math.min(6, z * 1.2); apply(); }));
 
     function init() { recompute(true); observe(); setTimeout(function () { recompute(true); observe(); }, 400); }
