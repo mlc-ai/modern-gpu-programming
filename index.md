@@ -60,7 +60,7 @@ chapter_tirx_layout_api/index
 ```
 
 ```{toctree}
-:caption: Part III, GEMM: Tiled to SOTA
+:caption: "Part III, GEMM: Tiled to SOTA"
 :maxdepth: 2
 
 chapter_gemm_basics/index
