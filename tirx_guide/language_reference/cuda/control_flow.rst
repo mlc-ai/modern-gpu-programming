@@ -46,7 +46,30 @@ thread/lane comparison, or elect a single issuing thread with
       A_ptr[tx] = A_ptr[tx] + 1.0f;
     }
 
-For an expression-level choice (no branch), use ``T.if_then_else(cond, a, b)``.
+For an expression-level choice (no branch), use ``T.if_then_else(cond, a, b)``. It
+lowers to a ternary, so it introduces no control-flow divergence:
+
+.. code-block:: c++
+
+    O_ptr[tx] = (A_ptr[tx] > 0.0f) ? A_ptr[tx] : 0.0f;
+
+Uniform vs. divergent control flow
+----------------------------------
+
+Per-thread guards such as ``if tx < 128`` are fine for ordinary work, but
+**collective** operations must be reached *uniformly* by every thread they
+synchronize. 
+
+For example, ``T.cuda.cta_sync()`` maps to ``__syncthreads()``, which requires all
+threads in the thread block. It must never sit inside a thread- or
+warpgroup-divergent branch: if placed inside ``if wg_id == 0:``, the other
+warpgroups will never arrive and the kernel will deadlock. When only one warpgroup
+needs to synchronize, use a warpgroup-scoped ``T.cuda.warpgroup_sync(id)`` (see
+:ref:`chap_gemm_advanced` and :doc:`threads_sync`). 
+
+The same caution applies to barrier setup. An ``mbarrier`` ``.init()`` lowers to a
+single-thread guard (``if (threadIdx.x < 1)``). Nesting it inside another divergent
+branch can leave the barrier uninitialized, leading to unspecified launch failures.
 
 loop
 ----

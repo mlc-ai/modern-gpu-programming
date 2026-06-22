@@ -67,6 +67,52 @@ Other families under ``T.ptx.*`` / ``T.cuda.*``: ``cp_async`` (LDGSTS),
 (Blackwell MMA), ``atomic_add``, ``fence`` … See the backend API reference for the
 full ``tvm.backend.cuda`` reference.
 
+Synchronization semantics
+-------------------------
+
+Four synchronization mechanisms come up constantly in the GEMM and Flash Attention
+kernels. Because they control asynchronous engines and parallel thread groups,
+misusing any of them usually leads to silent corruption or deadlock.
+
+**Mbarrier Phases.** Mbarriers track arrivals using a single internal phase bit.
+The ``T.ptx.mbarrier.try_wait(bar, phase)`` intrinsic blocks until the barrier's
+internal phase *differs* from the ``phase`` argument provided by the caller.
+Consequently, when reusing a barrier across loop iterations, the caller must flip
+its local phase tracker (``phase ^= 1``) after every wait. Failing to do so causes
+subsequent waits to return immediately, allowing the engine to read half-written
+memory. :ref:`chap_gemm_basics` walks through the full phase-tracking table.
+
+**Election.** ``T.ptx.elect_sync()`` elects a *single active lane within a warp*,
+not lane 0, and not one thread per CTA. To narrow an issuer down to exactly one
+thread, you must pair it with a warp-level guard. The pattern ``if warp_id == 0:``
+followed by ``if T.ptx.elect_sync():`` is used to issue ``Tx.gemm_async`` and
+``tcgen05.commit`` in :ref:`chap_gemm_basics`.
+
+**Named Warpgroup Barriers.** ``T.cuda.cta_sync()`` maps to ``__syncthreads()`` and
+requires *every* CTA thread to arrive. Once warpgroups specialize onto different
+code paths, placing a ``cta_sync()`` inside a warpgroup branch deadlocks the kernel
+because the other warpgroups never reach it. The hardware provides 16 named
+barriers (IDs 0 to 15); ``T.cuda.warpgroup_sync(10)`` synchronizes only the threads
+of one warpgroup. Distinct warpgroups take distinct IDs (e.g.,
+``warpgroup_sync(wg_id + 10)``) so they never collide on the same hardware barrier.
+See :ref:`chap_gemm_advanced`.
+
+**Fences.** Fences order a producer's writes before a consumer (often an
+asynchronous engine) reads them:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 50
+
+   * - Fence
+     - Orders
+   * - ``T.ptx.fence.proxy_async("shared::cta")``
+     - thread-written shared memory before an async proxy (TMA store / MMA) reads it
+   * - ``T.ptx.fence.mbarrier_init()``
+     - mbarrier initialization before later arrivals or waits use the barrier
+   * - ``T.ptx.tcgen05.fence.after_thread_sync()``
+     - a conservative ordering fence on the ``tcgen05`` writeback edge (Steps 8 and 9 add it; it is not needed on the TMA-to-MMA path)
+
 Inlining raw CUDA
 -----------------
 
