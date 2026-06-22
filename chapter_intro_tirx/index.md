@@ -192,6 +192,8 @@ When you use the demo, watch for three questions:
 - **Layout: where does each tile live?** A and B use the swizzled SMEM layouts that `tcgen05.mma` expects. The accumulator lives in TMEM under a `TLane`/`TCol` layout. The register readback view maps rows onto `tid_in_wg`, so each warpgroup thread owns one row fragment.
 - **Dispatch: which hardware path executes it?** `Tx.gemm_async(..., dispatch="tcgen05", ...)` selects the Blackwell Tensor Core path. The copy operations have dispatch choices too: this first kernel uses ordinary thread copies, and later GEMM steps swap those copies for TMA without changing the surrounding scope or layout.
 
+**Try with your agent**: Pick three lines from the first kernel: one copy, one MMA, and one TMEM readback. Ask it to label each line by scope, layout, and dispatch, then check whether the answer matches the guards, buffer layouts, and `dispatch=` argument in the code.
+
 ## How Compilation Works
 
 We already compiled the kernel above to test it; now we look a little closer at what that step does. The recipe is short: wrap the `PrimFunc` in an `IRModule` and hand it to `tvm.compile(mod, target=..., tir_pipeline="tirx")`. This runs the TIRx lowering pipeline and hands back an `Executable` that you call directly.

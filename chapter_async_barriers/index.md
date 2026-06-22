@@ -69,6 +69,8 @@ In a real pipeline, the bookkeeping is usually per stage. The kernel has a fixed
 
 This is why the later GEMM code does not need one barrier per K tile ({ref}`chap_gemm_async`). It needs one barrier per reusable stage, plus phase tracking. The stage index selects the shared-memory buffer and barrier. The phase value distinguishes the current use of that stage from the previous one.
 
+**Try with your agent**: Give it a two-stage pipeline and ask it to trace four iterations. For each iteration, list the stage index, the local phase value, when the barrier flips, and what would go wrong if the phase were not toggled before the stage is reused.
+
 ## Synchronization Rules
 
 Once the barrier and phase mechanism are clear, the synchronization pattern in a tensor-core kernel is fairly mechanical. Every time one path produces data or releases a resource that another path will consume, the handoff must be made explicit.

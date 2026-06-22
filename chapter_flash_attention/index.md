@@ -89,7 +89,7 @@ If we expand the short path into explicit producer-consumer edges, we get the fu
 
 The middle rows may look unfamiliar, but they are still ordinary tile operations. Softmax reads a score tile from TMEM into warpgroup registers, does its row-wise math, and writes a `P` tile back to TMEM; correction reads an `O` tile from TMEM, rescales it, and writes it back. It is the same SMEM/TMEM/register vocabulary we already know from GEMM, only there is more of it.
 
-**Try with your agent**: Ask it to trace only the short path above. For each arrow, name the producer role, consumer role, source tile, destination tile, and hardware path. Then ask which arrows did not exist in the GEMM chapters.
+**Try with your agent**: Ask it to trace only the short path above. For each arrow, name the producer stage, consumer stage, source tile, destination tile, and hardware path. Then ask which arrows did not exist in the GEMM chapters.
 
 ## Warp Roles and Scopes
 
@@ -311,7 +311,7 @@ P_region = T.TMEMStages(tmem_as_f16, col_start=MMA_N,                   width=BL
 
 The `* 2` in `P_region`'s `col_start` and `stride` is the one place the aliasing visibly leaks into the code. `S_region` and `O_region` are measured in fp32 `tmem` columns, while `P_region` is measured in fp16 `tmem_as_f16` columns, which are half as wide, so its offsets need the doubling to land on the same physical bytes. Once the regions are defined, though, the compute code stays clean: it writes `S_region[q_stage]`, reads `S_region[wg_id, ...]`, writes `P_region[wg_id, ...]`, and accumulates into `O_region[i_q]`, never once touching a raw column index.
 
-**Try with your agent**: Ask it to explain the fp32 (`tmem`) and fp16 (`tmem_as_f16`) views in this FA4 kernel. Which physical TMEM regions hold `S`, `P`, and `O`, why does `P_region`'s stride use `MMA_N * 2`, and which consumers must finish before each region can be reused?
+**Try with your agent**: Ask it to explain the fp32 (`tmem`) and fp16 (`tmem_as_f16`) views in this FA4 kernel. Which physical TMEM regions hold `S`, `P`, and `O`, and why does `P_region`'s stride use `MMA_N * 2`? Save the reuse question for the next section: after the barrier table, check which consumers must finish before each region can be reused.
 
 ## How Barriers Connect the Roles
 
@@ -608,4 +608,4 @@ So FA4 is harder than GEMM not because it relies on different hardware, but beca
 2. Why does softmax write the numerator tile `P` back to TMEM instead of keeping it only in registers for the value MMA?
 3. Pick `p_o_rescale` or `p_ready_2`. What exactly does the barrier prove, and what could go wrong if the value MMA skipped that wait?
 
-**Try with your agent**: Pick one tile primitive this chapter did *not* walk through, for example a `Tx.copy_async` in the epilogue, the fp32→fp16 `Tx.cast`, or the second `gemm_pv` sub-MMA, and ask it to write that primitive's full scope / layout / dispatch / handoff card from the source alone: which threads issue or cooperate on it, where each operand tile lives (SMEM / TMEM / registers), which hardware path it lowers to, and which barrier makes its result safe to consume. Then audit the card against the kernel yourself: does the scope match the `wg_id` / `warp_id` guard the call sits under, and the layout match where that tile was allocated? Leaving this chapter able to read a primitive nobody annotated for you is the whole point of the scope/layout/dispatch lens.
+**Try with your agent**: Pick one unannotated tile primitive, such as an epilogue `Tx.copy_async`, the fp32 -> fp16 `Tx.cast`, or the second `gemm_pv` sub-MMA. Ask for its scope / layout / dispatch / handoff card, then check the answer against the source guards, allocations, and waits.
