@@ -256,13 +256,13 @@ Why couldn't Step 4 overlap the load with the compute, when the two engines are 
 
 ### Pipeline Walkthrough
 
-Doubling the SMEM buffer is the whole idea of Step 5, so before reading the code it helps to see what schedule that extra stage is meant to unlock. With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages, and the two hardware engines can finally work a tile apart from each other. The figure below shows the target schedule across the K tiles.
+Doubling the SMEM buffer is the whole idea of Step 5, so before reading the code it helps to see what schedule that extra stage is meant to unlock. With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages, giving the load path and the MMA path separate slots to work on.
+
+Read the figure below as the pipeline structure that the two-stage buffer is meant to enable, not as an exact execution trace of this single-warpgroup kernel. Step 5 builds the ring buffer and prefetches later stages, but the main loop still waits for the current MMA before it issues the next TMA load. Full load/compute overlap arrives in Step 7, when warp specialization gives TMA and MMA separate roles.
 
 ![*Pipeline PIPE_DEPTH=2, the target schedule; this single-warpgroup step only prefetches, full overlap arrives with warp specialization in Step 7*](../img/pipe_depth2.png)
 
 Once it is primed, the schedule settles into a steady alternation. Two TMA loads fill both stages up front; from then on, while MMA computes on `k0`, TMA loads `k2` into the stage that will be reused next, and while MMA computes on `k1`, TMA loads `k3`, and so the dance continues. The reason this works is that the two engines are genuinely independent of each other: TMA moves GMEM -> SMEM tiles, while `tcgen05.mma` consumes an already-loaded SMEM stage and writes its accumulator to TMEM. Give each of them its own buffer and neither one blocks the other.
-
-One honest caveat is in order, because the figure paints a more concurrent picture than this step actually delivers. The single-warpgroup pipeline here overlaps only the *prefetched* stages: the main loop still waits for the current MMA (`try_wait(mma_bar, phase_mma)`) before it issues the next TMA load, so the load and the compute are not yet fully running side by side. Reaching the figure's fully concurrent schedule requires a dedicated load warp issuing TMA while a separate MMA warp computes, which is warp specialization, introduced as Step 7 in {ref}`chap_gemm_advanced`. What Step 5 does is lay the foundation: it builds the multi-stage SMEM ring buffer and the per-stage barriers that Step 7 later turns into real overlap, and the prefetch already pulls the first loads off the critical path. That is real progress even before the full overlap arrives.
 
 Concretely, the code differs from Step 4 in four places:
 
