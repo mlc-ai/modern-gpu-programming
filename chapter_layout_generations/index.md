@@ -277,8 +277,6 @@ So the fragment does not disappear. Its role changes. Earlier generations keep t
 
 ## The Throughline
 
-The direction across the three generations is clear.
-
 On Ampere, the kernel explicitly builds Tensor Core register fragments. Shared memory swizzle is mostly the kernel's responsibility through index math.
 
 On Hopper, the Tensor Core can read operands directly from shared memory through matrix descriptors. Swizzle becomes a named descriptor format shared by TMA and `wgmma`.

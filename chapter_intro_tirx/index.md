@@ -29,8 +29,6 @@ We could write raw CUDA or PTX, and many fast kernels are written exactly that w
 
 TIRx (Tensor IR neXt) is a Python DSL that lifts those three decisions into the open: **scope** (which threads run an operation), **layout** (where the operand tiles live), and **dispatch** (which hardware path executes it). It still names hardware concepts directly, including threads, shared and tensor memory, barriers, and `tcgen05` MMA. The difference is that those choices are now structured IR the compiler can lower, check, and schedule.
 
-Like the framework in *Dive into Deep Learning*, TIRx is the consistent medium through which every concept in this book becomes runnable code. This chapter introduces it through one small end-to-end kernel.
-
 Rather than introduce these ideas in the abstract, we will work from a single complete kernel: a minimal single-MMA GEMM. We get it running first, and only then read it back, line by line, to see how scope, layout, and dispatch each shape it and how the kernel is compiled. The tensor layout model that the kernel relies on is developed in its own right in {ref}`chap_tirx_layout_api`, and the full language-feature set in {ref}`chap_language_reference`; here we keep the focus on the one kernel and the three design elements.
 
 ## A First Kernel: Single-MMA GEMM

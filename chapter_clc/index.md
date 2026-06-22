@@ -19,8 +19,6 @@ Cluster Launch Control, or CLC, changes that scheduling model. Instead of decidi
 
 This is not the same thing as thread block clusters themselves. Thread block clusters (CTAs launched together, with cluster-level synchronization and access to distributed shared memory) were introduced with Hopper ({ref}`chap_background`). CLC is the Blackwell addition that makes scheduling over those cluster coordinates dynamic. The cluster is already the unit of launch; CLC lets an already-running cluster cancel a pending launch and inherit its coordinates.
 
-The rest of this chapter follows that mechanism in three steps: the two PTX instructions, the persistent work-stealing loop, and the connection back to the persistent GEMM scheduler used later.
-
 ## The Two Instructions
 
 Cluster Launch Control is exposed through two PTX instructions. The first instruction sends an asynchronous request to the grid scheduler. The second instruction reads the response.

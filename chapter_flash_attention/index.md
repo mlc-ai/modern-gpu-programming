@@ -58,7 +58,7 @@ For TIRx, knowing what the algorithm computes is only half the picture. The othe
 - `P` is the softmax numerator tile. Softmax reads `S` from TMEM into registers, computes `P = exp((S - m_new) / sqrt(d))`, and writes `P` back to TMEM.
 - `O` is the output accumulator tile. The value MMA reads `P` from TMEM and `V` from SMEM, then accumulates into `O` in TMEM.
 
-The rescale we flagged earlier is also a tile operation, not a piece of scalar bookkeeping: when `row_max` changes, the old `O` is read from TMEM, multiplied in registers, and written back to TMEM before the next value MMA accumulates into it. Seen this way, every step is just a tile moving between SMEM, TMEM, and registers, and reading the rest of the chapter through that lens is what keeps it legible.
+The rescale we flagged earlier is also a tile operation, not a piece of scalar bookkeeping: when `row_max` changes, the old `O` is read from TMEM, multiplied in registers, and written back to TMEM before the next value MMA accumulates into it. Every later section follows that same structure: a tile placement, a hardware path, and the barrier that proves the next consumer may run.
 
 ## Tile-Primitive Graph
 
@@ -87,7 +87,7 @@ If we expand the short path into explicit producer-consumer edges, we get the fu
 | Correction | `O` in TMEM -> registers -> `O` in TMEM | TMEM readback, register multiply, TMEM store | `tcgen05.ld` / TMEM store |
 | Epilogue | final `O` in TMEM -> registers -> SMEM -> GMEM | TMEM readback, `Tx.copy`, TMA store | `tcgen05.ld` + TMA store |
 
-The middle rows may look unfamiliar, but they are still ordinary tile operations. Softmax reads a score tile from TMEM into warpgroup registers, does its row-wise math, and writes a `P` tile back to TMEM; correction reads an `O` tile from TMEM, rescales it, and writes it back. It is the same SMEM/TMEM/register vocabulary we already know from GEMM, only there is more of it.
+The new rows are softmax and correction. Both add TMEM -> register -> TMEM traffic, and both create extra handoffs between the score MMA and the value MMA.
 
 **Try with your agent**: Ask it to trace only the short path above. For each arrow, name the producer stage, consumer stage, source tile, destination tile, and hardware path. Then ask which arrows did not exist in the GEMM chapters.
 
@@ -140,7 +140,7 @@ The fragments in this chapter are excerpts from [`flash_attention4.py`](https://
 | `MMA_K` | MMA inner-K step in `P`/`V` columns (16); `K_SPLIT = 6 * MMA_K = 96` |
 | `K_SPLIT` | split point of the value-MMA schedule (see *The Two MMA Phases*); the first value MMA covers columns `0:K_SPLIT` (`6 * MMA_K = 96`) |
 | `should_rescale` | WG2 per-row flag: whether the old `O` needs rescaling before the next value MMA (reduced across the warpgroup with `any_sync`) |
-| `rescale_threshold` | skip threshold for small row-max changes: if the new max does not clear it, the kernel keeps the old max and sets `acc_scale` to exactly 1.0 (8.0) |
+| `rescale_threshold` | skip threshold for small row-max changes; the current kernel uses `8.0`, and a skipped rescale sets `acc_scale` to exactly `1.0` |
 | `scale_log2` | the softmax scale in log2 units, `log2(e)/√d`, so `P = exp2((S - m) · scale_log2)` |
 | `acc_scale` | per-row rescale factor softmax passes to WG2 through the SMEM mailbox |
 | `chunk_start`/`chunk_end`, `p_start`/`p_end` | column range of the 32-wide softmax chunk being read / written |
@@ -256,7 +256,7 @@ Tx.warp.gemm_async(
 > - Dispatch: `tcgen05` with a TMEM operand.
 > - Handoff: waits `p_o_rescale`, `p_ready_2`, `kv_load.full`; arrives `o_ready` (→ epilogue).
 
-This operand placement is really the whole hardware difference between the two MMAs:
+This operand placement is the hardware difference between the two MMAs:
 
 - Score MMA reads both operands from SMEM: Q and K.
 - Value MMA reads one operand, `P`, from TMEM.
@@ -309,7 +309,7 @@ O_region = T.TMEMStages(tmem,        col_start=MMA_N * SMEM_PIPE_DEPTH_Q, width=
 P_region = T.TMEMStages(tmem_as_f16, col_start=MMA_N,                   width=BLK_N, stages=SMEM_PIPE_DEPTH_Q, stride=MMA_N * 2)
 ```
 
-The `* 2` in `P_region`'s `col_start` and `stride` is the one place the aliasing visibly leaks into the code. `S_region` and `O_region` are measured in fp32 `tmem` columns, while `P_region` is measured in fp16 `tmem_as_f16` columns, which are half as wide, so its offsets need the doubling to land on the same physical bytes. Once the regions are defined, though, the compute code stays clean: it writes `S_region[q_stage]`, reads `S_region[wg_id, ...]`, writes `P_region[wg_id, ...]`, and accumulates into `O_region[i_q]`, never once touching a raw column index.
+The `* 2` in `P_region`'s stride is the one place the aliasing visibly leaks into the code. `S_region` and `O_region` are measured in fp32 `tmem` columns, while `P_region` is measured in fp16 `tmem_as_f16` columns, which are half as wide, so stage-to-stage movement needs the doubled stride to land on the same physical bytes. Once the regions are defined, though, the compute code stays clean: it writes `S_region[q_stage]`, reads `S_region[wg_id, ...]`, writes `P_region[wg_id, ...]`, and accumulates into `O_region[i_q]`, never once touching a raw column index.
 
 **Try with your agent**: Ask it to explain the fp32 (`tmem`) and fp16 (`tmem_as_f16`) views in this FA4 kernel. Which physical TMEM regions hold `S`, `P`, and `O`, and why does `P_region`'s stride use `MMA_N * 2`? Save the reuse question for the next section: after the barrier table, check which consumers must finish before each region can be reused.
 
@@ -523,7 +523,7 @@ Tx.copy_async(
 
 K and V are never expanded in memory, and that is the whole point of GQA: the single K/V tile for `kv_head_idx` is reused by all `GQA_RATIO` query heads packed into the Q rows. The output side mirrors the input, with a matching 3D view storing the packed rows back to `O[batch, seq, qo_head, dim]` after the epilogue.
 
-The nice consequence is that GQA lives entirely at the Q-load and O-store boundaries. Inside the compute path the score MMA still sees a plain `128 x HEAD_DIM` Q tile, and the rest of the tile-primitive graph is untouched. It is a feature confined to the edges of the kernel.
+The consequence is that GQA lives entirely at the Q-load and O-store boundaries. Inside the compute path the score MMA still sees a plain `128 x HEAD_DIM` Q tile, and the rest of the tile-primitive graph is untouched.
 
 ## Tile Scheduling
 
@@ -581,7 +581,7 @@ print(f"FA4: B={B} S={S} Hq={Hq} Hkv={Hkv} D={D}, non-causal -> PASS")
 
 ## Differences from GEMM
 
-Now that the whole kernel has run, it is worth setting it side by side with GEMM, the kernel it builds on, to see exactly which axes attention stretches. The table collects those axes:
+The table below compares FA4 with GEMM along the axes that changed:
 
 | Aspect | GEMM | Flash Attention 4 |
 |--------|------|-------------------|
@@ -600,7 +600,7 @@ Every one of these differences traces back to the structural change we opened th
 - the layout says where the tile lives,
 - the barrier says when the next role may consume it.
 
-So FA4 is harder than GEMM not because it relies on different hardware, but because there are simply more tile values and more handoffs between them. The lens we read it through is the same; there is just more to look at.
+So FA4 is harder than GEMM not because it relies on different hardware, but because there are simply more tile values and more handoffs between them.
 
 ## Exercises
 

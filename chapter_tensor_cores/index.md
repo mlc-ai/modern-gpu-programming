@@ -178,10 +178,10 @@ This is the source of the common loading pattern in block-scaled cluster GEMM. S
 
 ![Block-scaled MMA placement: A and B packed in SMEM; SFA, SFB, and C in TMEM, with SFA split by M across CTAs and SFB multicast across the CTA pair](../img/mma_block_scaled.svg)
 
-## Putting It Together
+## Keeping the MMA Contracts Matched
 
 A Blackwell GEMM tile moves through several specialized paths.
 
 TMA brings A and B from global memory into SMEM. For block-scaled modes, it also brings scale factors into SMEM. `tcgen05.cp` moves those scale factors into TMEM when needed. `tcgen05.mma` reads its operands, runs asynchronously on the Tensor Core, and accumulates into TMEM. The completion barrier tells the kernel when that accumulator is ready. The epilogue then uses `tcgen05.ld` to load the accumulator from TMEM back into registers and store the final output.
 
-That is the practical model for `tcgen05`. The Tensor Core computes the tile. SMEM feeds the data operands. TMEM holds the accumulator and, for block-scaled modes, the scale factors. The kernel is responsible for matching all three pieces: operand layout, TMEM layout, and asynchronous completion.
+Across those paths, the kernel has to keep three contracts matched: the SMEM operand layout, the TMEM accumulator or scale-factor layout, and the asynchronous completion signal that makes the next consumer safe to run.

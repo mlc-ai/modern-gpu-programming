@@ -80,7 +80,7 @@ chapter_flash_attention/index
 :maxdepth: 1
 
 appendix/index
-appendix/troubleshooting
+appendix/debugging_warp_specialized
 tirx_guide/arch/index
 tirx_guide/language_reference/index
 ```

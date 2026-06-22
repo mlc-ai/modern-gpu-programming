@@ -17,8 +17,6 @@ The kernel therefore needs an explicit completion signal at every asynchronous h
 
 A barrier is not just a one-shot flag. It carries a phase bit, and that phase bit changes every time the barrier completes a round of arrivals. The phase is what lets one barrier be reused across many loop iterations without confusing the completion of one iteration with the completion of another.
 
-This chapter first describes the barrier object itself, then explains phase tracking, and finally summarizes the synchronization rules used by tensor-core kernels. The same rules will show up again in the pipelined GEMM chapter ({ref}`chap_gemm_async`).
-
 ## The mbarrier
 
 An `mbarrier`, short for memory barrier, is a hardware synchronization object stored in shared memory. Conceptually, it contains two pieces of state: an arrival counter and a phase bit. The counter tells the barrier how many arrivals are still missing in the current round. The phase bit tells the kernel which round the barrier is currently in.

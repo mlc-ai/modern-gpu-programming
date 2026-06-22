@@ -38,15 +38,6 @@ exclude_patterns = [
     "img/scripts",
     ".git",
     ".github",
-    # Part V (Workflow & Practice) is hidden for now — excluded so it does not
-    # build or appear in the nav. Re-add to the index.md toctree to restore.
-    "chapter_profiling/index.md",
-    "chapter_ai_assisted/index.md",
-    # Hidden for now: the hand-written API cheat sheet and the FA4 source snapshot
-    # (both drift from the canonical tvm / tirx-kernels sources). Re-add to the
-    # index.md Reference toctree to restore.
-    "chapter_api_reference/index.md",
-    "chapter_fa4_source/index.md",
 ]
 
 # --- HTML / theme ---

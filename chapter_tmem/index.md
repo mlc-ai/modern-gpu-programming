@@ -19,8 +19,6 @@ Blackwell changes this part of the data path. The accumulator for `tcgen05` does
 
 That extra memory space lets Blackwell support larger Tensor Core tiles without forcing the entire accumulator into per-thread registers. But TMEM is not automatic in the way registers are. The compiler does not simply hand it out as ordinary register storage. The kernel has to allocate TMEM, address it with the right layout, move data in and out with the right instructions, and free it when the CTA is done.
 
-This chapter covers those pieces in order: the two-dimensional address space, the allocation model, and the `tcgen05` instructions that move data through TMEM. The same pieces will be used directly in {ref}`chap_gemm_basics`.
-
 ## A 2D Address Space
 
 TMEM is not a flat byte array. It is a two-dimensional address space. The hardware names its two coordinates Lane and Col. There are 128 Lane rows and up to 512 Col columns. Each Col is a 32-bit column.
@@ -75,6 +73,4 @@ All three paths are asynchronous. A `tcgen05.ld`, `tcgen05.st`, or `tcgen05.cp` 
 
 The wait path depends on the instruction. A `tcgen05.ld` completes through `tcgen05.wait::ld`. A `tcgen05.st` completes through `tcgen05.wait::st`. A `tcgen05.cp`, like `tcgen05.mma`, completes through a commit group and an `mbarrier`. If the data is handed from one set of threads to another, the kernel may also need fences so the receiving threads see the completed writes in the intended order.
 
-Putting this together, TMEM sits in the middle of the Blackwell Tensor Core data path. TMA stages operands into shared memory. `tcgen05.mma` reads its operands and accumulates into TMEM. For block-scaled MMA, scale factors can also be staged into TMEM. After the compute phase, `tcgen05.ld` brings the accumulator back into registers, and the epilogue converts and stores the final output.
-
-That is the practical model to keep in mind when reading the GEMM kernel ({ref}`chap_gemm_basics`). TMEM is where the Blackwell Tensor Core keeps the large accumulator while computation is in flight. Registers are still used at the edges, especially in the epilogue, but the long-lived accumulator state has moved into a memory space that the kernel manages explicitly.
+TMEM sits in the middle of the Blackwell Tensor Core data path. TMA stages operands into shared memory. `tcgen05.mma` reads its operands and accumulates into TMEM. For block-scaled MMA, scale factors can also be staged into TMEM. After the compute phase, `tcgen05.ld` brings the accumulator back into registers, and the epilogue converts and stores the final output.

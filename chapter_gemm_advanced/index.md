@@ -48,7 +48,7 @@ Before introducing the roles and barriers, it helps to isolate the scheduling bo
 
 ![Warp Specialization Timeline](../img/warp_specialization_timeline.png)
 
-The figure is a before-and-after contrast, and it is worth reading slowly. On top is the pre-specialization single-warpgroup pattern: the same unspecialized thread group owns both the load path and the MMA path, so one engine can easily go idle while the other is active. Steps 5 and 6 improve that baseline with double buffering and persistent scheduling, but they do not yet split loading and compute into independent producer and consumer roles. On the bottom, specialization breaks that turn-taking. The TMA producer prefetches the next tile while the MMA consumer is busy computing, and writeback proceeds on its own. Producer warp 3 issues the next load while consumer warp 0 is still grinding through the current MMA, so neither engine has to wait on the other. Of course, overlap is not free; its price is coordination. The warps now have to tell each other when data is ready and when a buffer has been freed up, and two barriers carry those messages:
+On top is the pre-specialization single-warpgroup pattern: the same unspecialized thread group owns both the load path and the MMA path, so one engine can easily go idle while the other is active. Steps 5 and 6 improve that baseline with double buffering and persistent scheduling, but they do not yet split loading and compute into independent producer and consumer roles. On the bottom, specialization breaks that turn-taking. The TMA producer prefetches the next tile while the MMA consumer is busy computing, and writeback proceeds on its own. Producer warp 3 issues the next load while consumer warp 0 is still working through the current MMA, so neither engine has to wait on the other. The load/MMA handoff uses two barriers:
 
 - **`tma2mma`** (TMA → MMA): signals that the loaded SMEM data is ready for MMA to consume.
 - **`mma2tma`** (MMA → TMA): signals that MMA has finished reading a buffer, so TMA can reuse it for the next load.
@@ -311,7 +311,7 @@ Step 8 (with `BLK_N=256`) and Step 9 (with `MMA_N=256` per consumer) cannot keep
 
 ### When Step 7 Misbehaves
 
-The same concurrency that makes Step 7 fast also makes it the first GEMM kernel that is genuinely easy to break. With TMA, MMA, and writeback all in flight at once, a single misplaced barrier can deadlock the kernel, crash the CUDA context, or quietly corrupt the output. These same failure modes come back in Steps 8 and 9, so rather than repeat them three times, we have gathered the whole debugging playbook into *Debugging Warp-Specialized Kernels* at the end of this chapter; turn to it whenever something goes wrong.
+Step 7 is the first GEMM kernel where TMA load, `tcgen05` MMA, and writeback are all in flight at once. The same failure patterns come back in Steps 8 and 9: mismatched barrier counts, role guards in the wrong place, missing fences, or a staging buffer reused before the TMA store has drained. The debugging checklist for these cases is collected in {ref}`chap_warp_spec_debug`.
 
 **Pipeline depth tuning.** The Step 7 kernel runs at `PIPE_DEPTH=2`, the minimum. Pushing it to 4 or 6 lets the TMA producer race further ahead of the MMA consumer and hide more memory latency, but it does so by spending more SMEM, and SMEM is finite. The B200 offers 228 KB per SM (see *Numbers to Keep in Mind* in {ref}`chap_background`). With `BLK_M=BLK_N=128, BLK_K=64, fp16`, each pipeline stage costs `(128*64 + 128*64) * 2 = 32 KB` for A and B together, and the `Dsmem` writeback staging buffer adds another 32 KB on top. That puts `PIPE_DEPTH=4` at roughly 160 KB and `PIPE_DEPTH=6` at roughly 224 KB, right up against the budget. To go any deeper than that, you would have to rethink the writeback staging strategy.
 
@@ -377,7 +377,7 @@ At a glance `cbx` appears in both `m_st` and `n_st`, as though a row offset had 
 
 ### Code Changes from Step 7
 
-For all the conceptual weight behind it, the actual diff against Step 7 is only six edits, each one encoding a single piece of the cluster contract we just described:
+The diff against Step 7 has six edits, each one encoding a single piece of the cluster contract we just described:
 
 ```python
 # 1. Cluster launch
@@ -863,125 +863,9 @@ def hgemm_v9(M, N, K):
 
 - In this Step 9 design, `mma2ld` and `ld2mma` are each a single shared object with `depth=NUM_CONSUMER`, rather than separate per-consumer objects. Slot 0 connects MMA warp 0 to Warpgroup 0, and slot 1 connects MMA warp 1 to Warpgroup 1; the MMA side indexes by `warp_id`, the writeback side by `wg_id`.
 
-- This is the most heavily optimized GEMM structure we show in the tutorial.
-
-
-(chap_warp_spec_debug)=
-## Debugging Warp-Specialized Kernels
-
-Steps 7, 8, and 9 tend to fail in the same handful of ways, and for the same underlying reason: TMA, MMA, and writeback all run concurrently, so a single wrong barrier can deadlock the kernel, crash the CUDA context, or corrupt the output. The good news is that the failures are stereotyped. Once you learn to recognize the *shape* of a bug, the fix is usually a one-liner. Keep this checklist close, because these bugs come up again and again.
-
-### Inspecting Generated Code
-
-When a warp-specialized kernel misbehaves, the first thing to do is look at what the compiler actually emitted, in particular whether the role guards and barrier inits landed where you expected them to. For any compiled kernel:
-
-```python
-cuda_source = ex.mod.imports[0].inspect_source("cuda")
-print(cuda_source)
-```
-
-The generated code maps TIRx constructs to CUDA like this:
-
-| TIRx | Generated CUDA |
-|------|---------------|
-| `wg_id == 0` | `(warp_id_in_cta >> 2) == 0` |
-| `wg_id == 1` | `(warp_id_in_cta >> 2) == 1` |
-| `warp_id == 0` | `(warp_id_in_cta & 3) == 0` |
-| `warp_id == 3` | `(warp_id_in_cta & 3) == 3` |
-| `lane_id == 0` | `(((int)threadIdx.x) % 32) == 0` |
-| `.init()` internal guard | `((int)threadIdx.x) < 1` (CTA thread 0 only) |
-| `elect_sync()` | `tvm_builtin_elect_one_sync_op()` |
-
-### Reference: Generated CUDA Skeleton
-
-A correctly compiled Step 7 kernel has the top-level skeleton below. When you are debugging, run `inspect_source()` and check that your output matches this structure:
-
-```c
-// (1) Barrier inits: top level, CTA thread 0 only
-if (threadIdx.x < 1) {
-  mbarrier_init(tma2mma[0..1], 1);
-  mbarrier_init(mma2tma[0..1], 1);
-  mbarrier_init(mma2ld, 1);
-  mbarrier_init(ld2mma, 128);   // arrived by all 128 WG0 threads
-}
-
-// (2) TMEM alloc: WG0 warp 0, all 32 lanes (no lane guard)
-if (wg_id == 0 && warp_id == 0) tcgen05_alloc(..., 512);
-
-// (3) Fences + cta_sync, then phase init: producer=1, consumer=0
-
-// (4) Warp-specialized loop
-if (wg_id == 1 && warp_id == 3 && elect_sync) { /* TMA  */ while(valid){ ... next_tile(); } }
-if (wg_id == 1 && warp_id == 0 && elect_sync) { /* MMA  */ while(valid){ ... next_tile(); } }
-if (wg_id == 0)                                { /* WB   */ while(valid){ ... next_tile(); } }
-
-// (5) Cleanup: warp 0, no lane guard
-cta_sync();
-if (warp_id == 0) { tcgen05_relinquish_alloc_permit(); tcgen05_dealloc(..., 512); }
-```
-
-Things to verify in your generated code:
-
-- Barrier inits sit at **top level** (not inside a `wg_id` guard); see *Deadlocks*.
-- `tcgen05_alloc`/`dealloc` have a **warp guard but no lane guard**; all 32 lanes participate.
-- TMA and MMA loops both iterate `K_TILES` times.
-- Phase init: producer=`1`, consumer=`0`.
-
-### Symptom Map
-
-Before you reach for any tool, the symptom alone usually narrows the search to one of the sections below:
-
-| Symptom | Failure class | Where to look |
-|---|---|---|
-| Kernel hangs ~30 s, then "unspecified launch failure" | Deadlock | *Deadlocks* |
-| Crash within ms; subsequent `torch.randn` also fails | XID 43 / illegal memory access | *Crashes* |
-| Output max-err in multiples of 128 (128 / 256 / 384 rows) | Sync race | *Wrong results* |
-| Output `NaN` everywhere | MMA descriptor / TMA descriptor mismatch | *Wrong results* |
-
-### Deadlocks
-
-Almost every deadlock comes down to *one* of the following, so it pays to work through the list in order:
-
-- **Arrival count ≠ init count.** Common case: `MBarrier.init(128)` but `arrive` is guarded by `if warp_id == 0: if lane_id == 0:`, so only 1 thread arrives, the wait never returns. Reference:
-
-  | Barrier | init(count) | Who arrives | Arrivals |
-  |---|---|---|---|
-  | `TMABar` (tma→mma) | 1 | TMA engine via `arrive(stage, bytes)` | 1 |
-  | `TCGen05Bar` (mma→tma, mma→ld) | 1 | MMA warp via `tcgen05.commit` | 1 |
-  | `MBarrier` (ld→mma) | 128 | All WG0 threads via `arrive` | 128 |
-
-- **Barrier init nested inside a `wg_id` guard.** `.init()` lowers to `if threadIdx.x < 1:` (i.e., thread 0 of the CTA, which lives in WG0). Nest it inside `if wg_id == 1:` and **no** thread satisfies both, so the barrier stays uninitialized. Inits must be at top level; `grep mbarrier_init` in `inspect_source()` to verify.
-
-- **`cta_sync()` inside a warpgroup branch.** `cta_sync` is `__syncthreads()`, which requires *all* CTA threads. Inside `if wg_id == 0:`, WG1 never reaches it. Use `T.cuda.warpgroup_sync(10)` instead.
-
-- **`tile_scheduler.next_tile()` not called by all threads in the consumer warpgroup.** The scheduler tracks per-thread state; threads that skip it loop forever.
-
-- **TMA and MMA disagree on K-tile count.** If MMA does `K_TILES - 1` instead of `K_TILES`, barrier phases drift and the second outer tile deadlocks.
-
-- **`PipelineState` initial phase wrong.** Producer must start at `phase=1` (first wait passes); consumer at `phase=0` (first wait blocks). Same starting phase ⇒ instant deadlock.
-
-### Crashes (XID 43 / Illegal Memory Access)
-
-Where a deadlock hangs, a crash fails fast and loud. These crashes corrupt the CUDA context, and the tell-tale sign is that a *later*, perfectly innocent `torch.randn` fails too. All three causes are allocation- or warp-shape mistakes:
-
-- **`pool.alloc` after `pool.commit()`.** Barrier wrappers call `alloc` internally. Correct order: `tmem_addr → barrier wrappers → move_base_to(1024) → Asmem / Bsmem / Dsmem → commit()`.
-- **`tcgen05.alloc` / `dealloc` with a lane guard.** They require all 32 lanes of the warp to participate; `if lane_id == 0:` runs one thread, which is undefined behavior, often observed as an illegal-instruction or context error, a hang, or (worst) silently wrong results.
-- **Missing `cta_sync()` before `tcgen05.dealloc`**: TMEM is freed while writeback is still reading.
-
-### Wrong Results
-
-The third failure class is the quietest: the kernel runs to completion but the numbers are wrong. The tell for these lives in the error pattern itself. Mismatch counts that come out as exact multiples of 128 (128, 256, or 384 rows) point to a sync race rather than bad arithmetic: whole warpgroup-sized stripes are wrong because a handoff slipped, not because any single number was computed incorrectly.
-
-- **`tcgen05.commit` outside `elect_sync`**: all 32 threads create commit groups; the 31 empty ones signal the mbarrier immediately. TMA overwrites SMEM before MMA reads it. Output is zeros or garbage.
-- **Missing `fence.proxy_async("shared::cta")` before TMA store**: TMA engine doesn't see SMEM writes from threads.
-- **Missing `cp_async.bulk.commit_group()` + `wait_group(0)` after TMA store**: next tile reuses Dsmem before the store drains.
-- **Persistent kernel, intermittent fails at small sizes (e.g., 1024×1024)**: not GPU flakiness. Larger sizes mask the race with longer K-loops. Re-check phase reset between tiles and the TMA-store commit/wait.
-- **`fence.after_thread_sync()` is usually not the cause.** The MMA-completion mbarrier already carries release→acquire semantics. Steps 8 and 9 here add it conservatively on the writeback edge (after `mma2ld.wait`, before the first `tcgen05.ld`), but it is not a general MMA-boundary fix. Do not add it routinely on the TMA→MMA edge; if your output is wrong, check the barrier and store-drain bullets first.
-
-
 ## End-to-End Result
 
-With all nine steps in hand, it is worth lining them up to see where the time actually went. The table below collects every step from the naive baseline through the warp-specialized cluster kernel, alongside the cuBLAS reference, so the cumulative effect of the chapter reads top to bottom in one place. Reference numbers on NVIDIA B200, M=N=K=4096, fp16, locked clocks, 1000-iteration timed benchmark:
+The table below reports the measured milestones from the naive baseline through the warp-specialized cluster kernel, alongside the cuBLAS reference. Reference numbers on NVIDIA B200, M=N=K=4096, fp16, locked clocks, 1000-iteration timed benchmark:
 
 | Step | Technique | Time | Speedup |
 |------|-----------|------|---------|
@@ -1000,7 +884,7 @@ Every time in this table, the 70 ms Step 1 baseline included, is measured at the
 
 Read these numbers as a single B200 reference run under controlled conditions, not as a leaderboard entry. The `{.python .input}` benchmark cells embedded in each step are smoke benchmarks: they are good for spotting trends, not for claiming peak performance.
 
-If you stand back from the table, four techniques account for nearly all of the gain:
+Four techniques account for nearly all of the gain:
 
 1. **TMA Async Data Movement**: a hardware copy engine replaces the software copy (~142× from Step 1 → Step 4). It is important to read this 142× correctly: it reflects going from a single 128×128-tile kernel (grid 1×1) all the way to a full tiled-and-parallel kernel with a K-loop, spatial tiling, and many CTAs, *together with* TMA; it is not TMA's contribution in isolation. Isolating TMA would mean comparing two full-size kernels that differ only in the copy mechanism.
 2. **Software Pipelining + Warp Specialization**: overlap load and compute by giving each its own dedicated role (~2.2× from Step 4 → Step 7).
@@ -1010,8 +894,6 @@ If you stand back from the table, four techniques account for nearly all of the 
 Plotted at the measured milestones, those same four contributions trace the descent from the synchronous tiled kernel toward the cuBLAS reference. The figure below shows the selected measured points:
 
 ![GEMM Optimization Journey](../img/gemm_perf.png)
-
-Across the table, the path runs from the 70 ms baseline down to 0.094 ms, matching the rounded cuBLAS reference in this run.
 
 Notice that the gains shrink as we go down the list, and there is a structural reason for it rather than any weakening of effort. The early steps go after *memory* bottlenecks (TMA replaces software copies, clusters raise arithmetic intensity), and that is where most of the 70 ms was actually being spent, so those steps pay off the most. By Step 8 the kernel is already within ~10% of cuBLAS (0.104 vs 0.094 ms) and is close to *compute-bound*, which means there is very little memory stall left to hide; Step 9's multi-consumer overlap recovers most of what little remains. A roughly 10% final gain is exactly what to expect near the compute ceiling: it is the diminishing return of a problem that is nearly solved, not the sign of a weak optimization.
 

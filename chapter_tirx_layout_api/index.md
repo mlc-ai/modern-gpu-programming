@@ -228,7 +228,7 @@ layout = TileLayout(
 )
 ```
 
-Read left to right, the shard places the logical tile, the replica copies it across two warp groups, and the offset shifts the whole placement to start at `warpid = 5`.
+Read left to right, the shard places the logical tile, the replica creates a second copy four warp IDs away, and the offset shifts the whole placement to start at `warpid = 5`.
 
 If the iters have already been built as objects, the same layout can be constructed directly:
 

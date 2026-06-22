@@ -17,8 +17,6 @@ The roofline model gives that ceiling. It separates the kernel into two basic ac
 
 The numbers in this chapter use the NVIDIA B200 as the running example. Following the convention from {ref}`chap_background`, we use round ceilings for reasoning: roughly 2 PFLOP/s of dense fp16 or bf16 Tensor Core throughput, and roughly 8 TB/s of HBM3e bandwidth. The exact values depend on the specific device, clock, power limit, and measurement setup, so they should be read as order-of-magnitude limits rather than datasheet constants.
 
-This chapter introduces the three ideas used throughout the rest of the book: arithmetic intensity, the roofline model, and overlap.
-
 ## The Roofline Model
 
 Every kernel moves data and does arithmetic. The roofline model bounds the kernel by the slower of those two paths.
@@ -175,17 +173,13 @@ A large fp16 GEMM may be compute-bound in theory. That only means the HBM roof i
 
 The GEMM kernels in Part III show this as a sequence of steps on B200 ({ref}`chap_gemm_advanced`). Each step keeps the same basic algorithm but changes how the tile is computed or scheduled.
 
-The first large jump is switching from CUDA core tiling to the Tensor Core and TMA path. A CUDA core GEMM performs the right mathematical operation, but it does not use the hardware unit that provides the dense matrix multiply peak. Moving the computation onto Tensor Cores raises the reachable ceiling by orders of magnitude.
+The first large measured jump in the GEMM ladder is the move from the thread-copy tiled path to the TMA-backed path. TMA takes regular GMEM -> SMEM tile movement off the CTA threads and lets the kernel feed Tensor Cores through hardware-managed bulk copies.
 
 After that first jump, the main improvements come from overlap and scheduling. TMA brings future tiles into shared memory. `tcgen05.mma` runs asynchronously. The epilogue drains previous results. Software pipelining and warp specialization arrange those pieces so that the hardware engines are active at the same time.
 
-The important lesson is that the optimization steps are not just local tricks. They change which hardware unit is on the critical path and how much idle time remains between stages.
-
 There is also no rule that every intermediate step must be faster by itself. A step such as warp specialization may temporarily spend resources on a structure that does not immediately improve the number. It can still be the right step if it enables later overlap that the simpler structure could not express.
 
-![The GEMM optimization journey on B200: each point adds one technique, from CUDA-core tiling to Tensor Cores, TMA, pipelining, warp specialization, and cluster-level scheduling](../img/gemm_perf.png)
-
-The roofline gives the final target. The optimization ladder shows the engineering path toward that target.
+![The GEMM optimization journey on B200: measured points from a synchronous tiled baseline through TMA, warp specialization, CTA clusters, and multi-consumer execution](../img/gemm_perf.png)
 
 ## Overlap Is the Main Lever
 

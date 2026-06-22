@@ -18,8 +18,6 @@ The Tensor Memory Accelerator, or TMA, moves this work into a hardware copy engi
 
 TMA also handles part of the layout problem. A Tensor Core does not just need the right values in shared memory. It needs them in the right shared-memory layout. On the load path, TMA can apply a shared-memory swizzle as it writes the tile. That lets the tile land directly in the layout the later MMA expects.
 
-This chapter covers the three pieces needed to use TMA in a kernel: how one thread issues the copy, how swizzled shared-memory layouts are applied, and how the kernel waits for completion.
-
 ```{raw} html
 <div style="overflow-x:auto;">
 <iframe src="../demo/tma_intro.html" title="TMA: the Tensor Memory Accelerator" loading="lazy"
@@ -147,7 +145,3 @@ TMA is most useful when it is part of a pipeline. A kernel can issue the load fo
 A typical GEMM loop uses this structure repeatedly. One stage of shared memory holds the tile currently consumed by MMA. Another stage is being filled by TMA. As the loop advances, the roles rotate. Before MMA reads a stage, it waits on that stage's load barrier. Before TMA overwrites a stage, the kernel makes sure the previous consumer is done with it.
 
 This is why TMA and `mbarrier` usually appear together in Blackwell- and Hopper-style kernels. TMA gives the kernel an asynchronous copy engine. The barrier gives the kernel a precise way to know when the copied bytes are ready.
-
-Putting the pieces together, the data path is straightforward. TMA moves a rectangular tile from global memory into shared memory. The descriptor controls the global indexing and the shared-memory swizzle. The load completes through an `mbarrier`. Once the barrier fires, the Tensor Core can read the tile from shared memory. For stores, TMA moves data from shared memory back to global memory and the kernel waits through a commit group and wait group.
-
-That is the practical model to keep in mind. TMA turns tile movement from a per-thread copy loop into an asynchronous hardware operation. The kernel still owns the schedule, the layout, and the synchronization, but it no longer has to spend the main compute threads on the mechanics of moving every element by hand.

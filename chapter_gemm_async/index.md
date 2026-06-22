@@ -247,22 +247,22 @@ At this point we have the right pieces but the wrong rhythm. Step 4 still finish
 (chap_software_pipeline)=
 ## Step 5: Software Pipeline (PIPE_DEPTH=2)
 
-Why couldn't Step 4 overlap the load with the compute, when the two engines are clearly independent? The obstacle turns out to be storage. With only one SMEM tile pair, the next load has nowhere to go: it cannot begin until the current MMA has finished reading that pair, since starting early would overwrite data still in use. Step 5 removes the conflict in the simplest possible way, by double-buffering shared memory. With two stages instead of one, the kernel can fill one stage while it computes on the other. We are still at the full M=N=K=4096 size.
+Why couldn't Step 4 overlap the load with the compute, when the two engines are clearly independent? The obstacle turns out to be storage. With only one SMEM tile pair, the next load has nowhere to go: it cannot begin until the current MMA has finished reading that pair, since starting early would overwrite data still in use. Step 5 removes that storage conflict by double-buffering shared memory. The single-warpgroup loop still waits for each MMA before launching the next TMA load, but it now has distinct stages to prefetch into and reuse. We are still at the full M=N=K=4096 size.
 
 > **What this step changes: Layout**
 > - Scope: unchanged, one warpgroup.
 > - Layout: the single SMEM tile pair becomes a `PIPE_DEPTH`-stage ring buffer.
-> - Dispatch: unchanged, TMA load and `tcgen05` MMA, now overlapped across stages.
+> - Dispatch: unchanged, TMA load and `tcgen05` MMA; this step adds prefetch and stage reuse, while full load/compute overlap arrives in Step 7.
 
 ### Pipeline Walkthrough
 
-Doubling the SMEM buffer is the whole idea of Step 5, so before reading the code it helps to see what schedule that extra stage is meant to unlock. With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages, giving the load path and the MMA path separate slots to work on.
+With `PIPE_DEPTH=2`, the kernel allocates two SMEM stages, giving the load path and the MMA path separate slots to work on.
 
 Read the figure below as the pipeline structure that the two-stage buffer is meant to enable, not as an exact execution trace of this single-warpgroup kernel. Step 5 builds the ring buffer and prefetches later stages, but the main loop still waits for the current MMA before it issues the next TMA load. Full load/compute overlap arrives in Step 7, when warp specialization gives TMA and MMA separate roles.
 
 ![*Pipeline PIPE_DEPTH=2, the target schedule; this single-warpgroup step only prefetches, full overlap arrives with warp specialization in Step 7*](../img/pipe_depth2.png)
 
-Once it is primed, the schedule settles into a steady alternation. Two TMA loads fill both stages up front; from then on, while MMA computes on `k0`, TMA loads `k2` into the stage that will be reused next, and while MMA computes on `k1`, TMA loads `k3`, and so the dance continues. The reason this works is that the two engines are genuinely independent of each other: TMA moves GMEM -> SMEM tiles, while `tcgen05.mma` consumes an already-loaded SMEM stage and writes its accumulator to TMEM. Give each of them its own buffer and neither one blocks the other.
+Once it is primed, the loop alternates through the two stages. Two TMA loads fill both stages up front; after that, the loop waits for the current stage, runs MMA on it, waits for that MMA to finish reading the stage, and then launches the load for `k + PIPE_DEPTH` into the stage that just became reusable. This is not yet a concurrent TMA/MMA schedule, but it establishes the ring-buffer structure that Step 7 will split across producer and consumer roles.
 
 Concretely, the code differs from Step 4 in four places:
 
@@ -272,8 +272,6 @@ Concretely, the code differs from Step 4 in four places:
 4. The K loop uses `stage = k % PIPE_DEPTH`: wait for the current stage, run MMA on it, then reuse that stage for `k + PIPE_DEPTH`.
 
 ### Pipeline Mechanics
-
-The four code changes that turn Step 4 into a two-stage pipeline really revolve around three concerns, namely priming the buffers, iterating in steady state, and tracking the barrier phases, and we will take them in that order.
 
 **1. Prefetch**: before the main loop ever runs, we load the first `PIPE_DEPTH` stages, so that the loop always finds data waiting for it on the very first iteration:
 ```python
@@ -312,7 +310,7 @@ from tvm.tirx.layout import TileLayout, S, TLane, TCol, tid_in_wg
 from tvm.tirx.cuda.operator.tile_primitive.tma_utils import tma_shared_layout, SwizzleMode
 ```
 
-It is wrapped in `hgemm_v5(M, N, K)`. The `PIPE_DEPTH=2` constant sets the number of pipeline stages (two of them here, which is exactly double buffering), and it is really the single knob that turns a one-stage kernel into a pipelined one:
+It is wrapped in `hgemm_v5(M, N, K)`. The `PIPE_DEPTH=2` constant sets the number of pipeline stages (two of them here, which is exactly double buffering):
 
 ```python
 PIPE_DEPTH = 2

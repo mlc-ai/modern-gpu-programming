@@ -351,7 +351,7 @@ Synchronization is where the care is needed. We reuse a single mbarrier for ever
 | 1 | 1 | barrier flips to 0 | `phase_mma = 0` |
 | 2 | 0 | barrier flips to 1 | `phase_mma = 1` |
 
-The single line `phase_mma ^= 1` is what keeps that table honest. Drop it, and the second iteration still calls `try_wait(bar, 0)`, but the barrier already flipped to phase 1 after the first MMA, so the wait sees a mismatch and returns immediately, before the second MMA has even been issued. The kernel then reads a half-computed accumulator and reports a wrong answer with no error at all. This is a bug that compiles and runs perfectly, which is exactly why the phase flip is worth this much attention.
+The single line `phase_mma ^= 1` is what keeps that table honest. Drop it, and the second iteration still calls `try_wait(bar, 0)`, but the barrier already flipped to phase 1 after the first MMA, so the wait sees a mismatch and returns immediately, before the second MMA has finished. The kernel then reads a half-computed accumulator and reports a wrong answer with no error at all. This is a bug that compiles and runs perfectly, which is exactly why the phase flip is worth this much attention.
 
 ### Complete Kernel
 

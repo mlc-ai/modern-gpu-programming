@@ -193,8 +193,8 @@ boilerplate elided; arena named ``smem`` for clarity):
     __syncthreads();
     C_ptr[tx] = smem[tx] + smem[tx + 64];
 
-(Two separate ``alloc_buffer(scope="shared.dyn")`` is an error — *only one dynamic
-shared memory allocation is allowed*.) So static shared memory is sized at compile
+(Two separate ``alloc_buffer(scope="shared.dyn")`` calls are an error — *only one
+dynamic shared memory allocation is allowed*.) So static shared memory is sized at compile
 time (``__shared__ T x[N];``); dynamic shared memory is this one launch-sized arena
 with views decl'd at offsets inside it.
 
