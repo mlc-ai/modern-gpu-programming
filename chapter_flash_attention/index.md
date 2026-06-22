@@ -131,7 +131,7 @@ This separation is precisely why softmax needs barriers around it. `s_ready` car
 
 ## Reading the Fragments
 
-The fragments in this chapter are excerpts from `flash_attention4.py`, so they inevitably reference names defined in parts of the kernel we do not reproduce. The self-describing ones (`wg_id`, `warp_id`, `BLK_M`/`BLK_N`, `HEAD_DIM`, `kv_stage`, the `SMEM_PIPE_DEPTH_*` / `TMEM_PIPE_DEPTH` depths, `should_accumulate`, and `CTA_GROUP` (1 here)) we introduce where they first matter below. The rest get a one-line gloss in the table here, so you have somewhere to look the moment a fragment puts an unfamiliar name in front of you:
+The fragments in this chapter are excerpts from [`flash_attention4.py`](https://github.com/mlc-ai/tirx-kernels/blob/main/tirx_kernels/attention/flash_attention4.py), so they inevitably reference names defined in parts of the kernel we do not reproduce. The self-describing ones (`wg_id`, `warp_id`, `BLK_M`/`BLK_N`, `HEAD_DIM`, `kv_stage`, the `SMEM_PIPE_DEPTH_*` / `TMEM_PIPE_DEPTH` depths, `should_accumulate`, and `CTA_GROUP` (1 here)) we introduce where they first matter below. The rest get a one-line gloss in the table here, so you have somewhere to look the moment a fragment puts an unfamiliar name in front of you:
 
 | Name | Meaning |
 |------|---------|
@@ -547,7 +547,7 @@ The only behavioral difference lies in what `next_tile()` does: in non-causal mo
 
 ## Compile and Verify
 
-Everything above has been excerpts, so to actually run the kernel we import the real thing from `tirx-kernels`, compile it, and check it against a torch reference. Two things differ from the GEMM verify cell: Flash Attention has a richer entry point (`get_flash_attention4_kernel`), and it takes an extra `profiler_buf` argument for its built-in profiler. This is the one cell to run for the whole chapter:
+Everything above has been excerpts, so to put it all together and actually run the kernel we import the real thing from `tirx-kernels`, compile it, and check it against a torch reference. The complete kernel, with every piece this chapter walked through assembled into one file, is [`flash_attention4.py`](https://github.com/mlc-ai/tirx-kernels/blob/main/tirx_kernels/attention/flash_attention4.py) in the `tirx-kernels` repository. Two things differ from the GEMM verify cell: Flash Attention has a richer entry point (`get_flash_attention4_kernel`), and it takes an extra `profiler_buf` argument for its built-in profiler. This is the one cell to run for the whole chapter:
 
 ```python
 import torch
