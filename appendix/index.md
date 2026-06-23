@@ -7,7 +7,7 @@ The main path runs through Parts I–IV. The Reference holds material you reach 
 |------|-----|
 | Look up a TIRx language feature | **{ref}`chap_language_reference`** |
 | Compiler internals (the lowering pipeline) | **{ref}`chap_arch`** |
-| Debug warp-specialized GEMM hangs, crashes, or wrong results | **{ref}`chap_warp_spec_debug`** |
+| Debug asynchronous GEMM/FA hangs, crashes, wrong results, or slowdowns | **{ref}`chap_warp_spec_debug`** |
 
 For the complete `tvm.tirx` Python API, see the
 [upstream TVM documentation](https://tvm.apache.org/docs/).

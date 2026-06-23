@@ -15,7 +15,7 @@ The symptom is easy to see. The TMA unit goes quiet while the Tensor Cores run, 
 
 We pursue that idea in three steps of widening cooperation. Step 7 ({ref}`chap_warp_specialization`) specializes warps into producer, consumer, and writeback roles. Step 8 ({ref}`chap_cta_cluster`) joins two CTAs into a cluster that shares operands across their shared memory. Step 9 ({ref}`chap_multi_consumer`) adds a second MMA consumer so one staged tile feeds twice the math.
 
-It helps to see the three steps as one pattern at different scales. Step 7 keeps the cooperation inside one warpgroup. Step 8 widens it across CTAs, producing a 256×256 tile that spans both of them. Step 9 pushes the compute density further still: the cluster output grows to 512×256, each staged B tile is reused by both consumers, and we arrive at the densest variant in the tutorial.
+It helps to see the three steps as one pattern at different scales. Step 7 keeps the full pipeline inside one CTA: TMA and MMA share one warpgroup, while writeback runs in another. Step 8 widens cooperation across CTAs, producing a 256×256 tile that spans both of them. Step 9 pushes the compute density further still: the cluster output grows to 512×256, each staged B tile is reused by both consumers, and we arrive at the densest variant in the tutorial.
 
 One thing stays constant through all of this. The SMEM, TMEM, and register layouts still honor the contracts we built in the previous two chapters; what changes is *who cooperates*, not how data is laid out. Step 8 is the first time the cooperating scope widens past a single CTA, so its operand tiles are split across two CTAs' shared memory and one layout spans both CTAs along the `cbx` cluster axis.
 

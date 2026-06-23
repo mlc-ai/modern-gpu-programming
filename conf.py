@@ -25,7 +25,6 @@ myst_heading_anchors = 3   # auto slug anchors for h1-h3
 # Sphinx does not warn about / try to render source, build, and asset files.
 exclude_patterns = [
     "_build",
-    "OUTLINE.md",
     "Thumbs.db",
     ".DS_Store",
     "README.md",
