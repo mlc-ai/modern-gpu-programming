@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIRx：Scope、Layout、Dispatch</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { max-width: 980px; margin: 0 auto; }
+  .knobs { display:flex; gap:10px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; }
+  .knob { padding:7px 16px; border:2px solid; border-radius:8px; background:#fff; cursor:pointer;
+          font-size:13px; font-weight:700; transition:all .12s; }
+  .knob[data-k="scope"]    { border-color:#5b9bd5; color:#2a6aa0; }
+  .knob[data-k="layout"]   { border-color:#ed9a3c; color:#b46a14; }
+  .knob[data-k="dispatch"] { border-color:#45b5a5; color:#2f8076; }
+  .knob.on[data-k="scope"]    { background:#5b9bd5; color:#fff; }
+  .knob.on[data-k="layout"]   { background:#ed9a3c; color:#fff; }
+  .knob.on[data-k="dispatch"] { background:#45b5a5; color:#fff; }
+
+  .code { background:#0f172a; border-radius:10px; padding:14px 16px; overflow-x:auto;
+          font-family:'SF Mono','Fira Code',monospace; font-size:12.5px; line-height:1.55; }
+  .ln { white-space:pre; color:#cbd5e1; border-radius:4px; padding:0 6px; margin:0 -6px;
+        transition:background .12s, opacity .12s; }
+  /* Python syntax highlighting (on the dark code background) */
+  .ln .cm  { color:#64748b; font-style:italic; }   /* comment */
+  .ln .kw  { color:#c792ea; }                       /* keyword */
+  .ln .st  { color:#c3e88d; }                       /* string */
+  .ln .dec { color:#82aaff; }                       /* decorator */
+  .ln .nu  { color:#f78c6c; }                       /* number */
+  /* when a design element is active, spotlight its lines, dim the rest */
+  .code.k-scope    .ln:not([data-k="scope"]),
+  .code.k-layout   .ln:not([data-k="layout"]),
+  .code.k-dispatch .ln:not([data-k="dispatch"]) { opacity:.30; }
+  .code.k-scope    .ln[data-k="scope"]    { background:rgba(91,155,213,.30); }
+  .code.k-layout   .ln[data-k="layout"]   { background:rgba(237,154,60,.30); }
+  .code.k-dispatch .ln[data-k="dispatch"] { background:rgba(69,181,165,.32); }
+
+  .expl { max-width:920px; margin:14px auto 0; border:1px solid var(--border); border-radius:10px;
+          background:var(--surface); padding:12px 16px; min-height:74px; font-size:13px; line-height:1.6; }
+  .expl b { color:var(--text); }
+  .expl code { font-family:'SF Mono','Fira Code',monospace; font-size:11.5px; background:#f1f5f9;
+               padding:1px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+<h1>TIRx：Scope、Layout、Dispatch</h1>
+<div class="sub">点击一个设计元素，查看它控制 single-MMA GEMM 中的哪些代码行</div>
+
+<div class="knobs">
+  <button class="knob" data-k="scope">Scope（作用域）</button>
+  <button class="knob" data-k="layout">Layout（布局）</button>
+  <button class="knob" data-k="dispatch">Dispatch（派发）</button>
+</div>
+
+<div class="code" id="code"></div>
+<div class="expl" id="expl"></div>
+
+<script>
+(function () {
+  // [code text, element|null]; a "##" in the text marks the trailing comment.
+  var LINES = [
+    ["from tvm.script import tirx as T", null],
+    ["from tvm.script.tirx import tile as Tx", null],
+    ["from tvm.tirx.layout import TileLayout, S, TLane, TCol", null],
+    ["from tvm.tirx.cuda.operator.tile_primitive.tma_utils import tma_shared_layout, SwizzleMode", null],
+    ["", null],
+    ["A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))  ## swizzle 后的 SMEM layout", "layout"],
+    ["B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))", "layout"],
+    ["", null],
+    ["@T.prim_func", null],
+    ["def kernel(A, B, D):", null],
+    ["    T.device_entry()", null],
+    ["    warp_id = T.warp_id_in_wg([4])      ## thread/lane id（不是 scope）", null],
+    ["    lane_id = T.lane_id([32])", null],
+    ["", null],
+    ["    Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)   ## A 位于 SMEM", "layout"],
+    ["    Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)   ## B 位于 SMEM", "layout"],
+    ["    tmem = T.decl_buffer((128, 512), \"float32\", scope=\"tmem\",     ## 累加器位于 TMEM", "layout"],
+    ["                         layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))", "layout"],
+    ["", null],
+    ["    Tx.cta.copy(Asmem[:, :], A[m0:m0+BLK_M, :])   ## 全部 128 个线程协作", "scope"],
+    ["    Tx.cta.copy(Bsmem[:, :], B[n0:n0+BLK_N, :])", "scope"],
+    ["    T.cuda.cta_sync()", null],
+    ["", null],
+    ["    if warp_id == 0:                     ## 一个被选中的线程", "scope"],
+    ["        if T.ptx.elect_sync():           ## 发出 MMA", "scope"],
+    ["            Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :],", null],
+    ["                          accum=False,", null],
+    ["                          dispatch=\"tcgen05\")   ## Blackwell Tensor Core 路径", "dispatch"],
+    ["    T.ptx.mbarrier.try_wait(mma_bar, phase)", null],
+    ["", null],
+    ["    Tx.wg.copy_async(Dreg_wg[:, :], tmem[:, :BLK_N])   ## warpgroup 读取 TMEM", "scope"],
+    ["    Tx.cast(Dreg_f16[:], Dreg[:])", null],
+    ["    Tx.copy(D[m_thr, n0:n0+BLK_N], Dreg_f16[:])", null]
+  ];
+  var EXPL = {
+    scope:    "<b>Scope — 哪些线程执行每个操作。</b> 操作会标明负责执行它的线程组：<code>Tx.cta.copy</code> 使用 CTA 的全部 128 个线程；MMA 收窄到 <em>一个被选中的线程</em>（<code>elect_sync</code>），因为 <code>tcgen05.mma</code> 是单指令协作操作；<code>Tx.wg.copy_async</code> 则用完整的 128 线程 warpgroup 读回累加器。",
+    layout:   "<b>Layout — 每个 tile 放在哪里。</b> 每个 operand 都带有显式放置方式：A 和 B 按 Tensor Core 要求的 swizzle 后 <code>tma_shared_layout</code> 放入 SMEM；累加器放在 TMEM 中，并用基于 <code>TLane</code>/<code>TCol</code> 的 <code>TileLayout</code> 声明。MMA 读取这些 layout 来知道 tile 的物理排列。",
+    dispatch: "<b>Dispatch — 由哪条硬件路径执行操作。</b> 当同一操作存在多种 lowering 时，<code>dispatch=\"tcgen05\"</code> 会选择 Blackwell Tensor Core，因此 tile MMA 会 lower 成写入 TMEM 的 <code>tcgen05.mma</code>。可以替换这条路径（或改成 TMA copy），而不需要改变 scope 或 layout。",
+    none:     "这个 single-MMA GEMM 的每一行，都是 TIRx 三个设计元素之一上的选择。点击 <b>Scope</b>、<b>Layout</b> 或 <b>Dispatch</b>，即可高亮它控制的代码行。"
+  };
+
+  // --- tiny Python highlighter (keywords / strings / decorators / numbers) ---
+  var KW = {"from":1,"import":1,"def":1,"return":1,"if":1,"elif":1,"else":1,"for":1,"while":1,
+            "as":1,"with":1,"None":1,"True":1,"False":1,"and":1,"or":1,"not":1,"in":1,"is":1,
+            "class":1,"pass":1,"lambda":1,"yield":1};
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function hl(s) {
+    var o = '', i = 0, n = s.length;
+    while (i < n) {
+      var c = s[i], j;
+      if (c === '"' || c === "'") {                                  // string
+        j = i + 1; while (j < n && s[j] !== c) j++;
+        o += '<span class="st">' + esc(s.slice(i, Math.min(j + 1, n))) + '</span>'; i = j + 1; continue;
+      }
+      if (c === '@' && /^\s*$/.test(s.slice(0, i))) {                // line-initial decorator only
+        j = i + 1; while (j < n && /[\w.]/.test(s[j])) j++;
+        o += '<span class="dec">' + esc(s.slice(i, j)) + '</span>'; i = j; continue;
+      }
+      if (/[A-Za-z_]/.test(c)) {                                     // identifier / keyword
+        j = i; while (j < n && /\w/.test(s[j])) j++;
+        var w = s.slice(i, j);
+        o += KW[w] ? '<span class="kw">' + w + '</span>' : esc(w); i = j; continue;
+      }
+      if (/[0-9]/.test(c)) {                                         // number
+        j = i; while (j < n && /[0-9]/.test(s[j])) j++;
+        o += '<span class="nu">' + s.slice(i, j) + '</span>'; i = j; continue;
+      }
+      o += esc(c); i++;
+    }
+    return o;
+  }
+
+  var code = document.getElementById('code'), expl = document.getElementById('expl');
+  LINES.forEach(function (L) {
+    var d = document.createElement('div'); d.className = 'ln';
+    if (L[1]) d.dataset.k = L[1];
+    var parts = L[0].split('##');
+    d.innerHTML = hl(parts[0]);
+    if (parts[1]) { var c = document.createElement('span'); c.className = 'cm'; c.textContent = '# ' + parts[1].trim(); d.appendChild(c); }
+    code.appendChild(d);
+  });
+  expl.innerHTML = EXPL.none;
+
+  var active = null;
+  document.querySelectorAll('.knob').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.dataset.k;
+      code.classList.remove('k-scope', 'k-layout', 'k-dispatch');
+      document.querySelectorAll('.knob').forEach(function (x) { x.classList.remove('on'); });
+      if (active === k) { active = null; expl.innerHTML = EXPL.none; return; }   // toggle off
+      active = k; b.classList.add('on'); code.classList.add('k-' + k); expl.innerHTML = EXPL[k];
+    });
+  });
+})();
+</script>
+</body>
+</html>

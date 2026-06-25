@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Tiled 布局</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  .cell.tile-hi { background:#dbeafe !important; color:#1e40af !important; }
+
+  /* Memory strip */
+  .mlab { font-size:11px; color:var(--dim); text-align:center; margin-top:14px; margin-bottom:3px; font-weight:600; }
+  .mstrip { display:grid; grid-template-columns:repeat(32,1fr); gap:1px; }
+  .ms {
+    height:24px; border-radius:3px; display:flex; align-items:center; justify-content:center;
+    font-size:7px; font-weight:700; transition:all .18s; min-width:0; background:#e2e5ea; color:var(--dim);
+  }
+  .ms.hov-hit { border:2px solid var(--accent); z-index:2; box-shadow:0 0 4px rgba(59,130,246,.4); background:#d0e0f0; color:#222; font-size:8px; }
+</style>
+</head>
+<body>
+
+<h1>S[(4, 2, 2, 4) : (16, 4, 8, 1)]</h1>
+<div class="sub">逻辑视图 vs 物理内存 &nbsp;|&nbsp; 点击 cell 查看映射</div>
+
+<div class="panels" id="panels">
+  <div class="panel">
+    <h2>逻辑矩阵</h2>
+    <div class="nota" id="n0"></div>
+    <div class="grid" id="g0"></div>
+    <div class="mlab" id="ml0"></div>
+    <div class="mstrip" id="m0"></div>
+  </div>
+  <div class="panel">
+    <h2>物理内存（2×4 tiled）</h2>
+    <div class="nota" id="n1"></div>
+    <div class="grid" id="g1"></div>
+    <div class="mlab" id="ml1"></div>
+    <div class="mstrip" id="m1"></div>
+  </div>
+  <svg class="arrow-svg" id="arrow"></svg>
+</div>
+
+<div class="formula-bar" id="fb"></div>
+
+<script>
+const N = 8, TOTAL = N * N;
+const TILE_R = 2, TILE_C = 4;
+const TILE_SZ = TILE_R * TILE_C;
+const N_TILE_R = N / TILE_R;
+const N_TILE_C = N / TILE_C;
+
+const TILE_8 = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+function tileId(r, c) {
+  return Math.floor(r / TILE_R) * N_TILE_C + Math.floor(c / TILE_C);
+}
+
+function addrFlat(r, c) { return r * N + c; }
+
+function addrTiled(r, c) {
+  const ro = Math.floor(r / TILE_R), ri = r % TILE_R;
+  const co = Math.floor(c / TILE_C), ci = c % TILE_C;
+  return ro * (TILE_SZ * N_TILE_C) + co * TILE_SZ + ri * TILE_C + ci;
+}
+
+function invTiled(addr) {
+  const ro = Math.floor(addr / (TILE_SZ * N_TILE_C));
+  const rem1 = addr % (TILE_SZ * N_TILE_C);
+  const co = Math.floor(rem1 / TILE_SZ);
+  const rem2 = rem1 % TILE_SZ;
+  const ri = Math.floor(rem2 / TILE_C);
+  const ci = rem2 % TILE_C;
+  return { r: ro * TILE_R + ri, c: co * TILE_C + ci };
+}
+
+function mk(t, c) { const d = document.createElement(t); if (c) d.className = c; return d; }
+
+let hovCell = null;
+let drawing = false;
+
+function draw() {
+  drawing = true;
+  drawLogicalGrid();
+  drawPhysicalMemoryGrid();
+  drawStrips();
+  drawFormula();
+  drawArrow();
+  setTimeout(() => { drawing = false; }, 0);
+}
+
+function drawLogicalGrid() {
+  const g = document.getElementById('g0');
+  g.innerHTML = '';
+  g.style.gridTemplateColumns = '24px repeat(' + N + ',1fr)';
+
+  g.appendChild(mk('div', 'hdr'));
+  for (let c = 0; c < N; c++) {
+    const h = mk('div', 'hdr'); h.textContent = 'c' + c; g.appendChild(h);
+  }
+
+  const hovTile = hovCell ? tileId(hovCell.r, hovCell.c) : null;
+
+  for (let r = 0; r < N; r++) {
+    const rl = mk('div', 'rl'); rl.textContent = 'r' + r; g.appendChild(rl);
+    for (let c = 0; c < N; c++) {
+      const d = mk('div', 'cell');
+      d.dataset.r = r;
+      d.dataset.c = c;
+      d.textContent = r * N + c;
+      d.style.background = '#f0f1f3';
+      d.style.color = '#333';
+      if (hovCell) {
+        if (tileId(r, c) === hovTile) {
+          d.classList.add('tile-hi');
+        } else {
+          d.classList.add('dm');
+        }
+      }
+      if (hovCell && r === hovCell.r && c === hovCell.c) d.classList.add('hov');
+      g.appendChild(d);
+    }
+  }
+}
+
+function drawPhysicalMemoryGrid() {
+  const g = document.getElementById('g1');
+  g.innerHTML = '';
+  g.style.gridTemplateColumns = '36px repeat(' + N + ',1fr)';
+
+  g.appendChild(mk('div', 'hdr'));
+  for (let c = 0; c < N; c++) {
+    const h = mk('div', 'hdr'); h.textContent = '+' + c; g.appendChild(h);
+  }
+
+  const hovTile = hovCell ? tileId(hovCell.r, hovCell.c) : null;
+
+  for (let mr = 0; mr < N; mr++) {
+    const rl = mk('div', 'rl'); rl.textContent = (mr * N); g.appendChild(rl);
+    for (let mc = 0; mc < N; mc++) {
+      const physAddr = mr * N + mc;
+      const logical = invTiled(physAddr);
+      const logVal = logical.r * N + logical.c;
+
+      const d = mk('div', 'cell');
+      d.dataset.r = logical.r;
+      d.dataset.c = logical.c;
+      d.textContent = logVal;
+      d.style.background = '#f0f1f3';
+      d.style.color = '#333';
+      if (hovCell) {
+        if (tileId(logical.r, logical.c) === hovTile) {
+          d.classList.add('tile-hi');
+        } else {
+          d.classList.add('dm');
+        }
+      }
+      if (hovCell && logical.r === hovCell.r && logical.c === hovCell.c) d.classList.add('hov');
+      g.appendChild(d);
+    }
+  }
+}
+
+function drawStrips() {
+  const ms0 = document.getElementById('m0');
+  ms0.innerHTML = '';
+  const hovFlatAddr = hovCell ? addrFlat(hovCell.r, hovCell.c) : null;
+  const hovTileS = hovCell ? tileId(hovCell.r, hovCell.c) : null;
+  for (let a = 0; a < TOTAL; a++) {
+    const d = mk('div', 'ms');
+    const rr = Math.floor(a / N), cc = a % N;
+    if (hovCell && tileId(rr, cc) === hovTileS) {
+      d.style.background = '#dbeafe';
+      d.style.color = '#1e40af';
+    } else if (hovCell) {
+      d.style.opacity = '0.25';
+    }
+    if (hovFlatAddr !== null && a === hovFlatAddr) {
+      d.classList.add('hov-hit');
+      d.textContent = a;
+    }
+    ms0.appendChild(d);
+  }
+
+  const ms1 = document.getElementById('m1');
+  ms1.innerHTML = '';
+  const hovTiledAddr = hovCell ? addrTiled(hovCell.r, hovCell.c) : null;
+  const hovTileS1 = hovCell ? tileId(hovCell.r, hovCell.c) : null;
+  for (let a = 0; a < TOTAL; a++) {
+    const d = mk('div', 'ms');
+    const tl = invTiled(a);
+    if (hovCell && tileId(tl.r, tl.c) === hovTileS1) {
+      d.style.background = '#dbeafe';
+      d.style.color = '#1e40af';
+    } else if (hovCell) {
+      d.style.opacity = '0.25';
+    }
+    if (hovTiledAddr !== null && a === hovTiledAddr) {
+      d.classList.add('hov-hit');
+      d.textContent = a;
+    }
+    ms1.appendChild(d);
+  }
+}
+
+function drawFormula() {
+  const fb = document.getElementById('fb');
+  if (!hovCell) {
+    fb.innerHTML = '<div class="ftitle">点击 cell 查看逻辑元素如何映射到物理内存</div>';
+    return;
+  }
+  const {r, c} = hovCell;
+  const logVal = r * N + c;
+  const at = addrTiled(r, c);
+  const ro = Math.floor(r / TILE_R), ri = r % TILE_R;
+  const co = Math.floor(c / TILE_C), ci = c % TILE_C;
+  let html = `<div class="ftitle">元素 ${logVal} 位于（row=${r}, col=${c}）</div>`;
+  html += '<div class="fcontent">';
+  html += `addr = (row // 2) × 16 + (col // 4) × 8 + (row % 2) × 4 + (col % 4)<br>`;
+  html += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (${r} // 2) × 16 + (${c} // 4) × 8 + (${r} % 2) × 4 + (${c} % 4)<br>`;
+  html += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${ro} × 16 + ${co} × 8 + ${ri} × 4 + ${ci} = <b>${at}</b>`;
+  html += '</div>';
+  fb.innerHTML = html;
+}
+
+// Arrow overlay
+const panels = document.getElementById('panels');
+const arrowSvg = document.getElementById('arrow');
+
+function drawArrow() {
+  arrowSvg.innerHTML = '';
+  const hovs = panels.querySelectorAll('.cell.hov');
+  if (hovs.length < 2) return;
+  const pr = panels.getBoundingClientRect();
+  const a = hovs[0].getBoundingClientRect(), b = hovs[1].getBoundingClientRect();
+  const x1 = a.left + a.width/2 - pr.left, y1 = a.top - pr.top;
+  const x2 = b.left + b.width/2 - pr.left, y2 = b.top - pr.top;
+  const mx = (x1 + x2) / 2, my = -10;
+  const d = `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+  const ns = 'http://www.w3.org/2000/svg';
+  const defs = document.createElementNS(ns, 'defs');
+  const marker = document.createElementNS(ns, 'marker');
+  marker.setAttribute('id', 'ah'); marker.setAttribute('markerWidth', '8'); marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('refX', '7'); marker.setAttribute('refY', '3'); marker.setAttribute('orient', 'auto');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', '0 0, 8 3, 0 6'); poly.setAttribute('fill', '#222');
+  marker.appendChild(poly); defs.appendChild(marker); arrowSvg.appendChild(defs);
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', d); path.setAttribute('marker-end', 'url(#ah)');
+  arrowSvg.appendChild(path);
+}
+
+function clearHov() {
+  panels.querySelectorAll('.cell.hov').forEach(d => d.classList.remove('hov'));
+  arrowSvg.innerHTML = '';
+  hovCell = null;
+}
+
+panels.addEventListener('click', e => {
+  const cell = e.target.closest('.cell');
+  if (!cell || cell.dataset.r === undefined) return;
+  const r = +cell.dataset.r, c = +cell.dataset.c;
+  if (hovCell && hovCell.r === r && hovCell.c === c) return;
+  clearHov();
+  hovCell = { r, c };
+  draw();
+});
+panels.addEventListener('mouseout', e => {
+  if (!hovCell || drawing) return;
+  const next = e.relatedTarget?.closest('.cell');
+  if (!next) { clearHov(); draw(); return; }
+  const nr = +next.dataset.r, nc = +next.dataset.c;
+  if (isNaN(nr) || tileId(nr, nc) !== tileId(hovCell.r, hovCell.c)) { clearHov(); draw(); }
+});
+
+draw();
+</script>
+</body>
+</html>
