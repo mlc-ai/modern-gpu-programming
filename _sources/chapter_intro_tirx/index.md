@@ -16,7 +16,7 @@ These examples need a Blackwell GPU (`sm_100a`, such as a B200). The TIRx compil
 `tvm.tirx` module of the Apache TVM wheel; install it alongside a CUDA build of PyTorch:
 
 ```bash
-pip install apache-tvm==0.25.0
+pip install apache-tvm
 ```
 
 Confirm it imports with `python -c "import tvm, tvm.tirx; print(tvm.__version__)"`. The same setup
