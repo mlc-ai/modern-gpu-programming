@@ -7,6 +7,30 @@ author = "MLC Community"
 copyright = "2026, MLC Community"
 release = "0.0.1"
 
+# Unicode symbols (≈, ×, ≤, →, etc.) in the text require a Unicode-aware engine;
+# pdflatex chokes on them. xelatex handles them natively.
+latex_engine = "xelatex"
+
+# Sphinx's xelatex default uses GNU FreeFont (FreeSerif/FreeSans/FreeMono), which
+# BasicTeX doesn't ship. Use the tex-gyre fonts (already installed) instead, and
+# let xelatex fall back to a system font for any glyphs they lack.
+latex_elements = {
+    "fontpkg": r"""
+\setmainfont{texgyretermes-regular.otf}[
+  BoldFont=texgyretermes-bold.otf,
+  ItalicFont=texgyretermes-italic.otf,
+  BoldItalicFont=texgyretermes-bolditalic.otf]
+\setsansfont{texgyreheros-regular.otf}[
+  BoldFont=texgyreheros-bold.otf,
+  ItalicFont=texgyreheros-italic.otf,
+  BoldItalicFont=texgyreheros-bolditalic.otf]
+\setmonofont{texgyrecursor-regular.otf}[
+  BoldFont=texgyrecursor-bold.otf,
+  ItalicFont=texgyrecursor-italic.otf,
+  BoldItalicFont=texgyrecursor-bolditalic.otf]
+""",
+}
+
 extensions = ["myst_parser", "sphinx_copybutton"]
 
 # Markdown (MyST) is the primary source format.
@@ -57,3 +81,5 @@ html_theme_options = {
     "use_download_button": False,
     "use_fullscreen_button": False,
 }
+
+extensions = ["myst_parser", "sphinx_copybutton", "sphinxcontrib.rsvgconverter"]
