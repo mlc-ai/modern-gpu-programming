@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2-CTA Cluster</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 16px 28px; max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 26px; line-height: 1.1; margin-bottom: 6px; }
+
+  /* outer cluster box */
+  .cluster { border: 2.5px dashed #94a3b8; background: #f8fafc; border-radius: 12px;
+             position: relative; padding: 28px 16px 16px; max-width: 860px; margin: 0 auto; cursor: pointer; }
+  .ctag { position: absolute; top: -11px; left: 16px; background: #64748b; color: #fff;
+          font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 4px; letter-spacing: .02em; }
+
+  .grid3 { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+
+  .cta { border: 2.5px solid; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .cta0 { border-color: #94a3b8; background: #fff; }
+  .cta1 { border-color: #94a3b8; background: #fff; border-style: dashed; }
+  .hd { font-size: 14px; font-weight: 700; text-align: center; }
+  .cta0 .hd, .cta1 .hd { color: #334155; }
+
+  .slot { border: 2px solid; border-radius: 8px; padding: 8px 6px; text-align: center; cursor: pointer;
+          transition: box-shadow .15s; }
+  .slot b { display: block; font-size: 13px; }
+  .slot span { font-size: 11.5px; color: #475569; }
+  .asmem { background: #ede9fe; border-color: #8b5cf6; }
+  .bsmem { background: #ddd6fe; border-color: #6d28d9; }
+  .out   { background: #fffbeb; border-color: #f59e0b; }
+
+  .mid { display: flex; align-items: center; justify-content: center; }
+  .xread { background: #dcfce7; border: 2.2px solid #059669; color: #047857; font-weight: 700;
+           font-size: 12.5px; line-height: 1.25; text-align: center; border-radius: 9px;
+           padding: 8px 10px; cursor: pointer; white-space: nowrap; transition: box-shadow .15s; }
+
+  .summary { margin-top: 12px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 9px;
+             padding: 8px 12px; text-align: center; font-size: 13px; font-weight: 700; color: #c2410c; }
+
+  .sel { box-shadow: 0 0 0 3px rgba(0,0,0,.18); }
+
+  .detail-panel { max-width: 860px; margin: 14px auto 0; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--surface); padding: 10px 16px; min-height: 84px; }
+  .dp-title { font-size: 12.5px; font-weight: 700; margin-bottom: 4px; }
+  .dp-body  { font-size: 12px; line-height: 1.6; color: #475569; }
+  .dp-body code { font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; background: #f1f5f9;
+    padding: 1px 5px; border-radius: 3px; color: #1e293b; }
+
+  @media (max-width: 640px) { .grid3 { grid-template-columns: 1fr; } .mid { transform: rotate(90deg); } }
+</style>
+</head>
+<body>
+<h1>2-CTA Cluster：通过跨 CTA SMEM 读取实现协作 MMA</h1>
+<div class="sub">点击任意部分查看说明；两个 CTA 在 cluster 内共享 stored-B 行切片（DSMEM）</div>
+
+<div class="cluster" id="diagram" data-k="cluster">
+  <span class="ctag">CLUSTER — 跨 SM 的 2 个 CTA · DSMEM</span>
+  <div class="grid3">
+    <div class="cta cta0" data-k="cta">
+      <div class="hd">CTA 0 · SM-0</div>
+      <div class="slot asmem" data-k="asmem"><b>Asmem（本 CTA）</b><span>A 行 0–127</span></div>
+      <div class="slot bsmem" data-k="bsmem"><b>Bsmem</b><span>B stored 行 0–127</span></div>
+      <div class="slot out"   data-k="out"><b>D[0:128, 0:256]</b></div>
+    </div>
+    <div class="mid">
+      <div class="xread" data-k="xread">跨 CTA<br>读取&nbsp;↔</div>
+    </div>
+    <div class="cta cta1" data-k="cta">
+      <div class="hd">CTA 1 · SM-1</div>
+      <div class="slot asmem" data-k="asmem"><b>Asmem（本 CTA）</b><span>A 行 128–255</span></div>
+      <div class="slot bsmem" data-k="bsmem"><b>Bsmem</b><span>B stored 行 128–255</span></div>
+      <div class="slot out"   data-k="out"><b>D[128:256, 0:256]</b></div>
+    </div>
+  </div>
+  <div class="summary">Cluster 输出：256 × 256 — 是单个 CTA 独立计算 128 × 128 的两倍</div>
+</div>
+
+<div class="detail-panel" id="detail">
+  <div class="dp-title" id="dpt"></div>
+  <div class="dp-body" id="dpb"></div>
+</div>
+
+<script>
+(function () {
+  var INFO = {
+    cluster: ["Cluster — 跨 SM 的 2 个 CTA", "Cluster 把位于不同 SM 上的 CTA 组织到一起，使它们可以同步，并直接读取彼此的 shared memory（<b>DSMEM</b>）。这里的 2-CTA cluster 协作计算一个 256&times;256 输出 tile。"],
+    cta:     ["CTA — 一个 SM 上的一个线程块", "每个 CTA 在单个 SM 上运行，并拥有该 SM 的 shared memory。单独运行时，它会计算输出的一个 128&times;256 切片；在 cluster 中，两个 CTA 组合成更大的 MMA。"],
+    asmem:   ["Asmem（本 CTA）— 该 CTA 的 A 行切片", "每个 CTA 都把自己的 A 行暂存在 shared memory：CTA 0 保存 <code>A 行 0&ndash;127</code>，CTA 1 保存 <code>A 行 128&ndash;255</code>。"],
+    bsmem:   ["Bsmem — 该 CTA 保存的 stored-B 行切片", "每个 CTA 暂存一个 stored-B 行切片（CTA 0：<code>行 0&ndash;127</code>；CTA 1：<code>行 128&ndash;255</code>）。经过 <code>B.T</code> 后，这些切片会变成逻辑输出列范围。MMA 需要两个范围，因此每个 CTA 还要跨 cluster 读取<em>另一个</em> CTA 的 Bsmem。"],
+    xread:   ["跨 CTA 读取（DSMEM）", "CTA 通过 cluster 互连直接从 <code>Bsmem</code> 读取另一个 CTA 的 stored-B 切片，不需要绕回 global memory。正是这种 distributed shared memory 访问让 2-CTA 协作 MMA 成为可能。"],
+    out:     ["输出 — 一个 256&times;256 tile", "两者合起来生成一个 256&times;256 tile（CTA 0：行 0&ndash;127，CTA 1：行 128&ndash;255），是单个 CTA 独立生成 128&times;128 的两倍。"]
+  };
+  var diagram = document.getElementById('diagram');
+  var dpt = document.getElementById('dpt'), dpb = document.getElementById('dpb');
+
+  function select(k) {
+    diagram.parentNode.querySelectorAll('.sel').forEach(function (e) { e.classList.remove('sel'); });
+    diagram.querySelectorAll('[data-k="' + k + '"]').forEach(function (e) { e.classList.add('sel'); });
+    dpt.innerHTML = INFO[k][0];
+    dpb.innerHTML = INFO[k][1];
+  }
+  diagram.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-k]');
+    if (el) select(el.dataset.k);
+  });
+  select('xread');   // default: the cross-CTA read is the point of the figure
+})();
+</script>
+</body>
+</html>

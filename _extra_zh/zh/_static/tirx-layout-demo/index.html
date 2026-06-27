@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+
+  Page structure and interaction pattern adapted from the team's own course
+  material (mlsyscourse/slides-modern-gpu-programming,
+  data-layout/site/demo/tile_distributed.html). TIRx layout logic in
+  layout-demo.js is original. Not derived from any third-party demo.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIRx Tensor Layout — Interactive Demo</title>
+<link rel="stylesheet" href="viz-base.css">
+<script src="viz-base.js"></script>
+<style>
+  /* embed mode (?notitle / ?lock) */
+  body.lock .preset-row, body.lock .main-controls, body.lock #status { display:none; }
+  body.notitle, body.lock { padding:10px; }
+  /* lock: lay panels at natural size; JS scales the whole block to fit the width */
+  body.lock #panels { display:flex; flex-direction:column; align-items:flex-start; gap:20px; grid-template-columns:none; width:max-content; max-width:none; margin:0; }
+
+  /* Demo-specific overrides */
+  .ti {
+    padding:5px 9px; border:1px solid var(--border); border-radius:5px;
+    font-family:'SF Mono','Fira Code',monospace; font-size:15px; color:var(--text);
+    background:var(--surface);
+  }
+  .ti.expr { min-width:440px; max-width:70vw; }
+  .ti.shape { width:84px; }
+  select.ti { font-family:inherit; cursor:pointer; }
+
+  /* preset = secondary helper (just loads an example into the two fields) */
+  .preset-row { display:flex; align-items:center; gap:8px; justify-content:center;
+    margin-bottom:8px; font-size:13px; }
+  .preset-row .lbl { font-size:13px; }
+  .preset-hint { color:var(--dim); font-size:13px; font-style:italic; }
+
+  /* shape + layout = the first-class inputs */
+  .main-controls { display:flex; gap:20px; justify-content:center; align-items:flex-end;
+    flex-wrap:wrap; padding:16px 20px; border:1px solid #c7d6f0; border-radius:10px;
+    background:#f6f9ff; max-width:960px; margin:0 auto 10px; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field.grow { flex:1; min-width:300px; }
+  .flbl { font-size:15px; font-weight:700; color:var(--text); }
+  .flbl-sub { font-weight:500; color:var(--dim); font-size:13px;
+    font-family:'SF Mono','Fira Code',monospace; }
+  .field .ti { font-size:15px; padding:8px 11px; }
+  .field .ti.expr { width:100%; min-width:0; max-width:none; }
+  .sw-group { display:flex; gap:6px; }
+  .sw-group .ti { font-size:15px; padding:8px 8px; }
+
+  #status { font-size:13px; font-family:'SF Mono','Fira Code',monospace; color:var(--dim);
+    text-align:center; margin-bottom:14px; }
+
+  /* Stack the two panels vertically (logical on top, physical below) */
+  .panels { grid-template-columns:1fr; max-width:1280px; align-items:start; }
+  .grid { gap:2px; }
+  .cell { aspect-ratio:1; font-size:15px; border-radius:5px; border-width:2px; }
+  .cell.dm { opacity:.18; }
+
+  /* Right panel: physical-coordinate view (2D table or 1D wrapped tiles) */
+  #phys { max-height:580px; overflow:auto; padding:2px; }
+  .phys-table { display:grid; gap:3px; }
+  .ax-hdr { font-size:12px; color:var(--dim); font-weight:600;
+    font-family:'SF Mono','Fira Code',monospace; display:flex; align-items:center; justify-content:center; }
+  .ax-hdr.row { justify-content:flex-end; padding-right:4px; white-space:nowrap; }
+  .pcell { border:1px solid var(--border); border-radius:4px; min-height:30px; padding:2px;
+    display:flex; flex-wrap:wrap; gap:2px; align-content:flex-start; justify-content:center; transition:all .15s; }
+  .pcell.hov-cell { border-color:#222; box-shadow:0 0 7px rgba(59,130,246,.4); }
+  .pcell.dm-cell { opacity:.16; }
+  /* bank mode: pack the elements of one bank word side by side (same size as
+     the logical-tensor cells), not stacked */
+  .phys-table.bank-mode .pcell { flex-wrap:nowrap; gap:2px; padding:2px; }
+
+  .phys-1d { display:flex; flex-wrap:wrap; gap:8px; }
+  .thread-tile { border:2px solid var(--border); border-radius:8px; padding:5px 6px 6px;
+    background:var(--bg); min-width:54px; transition:all .15s; }
+  .thread-tile.hov-tile { box-shadow:0 0 8px rgba(59,130,246,.35); border-color:#222; }
+  .thread-tile.dm-tile { opacity:.2; }
+  .thread-lbl { font-size:12px; font-weight:700; color:var(--dim);
+    font-family:'SF Mono','Fira Code',monospace; text-align:center; margin-bottom:4px; white-space:nowrap; }
+  .thread-slots { display:flex; flex-wrap:wrap; gap:2px; justify-content:center; }
+
+  .gcell {
+    border-radius:3px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:700; width:46px; height:46px; flex:0 0 auto; cursor:pointer;
+    border:2px solid transparent; transition:all .15s;
+  }
+  .gcell.hov { border-color:#222; box-shadow:0 0 6px rgba(59,130,246,.45); }
+  .gcell.dm  { opacity:.18; }
+
+  .formula-bar { max-width:1280px; }
+  /* Larger labels/headers/legend for embedded (scaled) readability */
+  .panel h2 { font-size:16px; }
+  .panel .nota { font-size:13px; }
+  .hdr { font-size:12px; }
+  .rl { font-size:12px; }
+  .li { font-size:15px; }
+</style>
+</head>
+<body>
+
+<h1>TIRx Tensor Layout</h1>
+<div class="sub">how a <code>TileLayout</code> (shard / replica / offset) maps logical tensor elements to physical threads</div>
+
+<div class="preset-row">
+  <span class="lbl">load an example</span>
+  <select id="preset" class="ti"></select>
+  <span class="preset-hint">↓ fills the two fields below</span>
+</div>
+
+<div class="main-controls">
+  <div class="field">
+    <label class="flbl">Logical shape</label>
+    <input id="shape" class="ti shape" value="4, 8" spellcheck="false">
+  </div>
+  <div class="field">
+    <label class="flbl">Swizzle (SMEM)</label>
+    <div class="sw-group">
+      <select id="dtype" class="ti"></select>
+      <select id="swmode" class="ti"></select>
+    </div>
+  </div>
+  <div class="field grow">
+    <label class="flbl">Tile layout&nbsp;&nbsp;<span class="flbl-sub">S[shard] + R[replica] + offset</span></label>
+    <input id="expr" class="ti expr" value="S[(4,8):(8@laneid,1@laneid)]" spellcheck="false">
+  </div>
+</div>
+<div id="status"></div>
+
+<div class="panels" id="panels">
+  <div class="panel">
+    <h2>Logical tensor</h2>
+    <div class="nota" id="n0"></div>
+    <div class="grid" id="g0"></div>
+  </div>
+  <div class="panel">
+    <h2>Physical threads</h2>
+    <div class="nota" id="nphys"></div>
+    <div id="phys"></div>
+  </div>
+  <svg class="arrow-svg" id="arrow"></svg>
+</div>
+
+<div class="formula-bar" id="fb"></div>
+<div class="leg" id="lg"></div>
+
+<script src="layout-demo.js"></script>
+</body>
+</html>

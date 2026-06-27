@@ -1,0 +1,32 @@
+<nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        {% if theme_home_page_in_toc == True %}
+        {#- This mimics the pydata theme list style so we can append an extra item at the top #}
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1{% if pagename == root_doc %} current active{% endif %}">
+                <a class="reference internal" href="{{ pathto(root_doc) }}">
+                    {{ root_title }}
+                </a>
+            </li>
+        </ul>
+        {% endif -%}
+
+        {% if pagename == "zh/index" or pagename.startswith("zh/") %}
+        {{- generate_zh_toctree_html(
+            maxdepth=theme_max_navbar_depth|int,
+            collapse=theme_collapse_navbar|tobool,
+            includehidden=True,
+            titles_only=True,
+            show_nav_level=theme_show_navbar_depth|int) }}
+        {% else %}
+        {{- generate_toctree_html(
+            startdepth=0,
+            kind="sidebar",
+            maxdepth=theme_max_navbar_depth|int,
+            collapse=theme_collapse_navbar|tobool,
+            includehidden=True,
+            titles_only=True,
+            show_nav_level=theme_show_navbar_depth|int) }}
+        {% endif %}
+    </div>
+</nav>

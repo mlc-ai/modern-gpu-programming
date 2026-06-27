@@ -1,0 +1,90 @@
+/* Shared base styles for all viz HTMLs
+ * Colors: --bg gray, --accent blue, --surface white
+ * Fonts: Inter (body), SF Mono (code/notation)
+ */
+
+:root {
+  --bg:#fff; --surface:#fff; --border:#dfe1e6; --text:#222; --dim:#888; --accent:#3b82f6;
+
+  /* ── Group palette (tiles, lanes, banks, sectors) ─────── */
+  --color-group-0: #5b9bd5;
+  --color-group-1: #ed9a3c;
+  --color-group-2: #d95555;
+  --color-group-3: #45b5a5;
+  --color-group-4: #5fb85f;
+  --color-group-5: #e0b828;
+  --color-group-6: #9d6eb5;
+  --color-group-7: #e87888;
+
+  /* ── Interaction ──────────────────────────────────────── */
+  --color-hover-bg: #dbeafe;
+  --color-hover-text: #1e40af;
+
+  /* ── Status ───────────────────────────────────────────── */
+  --color-good: #2e7d32;
+  --color-bad: #c62828;
+
+  /* ── Boundaries & neutrals ────────────────────────────── */
+  --color-boundary: #8C1515;
+  --color-cell-bg: #f0f1f3;
+  --color-cell-bg-alt: #e8eaed;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Inter','SF Pro','Segoe UI',system-ui,sans-serif; padding:24px; }
+body.figure h1, body.figure .sub { display:none; }
+body.notitle h1, body.notitle .sub { display:none; }
+h1 { text-align:center; font-size:21px; font-weight:700; margin-bottom:2px; }
+.sub { text-align:center; color:var(--dim); font-size:14px; margin-bottom:20px; font-family:'SF Mono','Fira Code',monospace; }
+
+/* Controls */
+.controls { display:flex; gap:18px; justify-content:center; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+.lbl { font-size:13px; color:var(--dim); margin-right:4px; font-weight:600; }
+.bg { display:inline-flex; gap:2px; }
+.btn {
+  padding:5px 11px; border:1px solid var(--border); background:var(--surface); color:var(--text);
+  cursor:pointer; border-radius:5px; font-size:13px; font-family:inherit; font-weight:500; transition:all .12s;
+}
+.btn:hover { background:#eef0f4; }
+.btn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn.on:hover { background:#2563eb; }
+
+/* Side-by-side panels */
+.panels { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:1100px; margin:0 auto; position:relative; }
+.panel { background:var(--surface); border-radius:10px; padding:16px 14px; border:1px solid var(--border);
+  box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.panel h2 { text-align:center; font-size:14px; font-weight:700; margin-bottom:2px; }
+.panel .nota { text-align:center; font-size:11px; color:var(--accent); font-family:'SF Mono','Fira Code',monospace;
+  margin-bottom:8px; font-weight:600; }
+
+/* Grid cells */
+.grid { display:grid; gap:3px; }
+.hdr { font-size:10px; color:var(--dim); text-align:center; padding:2px 0; font-weight:600; }
+.rl { font-size:10px; color:var(--dim); display:flex; align-items:center; justify-content:flex-end; padding-right:3px; font-weight:600; }
+.cell {
+  aspect-ratio:1; border-radius:5px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; border:2.5px solid transparent; transition:all .18s;
+  min-width:0; cursor:pointer; line-height:1.15;
+}
+.cell.hov { border-color:#222; border-width:3px; z-index:2; box-shadow:0 0 8px rgba(59,130,246,.4); }
+.cell.dm { opacity:.25; }
+
+/* Arrow SVG overlay */
+.arrow-svg { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; overflow:visible; }
+.arrow-svg path { fill:none; stroke:#222; stroke-width:1.5; }
+.arrow-svg text { font-size:11px; font-weight:600; fill:#222; font-family:inherit; }
+
+/* Formula bar */
+.formula-bar { max-width:1100px; margin:18px auto 0; background:var(--surface); border-radius:10px;
+  padding:12px 18px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.formula-bar .ftitle { font-size:13px; font-weight:700; margin-bottom:6px; }
+.formula-bar .fcontent { font-size:13px; font-family:'SF Mono','Fira Code',monospace; color:var(--accent); line-height:1.6; }
+
+/* Legend */
+.leg { display:flex; flex-direction:column; align-items:center; gap:4px; margin-top:14px; }
+.leg-row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.leg-group { display:flex; gap:10px; align-items:center; }
+.leg-sep { width:1px; height:16px; background:var(--border); }
+.li { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--dim); }
+.swtch { width:14px; height:14px; border-radius:3px; }
+
+@media(max-width:700px) { .panels { grid-template-columns:1fr; } }

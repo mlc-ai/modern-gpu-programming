@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>分布式布局</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  /* Demo-specific overrides */
+  .controls { margin-bottom:16px; }
+  .panels { max-width:1200px; }
+  .panel .nota { line-height:1.4; }
+  .grid { gap:2px; }
+  .cell {
+    border-radius:4px; flex-direction:row; font-size:12px;
+    border-width:2px; line-height:normal;
+  }
+  .cell.dm { opacity:.20; }
+  .formula-bar { max-width:1200px; }
+
+  /* GPU mesh on right panel */
+  .gpu-mesh { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .gpu-box { background:var(--bg); border-radius:8px; padding:8px 6px; border:2px solid var(--border); }
+  .gpu-box.hov-gpu { border-color:#222; box-shadow:0 0 8px rgba(59,130,246,.3); }
+  .gpu-box.dm-gpu { opacity:.25; }
+  .gpu-lbl { text-align:center; font-size:12px; font-weight:700; margin-bottom:4px; }
+  .gpu-grid { display:grid; gap:2px; }
+  .gcell {
+    border-radius:3px; display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700; min-width:0; min-height:22px; transition:all .18s;
+    border:2px solid transparent;
+  }
+  .gcell.hov { border-color:#222; border-width:2px; box-shadow:0 0 6px rgba(59,130,246,.4); }
+  .gcell.dm  { opacity:.20; }
+</style>
+</head>
+<body>
+
+<h1>分布式布局 — 2×2 GPU Mesh 上的 8×8 矩阵</h1>
+<div class="sub" id="subtitle">完全 shard 到 4 个 GPU &nbsp;|&nbsp; 点击 cell 查看放置位置</div>
+
+<div class="controls">
+  <div><span class="lbl">布局</span>
+    <div class="bg" id="mode">
+      <button class="btn on" data-v="shard">完全 Sharded (S0S1)</button>
+      <button class="btn" data-v="replica">Shard + Replica (S0R)</button>
+      <button class="btn" data-v="offset">Shard + Offset (S0+O)</button>
+    </div>
+  </div>
+</div>
+
+<div class="panels" id="panels">
+  <div class="panel">
+    <h2 id="n0"></h2>
+    <div class="nota"></div>
+    <div class="grid" id="g0"></div>
+  </div>
+  <div class="panel">
+    <h2>GPU Mesh（2×2）</h2>
+    <div class="nota"></div>
+    <div class="gpu-mesh" id="mesh"></div>
+  </div>
+  <svg class="arrow-svg" id="arrow"></svg>
+</div>
+
+<div class="formula-bar" id="fb"></div>
+<div class="leg" id="lg"></div>
+
+<script>
+const N = 8;
+
+// Tile/partition colors — color indicates data partition, not GPU
+const TILE_COLORS = ['#5b9bd5', '#ed9a3c', '#45b5a5', '#d95555'];
+const TILE_TEXT   = ['#fff',    '#fff',    '#fff',    '#fff'];
+
+// GPU identifiers — neutral border colors, labels only
+const GPU_NAMES  = ['GPU 0', 'GPU 1', 'GPU 2', 'GPU 3'];
+const GPU_BORDER = ['#666', '#666', '#666', '#666'];
+// Mesh layout: GPU0=(y0,x0) GPU1=(y0,x1) GPU2=(y1,x0) GPU3=(y1,x1)
+
+const ST = { mode: 'shard' };
+let hovCell = null;
+let drawing = false;
+
+// ── Mapping functions ──────────────────────────────────────────
+
+// Fully Sharded (S0S1):
+// S[(2, 4, 2, 4) : (1@gpuid_y, 4@m, 1@gpuid_x, 1@m)]
+// rows split by 2 → gpuid_y, cols split by 2 → gpuid_x
+function shardGpus(r, c) {
+  const gy = Math.floor(r / 4), gx = Math.floor(c / 4);
+  return [gy * 2 + gx];
+}
+function shardLocal(r, c) {
+  return { lr: r % 4, lc: c % 4 };
+}
+function shardGpuData(gpuId) {
+  // Returns list of {r, c, lr, lc} for cells on this GPU
+  const gy = Math.floor(gpuId / 2), gx = gpuId % 2;
+  const cells = [];
+  for (let lr = 0; lr < 4; lr++)
+    for (let lc = 0; lc < 4; lc++)
+      cells.push({ r: gy * 4 + lr, c: gx * 4 + lc, lr, lc });
+  return cells;
+}
+function shardGpuShape() { return { rows: 4, cols: 4 }; }
+
+// Shard + Replica (S0R):
+// S[(2, 4, 8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]
+// rows split by 2 → gpuid_y; all cols on each GPU; replicated across gpuid_x
+function replicaGpus(r, c) {
+  const gy = Math.floor(r / 4);
+  return [gy * 2, gy * 2 + 1]; // both x=0 and x=1
+}
+function replicaLocal(r, c) {
+  return { lr: r % 4, lc: c };
+}
+function replicaGpuData(gpuId) {
+  const gy = Math.floor(gpuId / 2);
+  const cells = [];
+  for (let lr = 0; lr < 4; lr++)
+    for (let lc = 0; lc < N; lc++)
+      cells.push({ r: gy * 4 + lr, c: lc, lr, lc });
+  return cells;
+}
+function replicaGpuShape() { return { rows: 4, cols: 8 }; }
+
+// Tile/partition ID: color represents data partition
+function getTile(r, c) {
+  if (ST.mode === 'shard') {
+    // 4 tiles: gy*2 + gx
+    return Math.floor(r / 4) * 2 + Math.floor(c / 4);
+  } else {
+    // 2 tiles: gy (rows sharded, cols replicated)
+    return Math.floor(r / 4);
+  }
+}
+
+// Dispatch
+function getGpus(r, c) {
+  if (ST.mode === 'shard') return shardGpus(r, c);
+  if (ST.mode === 'offset') {
+    // O[1@gpuid_x]: data placed at gpuid_x=1 (offset by 1, not replicated)
+    const gy = Math.floor(r / 4);
+    return [gy * 2 + 1]; // only gpuid_x=1
+  }
+  return replicaGpus(r, c);
+}
+function getLocal(r, c) { return ST.mode === 'shard' ? shardLocal(r, c) : replicaLocal(r, c); }
+function getGpuData(g) {
+  if (ST.mode === 'shard') return shardGpuData(g);
+  if (ST.mode === 'offset') {
+    if (g % 2 === 0) return []; // GPU_x=0 has no data (offset=1 → data on gpuid_x=1)
+    return replicaGpuData(g);
+  }
+  return replicaGpuData(g);
+}
+function getGpuShape() { return ST.mode === 'shard' ? shardGpuShape() : replicaGpuShape(); }
+
+// Local storage address on each GPU
+function localAddr(gpuId, lr, lc) {
+  if (ST.mode === 'shard') return lr * 4 + lc;
+  // replica and offset: 4×8 local
+  return lr * 8 + lc;
+}
+
+function tileColor(r, c) { return TILE_COLORS[getTile(r, c)]; }
+function tileTextColor(r, c) { return TILE_TEXT[getTile(r, c)]; }
+
+function mk(t, c) { const d = document.createElement(t); if (c) d.className = c; return d; }
+
+// ── Draw ───────────────────────────────────────────────────────
+function draw() {
+  drawing = true;
+  const isShard = ST.mode === 'shard';
+  const isOffset = ST.mode === 'offset';
+
+  // Subtitle
+  const subtitles = {
+    shard:   '完全 shard 到 4 个 GPU &nbsp;|&nbsp; 点击 cell 查看放置位置',
+    replica: '按行 shard，数据 replicated &nbsp;|&nbsp; 点击 cell 查看放置位置',
+    offset:  '按行 shard，数据只放在 GPU-x=1（offset）&nbsp;|&nbsp; 点击 cell 查看放置位置',
+  };
+  document.getElementById('subtitle').innerHTML = subtitles[ST.mode];
+
+  // Layout notations
+  const notations = {
+    shard:   'Layout: S[(2,4,2,4) : (1@gpuid_y, 4@m, 1@gpuid_x, 1@m)]',
+    replica: 'Layout: S[(2,4,8) : (1@gpuid_y, 8@m, 1@m)] + R[2 : 1@gpuid_x]',
+    offset:  'Layout: S[(2,4,8) : (1@gpuid_y, 8@m, 1@m)] + O[1@gpuid_x]',
+  };
+  document.getElementById('n0').innerHTML = notations[ST.mode];
+
+  // Hovered cell's GPUs
+  const hovGpuSet = new Set(hovCell ? getGpus(hovCell.r, hovCell.c) : []);
+  const hovLocalKey = hovCell ? (() => {
+    const loc = getLocal(hovCell.r, hovCell.c);
+    return loc.lr + ',' + loc.lc;
+  })() : null;
+
+  // ── Left: Logical grid ──
+  const g = document.getElementById('g0');
+  g.innerHTML = '';
+  g.style.gridTemplateColumns = '24px repeat(' + N + ',1fr)';
+
+  g.appendChild(mk('div', 'hdr'));
+  for (let c = 0; c < N; c++) {
+    const h = mk('div', 'hdr'); h.textContent = 'c' + c; g.appendChild(h);
+  }
+
+  for (let r = 0; r < N; r++) {
+    const rl = mk('div', 'rl'); rl.textContent = 'r' + r; g.appendChild(rl);
+    for (let c = 0; c < N; c++) {
+      const d = mk('div', 'cell');
+      d.dataset.r = r;
+      d.dataset.c = c;
+      d.textContent = r * N + c;
+
+      // Color by data partition/tile
+      d.style.background = tileColor(r, c);
+      d.style.color = tileTextColor(r, c);
+
+      // Hover
+      if (hovCell && r === hovCell.r && c === hovCell.c) {
+        d.classList.add('hov');
+      } else if (hovCell) {
+        d.classList.add('dm');
+      }
+
+      // Shard boundaries (color-only, no width change)
+      if (r === 3) d.style.borderBottomColor = '#8C1515';
+      if (isShard && c === 3) d.style.borderRightColor = '#8C1515';
+
+      g.appendChild(d);
+    }
+  }
+
+  // ── Right: GPU mesh ──
+  const mesh = document.getElementById('mesh');
+  mesh.innerHTML = '';
+  const shape = getGpuShape();
+
+  for (let gi = 0; gi < 4; gi++) {
+    const box = mk('div', 'gpu-box');
+    // Neutral border — GPU identity shown by label only
+    box.style.borderColor = '#999';
+
+    if (hovCell) {
+      if (hovGpuSet.has(gi)) {
+        box.classList.add('hov-gpu');
+      } else {
+        box.classList.add('dm-gpu');
+      }
+    }
+
+    const lbl = mk('div', 'gpu-lbl');
+    lbl.textContent = GPU_NAMES[gi];
+    lbl.style.color = '#555';
+    box.appendChild(lbl);
+
+    const data = getGpuData(gi);
+
+    if (data.length === 0) {
+      // Empty GPU box (offset mode: no data on this GPU)
+      const empty = mk('div', 'gpu-lbl');
+      empty.textContent = '无数据（offset → gpuid_x=1）';
+      empty.style.color = '#bbb';
+      empty.style.fontWeight = '400';
+      empty.style.fontSize = '11px';
+      empty.style.padding = '16px 0';
+      box.style.opacity = '0.4';
+      box.appendChild(empty);
+    } else {
+      const gg = mk('div', 'gpu-grid');
+      gg.style.gridTemplateColumns = `repeat(${shape.cols}, 1fr)`;
+
+      for (const cell of data) {
+        const d = mk('div', 'gcell');
+        // Show logical element value
+        d.textContent = cell.r * N + cell.c;
+        // Color by tile/partition — same tile = same color across GPUs
+        d.style.background = tileColor(cell.r, cell.c);
+        d.style.color = tileTextColor(cell.r, cell.c);
+        d.style.opacity = '0.7';
+        d.dataset.r = cell.r;
+        d.dataset.c = cell.c;
+
+        const localKey = cell.lr + ',' + cell.lc;
+        if (hovCell && hovGpuSet.has(gi) && localKey === hovLocalKey) {
+          d.classList.add('hov');
+          d.style.opacity = '1';
+        } else if (hovCell && !hovGpuSet.has(gi)) {
+          d.classList.add('dm');
+        }
+
+        gg.appendChild(d);
+      }
+
+      box.appendChild(gg);
+    }
+    mesh.appendChild(box);
+  }
+
+  // ── Formula bar ──
+  const fb = document.getElementById('fb');
+  if (hovCell) {
+    const {r, c} = hovCell;
+    const gpus = getGpus(r, c);
+    const loc = getLocal(r, c);
+    let html;
+    if (isShard) {
+      const gy = Math.floor(r / 4), gx = Math.floor(c / 4);
+      const addr = localAddr(gpus[0], loc.lr, loc.lc);
+      html = `<div class="ftitle">元素 ${r*N+c} 位于（row=${r}, col=${c}）</div>`;
+      html += '<div class="fcontent">';
+      html += `addr = (row // 4) × 1@gpuid_y + (row % 4) × 4@m + (col // 4) × 1@gpuid_x + (col % 4) × 1@m<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = (${r} // 4) × 1@gpuid_y + (${r} % 4) × 4@m + (${c} // 4) × 1@gpuid_x + (${c} % 4) × 1@m<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = <b>${gy}</b>@gpuid_y + <b>${gx}</b>@gpuid_x + <b>${addr}</b>@m`;
+      html += '</div>';
+    } else if (ST.mode === 'replica') {
+      const gy = Math.floor(r / 4);
+      const addr = localAddr(gpus[0], loc.lr, loc.lc);
+      html = `<div class="ftitle">元素 ${r*N+c} 位于（row=${r}, col=${c}）</div>`;
+      html += '<div class="fcontent">';
+      html += `addr = (row // 4) × 1@gpuid_y + (row % 4) × 8@m + col × 1@m + R[2 : 1@gpuid_x]<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = (${r} // 4) × 1@gpuid_y + (${r} % 4) × 8@m + ${c} × 1@m + R[2 : 1@gpuid_x]<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = <b>${gy}</b>@gpuid_y + <b>${addr}</b>@m + R[2 : 1@gpuid_x]<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = {<b>${gy}</b>@gpuid_y + <b>0</b>@gpuid_x + <b>${addr}</b>@m, <b>${gy}</b>@gpuid_y + <b>1</b>@gpuid_x + <b>${addr}</b>@m} <span style="color:var(--dim);font-size:11px">&larr; 集合值</span>`;
+      html += '</div>';
+    } else {
+      const gy = Math.floor(r / 4);
+      const addr = localAddr(gpus[0], loc.lr, loc.lc);
+      html = `<div class="ftitle">元素 ${r*N+c} 位于（row=${r}, col=${c}）</div>`;
+      html += '<div class="fcontent">';
+      html += `addr = (row // 4) × 1@gpuid_y + (row % 4) × 8@m + col × 1@m<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = (${r} // 4) × 1@gpuid_y + (${r} % 4) × 8@m + ${c} × 1@m<br>`;
+      html += `&nbsp;&nbsp;&nbsp;&nbsp; = <b>${gy}</b>@gpuid_y + <b>1</b>@gpuid_x + <b>${addr}</b>@m`;
+      html += '</div>';
+    }
+    fb.innerHTML = html;
+  } else {
+    fb.innerHTML = '<div class="ftitle">点击 cell 查看 GPU 放置位置和存储位置</div>';
+  }
+
+  drawArrow();
+  drawLegend();
+  setTimeout(() => { drawing = false; }, 0);
+}
+
+// ── Arrow ──────────────────────────────────────────────────────
+const panels = document.getElementById('panels');
+const arrowSvg = document.getElementById('arrow');
+
+function drawArrow() {
+  arrowSvg.innerHTML = '';
+  if (!hovCell) return;
+
+  // Find the hovered cell in left grid
+  const leftCell = document.querySelector('#g0 .cell.hov');
+  // Find the hovered cell(s) in right GPU grid
+  const rightCells = document.querySelectorAll('#mesh .gcell.hov');
+  if (!leftCell || rightCells.length === 0) return;
+
+  const pr = panels.getBoundingClientRect();
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Arrow marker
+  const defs = document.createElementNS(ns, 'defs');
+  const marker = document.createElementNS(ns, 'marker');
+  marker.setAttribute('id', 'ah'); marker.setAttribute('markerWidth', '8'); marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('refX', '7'); marker.setAttribute('refY', '3'); marker.setAttribute('orient', 'auto');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', '0 0, 8 3, 0 6'); poly.setAttribute('fill', '#222');
+  marker.appendChild(poly); defs.appendChild(marker); arrowSvg.appendChild(defs);
+
+  const a = leftCell.getBoundingClientRect();
+  const x1 = a.left + a.width/2 - pr.left, y1 = a.top - pr.top;
+
+  rightCells.forEach(rc => {
+    const b = rc.getBoundingClientRect();
+    const x2 = b.left + b.width/2 - pr.left, y2 = b.top - pr.top;
+    const mx = (x1 + x2) / 2, my = -10;
+    const d = `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d); path.setAttribute('marker-end', 'url(#ah)');
+    arrowSvg.appendChild(path);
+  });
+}
+
+function clearHov() {
+  document.querySelectorAll('.cell.hov, .gcell.hov').forEach(d => d.classList.remove('hov'));
+  arrowSvg.innerHTML = '';
+  hovCell = null;
+}
+
+// Click on either panel
+panels.addEventListener('click', e => {
+  const cell = e.target.closest('.cell') || e.target.closest('.gcell');
+  if (!cell || cell.dataset.r === undefined) return;
+  const r = +cell.dataset.r, c = +cell.dataset.c;
+  if (hovCell && hovCell.r === r && hovCell.c === c) return;
+  clearHov();
+  hovCell = { r, c };
+  draw();
+});
+panels.addEventListener('mouseout', e => {
+  if (drawing) return;
+  const next = e.relatedTarget;
+  if (hovCell && !(next?.closest('.cell') || next?.closest('.gcell'))) { clearHov(); draw(); }
+});
+
+// ── Legend ──────────────────────────────────────────────────────
+function drawLegend() {
+  const isShard = ST.mode === 'shard';
+  const isOffset = ST.mode === 'offset';
+  const lg = document.getElementById('lg');
+  lg.innerHTML = '';
+  const r1 = mk('div', 'leg-row');
+
+  // Tile/partition colors
+  const nTiles = isShard ? 4 : 2;
+  for (let i = 0; i < nTiles; i++) {
+    const d = mk('div', 'li');
+    const w = mk('div', 'swtch');
+    w.style.background = TILE_COLORS[i];
+    d.appendChild(w);
+    d.appendChild(document.createTextNode('Partition ' + i));
+    r1.appendChild(d);
+  }
+
+  r1.appendChild(mk('div', 'leg-sep'));
+  const hint = mk('div', 'li');
+  hint.textContent = 'GPU cell = 逻辑元素值';
+  r1.appendChild(hint);
+
+  if (ST.mode === 'replica') {
+    r1.appendChild(mk('div', 'leg-sep'));
+    const rep = mk('div', 'li');
+    rep.textContent = '跨 GPU 同色 = replicated data';
+    r1.appendChild(rep);
+  }
+  if (isOffset) {
+    r1.appendChild(mk('div', 'leg-sep'));
+    const off = mk('div', 'li');
+    off.textContent = 'O[1@gpuid_x] = 数据放在 gpuid_x=1，不复制';
+    r1.appendChild(off);
+  }
+
+  r1.appendChild(mk('div', 'leg-sep'));
+  const bdr = mk('div', 'li');
+  const bs = mk('div', 'swtch'); bs.style.borderColor = '#8C1515'; bs.style.background = '#e2e5ea';
+  bdr.appendChild(bs); bdr.appendChild(document.createTextNode('Shard 边界'));
+  r1.appendChild(bdr);
+
+  lg.appendChild(r1);
+
+  // Mesh arrangement label
+  const r2 = mk('div', 'leg-row');
+  const ml = mk('div', 'li');
+  ml.style.fontFamily = "'SF Mono','Fira Code',monospace";
+  ml.style.fontSize = '11px';
+  ml.textContent = 'Mesh：GPU0=(y0,x0)  GPU1=(y0,x1)  GPU2=(y1,x0)  GPU3=(y1,x1)';
+  r2.appendChild(ml);
+  lg.appendChild(r2);
+}
+
+// ── Mode selector ──────────────────────────────────────────────
+document.getElementById('mode').onclick = e => {
+  const b = e.target.closest('.btn'); if (!b) return;
+  ST.mode = b.dataset.v;
+  document.querySelectorAll('#mode .btn').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  clearHov();
+  draw();
+};
+
+draw();
+</script>
+</body>
+</html>
