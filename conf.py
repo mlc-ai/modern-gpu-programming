@@ -57,9 +57,10 @@ html_theme_options = {
     "repository_url": "https://github.com/mlc-ai/modern-gpu-programming-for-mlsys",
     "repository_branch": "main",
     "path_to_docs": ".",
-    "use_repository_button": True,
+    "use_repository_button": False,
     "use_issues_button": True,
     "use_edit_page_button": True,
+    "use_source_button": True,
     "use_download_button": False,
     "use_fullscreen_button": False,
 }
