@@ -22,6 +22,9 @@ at Carnegie Mellon University. To make the ideas easier to study and easier to r
 the **TIRx** Python DSL to build real GPU kernel examples step by step. TIRx stays close to the
 hardware, which lets us reason about low-level control while still learning through runnable code.
 
+This book is open source. Contributions, corrections, and examples are welcome through the
+[GitHub repository](https://github.com/mlc-ai/modern-gpu-programming-for-mlsys).
+
 ## How This Book Is Organized
 
 - **Part I, Understanding the GPU.** This part introduces the overall organization of the GPU,
