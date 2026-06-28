@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>TMA：Tensor Memory Accelerator</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  .main { display:flex; gap:20px; max-width:1200px; margin:0 auto; align-items:center; justify-content:center;
+    position:relative; }
+  .mat-box { background:var(--surface); border-radius:10px; padding:14px; border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,.06); text-align:center; }
+  .mat-box h2 { font-size:14px; font-weight:700; margin-bottom:2px; }
+  .mat-box .dims { font-size:11px; color:var(--dim); margin-bottom:6px; font-weight:600; }
+
+  .grid { display:inline-grid; gap:1px; }
+
+  /* Global memory cells */
+  .gc {
+    border-radius:2px; display:flex; align-items:center; justify-content:center;
+    font-size:6px; font-weight:700; border:1.5px solid transparent; transition:all .12s;
+    min-width:0; color:var(--text);
+  }
+  .gc.idle { background:#dde0e4; opacity:1; }
+  .gc.inbox { background:var(--color-hover-bg); border-color:var(--accent); color:var(--color-hover-text);
+    cursor:pointer; }
+  .gc.hov { border-color:#222; border-width:2.5px; z-index:2; box-shadow:0 0 6px rgba(59,130,246,.4); }
+
+  /* Shared memory cells (swizzle-atom style) */
+  .sc {
+    border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-weight:700; border:2.5px solid transparent; transition:all .18s;
+    min-width:0; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2); line-height:1.2; cursor:pointer;
+  }
+  .sc .cv { font-size:11px; }
+  .sc .ca { font-size:8px; opacity:.8; }
+  .sc.hov { border-color:#222; z-index:2; box-shadow:0 0 8px rgba(59,130,246,.4); }
+  .sc.dm { opacity:.18; }
+
+  .arrow-box { display:flex; flex-direction:column; align-items:center; gap:6px; padding:0 8px; }
+  .tma-hw-box {
+    border: 2.5px solid #3b82f6; background: #dbeafe; border-radius: 8px;
+    padding: 8px 14px; text-align: center;
+  }
+  .tma-hw-box .tma-name { font-size: 12px; font-weight: 700; color: #1e40af; }
+  .tma-hw-box .tma-sub { font-size: 9px; color: #3b82f6; font-weight: 600; }
+  .arrow-box .arrow-line { color: #3b82f6; font-size: 22px; font-weight: 700; line-height: 1; }
+  .arrow-box .detail { font-size: 9px; color:var(--dim); font-weight:600; text-align:center; line-height:1.4; }
+
+  .arrow-svg { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; overflow:visible; }
+  .arrow-svg path { fill:none; stroke:#222; stroke-width:1.5; }
+  .arrow-svg text { font-size:11px; font-weight:600; fill:#222; font-family:inherit; }
+
+  .info { max-width:1200px; margin:14px auto 0; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:10px 16px; font-size:13px; line-height:1.6; }
+  .info b { font-weight:700; }
+  .info .formula { font-family:'SF Mono','Fira Code',monospace; color:var(--accent); font-weight:600; }
+
+  .leg { gap:0; margin-top:12px; }
+
+  .notes {
+    max-width:1200px; margin:10px auto 0; padding:0;
+    list-style:none; display:flex; gap:20px; flex-wrap:wrap;
+    font-size:12px; color:#475569;
+  }
+  .notes li {
+    display:flex; align-items:baseline; gap:5px;
+  }
+  .notes .icon { color:#3b82f6; font-weight:700; flex-shrink:0; }
+  .notes strong { color:#1e293b; }
+</style>
+</head>
+<body>
+
+<h1>TMA：从 Global Memory 搬到 Shared Memory</h1>
+<div class="sub">硬件执行的 2D copy，可选 swizzle；一条指令完成，无需 thread 逐元素搬运</div>
+
+<div class="controls">
+  <div><span class="lbl">Swizzle</span>
+    <div class="bg" id="sw">
+      <button class="btn" data-v="none">无</button>
+      <button class="btn on" data-v="128">128B</button>
+    </div>
+  </div>
+  <div><span class="lbl">Row offset</span><div class="bg" id="rc"></div></div>
+  <div><span class="lbl">Col offset</span><div class="bg" id="cc"></div></div>
+</div>
+
+<div class="main" id="main">
+  <svg class="arrow-svg" id="arrowsvg"></svg>
+
+  <div class="mat-box" style="border-color:#6b7280; background:#f3f4f6;">
+    <h2>Global Memory</h2>
+    <div class="dims">16&times;128 fp16（每个 cell = 16B = 1&times;8 fp16）</div>
+    <div class="grid" id="gg"></div>
+  </div>
+
+  <div class="arrow-box">
+    <div class="tma-hw-box">
+      <div class="tma-name">TMA Engine</div>
+      <div class="tma-sub">数据搬运引擎</div>
+    </div>
+    <div class="arrow-line">→</div>
+    <div class="detail" id="tmainfo">cp.async.bulk.tensor.2d<br>+ SWIZZLE_128B</div>
+  </div>
+
+  <div class="mat-box" style="border-color:#8b5cf6; background:#ede9fe;">
+    <h2 style="color:#5b21b6;">Shared Memory</h2>
+    <div class="dims" id="sdims">8&times;8 sectors (swizzled)</div>
+    <div class="grid" id="gs"></div>
+  </div>
+</div>
+
+<div class="info" id="infobox"></div>
+
+<div class="leg">
+  <div class="leg-row" id="sl"></div>
+</div>
+
+<ul class="notes">
+  <li><span class="icon">▸</span> <strong>单 thread dispatch</strong>（non-blocking）</li>
+  <li><span class="icon">▸</span> <strong>自动 swizzling</strong>：数据落到 Shared Memory 时已经避免 bank conflict</li>
+  <li><span class="icon">▸</span> <strong>双向支持：</strong>load（GMEM→SMEM）和 store（SMEM→GMEM）</li>
+</ul>
+
+<script>
+var BK = ['#5b9bd5','#ed9a3c','#d95555','#45b5a5','#5fb85f','#e0b828','#9d6eb5','#e87888'];
+
+var GDR = 16;          // global display rows
+var GDC = 16;          // global display cols (128 fp16 / 8 per cell)
+var BOX_R = 8;         // TMA box rows
+var BOX_C = 8;         // TMA box display cols (128 bytes / 16 bytes per cell)
+
+var ST = { sw: '128', row: 0, col: 0, hovR: -1, hovC: -1 };
+
+function mk(t, c) { var d = document.createElement(t); if (c) d.className = c; return d; }
+
+function draw() {
+  var useSw = ST.sw === '128';
+  var rOff = ST.row * BOX_R;
+  var cOff = ST.col * BOX_C;
+
+  // Concrete fp16 coordinates for current offset
+  var rowCoord = rOff;           // fp16 row
+  var colCoord = cOff * 8;       // fp16 col (cOff is in sector units, ×8 for fp16)
+
+  document.getElementById('tmainfo').innerHTML =
+    'cp.async.bulk.tensor.2d<br>(row=' + rowCoord + ', col=' + colCoord + ')' +
+    (useSw ? '<br>+ SWIZZLE_128B' : '');
+  document.getElementById('sdims').textContent =
+    BOX_R + '\u00d7' + BOX_C + ' sectors（' + (useSw ? 'swizzled' : 'linear') + '）';
+
+  // Info box with TensorMap descriptor (concrete strides)
+  var swName = useSw ? 'CU_TENSOR_MAP_SWIZZLE_128B' : 'CU_TENSOR_MAP_SWIZZLE_NONE';
+  document.getElementById('infobox').innerHTML =
+    '<b>TensorMap</b>: <span class="formula">' +
+    'dtype = f16, globalDim = [128, 16], globalStrides = [256B], ' +
+    'boxDim = [64, 8], swizzle = ' + swName + '</span><br>' +
+    '<b>Instruction</b>: <span class="formula">cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes [smem], [tensormap, {' +
+    colCoord + ', ' + rowCoord + '}], [mbar]</span><br>' +
+    '<b>注意</b>：官方规范中的 TensorMap 和 PTX 按 column-major 书写；globalDim、globalStrides、boxDim 以及 copy 指令坐标，相对 row-major 顺序都是反过来的。';
+
+  // Global memory: 16 rows x 16 cells
+  var gg = document.getElementById('gg');
+  gg.innerHTML = '';
+  gg.style.gridTemplateColumns = 'repeat(' + GDC + ', 18px)';
+  for (var r = 0; r < GDR; r++) {
+    for (var c = 0; c < GDC; c++) {
+      var d = mk('div', 'gc');
+      d.style.width = '18px';
+      d.style.height = '18px';
+      var inBox = (r >= rOff && r < rOff + BOX_R && c >= cOff && c < cOff + BOX_C);
+      if (inBox) {
+        d.classList.add('inbox');
+        var lr = r - rOff, lc = c - cOff;
+        d.dataset.lr = lr;
+        d.dataset.lc = lc;
+        if (ST.hovR === lr && ST.hovC === lc) d.classList.add('hov');
+      } else {
+        d.classList.add('idle');
+      }
+      gg.appendChild(d);
+    }
+  }
+
+  // Shared memory: 8 rows x 8 cols with row/col headers (swizzle-atom style)
+  var gs = document.getElementById('gs');
+  gs.innerHTML = '';
+  var csz = 46;
+  gs.style.gridTemplateColumns = '24px repeat(' + BOX_C + ',' + csz + 'px)';
+
+  // Column headers (physical sectors)
+  gs.appendChild(mk('div', 'hdr'));
+  for (var s = 0; s < BOX_C; s++) {
+    var h = mk('div', 'hdr');
+    h.textContent = 's' + s;
+    gs.appendChild(h);
+  }
+
+  // Rows
+  for (var r = 0; r < BOX_R; r++) {
+    var rl = mk('div', 'rl');
+    rl.textContent = 'r' + r;
+    gs.appendChild(rl);
+    for (var s = 0; s < BOX_C; s++) {
+      var d = mk('div', 'sc');
+      d.style.width = csz + 'px';
+      d.style.height = '34px';
+      d.style.background = BK[s % 8];
+      d.dataset.sr = r;
+      d.dataset.ss = s;
+      // Logical column: what global data is at physical sector s in row r
+      var logCol = useSw ? (s ^ r) : s;
+      d.innerHTML = '<span class="cv">' + logCol + '</span><span class="ca">@' + (r * 128 + s * 16) + '</span>';
+      if (ST.hovR >= 0) {
+        var destSec = useSw ? (ST.hovC ^ ST.hovR) : ST.hovC;
+        if (r === ST.hovR && s === destSec) d.classList.add('hov');
+        else d.classList.add('dm');
+      }
+      gs.appendChild(d);
+    }
+  }
+
+  // Arrow
+  drawArrow();
+
+  // Legend
+  var sl = document.getElementById('sl');
+  sl.innerHTML = '';
+  for (var i = 0; i < 8; i++) {
+    var li = mk('div', 'li');
+    var sw = mk('div', 'swtch');
+    sw.style.background = BK[i];
+    li.appendChild(sw);
+    li.appendChild(document.createTextNode('sector ' + i));
+    sl.appendChild(li);
+  }
+  var sep = mk('div', 'leg-sep');
+  sl.appendChild(sep);
+  var cv = mk('div', 'li');
+  cv.textContent = 'Cell 数值 = logical col index  |  @N = SMEM byte offset';
+  sl.appendChild(cv);
+}
+
+function drawArrow() {
+  var svg = document.getElementById('arrowsvg');
+  svg.innerHTML = '';
+  if (ST.hovR < 0) return;
+
+  var mainEl = document.getElementById('main');
+  var gCell = document.querySelector('.gc.hov');
+  var sCell = document.querySelector('.sc.hov');
+  if (!gCell || !sCell) return;
+
+  var pr = mainEl.getBoundingClientRect();
+  var ga = gCell.getBoundingClientRect();
+  var sa = sCell.getBoundingClientRect();
+  var x1 = ga.left + ga.width / 2 - pr.left;
+  var y1 = ga.top + ga.height / 2 - pr.top;
+  var x2 = sa.left + sa.width / 2 - pr.left;
+  var y2 = sa.top + sa.height / 2 - pr.top;
+  var mx = (x1 + x2) / 2;
+  var my = Math.min(y1, y2) - 40;
+
+  var ns = 'http://www.w3.org/2000/svg';
+  var defs = document.createElementNS(ns, 'defs');
+  var marker = document.createElementNS(ns, 'marker');
+  marker.setAttribute('id', 'ah');
+  marker.setAttribute('markerWidth', '8');
+  marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('refX', '7');
+  marker.setAttribute('refY', '3');
+  marker.setAttribute('orient', 'auto');
+  var poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', '0 0, 8 3, 0 6');
+  poly.setAttribute('fill', '#222');
+  marker.appendChild(poly);
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  var path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', 'M' + x1 + ',' + y1 + ' Q' + mx + ',' + my + ' ' + x2 + ',' + y2);
+  path.setAttribute('marker-end', 'url(#ah)');
+  svg.appendChild(path);
+
+  var useSw = ST.sw === '128';
+  if (useSw) {
+    var tx = document.createElementNS(ns, 'text');
+    tx.setAttribute('x', mx);
+    tx.setAttribute('y', my - 4);
+    tx.setAttribute('text-anchor', 'middle');
+    tx.textContent = 'col ' + ST.hovC + ' XOR row ' + ST.hovR + ' = sector ' + ((ST.hovC ^ ST.hovR) % 8);
+    svg.appendChild(tx);
+  }
+}
+
+(function init() {
+  document.getElementById('sw').onclick = function(e) {
+    var b = e.target.closest('.btn'); if (!b) return;
+    ST.sw = b.dataset.v;
+    document.querySelectorAll('#sw .btn').forEach(function(x) { x.classList.remove('on'); });
+    b.classList.add('on');
+    ST.hovR = -1; ST.hovC = -1;
+    draw();
+  };
+
+  // Row offset buttons: 0, 8
+  var rc = document.getElementById('rc');
+  for (var i = 0; i < GDR / BOX_R; i++) {
+    var b = mk('button', 'btn' + (i === 0 ? ' on' : ''));
+    b.textContent = i * BOX_R;
+    b.onclick = (function(v) { return function() {
+      ST.row = v;
+      rc.querySelectorAll('.btn').forEach(function(x) { x.classList.remove('on'); });
+      this.classList.add('on');
+      ST.hovR = -1; ST.hovC = -1;
+      draw();
+    }; })(i);
+    rc.appendChild(b);
+  }
+
+  // Col offset buttons: 0, 64
+  var cc = document.getElementById('cc');
+  for (var i = 0; i < GDC / BOX_C; i++) {
+    var b = mk('button', 'btn' + (i === 0 ? ' on' : ''));
+    b.textContent = i * BOX_C * 8;
+    b.onclick = (function(v) { return function() {
+      ST.col = v;
+      cc.querySelectorAll('.btn').forEach(function(x) { x.classList.remove('on'); });
+      this.classList.add('on');
+      ST.hovR = -1; ST.hovC = -1;
+      draw();
+    }; })(i);
+    cc.appendChild(b);
+  }
+
+  // Hover handlers on the main container (event delegation)
+  var mainEl = document.getElementById('main');
+  mainEl.addEventListener('mouseenter', function(e) {
+    var cell = e.target.closest('.gc.inbox');
+    if (!cell) return;
+    ST.hovR = +cell.dataset.lr;
+    ST.hovC = +cell.dataset.lc;
+    draw();
+  }, true);
+  mainEl.addEventListener('mouseleave', function(e) {
+    var cell = e.target.closest('.gc.inbox');
+    if (!cell) return;
+    ST.hovR = -1;
+    ST.hovC = -1;
+    draw();
+  }, true);
+
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tensor Core</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  .main { display:flex; gap:24px; max-width:1200px; margin:0 auto; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+  .mat-box { background:var(--surface); border-radius:10px; padding:14px; border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,.06); text-align:center; }
+  .mat-box h2 { font-size:14px; font-weight:700; margin-bottom:4px; }
+  .mat-box .dims { font-size:11px; color:var(--dim); margin-bottom:8px; font-weight:600; }
+
+  .grid { display:inline-grid; gap:1px; }
+  .cell {
+    border-radius:3px; display:flex; align-items:center; justify-content:center;
+    font-size:8px; font-weight:700; border:2px solid transparent; transition:all .15s;
+    cursor:pointer; min-width:0; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2);
+  }
+  .cell.idle { background:var(--color-cell-bg); color:var(--text); text-shadow:none; }
+  .cell.active { border-color:#222; border-width:2px; z-index:1; }
+  .cell.dim { background:#e2e5ea !important; color:#aaa !important; text-shadow:none !important; opacity:1; }
+
+  .op { font-size:22px; display:flex; align-items:center; justify-content:center; color:var(--dim);
+    font-weight:700; padding:0 6px; align-self:center; }
+  .eq { font-size:18px; display:flex; align-items:center; justify-content:center; color:var(--dim);
+    font-weight:700; padding:0 6px; align-self:center; }
+
+  .anim-bar { max-width:1200px; margin:18px auto 0; display:flex; gap:8px; justify-content:center; align-items:center; }
+  #kbar { display:flex; gap:2px; }
+  .anim-bar .lbl { font-size:12px; color:var(--dim); font-weight:600; }
+  .kb { width:36px; height:30px; border:1px solid var(--border); background:var(--surface); color:var(--text);
+    cursor:pointer; border-radius:0; font-size:12px; font-family:inherit; display:flex; align-items:center;
+    justify-content:center; transition:all .12s; font-weight:600; }
+  .kb:hover { background:#eef0f4; }
+  .kb.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .kb.done { background:#93c5fd; border-color:#93c5fd; color:#fff; }
+
+  .formula-box { max-width:1200px; margin:12px auto 0; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:10px 16px; text-align:center; font-size:14px;
+    font-family:'SF Mono','Fira Code',monospace; color:var(--accent); font-weight:600; }
+
+  .info { max-width:1200px; margin:14px auto 0; text-align:center; font-size:13px; color:var(--dim); font-weight:600; }
+
+  .leg { gap:0; margin-top:12px; }
+</style>
+</head>
+<body>
+
+<h1>tcgen05.mma</h1>
+
+<div class="controls">
+  <div><span class="lbl">Transpose A</span>
+    <div class="bg" id="ta">
+      <button class="btn on" data-v="0">No</button>
+      <button class="btn" data-v="1">Yes</button>
+    </div>
+  </div>
+  <div><span class="lbl">Transpose B</span>
+    <div class="bg" id="tb">
+      <button class="btn on" data-v="0">No</button>
+      <button class="btn" data-v="1">Yes</button>
+    </div>
+  </div>
+</div>
+<div class="controls">
+  <div><span class="lbl">M (output rows)</span>
+    <div class="bg" id="mc">
+      <button class="btn on" data-v="128" disabled>128</button>
+    </div>
+  </div>
+  <div><span class="lbl">N (output cols)</span>
+    <div class="bg" id="nc">
+      <button class="btn on" data-v="16">16</button>
+      <button class="btn" data-v="32">32</button>
+      <button class="btn" data-v="64">64</button>
+      <button class="btn" data-v="128">128</button>
+    </div>
+  </div>
+  <div><span class="lbl">K</span>
+    <div class="bg">
+      <button class="btn on" disabled>16</button>
+    </div>
+  </div>
+</div>
+<div class="controls">
+  <div><span class="lbl">Row group</span><div class="bg" id="rg"></div></div>
+  <div><span class="lbl">Col group</span><div class="bg" id="cg"></div></div>
+</div>
+
+<div class="main">
+  <div class="mat-box" style="border-color:#8b5cf6;">
+    <h2 style="color:#5b21b6" id="ah">A (SMEM)</h2>
+    <div class="dims" id="ad"></div>
+    <div class="grid" id="ga"></div>
+  </div>
+  <div class="op">&times;</div>
+  <div class="mat-box" style="border-color:#8b5cf6;">
+    <h2 style="color:#5b21b6" id="bh">B (SMEM)</h2>
+    <div class="dims" id="bd"></div>
+    <div class="grid" id="gb"></div>
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:4px; align-self:center; padding:0 4px;">
+    <div style="border:2.5px solid #059669; border-radius:8px; padding:6px 12px; text-align:center;">
+      <div style="font-size:11px; font-weight:700; color:#065f46;">Tensor Core</div>
+      <div style="font-size:8px; color:#059669; font-weight:600;">tcgen05.mma</div>
+    </div>
+    <div style="color:#059669; font-size:18px; font-weight:700; line-height:1;">&rarr;</div>
+  </div>
+  <div class="mat-box" style="border-color:#f59e0b;">
+    <h2 style="color:#c2410c">C (TMEM)</h2>
+    <div class="dims" id="cd"></div>
+    <div style="display:flex; align-items:flex-start; gap:4px;">
+      <div style="writing-mode:vertical-lr; transform:rotate(180deg); font-size:9px; font-weight:700; color:#f59e0b; display:flex; align-items:center; justify-content:center;">128 Lanes (M)</div>
+      <div>
+        <div class="grid" id="gc"></div>
+        <div style="text-align:center; font-size:9px; font-weight:700; color:#f59e0b; margin-top:2px;" id="col-label">Col (N) — allocated by <code style="font-size:8px; border:1px solid #f59e0b; border-radius:3px; padding:0 3px;">tmem.alloc</code></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="anim-bar">
+  <span class="lbl">K iteration:</span>
+  <div id="kbar"></div>
+</div>
+
+<div class="formula-box" id="fbox"></div>
+<div class="info" id="inf"></div>
+
+<div style="max-width:1200px; margin:10px auto 0; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+  <div style="border:1px solid #8b5cf6; border-radius:8px; padding:8px 14px; font-family:'SF Mono','Fira Code',monospace; font-size:11px;">
+    <div style="font-weight:700; color:#5b21b6; margin-bottom:4px;">SMEM Descriptor (A, B)</div>
+    <div style="color:#475569;">smem_desc = <span style="color:#8b5cf6;">base_addr</span> | <span style="color:#8b5cf6;">leading_byte_offset</span> | <span style="color:#8b5cf6;">stride_byte_offset</span> | <span style="color:#8b5cf6;">start_addr_off</span></div>
+  </div>
+  <div style="border:1px solid #059669; border-radius:8px; padding:8px 14px; font-family:'SF Mono','Fira Code',monospace; font-size:11px;">
+    <div style="font-weight:700; color:#065f46; margin-bottom:4px;">tcgen05.mma PTX</div>
+    <div style="color:#475569;">tcgen05.mma.cta_group::1.kind::f16 <span style="color:#059669;">taddr</span>, <span style="color:#8b5cf6;">a_desc</span>, <span style="color:#8b5cf6;">b_desc</span>, <span style="color:#f59e0b;">idesc</span>, <span style="color:#059669;">enable</span>;</div>
+  </div>
+</div>
+
+<script>
+// SMEM purple for A/B, TMEM orange for C (matching Blackwell arch slide)
+const BK = ['#8b5cf6','#8b5cf6','#d95555','#45b5a5','#f59e0b','#e0b828','#9d6eb5','#e87888'];
+const TOTAL = 128, BLOCK = 16;
+const BCOUNT = TOTAL / BLOCK; // 8x8 blocks
+// M = output rows, N = output cols. M fixed at 128 for tcgen05.
+const ST = { m: 128, n: 16, k: 0, rg: 0, cg: 0, tA: false, tB: false, playing: false, timer: null };
+
+function rebuildGroups() {
+  const mBlocks = ST.m / BLOCK; // row blocks
+  const nBlocks = ST.n / BLOCK; // col blocks
+  const mGroups = BCOUNT / mBlocks;
+  const nGroups = BCOUNT / nBlocks;
+  // Clamp
+  if (ST.rg >= mGroups) ST.rg = 0;
+  if (ST.cg >= nGroups) ST.cg = 0;
+
+  const rg = document.getElementById('rg'); rg.innerHTML = '';
+  for (let i = 0; i < mGroups; i++) {
+    const b = mk('button', 'btn' + (ST.rg === i ? ' on' : '')); b.textContent = i;
+    b.onclick = (v => () => { ST.rg = v; rg.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); draw(); })(i);
+    rg.appendChild(b);
+  }
+  const cg = document.getElementById('cg'); cg.innerHTML = '';
+  for (let i = 0; i < nGroups; i++) {
+    const b = mk('button', 'btn' + (ST.cg === i ? ' on' : '')); b.textContent = i;
+    b.onclick = (v => () => { ST.cg = v; cg.querySelectorAll('.btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); draw(); })(i);
+    cg.appendChild(b);
+  }
+}
+
+function draw() {
+  const mBlocks = ST.m / BLOCK; // row blocks
+  const nBlocks = ST.n / BLOCK; // col blocks
+  const totalK = BCOUNT;
+  const sz = Math.max(14, Math.min(28, 240 / BCOUNT));
+  const tA = ST.tA, tB = ST.tB;
+  const rOff = ST.rg * mBlocks; // row offset in blocks
+  const cOff = ST.cg * nBlocks; // col offset in blocks
+
+  // Headers
+  document.getElementById('ah').textContent = (tA ? 'A\u1d40' : 'A') + ' (SMEM)';
+  document.getElementById('bh').textContent = (tB ? 'B\u1d40' : 'B') + ' (SMEM)';
+
+  // Dims
+  const mEnd = rOff + mBlocks - 1;
+  const nEnd = cOff + nBlocks - 1;
+  if (tA) {
+    document.getElementById('ad').textContent = 'K\u00d7M: K-row ' + (ST.k < 0 ? 'all' : ST.k) + ', M-cols ' + rOff + '-' + mEnd;
+  } else {
+    document.getElementById('ad').textContent = 'M\u00d7K: M-rows ' + rOff + '-' + mEnd + ', K-col ' + (ST.k < 0 ? 'all' : ST.k);
+  }
+  if (tB) {
+    document.getElementById('bd').textContent = 'N\u00d7K: N-rows ' + cOff + '-' + nEnd + ', K-col ' + (ST.k < 0 ? 'all' : ST.k);
+  } else {
+    document.getElementById('bd').textContent = 'K\u00d7N: K-row ' + (ST.k < 0 ? 'all' : ST.k) + ', N-cols ' + cOff + '-' + nEnd;
+  }
+  document.getElementById('cd').textContent = ST.m + '\u00d7' + ST.n + ' accumulator';
+
+  // Matrix A: 8x8 grid — highlight M-rows
+  const ga = document.getElementById('ga'); ga.innerHTML = '';
+  ga.style.gridTemplateColumns = 'repeat(' + BCOUNT + ',' + sz + 'px)';
+  for (let r = 0; r < BCOUNT; r++) {
+    for (let c = 0; c < BCOUNT; c++) {
+      const d = mk('div', 'cell');
+      d.style.width = sz + 'px'; d.style.height = sz + 'px';
+      const cellM = tA ? c : r;
+      const cellK = tA ? r : c;
+      const inM = cellM >= rOff && cellM < rOff + mBlocks;
+      if (inM) {
+        if (cellK === ST.k) { d.style.background = BK[0]; d.classList.add('active'); }
+        else if (cellK < ST.k) { d.style.background = BK[0]; d.style.opacity = '.4'; }
+        else { d.classList.add('idle', 'dim'); }
+      } else {
+        d.classList.add('idle', 'dim');
+      }
+      ga.appendChild(d);
+    }
+  }
+
+  // Matrix B: 8x8 grid — highlight N-cols
+  const gb = document.getElementById('gb'); gb.innerHTML = '';
+  gb.style.gridTemplateColumns = 'repeat(' + BCOUNT + ',' + sz + 'px)';
+  for (let r = 0; r < BCOUNT; r++) {
+    for (let c = 0; c < BCOUNT; c++) {
+      const d = mk('div', 'cell');
+      d.style.width = sz + 'px'; d.style.height = sz + 'px';
+      const cellK = tB ? c : r;
+      const cellN = tB ? r : c;
+      const inN = cellN >= cOff && cellN < cOff + nBlocks;
+      if (inN) {
+        if (cellK === ST.k) { d.style.background = BK[1]; d.classList.add('active'); }
+        else if (cellK < ST.k) { d.style.background = BK[1]; d.style.opacity = '.4'; }
+        else { d.classList.add('idle', 'dim'); }
+      } else {
+        d.classList.add('idle', 'dim');
+      }
+      gb.appendChild(d);
+    }
+  }
+
+  // C: always 8×8 (128×128 TMEM), allocated region green, rest grey
+  const gc = document.getElementById('gc'); gc.innerHTML = '';
+  gc.style.gridTemplateColumns = 'repeat(' + BCOUNT + ',' + sz + 'px)';
+  for (let r = 0; r < BCOUNT; r++) {
+    for (let c = 0; c < BCOUNT; c++) {
+      const d = mk('div', 'cell');
+      d.style.width = sz + 'px'; d.style.height = sz + 'px';
+      if (r < mBlocks && c < nBlocks) {
+        d.style.background = BK[4]; d.classList.add('active');
+      } else {
+        d.classList.add('idle', 'dim');
+      }
+      gc.appendChild(d);
+    }
+  }
+  // K bar
+  const kbar = document.getElementById('kbar'); kbar.innerHTML = '';
+  const pb = mk('button', 'kb'); pb.style.width = '36px'; pb.style.fontSize = '16px';
+  pb.innerHTML = '&#x25b7;';
+  pb.onclick = () => {
+    if (ST.playing) { clearInterval(ST.timer); ST.playing = false; draw(); return; }
+    ST.k = 0; ST.playing = true; draw();
+    ST.timer = setInterval(() => {
+      ST.k++;
+      if (ST.k >= totalK) { ST.k = 0; ST.playing = false; clearInterval(ST.timer); }
+      draw();
+    }, 600);
+  };
+  kbar.appendChild(pb);
+  for (let i = 0; i < totalK; i++) {
+    const b = mk('button', 'kb');
+    if (ST.k === i) b.classList.add('on');
+    else if (i < ST.k) b.classList.add('done');
+    b.textContent = i;
+    b.onclick = (v => () => { ST.k = v; draw(); })(i);
+    kbar.appendChild(b);
+  }
+
+  // Formula
+  const fbox = document.getElementById('fbox');
+  const aRef = tA ? 'A\u1d40[k, m]' : 'A[m, k]';
+  const bRef = tB ? 'B\u1d40[n, k]' : 'B[k, n]';
+  const accum = ST.k === 0 ? 0 : 1;
+  const assign = accum ? '+=' : '=';
+  fbox.textContent = 'MMA m' + ST.m + 'n' + ST.n + 'k16, accum=' + accum + '  |  C ' + assign + ' ' + aRef + ' \u00d7 ' + bRef;
+
+  // Info
+  const inf = document.getElementById('inf');
+  inf.textContent = 'K step ' + ST.k + ' of ' + totalK + '  |  A reads ' + mBlocks + ' block' + (mBlocks > 1 ? 's' : '') + ', B reads ' + nBlocks + ' block' + (nBlocks > 1 ? 's' : '');
+}
+
+function mk(t, c) { const d = document.createElement(t); if (c) d.className = c; return d; }
+
+(function init() {
+  document.getElementById('mc').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.m = +b.dataset.v;
+    document.querySelectorAll('#mc .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    rebuildGroups(); draw();
+  };
+  document.getElementById('nc').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.n = +b.dataset.v;
+    document.querySelectorAll('#nc .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    rebuildGroups(); draw();
+  };
+  // Default M=128 selected
+  ST.m = 128;
+  document.querySelectorAll('#mc .btn').forEach(x => x.classList.remove('on'));
+  document.querySelector('#mc .btn[data-v="128"]').classList.add('on');
+  document.getElementById('ta').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.tA = b.dataset.v === '1';
+    document.querySelectorAll('#ta .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    draw();
+  };
+  document.getElementById('tb').onclick = e => {
+    const b = e.target.closest('.btn'); if (!b) return;
+    ST.tB = b.dataset.v === '1';
+    document.querySelectorAll('#tb .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    draw();
+  };
+  rebuildGroups();
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase Tracking</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 24px 28px; max-width: 1200px; min-height: 468px; margin: 0 auto; }
+
+  .phase-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 20px auto 24px;
+  }
+  .phase-block {
+    padding: 14px 20px; text-align: center;
+    font-weight: 700; font-size: 14px;
+    border: 2.5px solid; min-width: 110px;
+    cursor: pointer; transition: all .3s;
+    position: relative;
+  }
+  .phase-block:first-child { border-radius: 10px 0 0 10px; }
+  .phase-block:last-child  { border-radius: 0 10px 10px 0; }
+  .phase-block .iter-label {
+    font-size: 10px; font-weight: 600; opacity: .7;
+    font-family: 'SF Mono','Fira Code',monospace;
+  }
+
+  .phase-block.ph0 { border-color: #3b82f6; background: #dbeafe; color: #1e40af; }
+  .phase-block.ph1 { border-color: #059669; background: #d1fae5; color: #065f46; }
+  .phase-block.active { box-shadow: 0 0 0 3px rgba(0,0,0,.15); transform: scaleY(1.1); z-index: 2; }
+
+  .explain-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    margin-bottom: 18px;
+  }
+  .explain-card {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; background: var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .explain-card h3 {
+    font-size: 13px; font-weight: 700; margin-bottom: 8px;
+  }
+  .explain-card .ec-body {
+    font-size: 12.5px; line-height: 1.65; color: #475569;
+  }
+  .explain-card code {
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 11px;
+    background: #f1f5f9; padding: 1px 5px; border-radius: 3px;
+  }
+
+  .sequence {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 8px;
+  }
+  .seq-step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+  }
+  .seq-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .seq-num.blue  { background: #3b82f6; }
+  .seq-num.green { background: #059669; }
+  .seq-num.amber { background: #f59e0b; }
+
+  .anim-controls {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 16px;
+  }
+  .anim-btn {
+    padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all .15s;
+  }
+  .anim-btn:hover { background: #f1f5f9; }
+  .anim-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .anim-label {
+    font-size: 12px; font-weight: 600; color: var(--dim);
+    font-family: 'SF Mono','Fira Code',monospace;
+    min-width: 120px; text-align: center;
+  }
+
+  .bottom-note {
+    padding: 12px 16px; border-radius: 8px;
+    background: #fffbeb; border: 1px solid #fde68a;
+    font-size: 12.5px; line-height: 1.6; color: #78350f;
+  }
+  .bottom-note strong { color: #c2410c; }
+
+  @media(max-width:800px) { .explain-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>Phase Tracking</h1>
+  <p class="sub">Barrier 通过在 phase 0 和 phase 1 之间翻转，跨 iteration 复用</p>
+
+  <div class="anim-controls">
+    <button class="anim-btn" id="btnPlay">▶ 播放</button>
+    <span class="anim-label" id="animLabel"></span>
+  </div>
+
+  <div class="phase-row" id="phaseRow">
+    <div class="phase-block ph0" data-iter="0"><div class="iter-label">phase = 0</div>Iter 0</div>
+    <div class="phase-block ph1" data-iter="1"><div class="iter-label">phase = 1</div>Iter 1</div>
+    <div class="phase-block ph0" data-iter="2"><div class="iter-label">phase = 0</div>Iter 2</div>
+    <div class="phase-block ph1" data-iter="3"><div class="iter-label">phase = 1</div>Iter 3</div>
+    <div class="phase-block ph0" data-iter="4"><div class="iter-label">phase = 0</div>Iter 4</div>
+    <div class="phase-block ph1" data-iter="5"><div class="iter-label">phase = 1</div>Iter 5</div>
+    <div class="phase-block ph0" data-iter="6"><div class="iter-label">phase = 0</div>Iter 6</div>
+    <div class="phase-block ph1" data-iter="7"><div class="iter-label">phase = 1</div>Iter 7</div>
+  </div>
+
+  <div class="explain-grid">
+    <div class="explain-card">
+      <h3 style="color:#3b82f6;">工作方式</h3>
+      <div class="ec-body">
+        每个 barrier 都有一个 <strong>phase bit</strong>（0 或 1）。所有预期 arrival 到达后，barrier 会翻转 phase 并 reset，为下一次 iteration 做好准备，不需要重新初始化。
+        <div class="sequence">
+          <div class="seq-step"><div class="seq-num blue">1</div> Producer 在 barrier 上 arrive（phase 0）</div>
+          <div class="seq-step"><div class="seq-num green">2</div> Consumer 调用 <code>try_wait(phase=0)</code> 后解除阻塞</div>
+          <div class="seq-step"><div class="seq-num amber">3</div> Barrier 翻转到 phase 1，<code>phase ^= 1</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="explain-card">
+      <h3 style="color:#f59e0b;">为什么需要 Phase Tracking？</h3>
+      <div class="ec-body">
+        在 pipelined kernel 中，barrier 会在 K-loop 的每个 iteration 中复用。Phase tracking 解决的问题是：<strong>“这次 barrier 触发对应的是 iteration <em>i</em>，还是 iteration <em>i-1</em>？”</strong>
+        <div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border-radius:6px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;line-height:1.6;">
+          phase_tma = 0<br>
+          for k in range(K):<br>
+          &nbsp;&nbsp;try_wait(tma_bar, <strong>phase_tma</strong>)<br>
+          &nbsp;&nbsp;phase_tma ^= 1 &nbsp;# flip
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+(function() {
+  var blocks = document.querySelectorAll('.phase-block');
+  var btn = document.getElementById('btnPlay');
+  var label = document.getElementById('animLabel');
+  var timer = null;
+  var step = -1;
+
+  function clearAll() {
+    blocks.forEach(function(b) { b.classList.remove('active'); });
+    label.textContent = '';
+  }
+
+  function highlight(s) {
+    clearAll();
+    if (s >= 0 && s < blocks.length) {
+      blocks[s].classList.add('active');
+      var ph = s % 2;
+      label.textContent = 'Iteration ' + s + '  |  phase = ' + ph;
+    }
+  }
+
+  function play() {
+    stop();
+    step = -1;
+    btn.textContent = '⏸ 暂停';
+    btn.classList.add('active');
+    timer = setInterval(function() {
+      step++;
+      if (step >= blocks.length) { stop(); return; }
+      highlight(step);
+    }, 800);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    btn.textContent = '▶ 播放';
+    btn.classList.remove('active');
+  }
+
+  btn.addEventListener('click', function() {
+    if (timer) { stop(); clearAll(); }
+    else play();
+  });
+
+  blocks.forEach(function(b) {
+    b.addEventListener('click', function() {
+      stop();
+      highlight(parseInt(b.dataset.iter));
+    });
+  });
+})();
+</script>
+</body>
+</html>

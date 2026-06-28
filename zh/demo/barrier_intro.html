@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Async Coordination: Barriers</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 14px 28px; max-width: 1300px; margin: 0 auto; }
+
+  .wrap { position: relative; max-width: 1060px; margin: 4px auto 0; }
+
+  /* ── Grid layout ─────────────────────────────────────── */
+  .pg {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto;
+    row-gap: 0; column-gap: 0;
+    justify-items: center; align-items: center;
+  }
+
+  /* ── Pipeline stage boxes ────────────────────────────── */
+  .sb {
+    padding: 7px 8px; border-radius: 8px; text-align: center;
+    font-weight: 700; font-size: 12px; border: 2.5px solid;
+    width: 68px; height: 40px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity .3s;
+  }
+  .sb small { font-size: 10px; font-weight: 500; }
+
+  .s-gmem { border-color: #6b7280; background: #f3f4f6; color: #374151; }
+  .s-smem { border-color: #8b5cf6; background: #ede9fe; color: #5b21b6; }
+  .s-tmem { border-color: #f59e0b; background: #fffbeb; color: #c2410c; }
+  .s-reg  { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+
+  /* ── Pipeline arrows ─────────────────────────────────── */
+  .ah {
+    display: flex; align-items: center; flex-direction: column;
+    gap: 1px; padding: 0 1px;
+    transition: opacity .3s;
+  }
+  .ah svg { width: 26px; height: 13px; }
+  .al {
+    font-size: 8px; font-weight: 700; white-space: nowrap;
+    padding: 1px 3px; border-radius: 3px;
+  }
+  .al.c-blue  { color: #3b82f6; }
+  .al.c-green { color: #059669; }
+  .al.c-amber { color: #f59e0b; }
+  .al.c-red   { color: #dc2626; }
+
+  /* ── WG bars ─────────────────────────────────────────── */
+  .wg-bar {
+    border: 2.5px solid; border-radius: 8px;
+    padding: 5px 6px; text-align: center;
+    justify-self: stretch; margin: 0 2px;
+    transition: opacity .3s, box-shadow .3s;
+  }
+  .wg-bar .wg-name { font-size: 10px; font-weight: 700; }
+  .wg-bar .wg-detail { font-size: 8px; font-weight: 600; }
+
+  .wg-bar.wg0 { border-color: #3b82f6; }
+  .wg-bar.wg0 .wg-name { color: #1e40af; }
+  .wg-bar.wg0 .wg-detail { color: #3b82f6; }
+
+  .wg-bar.wg1 { border-color: #059669; }
+  .wg-bar.wg1 .wg-name { color: #065f46; }
+  .wg-bar.wg1 .wg-detail { color: #059669; }
+
+  /* ── HW + mbar boxes — same size as pipeline stage boxes ── */
+  .unit-box {
+    padding: 7px 8px; border-radius: 8px; text-align: center;
+    font-weight: 700; font-size: 12px; border: 2.5px solid;
+    width: 68px; height: 40px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity .3s, box-shadow .3s;
+  }
+  .unit-box small { font-size: 10px; font-weight: 500; }
+  .unit-box.tma  { border-color: #3b82f6; background: #dbeafe; color: #1e40af; }
+  .unit-box.tc   { border-color: #059669; background: #dcfce7; color: #065f46; }
+  .unit-box.mbar { border-color: #f59e0b; background: #fffbeb; color: #c2410c; }
+
+  /* ── Dim / highlight states ──────────────────────────── */
+  .dimmed { opacity: 0.15 !important; }
+  .hl { box-shadow: 0 0 0 3px rgba(59,130,246,.35); }
+  .hl-green { box-shadow: 0 0 0 3px rgba(5,150,105,.35); }
+  .hl-amber { box-shadow: 0 0 0 3px rgba(245,158,11,.35); }
+
+  /* ── SVG overlay ───────────────────────────────────── */
+  .svg-overlay {
+    position: absolute; top: 0; left: 0;
+    pointer-events: none; z-index: 10;
+  }
+
+  /* ── Step bar ──────────────────────────────────────── */
+  .step-bar {
+    max-width: 1060px; margin: 14px auto 0;
+    display: flex; gap: 3px; justify-content: center; align-items: center;
+  }
+  .step-bar .lbl { font-size: 12px; color: var(--dim); font-weight: 600; margin-right: 6px; }
+  .sb-btn {
+    height: 30px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; border-radius: 0; font-size: 11px; font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .12s; font-weight: 600; padding: 0 10px;
+  }
+  .sb-btn:hover { background: #eef0f4; }
+  .sb-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .sb-btn.done { background: #93c5fd; border-color: #93c5fd; color: #fff; }
+
+  /* ── Info text ─────────────────────────────────────── */
+  .info {
+    max-width: 1060px; margin: 10px auto 0; text-align: center;
+    font-size: 13px; color: var(--dim); font-weight: 600; min-height: 20px;
+  }
+
+  /* ── Notes ─────────────────────────────────────────── */
+  .notes {
+    max-width: 1060px; margin: 12px auto 0; padding: 10px 16px;
+    list-style: disc; display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px; color: #475569;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--surface);
+  }
+  .notes li { margin-left: 16px; }
+  .notes strong { color: #1e293b; }
+</style>
+</head>
+<body>
+
+<h1>Async Coordination: Barriers</h1>
+<div class="sub">HW units signal mbarrier on completion &mdash; warp groups wait before proceeding</div>
+
+<div class="wrap" id="wrap">
+<div class="pg">
+  <!-- ── Row 1: Pipeline ────────────────────────────────── -->
+  <div style="grid-column:1;grid-row:1;" class="sb s-gmem" data-el="pipe" data-c="1">GMEM<br><small>A, B</small></div>
+  <div style="grid-column:2;grid-row:1;" class="ah" data-el="pipe" data-c="2">
+    <svg viewBox="0 0 40 20"><path d="M2 10H30" stroke="#3b82f6" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#3b82f6"/></svg>
+    <div class="al c-blue">TMA load</div>
+  </div>
+  <div style="grid-column:3;grid-row:1;" class="sb s-smem" data-el="pipe" data-c="3">SMEM</div>
+  <div style="grid-column:4;grid-row:1;" class="ah" data-el="pipe" data-c="4">
+    <svg viewBox="0 0 40 20"><path d="M2 10H30" stroke="#059669" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#059669"/></svg>
+    <div class="al c-green">tcgen05.mma</div>
+  </div>
+  <div style="grid-column:5;grid-row:1;" class="sb s-tmem" data-el="pipe" data-c="5">TMEM<br><small>accum</small></div>
+  <div style="grid-column:6;grid-row:1;" class="ah" data-el="pipe" data-c="6">
+    <svg viewBox="0 0 40 20"><path d="M2 10H30" stroke="#f59e0b" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#f59e0b"/></svg>
+    <div class="al c-amber">tcgen05.ld</div>
+  </div>
+  <div style="grid-column:7;grid-row:1;" class="sb s-reg" data-el="pipe" data-c="7">Reg<br><small>cast</small></div>
+  <div style="grid-column:8;grid-row:1;" class="ah" data-el="pipe" data-c="8">
+    <svg viewBox="0 0 40 20"><path d="M2 10H30" stroke="#dc2626" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#dc2626"/></svg>
+    <div class="al c-red">store</div>
+  </div>
+  <div style="grid-column:9;grid-row:1;" class="sb s-smem" data-el="pipe" data-c="9">SMEM</div>
+  <div style="grid-column:10;grid-row:1;" class="ah" data-el="pipe" data-c="10">
+    <svg viewBox="0 0 40 20"><path d="M2 10H30" stroke="#3b82f6" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#3b82f6"/></svg>
+    <div class="al c-blue">TMA store</div>
+  </div>
+  <div style="grid-column:11;grid-row:1;" class="sb s-gmem" data-el="pipe" data-c="11">GMEM<br><small>D</small></div>
+
+  <!-- ── Row 2: Spacer ──────────────────────────────────── -->
+  <div style="grid-column:1/-1;grid-row:2;height:8px;"></div>
+
+  <!-- ── Row 3: WG bars ─────────────────────────────────── -->
+  <div style="grid-column:1/4;grid-row:3;" class="wg-bar wg0" id="wg0">
+    <div class="wg-name">Warp 0 &mdash; Producer</div>
+    <div class="wg-detail">TMA dispatch</div>
+  </div>
+  <div style="grid-column:4/6;grid-row:3;" class="wg-bar wg1" id="wg1">
+    <div class="wg-name">Warp 1 &mdash; Consumer</div>
+    <div class="wg-detail">tcgen05 dispatch</div>
+  </div>
+  <div style="grid-column:9/12;grid-row:3;" class="wg-bar wg0" id="wg0next">
+    <div class="wg-name">Warp 0 &mdash; next phase</div>
+    <div class="wg-detail">TMA dispatch</div>
+  </div>
+
+  <!-- ── Row 4: Spacer ──────────────────────────────────── -->
+  <div style="grid-column:1/-1;grid-row:4;height:20px;"></div>
+
+  <!-- ── Row 5: TMA + mbar (producer side) | TC + mbar (consumer side) ── -->
+  <div style="grid-column:1;grid-row:5;" class="unit-box tma" id="boxTMA">TMA<br><small>Engine</small></div>
+  <div style="grid-column:2;grid-row:5;" class="ah" id="complete-txArrow">
+    <svg viewBox="0 0 40 20"><path d="M2 10H30" stroke="#64748b" stroke-width="2.5" fill="none"/><polygon points="28,5 38,10 28,15" fill="#64748b"/></svg>
+    <div class="al" style="color:#64748b;">complete-tx</div>
+  </div>
+  <div style="grid-column:3;grid-row:5;" class="unit-box mbar" id="mbarTMA">mbar<br><small>TMA ready</small></div>
+  <div style="grid-column:5;grid-row:5;" class="unit-box tc" id="boxTC">Tensor<br><small>Core</small></div>
+  <div style="grid-column:6;grid-row:5;" class="unit-box mbar" id="mbarSMEM">mbar<br><small>SMEM free</small></div>
+</div>
+
+<!-- SVG overlay -->
+<svg class="svg-overlay" id="arrowSvg">
+  <defs>
+    <marker id="ah-gray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#64748b"/>
+    </marker>
+    <marker id="ah-blue-sm" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+      <polygon points="0 0,6 2,0 4" fill="#3b82f6"/>
+    </marker>
+    <marker id="ah-green-sm" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+      <polygon points="0 0,6 2,0 4" fill="#059669"/>
+    </marker>
+  </defs>
+  <!-- Warp → HW dispatch arrows -->
+  <path id="arrW0TMA" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue-sm)"/>
+  <path id="arrW1TC" stroke="#059669" stroke-width="1.5" fill="none" marker-end="url(#ah-green-sm)"/>
+  <!-- commit arrow (TC → mbar SMEM free) -->
+  <path id="arrCommit" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#ah-gray)"/>
+  <text id="lblCommit" fill="#64748b" font-size="8" font-weight="700" font-family="inherit"></text>
+  <!-- try_wait arrows -->
+  <path id="arrTMA" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#ah-gray)"/>
+  <text id="lblTMA" fill="#64748b" font-size="9" font-weight="700" font-family="inherit"></text>
+  <path id="arrTC" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#ah-gray)"/>
+  <text id="lblTC" fill="#64748b" font-size="9" font-weight="700" font-family="inherit"></text>
+</svg>
+</div>
+
+<!-- ── Step bar ──────────────────────────────────────── -->
+<div class="step-bar" id="stepBar">
+  <span class="lbl">Coordination:</span>
+</div>
+<div class="info" id="info"></div>
+
+<ul class="notes">
+  <li><strong>mbarrier (mbar)</strong> &mdash; used to coordinate asynchronous operations across threads and hardware units</li>
+  <li>Different warps run in parallel on different stages of operations</li>
+</ul>
+
+<script>
+(function() {
+  /* ── Step definitions ──────────────────────────────── */
+  var STEPS = [
+    { name: 'All',
+      desc: 'Warp 0 (producer) and Warp 1 (consumer) run in parallel, coordinated by mbarriers',
+      hl: ['wg0','wg1','wg0next','boxTMA','complete-txArrow','mbarTMA','boxTC','mbarSMEM'],
+      hlClass: {},
+      pipeCols: [1,2,3,4,5,6,7,8,9,10,11],
+      svgShow: ['arrW0TMA','arrW1TC','arrCommit','lblCommit','arrTMA','lblTMA','arrTC','lblTC'] },
+    { name: 'TMA → Consumer',
+      desc: 'TMA completes GMEM→SMEM, complete-txs on mbar(TMA ready) — Warp 1 try_wait before MMA',
+      hl: ['wg0','boxTMA','complete-txArrow','mbarTMA','wg1'],
+      hlClass: { boxTMA: 'hl', mbarTMA: 'hl-amber', wg1: 'hl-green' },
+      pipeCols: [1,2,3,4],
+      svgShow: ['arrW0TMA','arrTMA','lblTMA'] },
+    { name: 'TC → Producer',
+      desc: 'Tensor Core consumes SMEM, commits on mbar(SMEM free) — Warp 0 try_wait before next load',
+      hl: ['wg1','boxTC','mbarSMEM','wg0next'],
+      hlClass: { boxTC: 'hl-green', mbarSMEM: 'hl-amber', wg0next: 'hl' },
+      pipeCols: [3,4,5,9,10,11],
+      svgShow: ['arrW1TC','arrCommit','lblCommit','arrTC','lblTC'] }
+  ];
+
+  var SVG_IDS = ['arrW0TMA','arrW1TC','arrCommit','lblCommit','arrTMA','lblTMA','arrTC','lblTC'];
+  var DOM_IDS = ['wg0','wg1','wg0next','boxTMA','complete-txArrow','mbarTMA','boxTC','mbarSMEM'];
+  var PIPE_ELS; // pipeline row elements
+
+  var curStep = 0;
+  var stepBtns = [];
+
+  function applyStep(idx) {
+    curStep = idx;
+    var s = STEPS[idx];
+
+    // Pipeline: highlight active columns, dim others
+    if (!PIPE_ELS) PIPE_ELS = document.querySelectorAll('[data-el="pipe"]');
+    PIPE_ELS.forEach(function(el) {
+      var c = parseInt(el.dataset.c);
+      el.classList.toggle('dimmed', s.pipeCols.indexOf(c) < 0);
+    });
+
+    // DOM elements: dim all, then highlight selected
+    DOM_IDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      el.classList.remove('dimmed', 'hl', 'hl-green', 'hl-amber');
+      if (s.hl.indexOf(id) < 0) {
+        el.classList.add('dimmed');
+      } else if (s.hlClass[id]) {
+        el.classList.add(s.hlClass[id]);
+      }
+    });
+
+    // SVG: hide all, show selected
+    SVG_IDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      el.style.opacity = s.svgShow.indexOf(id) >= 0 ? '1' : '0';
+    });
+
+    // Update buttons
+    stepBtns.forEach(function(b, i) {
+      b.classList.remove('on', 'done');
+      if (i === idx) b.classList.add('on');
+      else if (i < idx && idx > 0) b.classList.add('done');
+    });
+
+    // Info
+    document.getElementById('info').textContent = s.desc;
+  }
+
+  /* ── Build coordination stage buttons ────────────────── */
+  var bar = document.getElementById('stepBar');
+  STEPS.forEach(function(s, i) {
+    var b = document.createElement('button');
+    b.className = 'sb-btn';
+    b.textContent = s.name;
+    b.onclick = function() { applyStep(i); };
+    bar.appendChild(b);
+    stepBtns.push(b);
+  });
+
+  /* ── Arrow positioning ─────────────────────────────── */
+  function positionArrows() {
+    var wrap = document.getElementById('wrap');
+    var svg = document.getElementById('arrowSvg');
+    var wr = wrap.getBoundingClientRect();
+
+    svg.setAttribute('width', wr.width);
+    svg.setAttribute('height', wr.height);
+
+    function rel(el) {
+      var r = el.getBoundingClientRect();
+      return {
+        top: r.top - wr.top, bottom: r.bottom - wr.top,
+        left: r.left - wr.left, right: r.right - wr.left,
+        cx: (r.left + r.right) / 2 - wr.left,
+        cy: (r.top + r.bottom) / 2 - wr.top
+      };
+    }
+
+    var wg0      = rel(document.getElementById('wg0'));
+    var wg1      = rel(document.getElementById('wg1'));
+    var wg0next  = rel(document.getElementById('wg0next'));
+    var boxTMA   = rel(document.getElementById('boxTMA'));
+    var boxTC    = rel(document.getElementById('boxTC'));
+    var mbarTMA  = rel(document.getElementById('mbarTMA'));
+    var mbarSMEM = rel(document.getElementById('mbarSMEM'));
+
+    /* Warp 0 → TMA */
+    document.getElementById('arrW0TMA').setAttribute('d',
+      'M' + boxTMA.cx + ',' + (wg0.bottom + 2) + ' L' + boxTMA.cx + ',' + (boxTMA.top - 2));
+
+    /* Warp 1 → TC */
+    document.getElementById('arrW1TC').setAttribute('d',
+      'M' + boxTC.cx + ',' + (wg1.bottom + 2) + ' L' + boxTC.cx + ',' + (boxTC.top - 2));
+
+    /* Commit: TC → mbar(SMEM free) */
+    document.getElementById('arrCommit').setAttribute('d',
+      'M' + (boxTC.right + 3) + ',' + boxTC.cy + ' L' + (mbarSMEM.left - 3) + ',' + mbarSMEM.cy);
+    var lblC = document.getElementById('lblCommit');
+    lblC.textContent = 'commit';
+    lblC.setAttribute('x', (boxTC.right + mbarSMEM.left) / 2);
+    lblC.setAttribute('y', boxTC.cy - 6);
+    lblC.setAttribute('text-anchor', 'middle');
+
+    /* try_wait 1: mbar(TMA ready) → Warp 1 bottom-left */
+    var x1 = mbarTMA.right + 3, y1 = mbarTMA.cy;
+    var x2 = wg1.left + 6, y2 = wg1.bottom - 3;
+    document.getElementById('arrTMA').setAttribute('d', 'M'+x1+','+y1+' L'+x2+','+y2);
+    var lbl1 = document.getElementById('lblTMA');
+    lbl1.textContent = 'try_wait';
+    lbl1.setAttribute('x', (x1+x2)/2 + 8);
+    lbl1.setAttribute('y', (y1+y2)/2 + 10);
+
+    /* try_wait 2: mbar(SMEM free) → Warp 0 next bottom-left */
+    var x3 = mbarSMEM.right + 3, y3 = mbarSMEM.cy;
+    var x4 = wg0next.left + 6, y4 = wg0next.bottom - 3;
+    document.getElementById('arrTC').setAttribute('d', 'M'+x3+','+y3+' L'+x4+','+y4);
+    var lbl2 = document.getElementById('lblTC');
+    lbl2.textContent = 'try_wait';
+    lbl2.setAttribute('x', (x3+x4)/2 + 8);
+    lbl2.setAttribute('y', (y3+y4)/2 + 10);
+  }
+
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      positionArrows();
+      applyStep(0);
+    });
+  });
+  window.addEventListener('resize', positionArrows);
+})();
+</script>
+</body>
+</html>

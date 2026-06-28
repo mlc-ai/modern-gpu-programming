@@ -1,0 +1,60 @@
+/* Zoomable viewer for embedded slide demos (see demo-embed.js). */
+.demo-embed {
+  margin: 0.6rem 0;
+  border: 1px solid var(--pst-color-border, #d0d0d0);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.demo-toolbar {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  padding: 4px 6px;
+  background: var(--pst-color-surface, #f3f3f3);
+  border-bottom: 1px solid var(--pst-color-border, #e2e2e2);
+}
+.demo-zoom-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--pst-color-border, #cccccc);
+  border-radius: 4px;
+  background: var(--pst-color-on-background, #ffffff);
+  color: var(--pst-color-text-base, #333333);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.demo-zoom-btn:hover {
+  background: var(--pst-color-surface, #ececec);
+}
+.demo-viewport {
+  /* Grow vertically with the iframe (auto-resized to its content); scroll only
+     horizontally when the demo is zoomed wider than the column. No max-height —
+     the frame follows the content height instead of capping and scrolling. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.demo-stage {
+  position: relative;
+  overflow: hidden;
+}
+.demo-stage iframe {
+  display: block;
+  border: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+/* Full-screen view (toggled by the middle toolbar button). The embed fills the
+   screen; the viewport takes the remaining height and scrolls. The stage/iframe
+   are still sized by apply(): on enter, recompute() refits the demo to the
+   full-screen width, and the zoom buttons keep adjusting from there. */
+.demo-embed.demo-fs {
+  background: var(--pst-color-on-background, #ffffff);
+  display: flex;
+  flex-direction: column;
+}
+.demo-embed.demo-fs .demo-viewport { flex: 1 1 auto; overflow: auto; }

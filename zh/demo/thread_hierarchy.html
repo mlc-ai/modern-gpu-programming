@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwell Thread Hierarchy</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 16px 28px; max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 28px; line-height: 1.1; margin-bottom: 6px; }
+  .hier { max-width: 860px; margin: 0 auto; }
+
+  .lvl { border: 2.5px solid; border-radius: 12px; position: relative;
+         padding: 26px 14px 14px; margin: 0; cursor: pointer; transition: box-shadow .15s; }
+  .lvl + .lvl, .lvl .lvl { margin-top: 0; }
+  .lvl.sel { box-shadow: 0 0 0 3px rgba(0,0,0,.16); }
+  .tag { position: absolute; top: -11px; left: 14px; color: #fff; font-size: 11px;
+         font-weight: 700; padding: 2px 10px; border-radius: 4px; letter-spacing: .02em; }
+
+  /* one color per level (viz-base group palette) */
+  .lvl-grid    { border-color:#9d6eb5; background:#f6f1fa; }      .lvl-grid    > .tag{ background:#9d6eb5; }
+  .lvl-cluster { border-color:#5b9bd5; background:#eef5fc; }      .lvl-cluster > .tag{ background:#5b9bd5; }
+  .lvl-cta     { border-color:#45b5a5; background:#ecfaf7; }      .lvl-cta     > .tag{ background:#2f8f82; }
+  .lvl-wg      { border-color:#ed9a3c; background:#fef4e7; }      .lvl-wg      > .tag{ background:#d97e1f; }
+  .lvl-warp    { border-color:#5fb85f; background:#eefaee; }      .lvl-warp    > .tag{ background:#4a9a4a; }
+
+  .ctarow { display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:stretch; }
+  .warprow { display:grid; grid-template-columns: 1fr auto auto auto; gap:8px; align-items:stretch; }
+  .ghost { border:2px dashed #b6bdc6; border-radius:10px; background:#f4f6f8; color:#8a93a0;
+           font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;
+           min-width:46px; padding:8px; text-align:center; }
+
+  .threads { display:grid; grid-template-columns: repeat(16, 1fr); gap:3px; margin-top:4px; cursor:pointer; }
+  .th { height:14px; border-radius:3px; background:#d95555; opacity:.85; }
+  .threads.sel .th { box-shadow: inset 0 0 0 1px #7a2222; }
+
+  .detail-panel { max-width:860px; margin:14px auto 0; border:1px solid var(--border);
+    border-radius:10px; background:var(--surface); padding:10px 16px; min-height:88px; }
+  .dp-title { font-size:12.5px; font-weight:700; margin-bottom:4px; }
+  .dp-body  { font-size:12px; line-height:1.6; color:#475569; }
+  .dp-body code { font-family:'SF Mono','Fira Code',monospace; font-size:11px; background:#f1f5f9;
+    padding:1px 5px; border-radius:3px; color:#1e293b; }
+</style>
+</head>
+<body>
+<h1>Blackwell Thread Hierarchy</h1>
+<div class="sub">click a level — thread → warp → warpgroup → CTA → cluster → grid</div>
+
+<div class="hier" id="hier">
+  <div class="lvl lvl-grid" data-k="grid">
+    <span class="tag">GRID — one kernel launch</span>
+    <div class="lvl lvl-cluster" data-k="cluster">
+      <span class="tag">CLUSTER — CTAs across SMs (DSMEM)</span>
+      <div class="ctarow">
+        <div class="lvl lvl-cta" data-k="cta">
+          <span class="tag">CTA — thread block · one SM</span>
+          <div class="lvl lvl-wg" data-k="wg">
+            <span class="tag">WARPGROUP — 4 warps · 128 threads</span>
+            <div class="warprow">
+              <div class="lvl lvl-warp" data-k="warp">
+                <span class="tag">WARP — 32 threads (SIMT)</span>
+                <div class="threads" id="threads" data-k="thread"></div>
+              </div>
+              <div class="ghost">warp 1</div>
+              <div class="ghost">warp 2</div>
+              <div class="ghost">warp 3</div>
+            </div>
+          </div>
+        </div>
+        <div class="ghost">CTA 1<br>…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-panel" id="detail">
+  <div class="dp-title" id="dpt"></div>
+  <div class="dp-body" id="dpb"></div>
+</div>
+
+<script>
+(function () {
+  var INFO = {
+    thread:  ["Thread", "The scalar unit of execution, identified by its <b>lane ID</b> within the warp. Each lane keeps its own registers and data."],
+    warp:    ["Warp — 32 threads", "32 threads execute in lockstep (<b>SIMT</b>): the lanes issue the same instruction together, each with its own registers."],
+    wg:      ["Warpgroup — 4 warps, 128 threads", "Introduced on Hopper as the unit for warpgroup-level MMA (<code>wgmma</code>); on Blackwell it is also the cooperation unit for <b>Tensor Memory</b> access (128 threads move a TMEM tile together)."],
+    cta:     ["CTA — Cooperative Thread Array", "A CUDA thread block. Runs on a single <b>SM</b> and owns that SM's shared memory. One or more warpgroups."],
+    cluster: ["Cluster — cooperating CTAs", "A group of CTAs (on different SMs) that can synchronize and read each other's shared memory (<b>DSMEM</b>). Blackwell adds dynamic scheduling (CLC) and 2-CTA cooperative MMA."],
+    grid:    ["Grid — one kernel launch", "All threads of a kernel launch, organized into clusters (or directly CTAs). Tiles of the problem are mapped onto CTAs/clusters."]
+  };
+  var hier = document.getElementById('hier');
+  var threads = document.getElementById('threads');
+  for (var i = 0; i < 32; i++) { var t = document.createElement('div'); t.className = 'th'; threads.appendChild(t); }
+  var dpt = document.getElementById('dpt'), dpb = document.getElementById('dpb');
+
+  function select(k) {
+    hier.querySelectorAll('.sel').forEach(function (e) { e.classList.remove('sel'); });
+    var el = hier.querySelector('[data-k="' + k + '"]');
+    if (el) el.classList.add('sel');
+    dpt.innerHTML = INFO[k][0];
+    dpb.innerHTML = INFO[k][1];
+  }
+  hier.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-k]');
+    if (el) select(el.dataset.k);
+  });
+  select('wg');   // default: the warpgroup (the key Hopper/Blackwell unit)
+})();
+</script>
+</body>
+</html>

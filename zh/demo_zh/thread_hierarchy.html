@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackwell 线程层级</title>
+<link rel="stylesheet" href="../viz-base.css">
+<script src="../viz-base.js"></script>
+<style>
+  body { padding: 16px 28px; max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 28px; line-height: 1.1; margin-bottom: 6px; }
+  .hier { max-width: 860px; margin: 0 auto; }
+
+  .lvl { border: 2.5px solid; border-radius: 12px; position: relative;
+         padding: 26px 14px 14px; margin: 0; cursor: pointer; transition: box-shadow .15s; }
+  .lvl + .lvl, .lvl .lvl { margin-top: 0; }
+  .lvl.sel { box-shadow: 0 0 0 3px rgba(0,0,0,.16); }
+  .tag { position: absolute; top: -11px; left: 14px; color: #fff; font-size: 11px;
+         font-weight: 700; padding: 2px 10px; border-radius: 4px; letter-spacing: .02em; }
+
+  /* one color per level (viz-base group palette) */
+  .lvl-grid    { border-color:#9d6eb5; background:#f6f1fa; }      .lvl-grid    > .tag{ background:#9d6eb5; }
+  .lvl-cluster { border-color:#5b9bd5; background:#eef5fc; }      .lvl-cluster > .tag{ background:#5b9bd5; }
+  .lvl-cta     { border-color:#45b5a5; background:#ecfaf7; }      .lvl-cta     > .tag{ background:#2f8f82; }
+  .lvl-wg      { border-color:#ed9a3c; background:#fef4e7; }      .lvl-wg      > .tag{ background:#d97e1f; }
+  .lvl-warp    { border-color:#5fb85f; background:#eefaee; }      .lvl-warp    > .tag{ background:#4a9a4a; }
+
+  .ctarow { display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:stretch; }
+  .warprow { display:grid; grid-template-columns: 1fr auto auto auto; gap:8px; align-items:stretch; }
+  .ghost { border:2px dashed #b6bdc6; border-radius:10px; background:#f4f6f8; color:#8a93a0;
+           font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;
+           min-width:46px; padding:8px; text-align:center; }
+
+  .threads { display:grid; grid-template-columns: repeat(16, 1fr); gap:3px; margin-top:4px; cursor:pointer; }
+  .th { height:14px; border-radius:3px; background:#d95555; opacity:.85; }
+  .threads.sel .th { box-shadow: inset 0 0 0 1px #7a2222; }
+
+  .detail-panel { max-width:860px; margin:14px auto 0; border:1px solid var(--border);
+    border-radius:10px; background:var(--surface); padding:10px 16px; min-height:88px; }
+  .dp-title { font-size:12.5px; font-weight:700; margin-bottom:4px; }
+  .dp-body  { font-size:12px; line-height:1.6; color:#475569; }
+  .dp-body code { font-family:'SF Mono','Fira Code',monospace; font-size:11px; background:#f1f5f9;
+    padding:1px 5px; border-radius:3px; color:#1e293b; }
+</style>
+</head>
+<body>
+<h1>Blackwell 线程层级</h1>
+<div class="sub">点击一个层级 — thread → warp → warpgroup → CTA → cluster → grid</div>
+
+<div class="hier" id="hier">
+  <div class="lvl lvl-grid" data-k="grid">
+    <span class="tag">GRID — 一次 kernel launch</span>
+    <div class="lvl lvl-cluster" data-k="cluster">
+      <span class="tag">CLUSTER — 跨 SM 的 CTAs（DSMEM）</span>
+      <div class="ctarow">
+        <div class="lvl lvl-cta" data-k="cta">
+          <span class="tag">CTA — thread block · 一个 SM</span>
+          <div class="lvl lvl-wg" data-k="wg">
+            <span class="tag">WARPGROUP — 4 个 warp · 128 个 thread</span>
+            <div class="warprow">
+              <div class="lvl lvl-warp" data-k="warp">
+                <span class="tag">WARP — 32 个 thread（SIMT）</span>
+                <div class="threads" id="threads" data-k="thread"></div>
+              </div>
+              <div class="ghost">warp 1</div>
+              <div class="ghost">warp 2</div>
+              <div class="ghost">warp 3</div>
+            </div>
+          </div>
+        </div>
+        <div class="ghost">CTA 1<br>…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-panel" id="detail">
+  <div class="dp-title" id="dpt"></div>
+  <div class="dp-body" id="dpb"></div>
+</div>
+
+<script>
+(function () {
+  var INFO = {
+    thread:  ["Thread", "标量执行单元，通过 warp 内的 <b>lane ID</b> 标识。每个 lane 都保留自己的寄存器和数据。"],
+    warp:    ["Warp — 32 个 thread", "32 个 thread 以 lockstep 方式执行（<b>SIMT</b>）：各个 lane 一起发出同一条指令，但各自拥有自己的寄存器。"],
+    wg:      ["Warpgroup — 4 个 warp，128 个 thread", "Hopper 引入 warpgroup 作为 warpgroup-level MMA（<code>wgmma</code>）的单位；在 Blackwell 上，它也是 <b>Tensor Memory</b> 访问的协作单位，128 个 thread 会一起搬运一个 TMEM tile。"],
+    cta:     ["CTA — Cooperative Thread Array", "也就是 CUDA thread block。一个 CTA 运行在单个 <b>SM</b> 上，并拥有这个 SM 中属于自己的 shared memory。它可以包含一个或多个 warpgroup。"],
+    cluster: ["Cluster — 协作的一组 CTA", "一组位于不同 SM 上的 CTA，可以彼此同步，也可以读取对方的 shared memory（<b>DSMEM</b>）。Blackwell 在此基础上加入动态调度（CLC）和 2-CTA cooperative MMA。"],
+    grid:    ["Grid — 一次 kernel launch", "一次 kernel launch 中的全部 thread，组织成 cluster（或直接组织成 CTA）。问题中的 tile 会被映射到 CTA 或 cluster 上。"]
+  };
+  var hier = document.getElementById('hier');
+  var threads = document.getElementById('threads');
+  for (var i = 0; i < 32; i++) { var t = document.createElement('div'); t.className = 'th'; threads.appendChild(t); }
+  var dpt = document.getElementById('dpt'), dpb = document.getElementById('dpb');
+
+  function select(k) {
+    hier.querySelectorAll('.sel').forEach(function (e) { e.classList.remove('sel'); });
+    var el = hier.querySelector('[data-k="' + k + '"]');
+    if (el) el.classList.add('sel');
+    dpt.innerHTML = INFO[k][0];
+    dpb.innerHTML = INFO[k][1];
+  }
+  hier.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-k]');
+    if (el) select(el.dataset.k);
+  });
+  select('wg');   // default: the warpgroup (the key Hopper/Blackwell unit)
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+/* Center table headers */
+table.docutils th {
+    text-align: center !important;
+}
+
+/* Math formula rendering — prevent theme CSS from breaking MathJax metrics */
+div.math {
+    overflow-x: auto;
+    padding: 0.5em 0;
+}
+mjx-container, .MathJax {
+    line-height: normal !important;
+}
+span.math {
+    line-height: normal;
+}
+
+/* Dark mode: the MLC logo is dark artwork on a transparent background, so it
+   disappears against the dark navbar. Put the dark-mode logo on a white chip so
+   it stays legible. (Light mode keeps the original transparent logo.) */
+.logo__image.only-dark {
+    background-color: #ffffff;
+    padding: 4px 8px;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+/* Chapter-opening "Overview" summary box: the {admonition} Overview blocks that
+   give the key takeaways before the narrative intro. Recolor the accent to the
+   theme primary so it reads as a roadmap, not a warning; bg/text inherit the
+   theme so it adapts to dark mode. */
+div.admonition.overview {
+    border-color: var(--pst-color-primary);
+}
+div.admonition.overview > .admonition-title {
+    color: var(--pst-color-primary);
+}
+div.admonition.overview > .admonition-title::after {
+    color: var(--pst-color-primary);
+}
