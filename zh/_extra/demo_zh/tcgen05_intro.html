@@ -248,7 +248,7 @@ function draw() {
     for (let c = 0; c < BCOUNT; c++) {
       const d = mk('div', 'cell');
       d.style.width = sz + 'px'; d.style.height = sz + 'px';
-      if (r < mBlocks && c < nBlocks) {
+      if (r >= rOff && r < rOff + mBlocks && c >= cOff && c < cOff + nBlocks) {
         d.style.background = BK[4]; d.classList.add('active');
       } else {
         d.classList.add('idle', 'dim');
