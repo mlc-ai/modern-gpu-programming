@@ -8,7 +8,7 @@ vehicle is **TIRx** (Tensor IR next), a Python DSL for writing GPU kernels at th
 
 📖 **Read it online: <https://mlc.ai/modern-gpu-programming-for-mlsys/>**
 
-Chinese version: <https://mlc.ai/modern-gpu-programming-for-mlsys/zh/>
+**Chinese version: <https://mlc.ai/modern-gpu-programming-for-mlsys/zh/>**
 
 🤝 **Contribute:** Corrections, examples, and improvements are welcome through the
 [GitHub repository](https://github.com/mlc-ai/modern-gpu-programming-for-mlsys).
