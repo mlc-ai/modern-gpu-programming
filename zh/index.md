@@ -24,6 +24,7 @@
 :maxdepth: 1
 
 chapter_background/index
+chapter_performance/index
 ```
 
 <!--

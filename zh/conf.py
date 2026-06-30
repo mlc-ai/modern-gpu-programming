@@ -40,7 +40,6 @@ exclude_patterns = [
     "chapter_gemm_basics/**",
     "chapter_intro_tirx/**",
     "chapter_layout_generations/**",
-    "chapter_performance/**",
     "chapter_tensor_cores/**",
     "chapter_tirx_layout_api/**",
     "chapter_tma/**",
