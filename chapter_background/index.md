@@ -4,8 +4,8 @@
 :::{admonition} Overview
 :class: overview
 
-- GPU kernel execution is first shaped by the thread hierarchy: thread, warp, warpgroup, CTA, cluster, and grid each correspond to a different scale of cooperation. Many Blackwell operations have their own natural scope: a TMA copy is launched by a single thread, a TMEM load is carried out by a warpgroup, and a 2-CTA cooperative MMA spans two CTAs.
-- Data does not live in just one place. GMEM, SMEM, TMEM, and registers serve different capacity, latency, and access-scope needs; clusters also use DSMEM so one CTA can access another CTA's shared memory. One core task of a high-performance kernel is to move data efficiently between these spaces.
+- A GPU kernel's execution is shaped first by its thread hierarchy: thread, warp, warpgroup, CTA, cluster, and grid each correspond to a different scale of cooperation. Many Blackwell operations have their own natural scope: a TMA copy is launched by a single thread, a TMEM load is carried out by a warpgroup, and a 2-CTA cooperative MMA spans two CTAs.
+- Data does not live in a single place. GMEM, SMEM, TMEM, and registers offer different tradeoffs in capacity, latency, and access scope; clusters also use DSMEM so one CTA can access another CTA's shared memory. A core task of a high-performance kernel is to move data efficiently between these spaces.
 - Compute and data movement are handled by different hardware engines. CUDA cores handle address calculation, control flow, and scalar logic; Tensor Cores perform the main matrix computation; TMA moves data asynchronously. We end the chapter with a GEMM data pipeline that shows how overlap keeps multiple engines busy at the same time.
 :::
 
@@ -76,16 +76,16 @@ spaces.
 |--------|-----------|------|-------|
 | **Global (GMEM)** | Device-wide | Persistent tensor storage | Large HBM, shared by all SMs |
 | **Shared (SMEM)** | Per-CTA (one SM) | Tile staging | Low-latency scratchpad; up to 228 KB/SM on B200 |
-| **Tensor Memory (TMEM)** | Per-CTA | MMA accumulator storage | New on Blackwell; used by `tcgen05` |
+| **Tensor Memory (TMEM)** | Per-CTA | MMA accumulator storage | Introduced with Blackwell; used by `tcgen05` |
 | **Register File (RF)** | Per-thread | Scalars and per-thread tile fragments | Fast; holds epilogue/temp values |
 
-Among these memory spaces, **Tensor Memory (TMEM)** is new on Blackwell. Before Blackwell, MMA
+Among these memory spaces, **Tensor Memory (TMEM)** was introduced with Blackwell. Before Blackwell, MMA
 accumulators were usually stored in registers, but registers are limited and large MMAs can create
 high register pressure. Blackwell's `tcgen05` instead writes accumulators into TMEM, moving that
 storage out of registers. You can think of TMEM as a CTA-scoped 2D scratchpad: each CTA gets 128
 lanes and up to 512 32-bit columns. Logically, this array belongs to the CTA, but physically it lives
 on the SM. Because accumulators are first written to TMEM, the kernel has to read them back into
-registers explicitly before the epilogue. This design has two consequences that will appear
+registers explicitly before the epilogue. This design has two implications that will appear
 repeatedly in later chapters, especially {ref}`chap_tensor_cores`. First, TMEM reads are explicit and
 warpgroup-distributed: they are carried out cooperatively by the four warps in a warpgroup. Second,
 TMEM is not automatically allocated and managed by the compiler like registers; the program must
@@ -104,7 +104,7 @@ to GMEM and having the peer CTA read it again. Once the copy completes, hardware
 barrier to tell later computation that the data is ready.
 
 The 2-CTA cluster GEMM in Part III is built on this mechanism. The two CTAs can share operand tiles
-through DSMEM, reducing global memory accesses. Here, "share" does not mean merging the two CTAs'
+through DSMEM, reducing global-memory traffic. Here, "share" does not mean merging the two CTAs'
 SMEM into one pool: Asmem and Bsmem still belong to their respective CTAs. DSMEM provides cross-CTA
 access, allowing other CTAs in the cluster, or a `cta_group=2` cooperative MMA, to read data from a
 peer CTA's SMEM.
@@ -125,11 +125,11 @@ B through the cluster (DSMEM), and the pair produces a 256×256 output tile.*
 
 The thread hierarchy determines how computation is organized, and the memory spaces determine where
 data lives. The arithmetic itself is carried out by compute units inside the SM. An SM mainly has two
-kinds of compute unit: CUDA cores and Tensor Cores.
+kinds of compute units: CUDA cores and Tensor Cores.
 
 - **CUDA cores** are general-purpose SIMT ALUs. They run the scalar and vector instructions that
-  handle index arithmetic, elementwise math, reductions, and control flow, the glue logic that
-  surrounds the heavy matrix work.
+  handle index arithmetic, elementwise math, reductions, and control flow. In Tensor Core kernels,
+  they provide the glue logic around the heavy matrix work.
 - **Tensor Cores** are fixed-function units that perform a dense matrix multiply-accumulate at *tile*
   granularity, computing $D = AB + C$ in a single instruction.
 
