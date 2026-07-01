@@ -166,11 +166,11 @@ such as `tma load` to highlight the data path it takes across the hardware units
 
 A single GEMM tile flows through three stages.
 
-1. **Load.** A TMA copy streams an A or B operand tile from GMEM into SMEM. One
+1. **Load.** A TMA copy ({ref}`chap_tma`) streams an A or B operand tile from GMEM into SMEM. One
    thread issues the copy, recording up front how many bytes are expected to arrive. As the bytes
    land, the TMA engine reports their progress, and a completion barrier flips only once all the
    expected bytes have been delivered.
-2. **Compute.** A `tcgen05` MMA reads the operand tiles out of SMEM and
+2. **Compute.** A `tcgen05` MMA ({ref}`chap_tensor_cores`) reads the operand tiles out of SMEM and
    accumulates the product into a TMEM tile. One elected thread issues it, and it signals a barrier
    when the math is done.
 3. **Epilogue.** The warpgroup reads the TMEM accumulator back into registers, casts the result to
